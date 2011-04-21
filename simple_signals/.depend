@@ -1,0 +1,9 @@
+QObjectCleanupHandler.cmo: qt.cmo
+QObjectCleanupHandler.cmx: qt.cmx
+QPushButton.cmo: qt.cmo QPushButton.cmi
+QPushButton.cmx: qt.cmx QPushButton.cmi
+qt.cmo:
+qt.cmx:
+qtGui.cmo: QPushButton.cmi QObjectCleanupHandler.cmo
+qtGui.cmx: QPushButton.cmx QObjectCleanupHandler.cmx
+QPushButton.cmi:
