@@ -17,20 +17,13 @@ CAMLprim value ml_QObject_connect (value sender, value signal, value receiver,
 {
   char *sg = String_val(signal);
   char *sl = String_val(member);
-  printf("signal name = %s\n",sg);
-  printf("slot name = %s\n",sl);  
-  //char *s1 = "1", *s2 = "2";
-
-    //  char* aaa = CONCAT("aaaa","bbbbb");
-    const char *loc1 = (QString("2")+QString(sg)).toStdString().c_str();
-    const char *loc2 = (QString("1")+QString(sl)).toStdString().c_str();
-    printf("loc1: %s\n" , loc1);
-    printf("loc2: %s\n" , loc2);
-    return Val_bool
+  const char *loc1 = (QString("2")+QString(sg)).toLocal8Bit().data();
+  const char *loc2 = (QString("1")+QString(sl)).toLocal8Bit().data();
+  return Val_bool
       (QObject::connect(QObject_val(sender),  
-			"2clicked()",
+			loc1,
 			QObject_val(receiver),
-			"1quit()") );
+			loc2) );
 }
   value ml_QObject_objectName(value sender) {
     CAMLparam1(sender);
