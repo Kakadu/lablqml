@@ -11,8 +11,7 @@ ML_OBJS_OPT= $(MLQT_ENUMS_OPT) qt.cmx $(MLQT_OBJS_OPT) qtGui.cmx
 
 CQT_ENUMS= 
 
-CQT_OBJS=  \
-	  ml_QPushButton.o 	  ml_qobject.o		ml_qapplication.o
+CQT_OBJS= ml_QWidget.o ml_QPushButton.o ml_QLayout.o ml_qobject.o		ml_qapplication.o
 
 C_OBJS= $(CQT_ENUMS) $(CQT_OBJS)
 QTDEBUG_PATH=/home/kakadu/prog/qt-all-opensource-src-4.5.3/include
@@ -23,8 +22,8 @@ COPTS = -I/usr/share/qt4/mkspecs/linux-g++   -I$(QTPATH)/Qt -I$(QTPATH)/QtCore \
 	-I$(QTPATH)/QtGui -I$(QTPATH)/
 
 CLIBS = -L/usr/lib -lQtGui -lQtCore -lpthread -L/usr/local/lib -L/usr/lib/
-OCAMLC=ocamlc -g 
-OCAMLOPT=ocamlopt -g
+OCAMLC=ocamlc -g -annot 
+OCAMLOPT=ocamlopt -g -annot
 GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED
 
 all:  lablqt

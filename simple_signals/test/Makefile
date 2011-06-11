@@ -6,7 +6,7 @@ all: main
 OCAMLC=ocamlopt -g
 main:
 	$(OCAMLC) -c -pp camlp4o $(INCLUDES) main.ml 
-	$(OCAMLC) $(INCLUDES) -cclib /usr/lib/libstdc++.so.6 lablqt.cmxa main.cmx -o test
+	$(OCAMLC) $(INCLUDES) -cclib -lstdc++ lablqt.cmxa main.cmx -o test
 
 clean:
 	        rm -f *.cm[xio] 

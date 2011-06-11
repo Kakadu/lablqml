@@ -6,13 +6,18 @@ external setButtonChecked:   'a -> bool -> unit = "ml_setButtonChecked"
 external setButtonCheckable: 'a -> bool -> unit = "ml_setButtonCheckable" 
 
 external qWidget_show : [> `qwidget] obj -> unit = "ml_qWidget_show"
+external createWidget': unit -> [`qwidget] obj = "ml_createWidget"
+
 class qWidget me = object (self)
+  method handler: [`qwidget] obj = me
   method show () = qWidget_show me
 end
+let createWidget () = let w = createWidget' () in
+		      new qWidget w
 
-class qPushButton me = object(self)
+class qPushButton me = object (self)
   inherit qWidget me as super
-  method handler:  [ `qwidget] obj  = me 
+  method handler:  [ `qwidget ] obj  = me 
   method setChecked:   bool -> unit = setButtonChecked   me
   method setCheckable: bool -> unit = setButtonCheckable me 
   method show () = super#show ()
@@ -40,14 +45,24 @@ external createApp': string array -> [> `qwidget] obj = "ml_QApplication"
 let createApp arr = 
   let app : [> `qwidget] obj = createApp' arr in
   new qApplication app
-(* application end *)
-
-
 
 let connect : qPushButton ->  <name:string; ..> signal -> 
-                 qApplication -> <name:string; ..> slot   -> unit = 
+              qApplication -> <name:string; ..> slot   -> unit = 
   fun sender signal target slot ->
-(*   print_endline ("signal = " ^ (signal#name) );
-   print_endline ("slot   = " ^ (slot#name) ); *)
     let b = QObject.connect sender#handler ~signal:signal#name
       ~dst:target#handler ~slot:slot#name in ()
+(*
+external createVBoxLayout': [> `qwidget] obj option -> [> `qlayout] obj = "ml_createVBoxLayout"
+external qvboxlayout_addWidget: [> `qlayout] obj -> [> `qwidget] obj -> unit = "ml_qvboxlayout_addWidget"
+
+class qvboxlayout w = object (self)
+  method handler: [`qlayout] obj = w
+  method addWidget: <handler:[`qwidget]obj; ..> -> unit = fun item ->
+    qvboxlayout_addWidget w (item#handler) 
+end
+
+let createVBoxLayout (parent: qWidget option) : qvboxlayout = 
+  let w = createVBoxLayout' (match parent with
+    | None -> None | Some x -> Some x#handler) in
+  new qvboxlayout w
+  *)  
