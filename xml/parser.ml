@@ -24,11 +24,26 @@ and slt = string * (func_arg list)
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
-exception Break
+let skipNs = function
+  | "std" | "QGL" | "internal" | "QtConcurrent" | "QtPrivate" | "QDrawBorderPixmap" 
+  | "QtSharedPointer" | "QMdi" | "QAlgorithmsPrivate" | "QAccessible2" -> true
+  | _ -> false
+
+let isTemplateClass name = 
+    try ignore (String.index name '<'); true
+    with Not_found -> false
 
 let startswith ~prefix:p s = 
   if (String.length p > (String.length s)) then false
   else (Str.first_chars s (String.length p) = p)
+
+let skipMeth name = 
+  if startswith ~prefix:"operator" name then true
+  else if startswith ~prefix:"d_func" name then true
+  else match name with
+  | _ -> false
+
+exception Break
 
 let strip_dd ~prefix:p s =
   let plen = String.length p+2 in
@@ -56,11 +71,6 @@ let chop s =
       | _ -> s
   with Not_found -> s
 
-let str2type s = 
-  let s = chop s in
-  let isConst = startswith ~prefix:"const" s in
-  let s = if isConst then Str.string_after s 5 else s in
-  ()
   *)  
 
 
@@ -78,8 +88,8 @@ let rec build root = match root with
   | PCData _ -> assert false
   | Element ("code",_,lst) -> 
     let classes = ref [] in
-    let nss : namespace list ref = ref [] in
-    let enums: enum list ref = ref [] in
+    let nss = ref [] in
+    let enums = ref [] in
 
     List.iter (function
       | Element (("class",attr,lst) as e)    -> 
@@ -89,9 +99,12 @@ let rec build root = match root with
       | Element ( ("enum",_,lst) as e) -> 
 	enums := (parse_enum "" e) :: !enums
       | _ -> assert false) lst;
-    {ns_name=""; ns_ns= !nss; ns_classes= !classes; ns_enums= !enums }
+(*    let nss = List.filter (fun ns -> not (skipNs ns.ns_name)) !nss in *)
+    let classes = List.filter (fun c -> not (isTemplateClass c.c_name) ) !classes in
+    {ns_name=""; ns_ns= !nss; ns_classes= classes; ns_enums= !enums }
   | _ -> print_endline "XML file is incorrect";
     assert false
+
 and parse_arg (_,attr,lst) : func_arg = 
   let default = attrib_opt "default" attr in
   let indir = attrib "indirections" attr |> int_of_string in
@@ -116,12 +129,13 @@ and parse_class nsname c  =
     let name = attrib "name" attr in
     let name = Str.global_replace  (Str.regexp "&lt;") "<" name in
     let name = Str.global_replace  (Str.regexp "&gt;") ">" name in
+    let name = strip_dd ~prefix:nsname name in
+
     (* is generic class *)
 (*    try let _ = String.index name '<' in ()
     with Not_found -> raise Break;
 *)
     (* fix name *)    
-    let name = strip_dd ~prefix:nsname name in
     
     let helper = 
       let aggr lst = 
@@ -189,7 +203,8 @@ and parse_class nsname c  =
       | _ -> assert false
     in
     List.iter f lst;
-    { c_name=name; c_constrs= !constrs; c_slots= !slots; c_meths= !mems; 
+    let mems = List.filter (fun (mname,_,_,_,_) -> not (skipMeth mname) ) !mems in
+    { c_name=name; c_constrs= !constrs; c_slots= !slots; c_meths= mems; 
       c_inherits= !inher; c_enums= !enums; c_props= !props; c_sigs= !sigs }
   | _ -> assert false
 
@@ -219,6 +234,7 @@ and parse_prop = function
     
 and parse_ns superName = function
   | ("namespace",("name",name)::_,lst) -> 
+    let name = strip_dd ~prefix:superName name in
     let clas = ref [] in
     let enums = ref [] in
     let nss = ref [] in 
@@ -232,6 +248,55 @@ and parse_ns superName = function
       | _ -> assert false
     in
     List.iter f lst;
-    let name = strip_dd ~prefix:superName name in
     {ns_name=name; ns_classes= !clas; ns_enums= !enums; ns_ns= !nss}
   | _ -> assert false
+
+(* name index *)
+type indexItem = Ns of namespace | Class of clas | Enum of enum
+exception NotInIndex of string
+module Index = struct 
+  include Map.Make(String)
+  
+  let print_keys t = iter (fun k _ -> print_endline k) t
+  let isEnum name t = 
+    try
+      match find name t with
+	| Enum _ -> true
+	| _ -> false
+    with Not_found -> raise (NotInIndex name)
+  let isClass name t = 
+    try
+      match find name t with
+	| Class _ -> true | _ -> false
+    with Not_found -> raise (NotInIndex name)
+end
+type index_t = indexItem Index.t
+
+let build_index nslst = 
+  let m = ref Index.empty in
+  let add k v = 
+    if Index.mem k !m then 
+      print_endline ("Adding dublicate with name " ^ k);
+      
+    m:= Index.add k v !m
+  in
+  let rec iter_ns ns = 
+    add ns.ns_name (Ns ns);
+    List.iter iter_ns ns.ns_ns;
+    List.iter iter_class ns.ns_classes;
+    List.iter (iter_enum (Some ns.ns_name) ) ns.ns_enums;
+    ()
+  and iter_class c = 
+    add c.c_name (Class c);
+    List.iter (iter_enum (Some c.c_name)) c.c_enums;
+  and iter_enum parent_name e = 
+    let k = (match parent_name with None -> "" | Some x -> x^"::") ^ (fst e) in
+    add k (Enum e)
+  in
+  List.iter iter_ns nslst;
+  !m
+
+  
+
+
+
