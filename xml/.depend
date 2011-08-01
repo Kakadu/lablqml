@@ -1,0 +1,8 @@
+generators.cmo: parser.cmi generators.cmi
+generators.cmx: parser.cmx generators.cmi
+main.cmo: parser.cmi generators.cmi
+main.cmx: parser.cmx generators.cmx
+parser.cmo: parser.cmi
+parser.cmx: parser.cmi
+generators.cmi: parser.cmi
+parser.cmi:
