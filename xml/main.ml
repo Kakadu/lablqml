@@ -47,14 +47,24 @@ class cppGenerator dir (index:Parser.indexItem Parser.Index.t) =
 (*    print_endline ("generating method " ^ classname ^ "::"^ meth_name); *)
     try
       let skipStr = ("skipped " ^ classname ^ "::" ^ meth_name) in
-      if (goodMeth meth_name res lst acce modlst) then 
+      if goodMeth ~classname:classname meth_name res lst acce modlst then 
 	raise (BreakS skipStr);
       
-      fprintf h "// method %s %s(%s)\n"
-	(match res with Some s -> self#type2str s | None -> "<none>") meth_name
+      fprintf h "// method %s `%s`(%s)\n"
+	(self#type2str res) meth_name
 	(List.map (self#type2str $ fst) lst |> String.concat ",");
 
+      let isProc = (res.t_name = "void") in
 
+      let resCast = if isProc then ""
+	else begin match self#toCamlCast (unreference res) "ans" "_ans" with 
+	  | CastError s -> raise (BreakS ("cant cast return type ("^s^"): " ^ (self#type2str res)  ) )
+	  | CastValueType name -> raise (BreakS ("Cast error. Return type is value-type: " ^ name))
+	  | CastTemplate str -> raise (BreakS ("Cast error. return tppe is a template: "^ str))
+	  | Success s -> s (*"  CAMLreturn( " ^ s ^ ");"*)
+	end
+      in
+      
       let argnames = ref [] in
       for i=List.length lst downto 1 do argnames := ("arg"^(string_of_int i)) :: !argnames done;
       let argnames = "self" :: !argnames in      
@@ -65,33 +75,45 @@ class cppGenerator dir (index:Parser.indexItem Parser.Index.t) =
       let lst2 = ({t_name=classname; t_is_ref=false; t_is_const=false; t_indirections=1;t_params=[] },None)
 	:: lst in
       let argCasts = List.map2 (fun name (t,def) -> 
-	self#fromCamlCast (self#index) t ~default:def name
+	self#fromCamlCast (self#index) (unreference t) ~default:def name
       ) argnames lst2 in
-      let fail = List.find_opt (function CastError _ -> true | _ -> false) argCasts in
+      let fail = List.find_opt (function Success _ -> false | _ -> true) argCasts in
 
       match fail with
 	| Some (CastError s) -> raise (BreakS s)
+	| Some (CastValueType name) -> raise (BreakS ("Casting value-type: " ^ name))
+	| Some (CastTemplate str) -> raise (BreakS ("Casting template: "^ str))
 	| None -> begin
 	  let cpp_func_name = self#cppFuncName classname meth_name lst in
 	  fprintf h "value %s(%s) {\n" cpp_func_name 
 	    (List.map (fun s->"value "^s) argnames |> String.concat ", ");
-	  
-	  
+	  	  
 	  if len>5 then (
 	    let l1,l2 = headl 5 argnames in
 	    fprintf h "  CAMLparam5(%s);\n" (                   l1 |> String.concat ",");
-	    fprintf h "  CAMLlocal5(%s);\n" (List.map ((^) "_") l1 |> String.concat ",");
-	    fprintf h "  CAMLxparam%d(%s);\n" (len-5) (                  l2 |> String.concat ",");
-	    fprintf h "  CAMLlocal%d(%s);\n" (len-5) (List.map ((^)"_") l2 |> String.concat ",")	     
+(*	    fprintf h "  CAMLlocal5(%s);\n" (List.map ((^) "_") l1 |> String.concat ","); *)
+	    fprintf h "  CAMLxparam%d(%s);\n" (len-5) (                  l2 |> String.concat ",") (*;
+	    fprintf h "  CAMLlocal%d(%s);\n" (len-5) (List.map ((^)"_") l2 |> String.concat ",") *)	     
 	  ) else (
-	    fprintf h "  CAMLparam%d(%s);\n" len (                  argnames |> String.concat ",");
-	    fprintf h "  CAMLlocal%d(%s);\n" len (List.map ((^)"_") argnames |> String.concat ",")
+	    fprintf h "  CAMLparam%d(%s);\n" len (                  argnames |> String.concat ",") (*;
+	    fprintf h "  CAMLlocal%d(%s);\n" len (List.map ((^)"_") argnames |> String.concat ",") *)
 	  );
-
+	  if not isProc then 
+	    fprintf h "  CAMLlocal1(_ans);\n";
+	  
 	  let argCasts = List.map (function Success s -> s| _ -> assert false) argCasts in
 	  List.iter (fun s -> fprintf h "  %s\n" s) argCasts;
-	  fprintf h "\n";
-	  fprintf h "}\n"
+	  let argsCall = List.map ((^)"_") (List.tl argnames) |> String.concat ", " in
+	  if isProc then (
+	    fprintf h "  _self -> %s(%s);\n" meth_name argsCall;
+	    fprintf h "  CAMLreturn(Val_unit);\n" 
+	  ) else (
+	    fprintf h "  %s ans = _self -> %s(%s);\n" 
+	      (unreference res |> self#type2str ) meth_name argsCall;
+	    fprintf h "  %s\n" resCast;
+	    fprintf h "  CAMLreturn(_ans);\n" 
+	  );	  
+	  fprintf h "}\n\n"
 	end
 	| _ -> assert false
 
@@ -101,8 +123,9 @@ class cppGenerator dir (index:Parser.indexItem Parser.Index.t) =
   method genConstr classname h (lst,policy,modif) = ()
 
   method makefile dir lst = 
+    let lst = List.fast_sort String.compare lst in
     let h = open_out (dir ^ "/Makefile") in
-    fprintf h "GCC=g++ -c -pipe -g -O2 -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/\n\n";
+    fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map (fun s -> s ^ ".o") lst |> String.concat " ");
     fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` $(COPTS) -fpic $<\n\n";
@@ -117,7 +140,7 @@ class cppGenerator dir (index:Parser.indexItem Parser.Index.t) =
     else begin
       let classname = c.c_name in
       let h = open_out (dir ^ "/" ^ classname ^ ".cpp") in
-      fprintf h "#include <Qt/QtGui>\n#include \"headers.h\"\nextern \"C\" {\n";
+      fprintf h "#include <Qt/QtOpenGL>\n#include \"headers.h\"\nextern \"C\" {\n";
       iter (self#genProp c.c_name h) c.c_props;
       iter (self#genSignal c.c_name h) c.c_sigs;
       iter (self#genSlot c.c_name h) c.c_slots;

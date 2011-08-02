@@ -18,11 +18,17 @@ and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_n
 and enum = string * (string list)
 and cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list }
 and func_arg = cpptype * string option 
-and meth = string * func_arg list * (cpptype option) * accessPolicy * modifiers list
+and meth = string * func_arg list * cpptype * accessPolicy * modifiers list
 and constr = func_arg list * accessPolicy * modifiers list
 and slt = string * (func_arg list)
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
+
+let unreference = function
+  | {t_name = t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
+    let t_is_ref = false in
+    { t_name; t_indirections; t_is_const; t_is_ref; t_params }
+
 
 let skipNs = function
   | "std" | "QGL" | "internal" | "QtConcurrent" | "QtPrivate" | "QDrawBorderPixmap" 
@@ -33,15 +39,41 @@ let isTemplateClass name =
     try ignore (String.index name '<'); true
     with Not_found -> false
 
+let isInnerClass name = 
+  try let _ = Str.search_forward (Str.regexp "::") name 0 in true
+  with Not_found -> false
+
+let fixTemplateClassName = 
+  (Str.global_replace (Str.regexp "&lt;") "<") $
+  (Str.global_replace (Str.regexp "&gt;") ">")
+
 let startswith ~prefix:p s = 
   if (String.length p > (String.length s)) then false
   else (Str.first_chars s (String.length p) = p)
 
-let skipMeth name = 
+let skipMeth ~classname name = 
   if startswith ~prefix:"operator" name then true
   else if startswith ~prefix:"d_func" name then true
   else match name with
-  | _ -> false
+    | "flush" 	
+    | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
+    | "data" when classname = "QByteArray" ->  true
+    | "bits" when classname = "QImage" ->  true
+    | "scanLine" when classname = "QImage" ->  true
+    | "invertedAppearance" when classname = "QProgressBar" ->  true
+    | "cap" when classname = "QRegExp" ->  true
+    | "pos" when classname = "QRegExp" ->  true
+    | "errorString" when classname = "QRegExp" ->  true
+    | "data" when classname = "QSharedMemory" ->  true
+    | "shortcutId" when classname = "QShortcutEvent" ->  true
+    | "isAmbiguous" when classname = "QShortcutEvent" ->  true
+    | "toUnicode" when classname = "QTextCodec" ->  true
+    | "indexOfTopLevelItem" when classname = "QTreeWidget" ->  true
+    | "data" when classname = "QVariant" ->  true
+    | "canConvert" when classname = "QVariant" ->  true
+    | "toGraphicsObject" when classname = "QGraphicsItem" -> true (* very strange override *)     
+    | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
+    | _ -> false
 
 exception Break
 
@@ -110,7 +142,7 @@ and parse_arg (_,attr,lst) : func_arg =
   let indir = attrib "indirections" attr |> int_of_string in
   let isRef = attrib "isReference" attr |> bool_of_string in
   let isConst = attrib "isConstant" attr |> bool_of_string in
-  let typename = attrib "type" attr  in
+  let typename = attrib "type" attr |> fixTemplateClassName in
   let params : cpptype list = 
     match lst with 
       | [Element ("arguments",_,lst)] ->
@@ -127,9 +159,8 @@ and parse_class nsname c  =
   match c with
   | ("class",attr,lst) ->
     let name = attrib "name" attr in
-    let name = Str.global_replace  (Str.regexp "&lt;") "<" name in
-    let name = Str.global_replace  (Str.regexp "&gt;") ">" name in
     let name = strip_dd ~prefix:nsname name in
+    let name = fixTemplateClassName name in
 
     (* is generic class *)
 (*    try let _ = String.index name '<' in ()
@@ -186,8 +217,11 @@ and parse_class nsname c  =
 	List.iter (function 
 	  | Element ("class",("name",nn)::_,_) -> inher := nn :: !inher
 	  |  _ -> assert false) ll
-      | (Element ("function",_,ll)) as e -> let f = helper e in 
-					    mems := f :: !mems
+      | (Element ("function",_,ll)) as e -> 
+	(let (name,args, ret,policy,modif) = helper e in 
+	 match ret with
+	   | Some r -> mems := (name,args,r,policy,modif) :: !mems
+	   | None -> assert false)
       | (Element ("constructor",_,ll)) as e -> let (_,args,_,policy,modif) = helper e in
 					       constrs := (args,policy,modif) :: !constrs 
 	
@@ -203,7 +237,7 @@ and parse_class nsname c  =
       | _ -> assert false
     in
     List.iter f lst;
-    let mems = List.filter (fun (mname,_,_,_,_) -> not (skipMeth mname) ) !mems in
+    let mems = List.filter (fun (mname,_,_,_,_) -> not (skipMeth ~classname:name mname) ) !mems in
     { c_name=name; c_constrs= !constrs; c_slots= !slots; c_meths= mems; 
       c_inherits= !inher; c_enums= !enums; c_props= !props; c_sigs= !sigs }
   | _ -> assert false

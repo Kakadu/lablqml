@@ -6,43 +6,51 @@ let skipClass c =
     | s when isTemplateClass classname -> 
       print_endline ("skipping template class " ^ classname);
       true
-    | s when Str.split (Str.regexp "::") s |> List.length > 1 -> 
+
+    | s when isInnerClass classname -> 
       print_endline ("skipping inner class " ^ classname);
       true
 
-    | "QTabletEvent" -> true
+    | "QTabletEvent" -> true (* ??? don't rember why skip it *)
     | _ -> false
    
-let skipArgument  = function
+let skipArgument  = function (* true when don't skip *)
   | "qreal" -> false
-  | s when Parser.isTemplateClass s -> false
+  | s when isTemplateClass s -> false
+  | s when isInnerClass s -> false
   | _ -> true
 
-let goodMeth name (res: Parser.cpptype option) lst access _ = 
+exception DoSkip
+exception DontSkip
+let goodMeth ~classname name res lst access _ = 
   try
-    if skipMeth name then raise Break;
-    if startswith ~prefix:"operator" name then raise Break;
+    if skipMeth ~classname name then raise DontSkip; 
+(*    if startswith ~prefix:"operator" name then raise DontSkip;
+    if startswith ~prefix:"d_func" name then raise DontSkip; *)
     
 (*    (match modif with 
       | Static | Abstract -> raise Break
       | Virtual -> ()); *)
     (match access with
-      | Private | Protected -> raise Break
+      | Private | Protected -> raise DontSkip
       | Public -> ());
     let lst = List.map fst lst in
-    let lst = match res with Some x -> x::lst | None -> lst in
+    let lst = res::lst in
     let _ = List.map (fun t -> t.t_name) lst |> List.find skipArgument  in
     false
 
-  with Break -> false
-    | Not_found -> true
+  with Break | DoSkip -> false
+    | DontSkip | Not_found -> true
 
 exception BreakS of string
 
-type t1 = string and t2 = string
-and castResult = Success of t1 | CastError of t2
+type t1 = string and t2 = string 
+and castResult = Success of t1 | CastError of t2 | CastValueType of t2 | CastTemplate of t2
 exception BreakOk of t1
 exception BreakFail of t2
+exception BreakResult of castResult
+
+type pattern = InvalidPattern | PrimitivePattern | ObjectPattern | EnumPattern
 
 class virtual abstractGenerator _index = object (self)
     
@@ -59,65 +67,73 @@ class virtual abstractGenerator _index = object (self)
 
   method private index : Parser.indexItem Index.t = _index
 
+
+  method private pattern t = 
+    let name = t.t_name in
+    let indir = t.t_indirections in
+    if indir>1 then InvalidPattern 
+    else if isTemplateClass name then InvalidPattern
+    else match name with
+      | "int"  | "bool" | "QString" -> 
+	if indir = 0 then PrimitivePattern else InvalidPattern
+      | "qreal" | "double" | "float" -> InvalidPattern
+      | s when indir = 1 -> ObjectPattern
+      | s when indir > 1 -> InvalidPattern
+      | _ -> try
+	       if Index.isEnum name self#index then EnumPattern
+	       else if Index.isClass name self#index then InvalidPattern
+	       else ( print_endline "you cant see this line. attempt to cast namespace";
+		      assert false )
+	with
+	    NotInIndex name -> (print_endline ("!!! Not in index: " ^ name);
+				InvalidPattern )
+
+
   method private fromCamlCast 
     : indexItem Index.t -> cpptype -> ?default:string option -> string -> castResult
-      = fun index t ?(default=None) (name(*arg name*):string) -> 
+      = fun index t ?(default=None) (argname(*arg name*):string) -> 
 	let _ = default in
-	let indirections = t.t_indirections in
+(*	let indirections = t.t_indirections in *)
 	let tname = t.t_name in
-	let is_ref = t.t_is_ref in
+(*	let is_ref = t.t_is_ref in *)
 	let is_const = t.t_is_const in
-	try
-	  if t.t_indirections > 1 then 
-	    raise (BreakFail "indirections > 1");
+	match self#pattern t with
+	  | InvalidPattern -> CastError ("Cant cast: " ^ (self#type2str t) )
+	  | PrimitivePattern ->
+ 	    (match t.t_name with
+	      | "int" -> Success (String.concat "" 
+				    ["int _";   argname; " = Int_val("; argname; ");"])
+	      | "double" -> CastError "double_value!"
+	      | "bool" -> Success (String.concat "" 
+				     ["bool _"; argname; " = Bool_val("; argname; ");"])
+	      | "QString" -> Success (String.concat "" 	  
+					["  "; if t.t_is_const then "const " else "";
+					 "QString"; if t.t_is_ref then "&" else "";
+					 " _"; argname; " = "; "QString(String_val("; argname; "));" ])
+	      | _ -> assert false)
 
-	let ans = (* empty list if can't cast *)
-	if (t.t_name = "QString") then begin
-	  if indirections<>0 then raise (BreakFail "QString with indirections");
-	  ["  "; if t.t_is_const then "const" else "";
-	   "QString"; if t.t_is_ref then "&" else "";
-	   " _"; name; " = "; "QString(String_val("; name; "));"]	 
-	end 
-	else if t.t_name = "int" then begin
-	  if indirections<>0 then raise (BreakFail "int with indirections");
-	  assert (t.t_indirections = 0);  
-	  ["int _";   name;" = Int_val(";name; ");"]
-	end 
-	else if t.t_name = "double" then begin
-	  if indirections<>0 then raise (BreakFail "double with indirections");
-	  ["double _";name;" = Double_val(";name; ");"]
-	end 
-	else if t.t_name = "bool" then begin
-	  if indirections<>0 then raise (BreakFail "bool with indirections");
-	  assert (t.t_indirections = 0);  
-	  ["bool _";  name;" = Bool_val(";name; ");"]
-	end 
-	else if (t.t_indirections = 1) then begin
-	  if not (Index.isClass tname (self#index)) then
-	    raise (BreakFail ("Not a class has indirections:" ^ (self#type2str t) ));
-	  if is_ref then
-	    raise (BreakFail ("Class pointer is a reference:" ^ (self#type2str t) ));
-	  [if is_const then "const " else ""; tname; "* _"; name; 
-	   " = (";tname;"*)"; name; ";"]
-	    
-	end else if Index.isEnum tname (self#index) then 
-	  raise (BreakFail ("enums are not supported (" ^ tname ^ ")"))	    
-	else 
-	  raise (BreakFail ("some shit (" ^ (self#type2str t) ^ ")"))	   	    
-(*	else
-	  BreakFail "this is incompilable yet" *)
-	in
+	  | ObjectPattern -> Success (String.concat ""
+					[if is_const then "const " else ""; tname; "* _"; argname; 
+					 " = (";tname;"*)"; argname; ";"])
 
-	if List.length ans > 0 then Success (String.concat "" ans)
-	else CastError "impossible string"
-	with
-	  | BreakOk s -> Success s
-	  | BreakFail s -> CastError s
-	  | NotInIndex name -> CastError ("Not in index: " ^ name)
+	  | EnumPattern -> CastError ("cant't cast enum: " ^ (self#type2str t)) 
+	      
 
   method private toCamlCast 
-    : indexItem Index.t -> cpptype -> ?default:string option -> string -> castResult
-      = fun index t ?(default=None) (name(*arg name*):string) -> 
+      = fun t arg ansVarName -> 
+	match self#pattern t with
+	  | InvalidPattern -> CastError ("Cant cast: " ^ (self#type2str t))
+	  | PrimitivePattern ->
+	    (match t.t_name with
+	      | "int" -> Success (String.concat "" [ansVarName;" = Val_int("; arg; ");"])
+	      | "double" -> CastError "Store_double_value!"
+	      | "bool" -> Success (String.concat "" [ansVarName; " = Val_bool("; arg; ");"])
+	      | "QString" -> Success (String.concat "" [ansVarName; " = caml_copy_string("; arg;
+							".toLocal8Bit().data() );"])
+	      | _ -> assert false)
+	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
+	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (self#type2str t)) 
+	
 
 
   method type2str t = 
