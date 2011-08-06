@@ -1,29 +1,24 @@
-ML_OBJS =parser.cmo superIndex.cmo generators.cmo ocamlGenerator.cmo main.cmo 
+ML_OBJS =parser.cmo superIndex.cmo  main.cmo 
 ML_OBJS_OPT= 
 
-#OCAML_INC=-I /usr/local/lib/ocaml/3.12.0/tyxml \
-#	-I /usr/lib/ocaml/camlp4 -I /usr/lib/ocaml/ocamlgraph  
-
 PACKAGES=dynlink,threads,unix,core,core_extended,tyxml,ocamlgraph,camlp4
-OCAMLC=ocamlfind ocamlc -g -thread -package $(PACKAGES)
+PP=-pp "camlp4o -I `ocamlfind query sexplib` -I `ocamlfind query type-conv` pa_type_conv.cmo pa_sexp_conv.cmo"
+OCAMLC=ocamlfind ocamlc -g -thread -package $(PACKAGES) $(PP) 
+
 OCAMLOPT=ocamlopt -g -thread $(OCAML_INC)
 
 CMOS_LIB=str.cma unix.cma threads.cma bigarray.cma nums.cma sexplib.cma bin_prot.cma res.cma \
         fieldslib.cma core.cma pcre.cma core_extended.cma \
-	dynlink.cma camlp4lib.cma xmllexer.cmo simplexmlparser.cmo graph.cma
+	dynlink.cma camlp4lib.cma xmllexer.cmo simplexmlparser.cmo graph.cma 
 
 CMOS=$(CMOS_LIB) $(ML_OBJS)
-#dynlink.cma str.cma unix.cma camlp4lib.cma xmllexer.cmo simplexmlparser.cmo graph.cma 
 
 all:  lablqt
 
 .SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx
 
 depend:
-	#$(OCAMLC) -i parser.ml > parser.mli
-	#$(OCAMLC) -i generators.ml > generators.mli
-	#$(OCAMLC) -i ocamlGenerator.ml > ocamlGenerator.mli
-	ocamldep  *.ml *.mli > .depend
+	ocamldep $(PP) *.ml *.mli > .depend
 
 .ml.cmx:
 	$(OCAMLOPT) -c $<

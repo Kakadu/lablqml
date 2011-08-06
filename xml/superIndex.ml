@@ -3,8 +3,6 @@ open Core
 module List = Core_list
 module String = Core_string
 
-type short_meth = string * cpptype list (* shortand for pure virtual meths *)
-
 module NameKey = struct
   type t = string list * string (* list of namespaces and classes (reversed) and concatenated string *)
   type sexpable = t
@@ -28,7 +26,7 @@ end
 module SuperIndex = Core_map.Make(NameKey)
 
 type index_data = 
-  | Class of clas * short_meth list (* class data and its virtuals *)
+  | Class of clas * MethSet.t (* class data and its virtuals *)
   | Enum of enum
 
 module Evaluated = Core_set.Make(NameKey)
@@ -70,8 +68,7 @@ let build_superindex root_ns =
 
   let on_class_found prefix name c =
     let key = NameKey.make_key ~name ~prefix in
-(*    print_endline ("adding class " ^ (snd key)); *)
-    let data = Class (c,[]) in
+    let data = Class (c, MethSet.empty) in
     
     let curvertex = G.V.create key in
     G.add_vertex g curvertex;
@@ -89,15 +86,12 @@ let build_superindex root_ns =
   in
 
   let rec iter_ns prefix ns = 
-(*    print_endline ("iterating namespace " ^ ns.ns_name ^ ": " ^ (List.to_string (fun x->x) prefix )); *)
     let new_prefix = ns.ns_name :: prefix in
     List.iter ~f:(iter_ns new_prefix) ns.ns_ns;
     List.iter ~f:(iter_class new_prefix) ns.ns_classes;
     List.iter ~f:(on_enum_found new_prefix) ns.ns_enums;
     ()
   and iter_class prefix c = 
-(*    let new_prefix = c.c_name :: prefix in
-    List.iter ~f:(iter_class new_prefix) c.c_classes; *)
     on_class_found prefix c.c_name c;
     ()
   in
@@ -109,10 +103,10 @@ let build_superindex root_ns =
 
   (* simplify_graph *)
   let dead_roots = List.map ~f:NameKey.key_of_fullname 
-    ["QEvent"; "QStyleOption"; "QAccessible"; "QStyle"; "QLayout"; 
-     "QGesture"; "QAccessible2Interface"; "QTextFormat"; "QAbstractState";
-     "QAbstractAnimation"; "QPaintDevice"; "QAbstractItemModel"; "QGraphicsItem";
-     "QTextObject"; "QFactoryInterface"] in
+    ["QIntegerForSize>"; (*"QEvent"; "QStyleOption";(* "QAccessible";*) "QStyle"; "QLayout"; 
+(*     "QGesture"; "QAccessible2Interface"; "QTextFormat"; "QAbstractState"; 
+     "QAbstractAnimation"; "QPaintDevice"; "QAbstractItemModel"; 
+     "QTextObject"; "QFactoryInterface";*) *) "QtSharedPointer::ExternalRefCountWithDestroyFn"] in
   List.iter dead_roots ~f:(G.kill_and_fall g);
 
   let h = open_out "./outgraph.dot" in
@@ -130,58 +124,66 @@ let build_superindex root_ns =
   print_endline "Root vertexes are:";
   List.iter roots_names ~f:(print_endline);
 
-
   (* Evaluating virtuals *)
 
-  let evaluated = ref Evaluated.empty in
-  let canEvaluate c =
-    List.map c.c_inherits ~f:(NameKey.key_of_fullname) |>
-    List.for_all ~f:(fun key -> Evaluated.mem !evaluated key) in
-
-(*  List.iter !roots ~f:(fun v ->
-    let key = G.V.label v in
-    if String.is_prefix (snd key) ~prefix:"QVector" then false else
-    if String.is_prefix (snd key) ~prefix:"QList" then false else
-      true
-  ) in *)
-  
+  let evaluated = ref Evaluated.empty in  
   let cur_root_generation = ref (Evaluated.of_list !roots) in
   let some_changed = ref false in (* recursion exit condition *)
 
   let eval_class v = 
     let key = G.V.label v in
     match SuperIndex.find !index key with
-      | None -> print_endline ("base class of " ^ (snd key) ^ "is not in index. skipped")
+      | None -> cur_root_generation := Evaluated.remove !cur_root_generation v;
+	print_endline ("base class of " ^ (snd key) ^ "is not in index. skipped")
       | Some (Enum _) -> print_endline ("In graph exists enum. nonsense")
       | Some (Class (c,_)) ->
 	Printf.printf "bases of `%s` are: %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits);
-	let canEvaluate = canEvaluate c in
+	let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
+	let canEvaluate = List.for_all base_keys ~f:(Evaluated.mem !evaluated) in
+
 	if canEvaluate then begin
 	  print_endline ("evaluating class " ^ c.c_name );
 	  assert (not (Evaluated.mem !evaluated key));
 	  evaluated := Evaluated.add !evaluated key;
 	  cur_root_generation := Evaluated.remove !cur_root_generation key;
-	  let abstrs = c.c_meths |> List.filter ~f:(fun (name,args,_,_,modlst) ->
-	    List.mem ~set:modlst Parser.Abstract) in
-	  let abstrs = List.map abstrs ~f:(fun (name,args,_,_,_) -> (name,List.map ~f:fst args)) in
-	  let data = Class (c,abstrs) in
-	  index := SuperIndex.add !index ~key ~data;
+
 	  (* now add subclasses to next root generation *)
 	  let sons = G.succ g v in
 	  List.iter sons ~f:(fun son -> cur_root_generation := Evaluated.add !cur_root_generation son);
-	  some_changed := true
+	  some_changed := true;
+
+	  (* Now add new viruals to index *)
+	  let my_abstrs = c.c_meths_abstr in
+
+	  let base_sets = List.map base_keys ~f:(fun key -> match SuperIndex.find !index key with
+	    | None -> Printf.printf "Base class %s of %s is not yet indexed" (snd key) c.c_name;
+	      assert false
+	    | Some (Enum _) -> print_endline "nonsense"; assert false
+	    | Some (Class (_,set)) -> set) in
+	  let pre_ans = ref (MethSet.union_list (my_abstrs :: base_sets)) in
+
+	  (* now remove implemented members *)
+	  (* I think next line removes from 1st set all elements of second set *)
+	  (* let ans = MethSet.diff pre_ans c.c_meths_normal in *)
+
+	  MethSet.iter c.c_meths_normal ~f:(fun (res,name,lst) ->
+	    let new_meth = (res,name,List.map lst ~f:(fun (a,_) -> (a,None))) in
+	    pre_ans := MethSet.remove !pre_ans new_meth
+	  );
+	  let data = Class (c,!pre_ans) in
+	  index := SuperIndex.add !index ~key ~data;
 	end else begin
 	  print_endline ("Can't evaluate clas " ^ c.c_name ^ " yet")
 	end
   in
   let count = ref 0 in
   let rec loop () = 
-    let () = 
+(*    let () = (* print current root vertexes *)
       let names = get_vertexes_names (Evaluated.to_list !cur_root_generation) in
       "current roots (count = " ^ (string_of_int !count) ^ ")" |> print_endline;
       List.to_string (fun x->x) names |> print_endline;
       incr count
-    in
+    in *)
     if Evaluated.is_empty !cur_root_generation then
       print_endline "Virtuals evaluation finished"
     else begin
@@ -199,27 +201,22 @@ let build_superindex root_ns =
   in
   print_endline "Evaluating virtuals";
   loop ();
-  print_endline "Now printing virtuals";
-  let rec short_method2str (name,lst) = 
-    String.concat 
-      [name;"(";
-       String.concat ~sep:"," (List.map ~f:type2str lst); 
-       ")"] in
 
+(*  print_endline "Now printing virtuals";
   SuperIndex.iter !index ~f:(fun ~key ~data -> begin
     match data with
-      | Class (c,lst) ->
+      | Class (c,set) ->
 	Printf.printf "class %s extends %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits);
-	List.iter lst ~f:(fun m -> Printf.printf "\t%s\n" (short_method2str m) )
+	MethSet.iter set ~f:(fun m -> Printf.printf "\t%s\n" (string_of_meth m) )
       | Enum (ename,lst) -> () (*print_endline ("enum " ^ ename)*)  
-  end);  
-(*
-  let testkey = NameKey.key_of_fullname "QAbstractEventDispatcher" in
+  end);  *)
+
+(*  let testkey = NameKey.key_of_fullname "QGraphicsSimpleTextItem" in
   let () = match SuperIndex.find_exn !index testkey with
     | Class (c,_) ->
       Printf.printf "Members of class %s:\n" c.c_name;
-      List.iter c.c_meths ~f:(fun m -> Parser.meth2str m |> print_endline)
+      MethSet.iter c.c_meths_normal ~f:(fun m -> Parser.string_of_meth m |> print_endline)
       
     | Enum _ -> ()
   in *)
-  ()
+  (!index,g)

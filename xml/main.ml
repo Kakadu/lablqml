@@ -20,7 +20,7 @@ let is_abstract_class = function
   | "QAccessible" -> true
   | _ -> false
 
-
+(*
 open Generators
 
 class cppGenerator dir (index:indexItem Index.t) =
@@ -215,7 +215,7 @@ class cppGenerator dir (index:indexItem Index.t) =
 end
 
 open OcamlGenerator
-
+*)
 type options = { mutable reparse_xml: bool;
 		 mutable input_file: string;
 		 mutable print_virtuals: bool;
@@ -261,7 +261,8 @@ main ();;
 let main () =
   let root_ns = List.map build !root |> List.hd in
   print_endline "building superindex";
-  SuperIndex.build_superindex root_ns
+  let (index,g) = SuperIndex.build_superindex root_ns in
+  print_endline "Index builded"
 ;;
 main ();;
 
