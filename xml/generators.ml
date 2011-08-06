@@ -1,6 +1,6 @@
 open Parser 
 
-let skipClass c =
+let skipClass (c:Parser.clas) =
   let classname = c.c_name in
   match classname with
     | s when isTemplateClass classname -> 
@@ -67,14 +67,13 @@ class virtual abstractGenerator _index = object (self)
 
   method private index : Parser.indexItem Index.t = _index
 
-
   method private pattern t = 
     let name = t.t_name in
     let indir = t.t_indirections in
     if indir>1 then InvalidPattern 
     else if isTemplateClass name then InvalidPattern
     else match name with
-      | "int"  | "bool" | "QString" -> 
+      | "int"  | "bool" | "QString" | "void" -> 
 	if indir = 0 then PrimitivePattern else InvalidPattern
       | "qreal" | "double" | "float" -> InvalidPattern
       | s when indir = 1 -> ObjectPattern
@@ -93,9 +92,7 @@ class virtual abstractGenerator _index = object (self)
     : indexItem Index.t -> cpptype -> ?default:string option -> string -> castResult
       = fun index t ?(default=None) (argname(*arg name*):string) -> 
 	let _ = default in
-(*	let indirections = t.t_indirections in *)
 	let tname = t.t_name in
-(*	let is_ref = t.t_is_ref in *)
 	let is_const = t.t_is_const in
 	match self#pattern t with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (self#type2str t) )
@@ -110,6 +107,7 @@ class virtual abstractGenerator _index = object (self)
 					["  "; if t.t_is_const then "const " else "";
 					 "QString"; if t.t_is_ref then "&" else "";
 					 " _"; argname; " = "; "QString(String_val("; argname; "));" ])
+	      | "void" -> Success "Val_unit"
 	      | _ -> assert false)
 
 	  | ObjectPattern -> Success (String.concat ""
@@ -134,14 +132,11 @@ class virtual abstractGenerator _index = object (self)
 	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
 	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (self#type2str t)) 
 	
-
-
-  method type2str t = 
-    String.concat "" 	  
+  method type2str  =  Parser.type2str
+(*    String.concat "" 	  
       [if t.t_is_const then "const " else "";
        t.t_name; String.make t.t_indirections '*';" "; if t.t_is_ref then "&" else ""]
-
-
+*)
   method cppFuncName classname funcname (argslist: func_arg list) = 
     String.concat "_" ("ml"::classname::funcname::(
       argslist |> List.map (fun (t,_) -> t.t_name)
@@ -164,4 +159,7 @@ class virtual abstractGenerator _index = object (self)
       self#makefile dir !classes;
     end
   method generate = (self#prefix) |> self#genNs |> List.iter
+(*
+  method buildIndex nslist = 
+*)  
 end
