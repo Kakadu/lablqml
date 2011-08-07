@@ -23,11 +23,24 @@ module NameKey = struct
   let equal (_,b) (_,d) = String.equal b d
 end
 
-module SuperIndex = Core_map.Make(NameKey)
-
 type index_data = 
   | Class of clas * MethSet.t (* class data and its virtuals *)
   | Enum of enum
+
+module SuperIndex = struct
+  include Core_map.Make(NameKey)
+end
+
+type index_t = index_data SuperIndex.t
+
+let is_enum_exn ~key t = match SuperIndex.find_exn t key with
+  | Class _ -> false
+  | Enum _ -> true
+
+let is_class_exn ~key t = match SuperIndex.find_exn t key with
+  | Class _ -> true
+  | Enum _ -> false
+
 
 module Evaluated = Core_set.Make(NameKey)
 module V = NameKey
@@ -176,7 +189,7 @@ let build_superindex root_ns =
 	  print_endline ("Can't evaluate clas " ^ c.c_name ^ " yet")
 	end
   in
-  let count = ref 0 in
+(*  let count = ref 0 in*)
   let rec loop () = 
 (*    let () = (* print current root vertexes *)
       let names = get_vertexes_names (Evaluated.to_list !cur_root_generation) in

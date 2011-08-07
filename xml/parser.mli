@@ -1,3 +1,4 @@
+
 type modifiers = Static | Abstract | Virtual
 val ( |> ) : 'a -> ('a -> 'b) -> 'b
 val ( $ ) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
@@ -9,8 +10,9 @@ type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bo
 and meth = cpptype * string * func_arg list (* void foo(int,int,int) *)
 and func_arg = cpptype * string option (* type and default value *)
 
+val unreference : cpptype -> cpptype
+val string_of_type : cpptype -> string
 val string_of_meth : meth -> string
-
 module MethSet :
   sig
     type elt = meth
@@ -72,10 +74,11 @@ and slt = string * (func_arg list)
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
-(*
-val type2str: cpptype -> string
-val meth2str: meth -> string
-*)
+val empty_namespace : namespace
+val typeP_of_class : clas -> cpptype
+
+val headl : int -> 'a list -> 'a list * 'a list
+
 (*
 val isAbstractMeth : 'a * 'b * 'c * 'd * modifiers list -> bool
 val unreference : cpptype -> cpptype

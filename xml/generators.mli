@@ -1,12 +1,10 @@
-val skipClass : Parser.clas -> bool
+open Parser
+
+val skipClass : clas -> bool
 val skipArgument : string -> bool
 exception DoSkip
 exception DontSkip
-val goodMeth :
-  classname:string ->
-  string ->
-  Parser.cpptype ->
-  (Parser.cpptype * 'a) list -> Parser.accessPolicy -> 'b -> bool
+
 exception BreakS of string
 type t1 = string
 and t2 = string
@@ -23,35 +21,37 @@ type pattern =
   | PrimitivePattern
   | ObjectPattern
   | EnumPattern
+
+val cpp_func_name : classname:string -> methname:string -> func_arg list -> string
+val is_good_meth : classname:string -> meth -> bool
+
 class virtual abstractGenerator :
-  Parser.indexItem Parser.Index.t ->
+  SuperIndex.index_t ->
   object
-    method cppFuncName : string -> string -> Parser.func_arg list -> string
     method private fromCamlCast :
-      Parser.indexItem Parser.Index.t ->
+      SuperIndex.index_t ->
       Parser.cpptype -> ?default:string option -> string -> castResult
-    method private virtual genClass : string -> Parser.clas -> string option
+    method private virtual gen_class : string -> Parser.clas -> string option
     method private virtual genConstr :
       string -> out_channel -> Parser.constr -> unit
-    method private virtual genEnumOfClass :
+    method private virtual gen_enumOfClass :
       string -> out_channel -> Parser.enum -> unit
-    method private virtual genEnumOfNs :
+    method private virtual gen_enumOfNs :
       string -> Parser.enum -> string option
     method private virtual genMeth :
       string -> out_channel -> Parser.meth -> unit
-    method genNs : string -> Parser.namespace -> unit
+    method gen_ns : string -> Parser.namespace -> unit
     method private virtual genProp :
       string -> out_channel -> Parser.prop -> unit
     method private virtual genSignal :
       string -> out_channel -> Parser.sgnl -> unit
     method private virtual genSlot :
       string -> out_channel -> Parser.slt -> unit
-    method generate : Parser.namespace list -> unit
-    method private index : Parser.indexItem Parser.Index.t
+    method generate : namespace -> unit
+    method private index : SuperIndex.index_t
     method private virtual makefile : string -> string list -> unit
     method private pattern : Parser.cpptype -> pattern
     method private virtual prefix : string
     method private toCamlCast :
       Parser.cpptype -> string -> string -> castResult
-    method type2str : Parser.cpptype -> string
   end

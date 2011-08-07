@@ -24,6 +24,11 @@ and meth = cpptype * string * func_arg list (* void foo(int,int,int) *)
 and func_arg = cpptype * string option (* type and default value *)
 with sexp
 
+let unreference = function
+  | {t_name = t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
+    let t_is_ref = false in
+    { t_name; t_indirections; t_is_const; t_is_ref; t_params }
+
 exception Ans of int
 let wrap v = if v<>0 then raise(Ans v) 
 let rec compare_cpptype a b = 
@@ -79,6 +84,12 @@ and constr = func_arg list
 and slt = string * (func_arg list)
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
+
+let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
+(* convert class to pointer on this class *)
+let typeP_of_class c = 
+  { t_name=c.c_name; t_indirections=1; t_is_const=false; t_is_ref = false; t_params=[] }
+
 (*
 let meth2str (name,args,res,policy,modifiers) = 
   let isAbstract = List.mem Abstract modifiers in
@@ -92,18 +103,18 @@ let meth2str (name,args,res,policy,modifiers) =
 let remove_defaults meth = match meth with
   | (res,name,lst) -> (res,name, List.map lst ~f:(fun (a,_) -> (a,None)))
 
-let type2str t = 
+let string_of_type t = 
   String.concat  	  
     [if t.t_is_const then "const " else "";
      t.t_name; String.make t.t_indirections '*';" "; if t.t_is_ref then "&" else ""]
 
 let string_of_meth (res,name,args) = 
   let args_str = Core_list.map args ~f:(fun (t,def) ->
-    (type2str t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
+    (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
 	   |> String.concat ~sep:","
   in
   Printf.sprintf "%s %s(%s)"
-    (type2str res) name args_str
+    (string_of_type res) name args_str
 
 let rec headl c lst =
   let rec helper c h tl = 
@@ -114,10 +125,6 @@ let rec headl c lst =
   in
   helper c [] lst
 (*
-let unreference = function
-  | {t_name = t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
-    let t_is_ref = false in
-    { t_name; t_indirections; t_is_const; t_is_ref; t_params }
 *)
 (*
 let skipClass  = function
@@ -138,14 +145,6 @@ let skipNs = function
   | "QtSharedPointer" | "QMdi" | "QAlgorithmsPrivate" | "QAccessible2" -> true
   | _ -> false
 
-let isTemplateClass name = 
-    try ignore (String.index name '<'); true
-    with Not_found -> false
-
-let isInnerClass name = 
-  try let _ = Str.search_forward (Str.regexp "::") name 0 in true
-  with Not_found -> false
-
 let fixTemplateClassName = 
   (Str.global_replace (Str.regexp "&lt;") "<") $
   (Str.global_replace (Str.regexp "&gt;") ">")
@@ -156,31 +155,6 @@ let str_replace ~patt init = List.fold_left
   ) ~init patt
 
 
-let skipMeth ~classname name = 
-  if startswith ~prefix:"operator" name then true
-  else if startswith ~prefix:"d_func" name then true
-  else match name with
-    | "flush" 	
-    | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
-    | "data" when classname = "QByteArray" ->  true
-    | "bits" when classname = "QImage" ->  true
-    | "scanLine" when classname = "QImage" ->  true
-    | "invertedAppearance" when classname = "QProgressBar" ->  true
-    | "cap" when classname = "QRegExp" ->  true
-    | "pos" when classname = "QRegExp" ->  true
-    | "errorString" when classname = "QRegExp" ->  true
-    | "data" when classname = "QSharedMemory" ->  true
-    | "shortcutId" when classname = "QShortcutEvent" ->  true
-    | "isAmbiguous" when classname = "QShortcutEvent" ->  true
-    | "toUnicode" when classname = "QTextCodec" ->  true
-    | "indexOfTopLevelItem" when classname = "QTreeWidget" ->  true
-    | "data" when classname = "QVariant" ->  true
-    | "canConvert" when classname = "QVariant" ->  true
-    | "toGraphicsObject" when classname = "QGraphicsItem" -> true (* very strange override *)     
-    | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
-    | "QThreadStorageData::QThreadStorageData" -> true
-    | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
-    | _ -> false
 
 exception Break
 

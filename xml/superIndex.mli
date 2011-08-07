@@ -63,6 +63,10 @@ type index_data =
     Class of Parser.clas * Parser.MethSet.t
   | Enum of Parser.enum
 
+type index_t  = index_data SuperIndex.t
+val is_enum_exn : key:SuperIndex.key -> index_t -> bool
+val is_class_exn : key:SuperIndex.key -> index_t -> bool
+
 module V :
   sig
     type t = string list * string

@@ -2,3 +2,6 @@
 *.cmo
 *.cmi
 main
+*#*
+*.backup
+

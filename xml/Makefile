@@ -1,4 +1,4 @@
-ML_OBJS =parser.cmo superIndex.cmo  main.cmo 
+ML_OBJS =parser.cmo superIndex.cmo generators.cmo cppGenerator.cmo main.cmo 
 ML_OBJS_OPT= 
 
 PACKAGES=dynlink,threads,unix,core,core_extended,tyxml,ocamlgraph,camlp4
