@@ -100,18 +100,20 @@ let meth2str (name,args,res,policy,modifiers) =
 
   *)
 
+let is_void_type t = (t.t_name = "void") && (t.t_indirections=0) 
+
 let remove_defaults meth = match meth with
   | (res,name,lst) -> (res,name, List.map lst ~f:(fun (a,_) -> (a,None)))
 
 let string_of_type t = 
   String.concat  	  
     [if t.t_is_const then "const " else "";
-     t.t_name; String.make t.t_indirections '*';" "; if t.t_is_ref then "&" else ""]
+     t.t_name; String.make t.t_indirections '*'; if t.t_is_ref then " &" else ""]
 
 let string_of_meth (res,name,args) = 
   let args_str = Core_list.map args ~f:(fun (t,def) ->
     (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
-	   |> String.concat ~sep:","
+	   |> String.concat ~sep:", "
   in
   Printf.sprintf "%s %s(%s)"
     (string_of_type res) name args_str

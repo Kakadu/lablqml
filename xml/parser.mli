@@ -78,6 +78,7 @@ val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
 
 val headl : int -> 'a list -> 'a list * 'a list
+val is_void_type : cpptype -> bool
 
 (*
 val isAbstractMeth : 'a * 'b * 'c * 'd * modifiers list -> bool

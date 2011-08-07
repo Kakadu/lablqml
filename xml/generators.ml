@@ -1,5 +1,7 @@
 open Parser 
 open Core
+open Core.Common
+open Printf
 module List = Core_list
 module String = Core_string
 open SuperIndex
@@ -58,14 +60,14 @@ let skipClass (c:Parser.clas) =
     | "QTabletEvent" -> true (* ??? don't rember why skip it *)
     | _ -> false
    
-let skipArgument  = function (* true when don't skip *)
-  | "qreal" -> false
-  | "void" -> false
-  | s when isTemplateClass s -> false
-  | s when isInnerClass s -> false
-  | _ -> true
+let skipArgument arg = match arg.t_name with (* true when do skip *)
+  | "void"
+  | "qreal" -> true
+  | s when isTemplateClass s -> true
+  | s when isInnerClass s -> true
+  | _ -> false
     
-let skip_ns _ = false
+let skip_ns ~prefix _ = false
 
 
 exception DoSkip
@@ -73,14 +75,18 @@ exception DontSkip
 
 let is_good_meth ~classname (res,methname,args) = 
   try
-    if skipMeth ~classname methname then raise DoSkip; 
-    let lst = List.map ~f:fst args in
-    let lst = res::lst in
-    let _ = lst |> List.map ~f:(fun t -> t.t_name)  |> List.find ~f:skipArgument  in
-    false
-
-  with DoSkip -> true
-    | DontSkip | Not_found -> false
+    if skipMeth ~classname methname then false 
+    else begin 
+      if methname = "detach_helper" then
+	print_endline (string_of_meth (res,methname,args));
+      let lst = List.map ~f:fst args in
+      match List.find lst ~f:skipArgument with
+	| None -> (* all arguments are OK *)
+	  (is_void_type res) or (not (skipArgument res))
+	| Some x -> (printf "Method %s skipped: %s\n" methname (string_of_type x); false)
+    end
+  with DoSkip -> false
+    | DontSkip | Not_found -> true
 
 exception BreakS of string
 
@@ -93,10 +99,10 @@ exception BreakResult of castResult
 type pattern = InvalidPattern | PrimitivePattern | ObjectPattern | EnumPattern
 
 class virtual abstractGenerator _index = object (self)
-    
+  method private index = _index    
   method private virtual prefix : string  
-  method private virtual gen_class : string -> clas -> string option
-  method private virtual gen_enumOfNs : string -> enum -> string option
+  method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
+  method private virtual gen_enumOfNs : prefix:string list -> dir:string -> enum -> string option
   method private virtual gen_enumOfClass : string -> out_channel -> enum -> unit
   method private virtual genSlot  : string -> out_channel -> slt -> unit
   method private virtual genSignal : string -> out_channel -> sgnl -> unit
@@ -104,8 +110,6 @@ class virtual abstractGenerator _index = object (self)
   method private virtual genMeth : string -> out_channel -> meth -> unit
   method private virtual genConstr : string -> out_channel -> constr -> unit
   method private virtual makefile : string -> string list -> unit
-
-  method private index : index_data SuperIndex.t = _index
 
   method private pattern t = 
     let name = t.t_name in
@@ -172,11 +176,13 @@ class virtual abstractGenerator _index = object (self)
 	      | _ -> assert false)
 	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
 	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
-	
-  method gen_ns dir ns =     
-    if not (skip_ns ns.ns_name) then begin 
-      let iter = List.iter in
-      let dir  = dir ^ ns.ns_name in
+
+  (* prefix is namespace preifx (reversed) 
+     dir is directory where create subdirectory
+  *)
+  method gen_ns ~prefix ~dir ns =     
+    if not (skip_ns ~prefix ns.ns_name) then begin 
+      let dir = dir ^/ ns.ns_name in
       if Sys.file_exists dir then
 	ignore (Sys.command ("rm -rf " ^ dir) );
       ignore (Sys.command ("mkdir -p -m 755 " ^ dir));
@@ -185,13 +191,28 @@ class virtual abstractGenerator _index = object (self)
       let wrap = function
 	| Some name -> classes := name :: !classes | None -> ()
       in
-      iter ~f:(self#gen_ns self#prefix) ns.ns_ns;
-      iter ~f:(fun c -> self#gen_class dir c |> wrap) ns.ns_classes;
-      iter ~f:(fun e -> self#gen_enumOfNs dir e |> wrap) ns.ns_enums;
+      let prefix = ns.ns_name :: prefix in
+      List.iter ~f:(self#gen_ns ~prefix ~dir) ns.ns_ns;
+      List.iter ~f:(fun c -> self#gen_class ~prefix ~dir c |> wrap) ns.ns_classes;
+      List.iter ~f:(fun e -> self#gen_enumOfNs ~prefix ~dir e |> wrap) ns.ns_enums;
       self#makefile dir !classes;
     end
 
-  method generate root_ns = self#gen_ns self#prefix root_ns
+  (* root namespace needs special magic (it doesn't have name) *)
+  method generate ns = 
+    let dir = self#prefix in
+    if Sys.file_exists dir then
+      ignore (Sys.command ("rm -rf " ^ dir) );
+    ignore (Unix.mkdir dir 0o755);
+    let classes = ref [] in
+    let wrap = Option.iter ~f:(fun name -> classes:= name :: !classes) in
+    let prefix = [] in
+    List.iter ~f:(self#gen_ns ~prefix ~dir) ns.ns_ns;
+    List.iter ~f:(fun c -> self#gen_class ~prefix ~dir c |> wrap) ns.ns_classes;
+    List.iter ~f:(fun e -> self#gen_enumOfNs ~prefix ~dir e |> wrap) ns.ns_enums;
+    self#makefile dir !classes
+    
+
 (*    let curdir = self#prefix in
     SuperIndex.iter index ~f:(fun ~key ~data -> match data with
       | Enum e -> self#gen_enum curdir e

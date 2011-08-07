@@ -1,4 +1,5 @@
 open Core
+open Core.Common
 open Generators
 open SuperIndex
 open Printf
@@ -12,13 +13,21 @@ let breaks s : unit = raise (BreakS s)
 class cppGenerator dir index = object (self)
   inherit abstractGenerator index as super
 
+  method is_abstract_class ~prefix name = 
+    let key = NameKey.make_key ~prefix ~name in
+    match SuperIndex.find index key with
+      | Some (Class (_,set)) when MethSet.is_empty set -> false
+      | Some (Class _) -> true
+      | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
+      | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
+
   method genMeth classname h meth =
     let (res,methname,lst) = meth in
 (*    let meth_name = fixElementName ~classname meth_name in *)
     try
       let skipStr = sprintf "skipped %s::%s" classname methname in
-      if is_good_meth ~classname meth then 
-	raise (BreakS skipStr);
+      if not (is_good_meth ~classname meth) then 
+	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth meth));
       
       fprintf h "// method %s \n" (string_of_meth meth);
 
@@ -88,8 +97,9 @@ class cppGenerator dir index = object (self)
       let skipStr = sprintf "skipped %s::%s" classname classname in
       let type_of_clas = 
 	{ t_name=classname; t_is_ref=false; t_is_const=false; t_indirections=1; t_params=[] } in
-
-      if is_good_meth ~classname (type_of_clas,classname,lst) then breaks skipStr;
+      let fake_meth = (type_of_clas,classname,lst) in
+      if not (is_good_meth ~classname fake_meth) then 
+	breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) );
       
       fprintf h "// constructor `%s`(%s)\n"
 	classname (List.map lst ~f:(string_of_type $ fst) |> String.concat ~sep:",");
@@ -146,10 +156,17 @@ class cppGenerator dir index = object (self)
 (*    fptintf h ".PHONY: all"; *)
     close_out h
 
-  method private prefix = dir ^ "/cpp/"
+  method private prefix = dir ^/ "cpp"
 
-  method gen_class dir c = 
-    if skipClass c then None
+    (* dir is directory where create .cpp file;
+       prefix is namespace prefix (reversed)
+    *)
+  method gen_class ~prefix ~dir c : string option = 
+    let key = NameKey.make_key ~name:c.c_name ~prefix in
+    if not (SuperIndex.mem index key) then begin
+      printf "Skipping class %s - its not in index\n" (NameKey.to_string key);
+      None
+    end else if skipClass c then None
     else begin
       let classname = c.c_name in
       let h = open_out (dir ^ "/" ^ classname ^ ".cpp") in
@@ -159,10 +176,10 @@ class cppGenerator dir index = object (self)
 	| _ -> true
       in
       *)
-(*      if is_abstract_class classname then
+      if self#is_abstract_class ~prefix classname then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else
-	iter (self#genConstr classname h) c.c_constrs; *)
+	iter ~f:(self#genConstr classname h) c.c_constrs; 
       MethSet.iter ~f:(self#genMeth c.c_name h) c.c_meths_normal;
       iter ~f:(self#genProp c.c_name h) c.c_props;
       iter ~f:(self#genSignal c.c_name h) c.c_sigs;
@@ -173,21 +190,21 @@ class cppGenerator dir index = object (self)
       Some classname
     end
 
-  method gen_enumOfNs _ (_,_) = None
+  method gen_enumOfNs ~prefix ~dir ((_,_):enum) = None
   method gen_enumOfClass classname h (name,lst) = 
 (*    print_endline ("generating enum " ^ classname ^ "::"^ name); *)
     fprintf h "// enum %s\n" name 
   method genSlot classname h (name,lst) = 
     fprintf h "// slot %s(%s)\n" name (List.map ~f:(string_of_type $ fst ) lst |> String.concat ~sep:",")
-  method genSignal classname h (name,lst) = 
-    fprintf h "// signal %s(%s)\n" name (List.map ~f:(string_of_type $ fst) lst |> String.concat ~sep:",")
-  method genProp classname h (name,r,w) = 
-    fprintf h "// property %s " name;
+  method genSignal classname h (name,lst) = ()
+(* fprintf h "// signal %s(%s)\n" name (List.map ~f:(string_of_type $ fst) lst |> String.concat ~sep:",") *)
+  method genProp classname h (name,r,w) = ()
+(*    fprintf h "// property %s " name;
     (match r with
       | Some s -> fprintf h "READ %s " s
       | None -> ());
     (match w with
       | Some s -> fprintf h "WRITE %s " s
       | None -> ());
-    fprintf h "\n"
+    fprintf h "\n" *)
 end

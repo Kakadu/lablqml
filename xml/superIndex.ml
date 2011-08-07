@@ -12,6 +12,10 @@ module NameKey = struct
     let a =  Str.split (Str.regexp "::")  b |> List.rev in
     (a,b) 
 
+  let key_of_prefix lst = match lst with
+    | [] -> raise (Invalid_argument "NameKey.key_of_prefix: []")
+    | lst -> (lst, List.rev lst |> String.concat ~sep:"::")
+      
   let t_of_sexp s = Core_string.t_of_sexp s |> key_of_fullname 
 
   let compare a b = Core_string.compare (snd a) (snd b) 
@@ -21,6 +25,7 @@ module NameKey = struct
     (lst, String.concat ~sep:"::" (List.rev lst) )
   let hash (_,b) = String.hash b
   let equal (_,b) (_,d) = String.equal b d
+  let to_string (lst,_) = String.concat ~sep:"::" (List.rev lst)
 end
 
 type index_data = 

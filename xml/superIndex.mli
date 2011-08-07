@@ -12,6 +12,7 @@ module NameKey :
       name:String.t -> prefix:String.t list -> String.t list * String.t
     val hash : 'a * String.t -> int
     val equal : 'a * String.t -> 'b * String.t -> bool
+    val to_string : t -> string
   end
 
 module SuperIndex :

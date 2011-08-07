@@ -1,7 +1,7 @@
 open Parser
 
 val skipClass : clas -> bool
-val skipArgument : string -> bool
+val skipArgument : cpptype -> bool
 exception DoSkip
 exception DontSkip
 
@@ -31,16 +31,17 @@ class virtual abstractGenerator :
     method private fromCamlCast :
       SuperIndex.index_t ->
       Parser.cpptype -> ?default:string option -> string -> castResult
-    method private virtual gen_class : string -> Parser.clas -> string option
+    method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
+
     method private virtual genConstr :
       string -> out_channel -> Parser.constr -> unit
     method private virtual gen_enumOfClass :
       string -> out_channel -> Parser.enum -> unit
     method private virtual gen_enumOfNs :
-      string -> Parser.enum -> string option
+      prefix:string list -> dir:string -> Parser.enum -> string option
     method private virtual genMeth :
       string -> out_channel -> Parser.meth -> unit
-    method gen_ns : string -> Parser.namespace -> unit
+    method gen_ns : prefix:string list -> dir:string -> Parser.namespace -> unit
     method private virtual genProp :
       string -> out_channel -> Parser.prop -> unit
     method private virtual genSignal :
