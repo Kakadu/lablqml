@@ -115,7 +115,8 @@ let string_of_meth (res,name,args) =
     (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
 	   |> String.concat ~sep:", "
   in
-  Printf.sprintf "%s %s(%s)"
+  (* additional space for OCaml compiler (comments) *)
+  Printf.sprintf "%s %s(%s )"
     (string_of_type res) name args_str
 
 let rec headl c lst =

@@ -128,6 +128,7 @@ class virtual abstractGenerator _index = object (self)
     else match name with
       | "int"  | "bool" | "QString" | "void" -> 
 	if indir = 0 then PrimitivePattern else InvalidPattern
+      | "char" when indir = 1 -> PrimitivePattern
       | "qreal" | "double" | "float" -> InvalidPattern
       | s when indir = 1 -> ObjectPattern
       | s when indir > 1 -> InvalidPattern
@@ -162,6 +163,8 @@ class virtual abstractGenerator _index = object (self)
 					 "QString"; if t.t_is_ref then "&" else "";
 					 " _"; argname; " = "; "QString(String_val("; argname; "));" ])
 	      | "void" -> Success "Val_unit"
+	      | "char" when t.t_indirections = 1 ->
+		Success (String.concat ["char* _"; argname; " = String_val("; argname; ");"])
 	      | _ -> assert false)
 
 	  | ObjectPattern -> Success (String.concat 
@@ -182,6 +185,8 @@ class virtual abstractGenerator _index = object (self)
 	      | "bool" -> Success (String.concat [ansVarName; " = Val_bool("; arg; ");"])
 	      | "QString" -> Success (String.concat [ansVarName; " = caml_copy_string("; arg;
 							".toLocal8Bit().data() );"])
+	      | "char" when t.t_indirections=1 ->
+		Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
 	      | _ -> assert false)
 	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
 	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
