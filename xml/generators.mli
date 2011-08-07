@@ -6,6 +6,8 @@ exception DoSkip
 exception DontSkip
 
 exception BreakS of string
+val breaks : string -> unit
+
 type t1 = string
 and t2 = string
 and castResult =
@@ -32,6 +34,7 @@ class virtual abstractGenerator :
       SuperIndex.index_t ->
       Parser.cpptype -> ?default:string option -> string -> castResult
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
+    method is_abstract_class : prefix:string list -> string -> bool
 
     method private virtual genConstr :
       string -> out_channel -> Parser.constr -> unit

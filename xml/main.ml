@@ -1,29 +1,5 @@
-open Simplexmlparser
-
 open Parser
 open Core
-
-let out_dir = "./out/" 
-let fixElementName ~classname name = 
-  match Str.split_delim (Str.regexp "::") name with
-    | [s] -> s
-    | h::t::[] when h = classname -> t
-    | _ -> assert false
-
-let classPointerT classname = {t_name=classname; t_indirections=1; t_is_const=false; t_is_ref = false;
-			       t_params=[] }
-let is_abstract_class = function
-  | s when startswith ~prefix:"QAbstract" s -> true
-  | s when endswith ~postfix:"Interface" s -> true
-  | "QAccessibleInterface"
-  | "QAccessibleImageInterface"
-  | "QAccessible" -> true
-  | _ -> false
-
-(*
-
-open OcamlGenerator
-*)
 open SuperIndex
 type options = { mutable reparse_xml: bool;
 		 mutable input_file: string;
@@ -31,15 +7,17 @@ type options = { mutable reparse_xml: bool;
 		 mutable nocpp: bool;
 		 mutable noml: bool;
 		 mutable reparse_base: bool;
-		 mutable base: (Parser.namespace * index_data SuperIndex.t * G.t)
+		 mutable base: (Parser.namespace * index_data SuperIndex.t * G.t);
+		 mutable out_dir: string
 	       }
 let options = { reparse_xml= false; 
 		input_file= "/home/kakadu/mand/prog/lablqt/aaa.xml";
 		print_virtuals= false;
 		nocpp=false;
-		noml=true;
+		noml=false;
 		reparse_base=false;
-		base=(empty_namespace, SuperIndex.empty, G.create ())
+		base=(empty_namespace, SuperIndex.empty, G.create ());
+		out_dir = "./out"
 	      }
 
 open Core_arg
@@ -52,7 +30,7 @@ let () = Core_arg.parse [
    "print virtual meths of all classes and return")
   ] (fun _ -> print_endline "fuck. anonymous function") "usage_msg"
 
-let root = ref [PCData ""];;
+let root = ref [Simplexmlparser.PCData ""];;
 (* parse and save file *)
 let main () = 
   if options.reparse_xml then begin
@@ -97,7 +75,13 @@ let main () =
     let (root,index,_) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
-    (new cppGenerator out_dir index)#generate root
+    (new cppGenerator options.out_dir index)#generate root
+  end;
+  if not options.noml then begin
+    let (root,index,g) = options.base in
+    let open OcamlGenerator in
+    print_endline "generating OCaml code";
+    (new ocamlGenerator options.out_dir (index,g) )#generate root
   end
 ;;
 main ();;

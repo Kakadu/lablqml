@@ -6,6 +6,9 @@ module List = Core_list
 module String = Core_string
 open SuperIndex
 
+exception BreakS of string
+let breaks s : unit = raise (BreakS s)
+
 let cpp_func_name ~classname ~methname argslist = 
   String.concat ~sep:"_" ("ml"::classname::methname::(
     List.map argslist ~f:(fun (t,_) -> t.t_name)
@@ -88,8 +91,6 @@ let is_good_meth ~classname (res,methname,args) =
   with DoSkip -> false
     | DontSkip | Not_found -> true
 
-exception BreakS of string
-
 type t1 = string and t2 = string 
 and castResult = Success of t1 | CastError of t2 | CastValueType of t2 | CastTemplate of t2
 exception BreakOk of t1
@@ -110,6 +111,14 @@ class virtual abstractGenerator _index = object (self)
   method private virtual genMeth : string -> out_channel -> meth -> unit
   method private virtual genConstr : string -> out_channel -> constr -> unit
   method private virtual makefile : string -> string list -> unit
+
+  method is_abstract_class ~prefix name = 
+    let key = NameKey.make_key ~prefix ~name in
+    match SuperIndex.find self#index key with
+      | Some (Class (_,set)) when MethSet.is_empty set -> false
+      | Some (Class _) -> true
+      | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
+      | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
 
   method private pattern t = 
     let name = t.t_name in

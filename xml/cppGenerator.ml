@@ -8,18 +8,9 @@ open Parser
 module List = Core_list
 module String = Core_string
 let iter = List.iter
-let breaks s : unit = raise (BreakS s)
 
 class cppGenerator dir index = object (self)
   inherit abstractGenerator index as super
-
-  method is_abstract_class ~prefix name = 
-    let key = NameKey.make_key ~prefix ~name in
-    match SuperIndex.find index key with
-      | Some (Class (_,set)) when MethSet.is_empty set -> false
-      | Some (Class _) -> true
-      | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
-      | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
 
   method genMeth classname h meth =
     let (res,methname,lst) = meth in
@@ -169,7 +160,7 @@ class cppGenerator dir index = object (self)
     end else if skipClass c then None
     else begin
       let classname = c.c_name in
-      let h = open_out (dir ^ "/" ^ classname ^ ".cpp") in
+      let h = open_out (dir ^/ classname ^ ".cpp") in
       fprintf h "#include <Qt/QtOpenGL>\n#include \"headers.h\"\nextern \"C\" {\n";
 (*      let hasPureVirtualMembers = match Index.find index classname with
 	| Some (Class (c,[])) -> false
@@ -180,6 +171,7 @@ class cppGenerator dir index = object (self)
 	fprintf h "//class has pure virtual members - no constructors\n"
       else
 	iter ~f:(self#genConstr classname h) c.c_constrs; 
+
       MethSet.iter ~f:(self#genMeth c.c_name h) c.c_meths_normal;
       iter ~f:(self#genProp c.c_name h) c.c_props;
       iter ~f:(self#genSignal c.c_name h) c.c_sigs;
