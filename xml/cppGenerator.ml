@@ -167,7 +167,7 @@ class cppGenerator dir index = object (self)
 	| _ -> true
       in
       *)
-      if self#is_abstract_class ~prefix classname then
+      if is_abstract_class ~prefix index classname then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else
 	iter ~f:(self#genConstr classname h) c.c_constrs; 

@@ -27,6 +27,10 @@ type pattern =
 val cpp_func_name : classname:string -> methname:string -> func_arg list -> string
 val is_good_meth : classname:string -> meth -> bool
 
+
+val pattern : SuperIndex.index_t -> cpptype -> pattern
+val is_abstract_class : prefix:string list -> SuperIndex.index_t -> string -> bool
+
 class virtual abstractGenerator :
   SuperIndex.index_t ->
   object
@@ -34,7 +38,6 @@ class virtual abstractGenerator :
       SuperIndex.index_t ->
       Parser.cpptype -> ?default:string option -> string -> castResult
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
-    method is_abstract_class : prefix:string list -> string -> bool
 
     method private virtual genConstr :
       string -> out_channel -> Parser.constr -> unit
@@ -54,7 +57,6 @@ class virtual abstractGenerator :
     method generate : namespace -> unit
     method private index : SuperIndex.index_t
     method private virtual makefile : string -> string list -> unit
-    method private pattern : Parser.cpptype -> pattern
     method private virtual prefix : string
     method private toCamlCast :
       Parser.cpptype -> string -> string -> castResult

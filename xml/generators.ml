@@ -64,7 +64,8 @@ let skipClass (c:Parser.clas) =
     | _ -> false
    
 let skipArgument arg = match arg.t_name with (* true when do skip *)
-  | "void"
+  | "GLfloat" | "GLint" | "GLuint"
+  | "void" | "uchar"
   | "qreal" -> true
   | s when isTemplateClass s -> true
   | s when isInnerClass s -> true
@@ -99,6 +100,40 @@ exception BreakResult of castResult
 
 type pattern = InvalidPattern | PrimitivePattern | ObjectPattern | EnumPattern
 
+let  pattern index t = 
+    let name = t.t_name in
+    let indir = t.t_indirections in
+    if indir>1 then InvalidPattern 
+    else if isTemplateClass name then InvalidPattern
+    else match name with
+      | "int"  | "bool" | "QString" | "void" -> 
+	if indir = 0 then PrimitivePattern else InvalidPattern
+      | "char" when indir = 1 -> PrimitivePattern
+      | "qreal" | "double" | "float" -> InvalidPattern
+      | s when indir = 1 -> 
+	let key = NameKey.key_of_fullname name in
+	if SuperIndex.mem index key  then ObjectPattern
+	else InvalidPattern
+      | s when indir > 1 -> InvalidPattern
+      | _ -> try
+	       let key = NameKey.key_of_fullname name in
+	       if is_enum_exn ~key index then EnumPattern
+	       else if is_class_exn ~key index then InvalidPattern
+	       else ( print_endline "you cant see this line. some fucking shit";
+		      assert false )
+	with
+	    Not_found  -> (print_endline ("!!! Not in index: " ^ name);
+				InvalidPattern )
+
+let is_abstract_class ~prefix index name = 
+    let key = NameKey.make_key ~prefix ~name in
+    match SuperIndex.find index key with
+      | Some (Class (_,set)) when MethSet.is_empty set -> false
+      | Some (Class _) -> true
+      | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
+      | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
+
+
 class virtual abstractGenerator _index = object (self)
   method private index = _index    
   method private virtual prefix : string  
@@ -112,36 +147,6 @@ class virtual abstractGenerator _index = object (self)
   method private virtual genConstr : string -> out_channel -> constr -> unit
   method private virtual makefile : string -> string list -> unit
 
-  method is_abstract_class ~prefix name = 
-    let key = NameKey.make_key ~prefix ~name in
-    match SuperIndex.find self#index key with
-      | Some (Class (_,set)) when MethSet.is_empty set -> false
-      | Some (Class _) -> true
-      | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
-      | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
-
-  method private pattern t = 
-    let name = t.t_name in
-    let indir = t.t_indirections in
-    if indir>1 then InvalidPattern 
-    else if isTemplateClass name then InvalidPattern
-    else match name with
-      | "int"  | "bool" | "QString" | "void" -> 
-	if indir = 0 then PrimitivePattern else InvalidPattern
-      | "char" when indir = 1 -> PrimitivePattern
-      | "qreal" | "double" | "float" -> InvalidPattern
-      | s when indir = 1 -> ObjectPattern
-      | s when indir > 1 -> InvalidPattern
-      | _ -> try
-	       let key = NameKey.key_of_fullname name in
-	       if is_enum_exn ~key self#index then EnumPattern
-	       else if is_class_exn ~key self#index then InvalidPattern
-	       else ( print_endline "you cant see this line. some fucking shit";
-		      assert false )
-	with
-	    Not_found  -> (print_endline ("!!! Not in index: " ^ name);
-				InvalidPattern )
-
 
   method private fromCamlCast 
     : index_data SuperIndex.t -> cpptype -> ?default:string option -> string -> castResult
@@ -149,7 +154,7 @@ class virtual abstractGenerator _index = object (self)
 	let _ = default in
 	let tname = t.t_name in
 	let is_const = t.t_is_const in
-	match self#pattern t with
+	match pattern _index t with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
 	  | PrimitivePattern ->
  	    (match t.t_name with
@@ -176,7 +181,7 @@ class virtual abstractGenerator _index = object (self)
 
   method private toCamlCast 
       = fun t arg ansVarName -> 
-	match self#pattern t with
+	match pattern _index t with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t))
 	  | PrimitivePattern ->
 	    (match t.t_name with

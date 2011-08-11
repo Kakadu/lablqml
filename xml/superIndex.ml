@@ -148,6 +148,7 @@ let build_superindex root_ns =
   let cur_root_generation = ref (Evaluated.of_list !roots) in
   let some_changed = ref false in (* recursion exit condition *)
 
+
   let eval_class v = 
     let key = G.V.label v in
     match SuperIndex.find !index key with

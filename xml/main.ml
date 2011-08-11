@@ -13,7 +13,7 @@ type options = { mutable reparse_xml: bool;
 let options = { reparse_xml= false; 
 		input_file= "/home/kakadu/mand/prog/lablqt/aaa.xml";
 		print_virtuals= false;
-		nocpp=false;
+		nocpp=true;
 		noml=false;
 		reparse_base=false;
 		base=(empty_namespace, SuperIndex.empty, G.create ());
