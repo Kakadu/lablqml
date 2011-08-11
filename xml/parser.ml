@@ -110,6 +110,14 @@ let string_of_type t =
     [if t.t_is_const then "const " else "";
      t.t_name; String.make t.t_indirections '*'; if t.t_is_ref then " &" else ""]
 
+let string_of_constr ~classname c = 
+  let args_str = Core_list.map c ~f:(fun (t,def) ->
+    (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
+	   |> String.concat ~sep:", "
+  in
+  String.concat
+    [classname;"("; args_str;" )"]
+
 let string_of_meth (res,name,args) = 
   let args_str = Core_list.map args ~f:(fun (t,def) ->
     (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 

@@ -74,6 +74,8 @@ and slt = string * (func_arg list)
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
+val string_of_constr : classname:string -> constr -> string
+
 val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
 

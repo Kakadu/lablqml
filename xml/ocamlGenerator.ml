@@ -49,6 +49,37 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
     | ObjectPattern -> Success "[> `qobject] obj" 
     | EnumPattern -> CastError (sprintf "cant't cast enum: %s" (string_of_type t) )
 
+  method gen_constr ~classname ~i h argslist = 
+    try
+      if List.length argslist > 5 then raise BreakSilent;
+      fprintf h "(* constructor %s *)\n" (string_of_constr ~classname argslist);
+      let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in
+      let cpp_func_name = cpp_func_name ~classname ~methname:classname argslist in
+      let lst = List.map argslist ~f:fst in
+      let types = List.map lst ~f:(self#toOcamlType) in
+      let types = List.map types ~f:(function | Success s -> s | _ -> raise BreakSilent) in
+
+      fprintf h "external create_%s_%d' : %s -> [>`qobject] obj = \"%s\"\n" classname i
+	(if List.length types = 0 then "unit" else String.concat ~sep:"->" types) 
+	cpp_func_name;
+
+      let args2 = List.map3 types lst argnames ~f:(fun ttt start name ->
+	match pattern index start with
+	  | EnumPattern | InvalidPattern -> assert false
+	  | PrimitivePattern  -> name
+	  | ObjectPattern -> "(" ^ name ^ "#handler)" ) in
+      let args1 = List.map3 types lst argnames ~f:(fun ttt start name ->
+	match pattern index start with
+	  | EnumPattern | InvalidPattern -> assert false
+	  | PrimitivePattern -> name
+	  | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name) 
+      ) in
+      fprintf h "let create_%s_%d %s = create_%s_%d' %s\n" classname i 
+	(String.concat ~sep:" " args1)
+	classname i 
+	(String.concat ~sep:" " args2)
+      
+    with BreakSilent -> ()
 
   method private gen_meth_stubs ~classname h meth = 
     let (res,methname,lst) = meth in
@@ -136,7 +167,7 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
   method makefile dir = 
     ignore (Sys.command ("touch " ^ dir ^/ ".depend"));
     let h = open_out (dir ^ "/Makefile") in
-    fprintf h "ML_MODULES=stubs.cmx classes.cmx\n\n";
+    fprintf h "ML_MODULES=stubs.cmx classes.cmx creators.cmx \n\n";
     fprintf h "OCAMLC=ocamlc -g\nOCAMLOPT=ocamlopt -g\n\n";
     fprintf h "INC=-I ./../../test_gen\n";
     fprintf h ".SUFFIXES: .ml .mli .cmi .cmx\n\n";
@@ -151,21 +182,25 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
     fprintf h "clean:\n\trm -f *.cmi *.cmx *.cmo *.o\n\n";
     close_out h
     
-  method gen_class ~prefix h_classes h_stubs c = 
+  method gen_class ~prefix h_classes h_stubs h_constrs c = 
     let key = NameKey.make_key ~name:c.c_name ~prefix in
-    if not (SuperIndex.mem index key) then begin
+    if not (SuperIndex.mem index key) then 
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key)      
-    end else if skipClass c then ()
+    else if skipClass c then ()
     else begin
       let classname = c.c_name in
       let is_abstract = is_abstract_class ~prefix index classname in
-      fprintf h_stubs "(* ********** class %s *********** *)\n" classname;
+      let ocaml_classname = ocaml_class_name classname in
 
+      
+      fprintf h_stubs "(* ********** class %s *********** *)\n" classname;
       if is_abstract then
 	fprintf h_stubs "(* class has pure virtual members - no constructors *)\n"
-      else 
-	List.iter ~f:(self#gen_constr_stubs ~classname h_stubs) c.c_constrs
-      ;
+      else (
+	List.iteri c.c_constrs ~f:(fun i c ->
+	  self#gen_constr ~classname ~i h_constrs c	  
+	)
+      );
       
       let module S = String.Set in
       (* we chould generate different ocaml names for methods overloaded in C++ *)
@@ -180,18 +215,17 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
 	meth_names := S.add !meth_names new_name;
 	MethSet.add acc (res,new_name,lst)	    
       ) in
-      MethSet.iter target_meths ~f:(self#gen_meth_stubs ~classname h_stubs); 
 
-      List.iter ~f:(self#gen_constr       ~classname h_classes) c.c_constrs;
-      let ocaml_classname = ocaml_class_name classname in
+      MethSet.iter target_meths ~f:(self#gen_meth_stubs ~classname h_stubs); 
       fprintf h_classes " %s me = object (self) \n" ocaml_classname;
+(*
+      List.iter c.c_inherits ~f:(fun s -> fprintf h_classes "  inherit %s me\n" (ocaml_class_name s));
+      fprintf h_classes "\n"; *)
       fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
       MethSet.iter target_meths ~f:(self#gen_meth classname h_classes);
       fprintf h_classes "end\nand ";
     end
 
-  method gen_constr_stubs ~classname h c = ()
-  method gen_constr ~classname h c = ()
 (*  method gen_enumOfNs ~prefix ~dir (_,_) = None
   method gen_enumOfClass classname h (name,lst) = ()
   method genSlot classname h (name,lst) = ()
@@ -202,11 +236,14 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
     self#makefile dir;
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
+    let h3 = open_out (dir ^/ "creators.ml") in
     fprintf h1 "\nopen Stubs\nopen Qtstubs\n\nclass ";
     fprintf h2 "open Qtstubs\n\n";
+    fprintf h3 "open Qtstubs\nopen Stubs\nopen Classes\n";
 
-    List.iter ns.ns_classes ~f:(self#gen_class ~prefix:[] h1 h2);
+    List.iter ns.ns_classes ~f:(self#gen_class ~prefix:[] h1 h2 h3);
     fprintf h1 "aa = object end";
+    close_out h3;
     close_out h2;
     close_out h1;
     ()
