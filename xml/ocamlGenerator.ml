@@ -86,22 +86,25 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
     with BreakSilent -> ()
 
   method private gen_meth_stubs ~is_abstract ~classname h meth =
+(*    printf "meth: %s\n" (string_of_meth meth);
+    assert (not (endswith ~postfix:"_" meth.m_name)); *)
     try   
-      if classname <> meth.m_declared then raise BreakSilent;
-      let (res,methname,lst) = (meth.m_res,meth.m_name,meth.m_args) in
+(*      if classname <> meth.m_declared then raise BreakSilent; *)
+(*      let (res,methname,lst) = (meth.m_res,meth.m_name,meth.m_args) in *)
 
       if not (is_good_meth ~classname meth) then 
 	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
-      if List.length lst + 1 > 10 then raise BreakSilent;
-      if List.length lst + 1 > 5 then raise BreakSilent; (* need additional stub for native compilation *)
+      if List.length meth.m_args + 1 > 10 then raise BreakSilent;
+      (* need additional stub for native compilation *)
+      if List.length meth.m_args + 1 > 5 then raise BreakSilent;
 
-      let methname = ocaml_methname ~methname in
+(*      let methname = ocaml_methname ~methname in *)
       let ocaml_classname = ocaml_class_name classname in
 
       fprintf h "(* method %s *)\n" (string_of_meth meth);
-      let cpp_func_name = cpp_func_name ~classname ~methname lst in
+      let cpp_func_name = cpp_func_name ~classname ~methname:meth.m_name meth.m_args in
 
-      let lst2 = List.map ~f:fst lst @ [res] in
+      let lst2 = List.map ~f:fst meth.m_args @ [meth.m_res] in
       let types = List.map ~f:(self#toOcamlType) lst2 in
 
       let types = List.map types ~f:(function
@@ -118,7 +121,7 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
   (* generates member code*)
   method gen_meth ~is_abstract ~classname h meth = 
     let (res,methname,lst) = (meth.m_res,meth.m_name,meth.m_args) in
-    let methname = ocaml_methname methname in
+(*    let methname = ocaml_methname methname in *)
 (*    let ocaml_classname = ocaml_class_name classname in *)
     try
       if not (is_good_meth ~classname meth) then 
@@ -160,14 +163,14 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
       ) in
 	
       if is_abstract then begin
-	fprintf h "  method virtual %s : %s" methname
+	fprintf h "  method virtual %s : %s" meth.m_out_name
 	  (String.concat ~sep:"->" (types) );
 	if List.length types <> 0 then fprintf h " -> ";
 	match pattern index res with
 	  | ObjectPattern -> fprintf h "%s" (ocaml_class_name res.t_name)
 	  | _ ->      fprintf h "%s" res_type
       end else begin
-	fprintf h "  method %s %s = %s_%s' me %s " methname (String.concat ~sep:" " args1)
+	fprintf h "  method %s %s = %s_%s' me %s " meth.m_out_name (String.concat ~sep:" " args1)
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
 	(match pattern index res with
 	  | ObjectPattern -> fprintf h "|> new %s" (ocaml_class_name res.t_name)
@@ -203,8 +206,8 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key)      
     else if skipClass c then ()
     else begin
-      printf "Generating class %s\n" c.c_name;
       let classname = c.c_name in
+      printf "Generating class %s\n" classname;
       let is_abstract = is_abstract_class ~prefix index classname in
       let ocaml_classname = ocaml_class_name classname in
       

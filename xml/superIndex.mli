@@ -65,6 +65,8 @@ type index_data =
   | Enum of Parser.enum
 
 type index_t  = index_data SuperIndex.t
+val to_channel : index_t -> out_channel -> unit
+
 val is_enum_exn : key:SuperIndex.key -> index_t -> bool
 val is_class_exn : key:SuperIndex.key -> index_t -> bool
 
@@ -157,4 +159,4 @@ module G :
     val kill_and_fall : t -> vertex -> unit
   end
 
-val build_superindex : Parser.namespace  -> index_data SuperIndex.t * G.t
+val build_superindex : Parser.namespace  -> index_data SuperIndex.t * G.t * SuperIndex.key Core.Core_queue.t

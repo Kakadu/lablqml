@@ -1,24 +1,27 @@
 open Parser
 open Core
 open SuperIndex
-type options = { mutable reparse_xml: bool;
-		 mutable input_file: string;
-		 mutable print_virtuals: bool;
-		 mutable nocpp: bool;
-		 mutable noml: bool;
-		 mutable reparse_base: bool;
-		 mutable base: (Parser.namespace * index_data SuperIndex.t * G.t);
-		 mutable out_dir: string
-	       }
+type options = { 
+  mutable reparse_xml: bool;
+  mutable input_file: string;
+  mutable print_virtuals: bool;
+  mutable nocpp: bool;
+  mutable noml: bool;
+  mutable reparse_base: bool;
+  mutable base: Parser.namespace * index_data SuperIndex.t * G.t * SuperIndex.key Core_queue.t;
+  mutable out_dir: string
+}
 let options = { reparse_xml= false; 
 		input_file= "/home/kakadu/mand/prog/lablqt/aaa.xml";
 		print_virtuals= false;
 		nocpp=false;
 		noml=false;
 		reparse_base=false;
-		base=(empty_namespace, SuperIndex.empty, G.create ());
+		base=(empty_namespace, SuperIndex.empty, G.create (), Core.Core_queue.create ());
 		out_dir = "./out"
 	      }
+
+(* TODO: experiment with Gc max heap size to speedup generator *)
 
 open Core_arg
 let () = Core_arg.parse [
@@ -54,9 +57,14 @@ let main () =
   if options.reparse_xml or options.reparse_base then begin
     let root_ns = List.map build !root |> List.hd in
     print_endline "building superindex";
-    let (index,g) = build_superindex root_ns in
+    let (index,g,q) = build_superindex root_ns in
     print_endline "Index builded";
-    options.base <- (root_ns, index, g);
+    options.base <- (root_ns, index, g, q);
+
+    let ch = open_out "superindex.log" in
+    to_channel  index ch;
+    close_out ch;
+
     let ch = open_out "tree.backup" in
     Marshal.to_channel ch options.base [];
     close_out ch
@@ -69,17 +77,15 @@ let main () =
 ;;
 main ();;
 
-
 let main () = 
-
   if not options.nocpp then begin
-    let (root,index,_) = options.base in
+    let (root,index,_,_) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
     (new cppGenerator options.out_dir index)#generate root
   end; 
   if not options.noml then begin
-    let (root,index,g) = options.base in
+    let (root,index,g,q) = options.base in
     let open OcamlGenerator in
     print_endline "generating OCaml code";
     (new ocamlGenerator options.out_dir (index,g) )#generate root

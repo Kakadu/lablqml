@@ -38,7 +38,7 @@ let remove_defaults meth = match meth with
     {m_res;m_name; m_declared; m_args; m_out_name }
 
 let unreference = function
-  | {t_name = t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
+  | {t_name=t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
     let t_is_ref = false in
     { t_name; t_indirections; t_is_const; t_is_ref; t_params }
 
@@ -83,6 +83,7 @@ module MethKey = struct
   let compare (a,b) (c,d) = 
     let c = compare_meth b d in c
 end
+
 module MethSet = struct
   include Core_set.Make(MethKey)
   let add_meth t item = 
@@ -240,8 +241,6 @@ let rec parse_arg (_,attr,lst) =
   in
   ({t_name; t_is_const; t_is_ref; t_indirections; t_params}, default)
   
-
-
 let rec build root = match root with
   | PCData _ -> assert false
   | Element ("code",_,lst) -> 
@@ -326,7 +325,7 @@ and parse_class nsname c  =
       | Element (("enum",_,_) as e) -> enums := (parse_enum classname e) :: !enums
       | Element (("property",_,_) as e) -> props := (parse_prop e) :: !props
       | Element ("class",("name",nn)::_,_) ->
-	printf "skipping inner class %s::%s" classname (fixTemplateClassName nn)
+	printf "skipping inner class %s::%s\n" classname (fixTemplateClassName nn)
       | Element ("destructor",_,_) -> ()
       | _ -> assert false
     );
@@ -335,7 +334,7 @@ and parse_class nsname c  =
     let normals = ref MethSet.empty in
     
     List.iter !mems ~f:(fun (m_name,m_args,m_res,policy,modif) ->
-      let m_declared = classname and m_out_name = m_name in
+      let m_declared = classname and m_out_name = String.copy m_name in
       let m = { m_args; m_res; m_name; m_declared; m_out_name } in
       match (policy, modif) with
 	| (`Private,`Abstract) -> 

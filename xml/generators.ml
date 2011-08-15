@@ -16,7 +16,7 @@ let cpp_func_name ~classname ~methname argslist =
   ))
 
 let isTemplateClass name = 
-    try ignore (String.index_exn name '<'); true
+    try ignore (String.index_exn name '<' : int); true
     with Not_found -> false
 
 let isInnerClass name = 
