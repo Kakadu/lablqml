@@ -7,7 +7,13 @@ val startswith : prefix:string -> string -> bool
 val endswith : postfix:string -> string -> bool
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
-and meth = cpptype * string * func_arg list (* void foo(int,int,int) *)
+and meth = {
+  m_res : cpptype;
+  m_name : string;
+  m_args : func_arg list;
+  m_declared : string;
+  mutable m_out_name : string;
+}
 and func_arg = cpptype * string option (* type and default value *)
 
 val unreference : cpptype -> cpptype
@@ -15,15 +21,17 @@ val string_of_type : cpptype -> string
 val string_of_meth : meth -> string
 module MethSet :
   sig
-    type elt = meth
+    type elt = meth*meth
     type t
     type sexpable = t
+    val remove_meth : t -> meth -> t
     val sexp_of_t : sexpable -> Sexplib.Sexp.t
     val t_of_sexp : Sexplib.Sexp.t -> sexpable
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
     val add : t -> elt -> t
+    val add_meth : t -> meth -> t
     val singleton : elt -> t
     val remove : t -> elt -> t
     val union : t -> t -> t
@@ -53,6 +61,7 @@ module MethSet :
     val to_array : t -> elt array
     val split : elt -> t -> t * bool * t
     val group_by : t -> equiv:(elt -> elt -> bool) -> t list
+    val compare_items : elt -> elt -> int
   end
 
 type clas = { 
@@ -78,10 +87,11 @@ val string_of_constr : classname:string -> constr -> string
 
 val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
-
+val remove_defaults : meth -> meth
 val headl : int -> 'a list -> 'a list * 'a list
 val is_void_type : cpptype -> bool
 
+val meth_of_constr : classname:string -> func_arg list -> meth
 (*
 val isAbstractMeth : 'a * 'b * 'c * 'd * modifiers list -> bool
 val unreference : cpptype -> cpptype

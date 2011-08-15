@@ -61,7 +61,7 @@ module SuperIndex :
     val exists : f:('a -> bool) -> 'a t -> bool
   end
 type index_data =
-    Class of Parser.clas * Parser.MethSet.t
+    Class of Parser.clas * Parser.MethSet.t 
   | Enum of Parser.enum
 
 type index_t  = index_data SuperIndex.t

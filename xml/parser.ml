@@ -1,4 +1,6 @@
 open Core
+open Printf
+open Sexplib.Conv
 module List = Core_list
 module String = Core_string
 module Set = Core_set
@@ -20,9 +22,20 @@ let (|>) a b = b a
 let ($) a b = fun x -> a (b x)
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
-and meth = cpptype * string * func_arg list (* void foo(int,int,int) *)
 and func_arg = cpptype * string option (* type and default value *)
+and meth = { 
+  m_res:cpptype; 
+  m_name:string; 
+  m_args:func_arg list; 
+  m_declared: string; 
+  mutable m_out_name:string 
+} 
 with sexp
+
+let remove_defaults meth = match meth with
+  | {m_res;m_name; m_args; m_declared; m_out_name } -> 
+    let m_args = List.map m_args ~f:(fun (a,_) -> (a,None)) in
+    {m_res;m_name; m_declared; m_args; m_out_name }
 
 let unreference = function
   | {t_name = t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
@@ -37,7 +50,7 @@ let rec compare_cpptype a b =
     (compare a.t_indirections b.t_indirections) |> wrap;
     (compare a.t_is_ref b.t_is_ref) |> wrap;
     (compare a.t_name b.t_name) |> wrap;
-    List.iter2 a.t_params b.t_params ~f:(fun a b -> compare_cpptype a b |> wrap);
+    List.iter2_exn a.t_params b.t_params ~f:(fun a b -> compare_cpptype a b |> wrap);
     0
   with Ans x -> x
     
@@ -49,22 +62,43 @@ let compare_func_arg (t1,o1) (t2,o2) =
     | (None, Some _) -> -1
     | (None,None) -> 0
   
-let compare_meth (res1,name1,l1) (res2,name2,l2) = 
-  try
-    compare name1 name2 |> wrap;
-    compare (List.length l1) (List.length l2) |> wrap;
-    compare_cpptype res1 res2 |> wrap;
-    List.iter2 l1 l2 ~f:(fun a b -> compare a b |> wrap);
-    0
-  with Ans c -> c
+let compare_meth m1 m2 = 
+  match (m1,m2) with
+    | ({ m_name=name1; m_args=lst1;m_res=res1; _}, { m_name=name2; m_args=lst2;m_res=res2; _}) ->      
+      try
+	compare name1 name2 |> wrap;
+	compare (List.length lst1) (List.length lst2) |> wrap;
+	compare_cpptype res1 res2 |> wrap;
+	List.iter2_exn lst1 lst2 ~f:(fun a b -> compare a b |> wrap);
+	(* I know that I dont compare declaring class's names*)
+	0
+      with Ans c -> c
     
-module MethSet = Core_set.Make(struct
-  type t = meth
-  type sexpable = meth
-  let sexp_of_t = sexp_of_meth
-  let t_of_sexp = meth_of_sexp
-  let compare = compare_meth
-end)
+module MethKey = struct
+  type t = meth*meth (* full method and without defaults *)
+  type sexpable = meth*meth
+  let sexp_of_t (a,_) = sexp_of_meth a
+  let t_of_sexp s = 
+    let a = meth_of_sexp s in (a,remove_defaults a)
+  let compare (a,b) (c,d) = 
+    let c = compare_meth b d in c
+end
+module MethSet = struct
+  include Core_set.Make(MethKey)
+  let add_meth t item = 
+    let item' = remove_defaults item in
+    let sames = filter t ~f:(fun x -> MethKey.compare x (item,item') <> 0) in
+    add sames (item,item')
+
+  let remove_meth t item =
+    let item' = remove_defaults item in
+    remove t (item,item')
+  let contains t item = 
+    let item' = remove_defaults item in
+    let sames = filter t ~f:(fun x -> MethKey.compare x (item,item') = 0) in
+    not (is_empty sames)
+  let compare_items: elt -> elt -> int = MethKey.compare
+end
 
 type clas = { 
   c_inherits: string list;
@@ -86,24 +120,17 @@ and sgnl = string * (func_arg list)
 and prop = string * string option * string option	
 
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
+
 (* convert class to pointer on this class *)
 let typeP_of_class c = 
   { t_name=c.c_name; t_indirections=1; t_is_const=false; t_is_ref = false; t_params=[] }
 
-(*
-let meth2str (name,args,res,policy,modifiers) = 
-  let isAbstract = List.mem Abstract modifiers in
-  let isVirtual =  List.mem Virtual modifiers in
-  let pol_str = match policy with 
-    | Public -> "public" | Protected -> "protected" | Private -> "private" in
-  let argsstr = Core_list.map args ~f:(fun (t,def) ->
-
-  *)
-
 let is_void_type t = (t.t_name = "void") && (t.t_indirections=0) 
 
-let remove_defaults meth = match meth with
-  | (res,name,lst) -> (res,name, List.map lst ~f:(fun (a,_) -> (a,None)))
+let meth_of_constr ~classname m_args = 
+  let m_declared = classname and m_name=classname and m_out_name=classname
+  and m_res={ t_name=classname; t_indirections=1; t_is_ref=false; t_params=[]; t_is_const=false } in
+  { m_declared; m_name; m_args; m_res; m_out_name }
 
 let string_of_type t = 
   String.concat  	  
@@ -118,14 +145,14 @@ let string_of_constr ~classname c =
   String.concat
     [classname;"("; args_str;" )"]
 
-let string_of_meth (res,name,args) = 
-  let args_str = Core_list.map args ~f:(fun (t,def) ->
+let string_of_meth m = 
+  let args_str = Core_list.map m.m_args ~f:(fun (t,def) ->
     (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
 	   |> String.concat ~sep:", "
   in
   (* additional space for OCaml compiler (comments) *)
   Printf.sprintf "%s %s(%s )"
-    (string_of_type res) name args_str
+    (string_of_type m.m_res) m.m_name args_str
 
 let rec headl c lst =
   let rec helper c h tl = 
@@ -135,8 +162,7 @@ let rec headl c lst =
       | [] -> raise (Failure "headl")
   in
   helper c [] lst
-(*
-*)
+
 (*
 let skipClass  = function
   | "Exception" -> true (* because it extends std::exception and I cant understand what to do *)
@@ -175,7 +201,6 @@ let strip_dd ~prefix:p s =
   else if (Str.first_chars s plen = (p^"::") ) then Str.string_after s plen 
   else s 
 
-let attrib = List.assoc
 
 let str2policy = function
   | "public" -> `Public
@@ -198,11 +223,11 @@ let  parse_prop = function
   | _ -> assert false
 (****** Parsing argument ************************)
 let rec parse_arg (_,attr,lst) = 
-  let default = List.assoc_opt "default" attr in
-  let t_indirections = List.assoc "indirections" attr |> int_of_string in
-  let t_is_ref = List.assoc "isReference" attr |> bool_of_string in
-  let t_is_const = List.assoc "isConstant" attr |> bool_of_string in
-  let t_name = List.assoc "type" attr |> fixTemplateClassName in
+  let default = List.Assoc.find attr "default" in
+  let t_indirections = List.Assoc.find_exn attr "indirections" |> int_of_string in
+  let t_is_ref = List.Assoc.find_exn attr "isReference" |> bool_of_string in
+  let t_is_const = List.Assoc.find_exn attr "isConstant" |> bool_of_string in
+  let t_name = List.Assoc.find_exn attr "type" |> fixTemplateClassName in
   let t_params = 
     match lst with 
       | [Element ("arguments",_,lst)] ->
@@ -241,9 +266,7 @@ let rec build root = match root with
 and parse_class nsname c  = 
   match c with
   | ("class",attr,lst) ->
-    let name = attrib "name" attr in
-    let name = strip_dd ~prefix:nsname name in
-    let name = fixTemplateClassName name in
+    let classname = List.Assoc.find_exn attr "name" |> strip_dd ~prefix:nsname |> fixTemplateClassName in
     
     let helper = 
       let aggr lst = 
@@ -300,11 +323,10 @@ and parse_class nsname c  =
 					slots := (a,b) :: !slots
       | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
 					  sigs := (a,b) :: !sigs
-      | Element (("enum",_,_) as e) -> enums := (parse_enum name e) :: !enums
+      | Element (("enum",_,_) as e) -> enums := (parse_enum classname e) :: !enums
       | Element (("property",_,_) as e) -> props := (parse_prop e) :: !props
       | Element ("class",("name",nn)::_,_) ->
-	let nn = fixTemplateClassName nn in
-	print_endline ("skipping inner class " ^ name ^ "::" ^ nn)	
+	printf "skipping inner class %s::%s" classname (fixTemplateClassName nn)
       | Element ("destructor",_,_) -> ()
       | _ -> assert false
     );
@@ -312,23 +334,24 @@ and parse_class nsname c  =
     let abstrs  = ref MethSet.empty in
     let normals = ref MethSet.empty in
     
-    List.iter !mems ~f:(fun (mname,args,res,policy,modif) ->
-      let m = (res,mname,args) in
+    List.iter !mems ~f:(fun (m_name,m_args,m_res,policy,modif) ->
+      let m_declared = classname and m_out_name = m_name in
+      let m = { m_args; m_res; m_name; m_declared; m_out_name } in
       match (policy, modif) with
 	| (`Private,`Abstract) -> 
 	  raise (Common.Bug
 		   (Printf.sprintf "Nonsense: private pure virtual function (class %s): %s" 
-	  name (string_of_meth m)))
+		      classname (string_of_meth m)))
 	| (`Protected,`Abstract) 	    
 	| (`Public,`Abstract) -> 
 	  (* removing defaults for normal find virtuals in graph *)
-	  abstrs := MethSet.add !abstrs (remove_defaults m)
+	  abstrs := MethSet.add_meth !abstrs (remove_defaults m)
 	| (`Private,`Static)
 	| (`Protected, `Static) -> ()
-	| (`Public, `Static) -> statics := MethSet.add !statics m
+	| (`Public, `Static) -> statics := MethSet.add_meth !statics m
 	| (`Private,`Normal)
 	| (`Protected, `Normal) -> ()
-	| (`Public, `Normal) -> normals := MethSet.add !normals m
+	| (`Public, `Normal) -> normals := MethSet.add_meth !normals m
     );
       
     let inherits = List.map ~f:fixTemplateClassName !inher in
@@ -346,7 +369,7 @@ and parse_class nsname c  =
     let constrs = List.filter ~f:(fun (args,policy) -> match policy with
       | `Public -> true | `Private | `Protected -> false) !constrs in
     let constrs = List.map ~f:fst constrs in
-    { c_name=name; c_constrs= constrs; c_slots= !slots; 
+    { c_name=classname; c_constrs= constrs; c_slots= !slots; 
       c_meths_static= !statics; c_meths_abstr= !abstrs; c_meths_normal= !normals;
       c_inherits= inherits; c_enums= !enums; c_props= !props; c_sigs= !sigs }
   | _ -> assert false

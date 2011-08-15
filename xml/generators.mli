@@ -6,7 +6,7 @@ exception DoSkip
 exception DontSkip
 
 exception BreakS of string
-val breaks : string -> unit
+val breaks : string -> 'a
 
 type t1 = string
 and t2 = string

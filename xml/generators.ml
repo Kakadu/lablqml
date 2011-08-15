@@ -7,7 +7,8 @@ module String = Core_string
 open SuperIndex
 
 exception BreakS of string
-let breaks s : unit = raise (BreakS s)
+
+let breaks s = raise (BreakS s)
 
 let cpp_func_name ~classname ~methname argslist = 
   String.concat ~sep:"_" ("ml"::classname::methname::(
@@ -15,7 +16,7 @@ let cpp_func_name ~classname ~methname argslist =
   ))
 
 let isTemplateClass name = 
-    try ignore (String.index name '<'); true
+    try ignore (String.index_exn name '<'); true
     with Not_found -> false
 
 let isInnerClass name = 
@@ -28,6 +29,9 @@ let skipMeth ~classname name =
   else match name with
     | "flush" 	
     | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
+    | "findChild" when classname = "QWidget" -> (*TODO: add into xml generator info about generic methods *)
+      true
+      
     | "data" when classname = "QByteArray" ->  true
     | "bits" when classname = "QImage" ->  true
     | "scanLine" when classname = "QImage" ->  true
@@ -42,24 +46,21 @@ let skipMeth ~classname name =
     | "indexOfTopLevelItem" when classname = "QTreeWidget" ->  true
     | "data" when classname = "QVariant" ->  true
     | "canConvert" when classname = "QVariant" ->  true 
-    | "toGraphicsObject" when classname = "QGraphicsItem" -> true (* very strange overrides *)
+    | "toGraphicsObject" (* when classname = "QGraphicsItem" *) -> true (* very strange overrides *)
     | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
     | "QThreadStorageData::QThreadStorageData" -> true
     | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
     | _ -> false
 
-
-let skipClass (c:Parser.clas) =
+let skipClass c =
   let classname = c.c_name in
   match classname with
     | s when isTemplateClass classname -> 
       print_endline ("skipping template class " ^ classname);
       true
-
     | s when isInnerClass classname -> 
       print_endline ("skipping inner class " ^ classname);
       true
-
     | "QTabletEvent" -> true (* ??? don't rember why skip it *)
     | _ -> false
    
@@ -77,12 +78,13 @@ let skip_ns ~prefix _ = false
 exception DoSkip
 exception DontSkip
 
-let is_good_meth ~classname (res,methname,args) = 
+let is_good_meth ~classname m = 
+  let methname = m.m_name in
+  let args = m.m_args in
+  let res = m.m_res in
   try
     if skipMeth ~classname methname then false 
     else begin 
-      if methname = "detach_helper" then
-	print_endline (string_of_meth (res,methname,args));
       let lst = List.map ~f:fst args in
       match List.find lst ~f:skipArgument with
 	| None -> (* all arguments are OK *)
@@ -109,6 +111,7 @@ let  pattern index t =
       | "int"  | "bool" | "QString" | "void" -> 
 	if indir = 0 then PrimitivePattern else InvalidPattern
       | "char" when indir = 1 -> PrimitivePattern
+      | "char"
       | "qreal" | "double" | "float" -> InvalidPattern
       | s when indir = 1 -> 
 	let key = NameKey.key_of_fullname name in

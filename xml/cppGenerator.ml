@@ -12,15 +12,16 @@ let iter = List.iter
 class cppGenerator dir index = object (self)
   inherit abstractGenerator index as super
 
-  method genMeth classname h meth =
-    let (res,methname,lst) = meth in
+  method genMeth classname h m =
+    let methname = m.m_name in
+    let res = m.m_res and lst= m.m_args in
 (*    let meth_name = fixElementName ~classname meth_name in *)
     try
       let skipStr = sprintf "skipped %s::%s" classname methname in
-      if not (is_good_meth ~classname meth) then 
-	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth meth));
+      if not (is_good_meth ~classname m) then 
+	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth m));
       
-      fprintf h "// method %s \n" (string_of_meth meth);
+      fprintf h "// method %s \n" (string_of_meth m);
 
       let isProc = (res.t_name = "void") in
 
@@ -41,7 +42,7 @@ class cppGenerator dir index = object (self)
       let type_of_clas = 
 	{ t_name=classname; t_is_ref=false; t_is_const=false; t_indirections=1; t_params=[] } in
       let lst2 = (type_of_clas, None) :: lst in
-      let arg_casts = List.map2 argnames lst2 ~f:(fun name (t,default) -> 
+      let arg_casts = List.map2_exn argnames lst2 ~f:(fun name (t,default) -> 
 	self#fromCamlCast (self#index) (unreference t) ~default name
       ) in
       let fail = List.find arg_casts ~f:(function Success _ -> false | _ -> true) in
@@ -86,9 +87,7 @@ class cppGenerator dir index = object (self)
 (*    print_endline ("generating constructor of " ^ classname); *)
     try
       let skipStr = sprintf "skipped %s::%s" classname classname in
-      let type_of_clas = 
-	{ t_name=classname; t_is_ref=false; t_is_const=false; t_indirections=1; t_params=[] } in
-      let fake_meth = (type_of_clas,classname,lst) in
+      let fake_meth = meth_of_constr ~classname lst in
       if not (is_good_meth ~classname fake_meth) then 
 	breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) );
       
@@ -100,7 +99,7 @@ class cppGenerator dir index = object (self)
       if len > 10 then
 	raise (BreakS (skipStr ^ ": to many arguments"));
 
-      let argCasts = List.map2 ~f:(fun name (t,default) -> 
+      let argCasts = List.map2_exn ~f:(fun name (t,default) -> 
 	self#fromCamlCast (self#index) (unreference t) ~default name
       ) argnames lst in
       let fail = Core_list.find argCasts ~f:(function Success _ -> false | _ -> true) in
@@ -136,7 +135,7 @@ class cppGenerator dir index = object (self)
     with BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
 
   method makefile dir lst = 
-    let lst = List.fast_sort ~cmp:String.compare lst in
+    let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^ "/Makefile") in
     fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
@@ -172,7 +171,7 @@ class cppGenerator dir index = object (self)
       else
 	iter ~f:(self#genConstr classname h) c.c_constrs; 
 
-      MethSet.iter ~f:(self#genMeth c.c_name h) c.c_meths_normal;
+      MethSet.iter ~f:(fun m -> self#genMeth c.c_name h (fst m) ) c.c_meths_normal;
       iter ~f:(self#genProp c.c_name h) c.c_props;
       iter ~f:(self#genSignal c.c_name h) c.c_sigs;
       iter ~f:(self#genSlot c.c_name h) c.c_slots;

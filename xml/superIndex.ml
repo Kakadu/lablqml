@@ -1,5 +1,6 @@
 open Parser
 open Core
+open Printf
 module List = Core_list
 module String = Core_string
 
@@ -29,7 +30,7 @@ module NameKey = struct
 end
 
 type index_data = 
-  | Class of clas * MethSet.t (* class data and its virtuals *)
+  | Class of clas * MethSet.t (* class data with all virtuals *)
   | Enum of enum
 
 module SuperIndex = struct
@@ -72,6 +73,22 @@ module G = struct
     List.iter lst ~f:(kill_and_fall g)
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
+(*
+(* change m.m_name in case of overrides. m_old_cpp_name will contain old name *)
+let fix_meth_names set = 
+  let module S=String.Set in
+  let cache = ref S.empty in
+  let rec make_name s = 
+    if S.mem !cache s then make_name (s^"_") else s
+  in
+  MethSet.iter set ~f:(fun (m1,m2) -> 
+    let new_name = make_name m1.m_name in
+    m1.m_name <- new_name;
+    m2.m_name <- new_name
+  )
+  *)
+
+
     
 let build_superindex root_ns = 
 (* итак, нам поступают по очереди классы. У них есть базовые классы.
@@ -96,7 +113,7 @@ let build_superindex root_ns =
 
     List.iter bases ~f:(fun from -> G.add_edge g from curvertex);
     index := SuperIndex.add ~key ~data !index
-  and on_enum_found (prefix:string list) e = 
+  and on_enum_found prefix e = 
     let name = fst e in
     let key = NameKey.make_key ~name ~prefix in
     let data = Enum e in
@@ -132,12 +149,11 @@ let build_superindex root_ns =
   close_out h;
 
   let get_vertexes_names lst = 
-    List.map ~f:(fun v -> G.V.label v |> snd) lst |> List.fast_sort ~cmp:String.compare 
+    List.map ~f:(fun v -> G.V.label v |> snd) lst |> List.stable_sort ~cmp:String.compare 
   in
 
   let roots = ref [] in
   G.iter_vertex (fun v -> if G.pred_e g v |> List.length = 0 then roots := v :: !roots) g; 
-(*  let roots = ref [NameKey.key_of_fullname "QObject"] in *)
   let roots_names = get_vertexes_names !roots in
   print_endline "Root vertexes are:";
   List.iter roots_names ~f:(print_endline);
@@ -148,20 +164,21 @@ let build_superindex root_ns =
   let cur_root_generation = ref (Evaluated.of_list !roots) in
   let some_changed = ref false in (* recursion exit condition *)
 
-
+  (* target is evaluate virtuals and normal methods and put it to index *)
   let eval_class v = 
     let key = G.V.label v in
     match SuperIndex.find !index key with
       | None -> cur_root_generation := Evaluated.remove !cur_root_generation v;
-	print_endline ("base class of " ^ (snd key) ^ "is not in index. skipped")
-      | Some (Enum _) -> print_endline ("In graph exists enum. nonsense")
+	printf "base class of %s is not in index. skipped" (snd key) 
+      | Some (Enum _) -> print_endline "In graph exists enum. nonsense"
+
       | Some (Class (c,_)) ->
-	Printf.printf "bases of `%s` are: %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits);
+(*	Printf.printf "bases of `%s` are: %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits); *)
 	let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
 	let canEvaluate = List.for_all base_keys ~f:(Evaluated.mem !evaluated) in
 
 	if canEvaluate then begin
-	  print_endline ("evaluating class " ^ c.c_name );
+	  print_endline ("evaluating class " ^ c.c_name ); 
 	  assert (not (Evaluated.mem !evaluated key));
 	  evaluated := Evaluated.add !evaluated key;
 	  cur_root_generation := Evaluated.remove !cur_root_generation key;
@@ -171,28 +188,62 @@ let build_superindex root_ns =
 	  List.iter sons ~f:(fun son -> cur_root_generation := Evaluated.add !cur_root_generation son);
 	  some_changed := true;
 
-	  (* Now add new viruals to index *)
-	  let my_abstrs = c.c_meths_abstr in
-
-	  let base_sets = List.map base_keys ~f:(fun key -> match SuperIndex.find !index key with
+	  let bases_data = List.map base_keys ~f:(fun key -> match SuperIndex.find !index key with
+	    | Some (Class (y,set) ) -> (y,set)
 	    | None -> Printf.printf "Base class %s of %s is not yet indexed" (snd key) c.c_name;
 	      assert false
-	    | Some (Enum _) -> print_endline "nonsense"; assert false
-	    | Some (Class (_,set)) -> set) in
-	  let pre_ans = ref (MethSet.union_list (my_abstrs :: base_sets)) in
+	    | Some (Enum _) -> print_endline "nonsense"; assert false) in
 
-	  (* now remove implemented members *)
-	  (* I think next line removes from 1st set all elements of second set *)
-	  (* let ans = MethSet.diff pre_ans c.c_meths_normal in *)
+	  (* Now generate viruals for index *)
+	  let base_virtuals = List.map bases_data ~f:(fun (_,set) -> set) in
+	  let module S = String.Set in
+	  let cache = ref S.empty in
+	  let put_cache s = cache := S.add !cache s in
+	  let overrides a b : bool = (MethSet.compare_items a b = 0) in
+	  let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides a b in
 
-	  MethSet.iter c.c_meths_normal ~f:(fun (res,name,lst) ->
-	    let new_meth = (res,name,List.map lst ~f:(fun (a,_) -> (a,None))) in
-	    pre_ans := MethSet.remove !pre_ans new_meth
+	  let evaluated_meths = ref MethSet.empty in
+	  let non_evaluated_meths = ref c.c_meths_normal in
+
+	  let base_virtuals = MethSet.filter (MethSet.union_list base_virtuals) ~f:(fun (m,m') ->
+	    (* for each base virtual find normal method which overrides base 
+	       in that case set take out_name of normal meth from base_meth
+	    *)
+	    put_cache m.m_name;
+	    let ans = ref true in 
+	    let (a,b) = MethSet.partition !non_evaluated_meths ~f:(fun (mm,mm') ->
+	      if (mm,mm') <=< (m,m') then begin 
+		ans:= false; 
+		mm.m_out_name <- m.m_out_name; mm'.m_out_name <- m.m_out_name;
+		true
+	      end else begin
+		put_cache mm.m_out_name;
+		false
+	      end
+	    ) in
+	    (* so we accumulated inherited members in `a` and own class's meths in b *)
+	    evaluated_meths := MethSet.union !evaluated_meths a; 
+	    non_evaluated_meths := b;
+	    !ans
+	  ) in
+	  (* now in base_virtuals we have base's class meths that are not implemented in current class *)
+	  
+	  let rec make_name s = 
+	    if S.mem !cache s then make_name (s^"_") else s in
+
+	  MethSet.iter !non_evaluated_meths ~f:(fun (m,m') ->
+	    assert (S.mem !cache m.m_out_name);
+	    let new_name = make_name m.m_out_name in
+	    m.m_out_name <- new_name;
+	    m'.m_out_name <- new_name
 	  );
-	  let data = Class (c,!pre_ans) in
+	  let ans_normals = MethSet.union !non_evaluated_meths !evaluated_meths in
+
+	  let new_c =  { c with c_meths_normal= ans_normals } in
+	  let data = Class (new_c, base_virtuals) in
 	  index := SuperIndex.add !index ~key ~data;
 	end else begin
-	  print_endline ("Can't evaluate clas " ^ c.c_name ^ " yet")
+	  printf "Can't evaluate clas %s yet" c.c_name 
 	end
   in
 (*  let count = ref 0 in*)
@@ -221,14 +272,14 @@ let build_superindex root_ns =
   print_endline "Evaluating virtuals";
   loop ();
 
-(*  print_endline "Now printing virtuals";
+  print_endline "Now printing virtuals";
   SuperIndex.iter !index ~f:(fun ~key ~data -> begin
     match data with
       | Class (c,set) ->
 	Printf.printf "class %s extends %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits);
-	MethSet.iter set ~f:(fun m -> Printf.printf "\t%s\n" (string_of_meth m) )
+	MethSet.iter set ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) )
       | Enum (ename,lst) -> () (*print_endline ("enum " ^ ename)*)  
-  end);  *)
+  end);  
 
 (*  let testkey = NameKey.key_of_fullname "QGraphicsSimpleTextItem" in
   let () = match SuperIndex.find_exn !index testkey with

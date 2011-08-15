@@ -13,7 +13,7 @@ type options = { mutable reparse_xml: bool;
 let options = { reparse_xml= false; 
 		input_file= "/home/kakadu/mand/prog/lablqt/aaa.xml";
 		print_virtuals= false;
-		nocpp=true;
+		nocpp=false;
 		noml=false;
 		reparse_base=false;
 		base=(empty_namespace, SuperIndex.empty, G.create ());
@@ -71,12 +71,13 @@ main ();;
 
 
 let main () = 
+
   if not options.nocpp then begin
     let (root,index,_) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
     (new cppGenerator options.out_dir index)#generate root
-  end;
+  end; 
   if not options.noml then begin
     let (root,index,g) = options.base in
     let open OcamlGenerator in
@@ -85,6 +86,7 @@ let main () =
   end
 ;;
 main ();;
+
 
 (*
 let index = ref Index.empty;;
