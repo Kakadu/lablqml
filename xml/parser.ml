@@ -8,6 +8,17 @@ module Map = Core_map
 
 open Simplexmlparser
 
+let make_out_name ~classname cpp_name = match (classname,cpp_name) with
+  | ("QGraphicsItem", "children") -> "children1"
+  | (_,"done") -> "done1"
+  | (_,"begin") -> "begin1"
+  | (_,"end") -> "end1"
+  | (_,"open") -> "open1"
+  | (_,"type") -> "type1"
+  | (_,"object") -> "object1"
+
+  | _ -> cpp_name
+
 let startswith ~prefix:p s = 
   if (String.length p > (String.length s)) then false
   else (Str.first_chars s (String.length p) = p)
@@ -28,7 +39,7 @@ and meth = {
   m_name:string; 
   m_args:func_arg list; 
   m_declared: string; 
-  mutable m_out_name:string 
+  m_out_name:string 
 } 
 with sexp
 
@@ -99,6 +110,7 @@ module MethSet = struct
     let sames = filter t ~f:(fun x -> MethKey.compare x (item,item') = 0) in
     not (is_empty sames)
   let compare_items: elt -> elt -> int = MethKey.compare
+  let map ~f t = fold ~init:empty ~f:(fun e acc -> add acc (f e)) t
 end
 
 type clas = { 
@@ -334,7 +346,8 @@ and parse_class nsname c  =
     let normals = ref MethSet.empty in
     
     List.iter !mems ~f:(fun (m_name,m_args,m_res,policy,modif) ->
-      let m_declared = classname and m_out_name = String.copy m_name in
+      let m_declared = classname 
+      and m_out_name = make_out_name ~classname m_name in
       let m = { m_args; m_res; m_name; m_declared; m_out_name } in
       match (policy, modif) with
 	| (`Private,`Abstract) -> 

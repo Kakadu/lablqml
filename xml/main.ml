@@ -12,7 +12,7 @@ type options = {
   mutable out_dir: string
 }
 let options = { reparse_xml= false; 
-		input_file= "/home/kakadu/mand/prog/lablqt/aaa.xml";
+		input_file= "../aaa.xml";
 		print_virtuals= false;
 		nocpp=false;
 		noml=false;
@@ -28,6 +28,7 @@ let () = Core_arg.parse [
   ("-xml", Unit (fun () -> (options.reparse_xml <- true)), "reparse xml file aaa.xml");
   ("-base", Unit (fun () -> (options.reparse_xml <- true)), "reparse xml file aaa.xml");
   ("-nocpp", Unit (fun () -> (options.nocpp <- true)), "don't generate cpp");
+  ("-file" , String (fun s -> options.input_file <- s), "XML file of classess");
   ("-noml", Unit (fun () -> (options.noml <- true)), "don't generate ml");
   ("-virt", Unit (fun () -> options.print_virtuals <- true), 
    "print virtual meths of all classes and return")
@@ -88,7 +89,7 @@ let main () =
     let (root,index,g,q) = options.base in
     let open OcamlGenerator in
     print_endline "generating OCaml code";
-    (new ocamlGenerator options.out_dir (index,g) )#generate root
+    (new ocamlGenerator options.out_dir (index,g) )#generate q
   end
 ;;
 main ();;

@@ -1,9 +1,9 @@
-
 open Core
 open Core.Common
 module List = Core_list
 module String = Core_string
 module Map = Core_map
+module Q = Core_queue
 open Parser
 open Generators
 open Printf
@@ -34,9 +34,7 @@ let break2file s = raise (Break2File s)
 
 exception BreakSilent
 class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
-(*  inherit abstractGenerator index as super *)
   method private prefix = dir ^/ "ml"
-(*  method pattern _ = InvalidPattern *)
   val  mutable graph = g
   method toOcamlType t = match pattern index t with
     | InvalidPattern -> CastError (sprintf "Cant cast: %s" (string_of_type t) )
@@ -102,7 +100,7 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
       let ocaml_classname = ocaml_class_name classname in
 
       fprintf h "(* method %s *)\n" (string_of_meth meth);
-      let cpp_func_name = cpp_func_name ~classname ~methname:meth.m_name meth.m_args in
+      let cpp_func_name = cpp_func_name ~classname:meth.m_declared ~methname:meth.m_name meth.m_args in
 
       let lst2 = List.map ~f:fst meth.m_args @ [meth.m_res] in
       let types = List.map ~f:(self#toOcamlType) lst2 in
@@ -121,8 +119,6 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
   (* generates member code*)
   method gen_meth ~is_abstract ~classname h meth = 
     let (res,methname,lst) = (meth.m_res,meth.m_name,meth.m_args) in
-(*    let methname = ocaml_methname methname in *)
-(*    let ocaml_classname = ocaml_class_name classname in *)
     try
       if not (is_good_meth ~classname meth) then 
 	break2file
@@ -164,7 +160,7 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
 	
       if is_abstract then begin
 	fprintf h "  method virtual %s : %s" meth.m_out_name
-	  (String.concat ~sep:"->" (types) );
+	  (String.concat ~sep:"->" types );
 	if List.length types <> 0 then fprintf h " -> ";
 	match pattern index res with
 	  | ObjectPattern -> fprintf h "%s" (ocaml_class_name res.t_name)
@@ -220,14 +216,12 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
 	)
       );
       
+      let meths_normal = c.c_meths_normal in
+      (*
       let module S = String.Set in
       (* we chould generate different ocaml names for methods overloaded in C++ *)
       let meth_names = ref S.empty in      
       (* fold because no `map` =) *)
-      let meths_normal = match SuperIndex.find_exn index key with
-	| Class (c,_) -> c.c_meths_normal
-	| _ -> assert false in
-      
       let target_meths = MethSet.fold ~init:MethSet.empty meths_normal ~f:(fun (m,_) acc ->
 	match m with
 	  | {m_name; m_declared; m_args; m_res; m_out_name} ->
@@ -238,10 +232,10 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
 	    let new_name = loop name in
 	    meth_names := S.add !meth_names new_name;
 	    MethSet.add_meth acc {m_name=new_name; m_declared; m_args; m_res; m_out_name }
-      ) in
-
-      fprintf h_classes " %s me = object (self)\n" 
-         (* (if is_abstract then "virtual" else "") *) ocaml_classname;
+      ) in *)
+      let target_meths = meths_normal in
+      fprintf h_classes " %s me = object (self) \n" 
+(*        (if is_abstract then "virtual " else "") *) ocaml_classname;
       fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
       MethSet.iter target_meths ~f:(fun (m,_) -> 
 	self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
@@ -256,7 +250,7 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
   method genSignal classname h (name,lst) =  ()
   method genProp classname h (name,r,w) = () *)
   
-  method generate ns =
+  method generate queue =
     self#makefile dir;
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
@@ -265,11 +259,23 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
     fprintf h2 "open Qtstubs\n\n";
     fprintf h3 "open Qtstubs\nopen Stubs\nopen Classes\n";
 
-    List.iter ns.ns_classes ~f:(self#gen_class ~prefix:[] h1 h2 h3);
+    let rec loop q = 
+      match Q.dequeue q with 
+	| None -> ()
+	| Some key -> begin
+	  (match SuperIndex.find_exn index key with
+	    | Enum  e -> ()
+	    | Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c 
+	  );
+	  loop q
+	end
+    in
+    loop queue;
+
     fprintf h1 "aa = object end";
     close_out h3;
     close_out h2;
-    close_out h1;
-    ()
+    close_out h1
+    
 end
 

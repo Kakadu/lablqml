@@ -12,7 +12,7 @@ and meth = {
   m_name : string;
   m_args : func_arg list;
   m_declared : string;
-  mutable m_out_name : string;
+  m_out_name : string;
 }
 and func_arg = cpptype * string option (* type and default value *)
 
@@ -30,6 +30,7 @@ module MethSet :
     val empty : t
     val is_empty : t -> bool
     val mem : t -> elt -> bool
+    val map : f:(elt -> elt) -> t -> t
     val add : t -> elt -> t
     val add_meth : t -> meth -> t
     val singleton : elt -> t
@@ -62,6 +63,7 @@ module MethSet :
     val split : elt -> t -> t * bool * t
     val group_by : t -> equiv:(elt -> elt -> bool) -> t list
     val compare_items : elt -> elt -> int
+    val length : t -> int
   end
 
 type clas = { 

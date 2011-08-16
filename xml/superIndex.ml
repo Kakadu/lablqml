@@ -54,11 +54,13 @@ let is_class_exn ~key t = match SuperIndex.find_exn t key with
 	fprintf ch "Class %s\n" (NameKey.to_string key);
 	fprintf ch "  Normal meths\n";
 	MethSet.iter c.c_meths_normal ~f:(fun (m,_) ->
-	  fprintf ch "    %s with out_name=%s\n" (string_of_meth m) m.m_out_name 
+	  fprintf ch "    %s with out_name = %s, decalred in %s\n" 
+	    (string_of_meth m) m.m_out_name m.m_declared
 	);
 	fprintf ch "  Pure virtuals\n";
 	MethSet.iter set ~f:(fun (m,_) ->
-	  fprintf ch "    %s with out_name=%s\n" (string_of_meth m) m.m_out_name
+	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
+	    (string_of_meth m) m.m_out_name m.m_declared
 	);
 	fprintf ch "************************************************** \n"
       end
@@ -89,23 +91,45 @@ module G = struct
     List.iter lst ~f:(kill_and_fall g)
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
-(*
-(* change m.m_name in case of overrides. m_old_cpp_name will contain old name *)
-let fix_meth_names set = 
-  let module S=String.Set in
-  let cache = ref S.empty in
-  let rec make_name s = 
-    if S.mem !cache s then make_name (s^"_") else s
-  in
-  MethSet.iter set ~f:(fun (m1,m2) -> 
-    let new_name = make_name m1.m_name in
-    m1.m_name <- new_name;
-    m2.m_name <- new_name
-  )
-  *)
 
 let overrides a b : bool = (MethSet.compare_items a b = 0) 
 let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides a b 
+
+let names_print_helper s ~set = 
+  printf "%s: %s\n" s
+    (MethSet.elements set
+	|> List.to_string (fun (m,m') -> sprintf "(%s;%s)" m.m_out_name m'.m_out_name) ) 
+
+(* Даны абстрактные методы в классе и нормальные методы.
+   Выдрать какие норм. методы реализуют абстрактные, норм методы, которые ничего не оверрайдят
+   и не реализованные абстрактные методы.
+ *)
+let super_filter_meths ~base ~cur = 
+  let base_not_impl = ref MethSet.empty in
+  let cur_impl = ref MethSet.empty in
+  let cur_new = ref MethSet.empty in
+  let rec loop base cur = 
+    if MethSet.is_empty base then cur_new := MethSet.union !cur_new cur 
+    else if MethSet.is_empty cur then base_not_impl := MethSet.union !base_not_impl base
+    else begin
+      let cur_el = MethSet.min_elt_exn cur  in
+      let (a,b) = MethSet.partition ~f:(fun m -> cur_el <=< m) base in
+      assert (MethSet.length a <= 1);
+      if MethSet.is_empty a then begin
+	(* метод cur_el не реализует ни одного абстрактного *)
+	cur_new := MethSet.add !cur_impl cur_el;
+	loop b (MethSet.remove cur cur_el)
+      end else begin
+	(* нашли абстрактный метод, реализованный в cur_el *)
+	let el = MethSet.min_elt_exn a |> fst in
+	cur_impl := MethSet.add_meth !cur_impl {fst cur_el with m_out_name = el.m_out_name }
+      end
+    end
+  in
+  loop base cur;
+  (* ФИШКА: нельзя будет меня генерируемые имена у cur_impl, иначе не будет согласоваться 
+     наследование с базовым (абстрактным) классом *)
+  (!base_not_impl,!cur_impl,!cur_new)
     
 let build_superindex root_ns = 
   let index = ref SuperIndex.empty in
@@ -146,10 +170,10 @@ let build_superindex root_ns =
 
   (* simplify_graph *)
   let dead_roots = List.map ~f:NameKey.key_of_fullname 
-    ["QIntegerForSize>"; (*"QEvent"; "QStyleOption";(* "QAccessible";*) "QStyle"; "QLayout"; 
-(*     "QGesture"; "QAccessible2Interface"; "QTextFormat"; "QAbstractState"; 
+    [(*"QIntegerForSize>"; "QWidget"; "QEvent"; "QStyleOption"; "QAccessible"; "QStyle"; "QLayout"; 
+     "QGesture"; "QAccessible2Interface"; "QTextFormat"; "QAbstractState"; 
      "QAbstractAnimation"; "QPaintDevice"; "QAbstractItemModel"; 
-     "QTextObject"; "QFactoryInterface";*) *) "QtSharedPointer::ExternalRefCountWithDestroyFn"] in
+     "QTextObject"; "QFactoryInterface";  "QtSharedPointer::ExternalRefCountWithDestroyFn" *)] in
   List.iter dead_roots ~f:(G.kill_and_fall g);
 
   let h = open_out "./outgraph.dot" in
@@ -168,66 +192,86 @@ let build_superindex root_ns =
   g |> Top.iter (fun v ->
     let key = G.V.label v in
     match SuperIndex.find !index key with
-      | None -> printf "base class of %s is not in index. skipped\n" (snd key) 
+      | None -> 
+	evaluated := Evaluated.add !evaluated key;
+	printf "base class of %s is not in index. skipped\n" (snd key) 
       | Some (Enum _) -> print_endline "In graph exists enum. nonsense"
       | Some (Class (c,_)) -> begin
 	let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
+	printf "Base classes are: %s\n" (List.to_string snd base_keys);
 	assert (List.for_all base_keys ~f:(Evaluated.mem !evaluated));
 	evaluated := Evaluated.add !evaluated key;
+	printf "Evaluating class %s\n" c.c_name;
+	names_print_helper "Normal meths" c.c_meths_normal;
+	names_print_helper "Abstract meths" c.c_meths_abstr;
 
-	let bases_data = List.map base_keys ~f:(fun key -> match SuperIndex.find !index key with
-	  | Some (Class (y,set) ) -> (y,set)
-	  | None -> printf "Base class %s of %s is not yet indexed\n" (snd key) c.c_name;
-	    assert false
+	let bases_data = List.filter_map base_keys ~f:(fun key -> match SuperIndex.find !index key with
+	  | Some (Class (y,set) ) -> 
+(*	    printf "Some class found %s\n" y.c_name; *)
+	    Some (y,set)
+	  | None -> 
+	    printf "WARNING! Base class %s of %s is not in index. Suppose that it is not abstract\n" 
+	      (snd key) c.c_name;
+	    None
 	  | Some (Enum _) -> print_endline "nonsense"; assert false
 	) in
-	(* Now generate viruals for index *)
-	let base_virtuals = List.map bases_data ~f:(fun (_,set) -> set) in
+(*	printf "Bases_data length = %d\n" (List.length bases_data); *)
+
 	let module S = String.Set in
 	let cache = ref S.empty in
 	let put_cache s = cache := S.add !cache s in
-
-	let evaluated_meths = ref MethSet.empty in
-	let non_evaluated_meths = ref c.c_meths_normal in
-
-	let base_virtuals = MethSet.filter (MethSet.union_list base_virtuals) ~f:(fun (m,m') ->
-	  (* for each base virtual find normal method which overrides base 
-	     in that case set take out_name of normal meth from base_meth *)
-	  put_cache m.m_out_name;
-	  let ans = ref true in 
-	  let (a,b) = MethSet.partition !non_evaluated_meths ~f:(fun (mm,mm') ->
-	    if (mm,mm') <=< (m,m') then begin
-		(* we can evaluate this meth *)
-	      ans:= false; 
-	      mm.m_out_name <- String.copy m.m_out_name; 
-	      mm'.m_out_name <- String.copy m.m_out_name;
-	      if endswith ~postfix:"_" mm.m_out_name then
-		assert (not (mm.m_name == m.m_out_name));
-	      true
-	    end 
-	    else false
-	  ) in
-	    (* so we accumulated inherited members in `a` and own class's meths in b *)
-	  evaluated_meths := MethSet.union !evaluated_meths a; 
-	  non_evaluated_meths := b;
-	  !ans
-	) 
-	in
-	(* now in base_virtuals we have base's class meths that are not implemented in current class *)
-	  
 	let rec make_name s = 
 	  if S.mem !cache s then make_name (s^"_") else s in
 
-	MethSet.iter !non_evaluated_meths ~f:(fun (m,m') ->
-	  let new_name = make_name m.m_out_name in
-	  m.m_out_name <- new_name;
-	  m'.m_out_name <- new_name;
-	  assert (not (endswith ~postfix:"_" m.m_name))
-	);
-	let ans_normals = MethSet.union !non_evaluated_meths !evaluated_meths in
+	(* Now generate viruals for index *)
+	let base_virtuals = List.map bases_data ~f:snd |> MethSet.union_list in
+	let base_normals  = List.map bases_data ~f:(fun (c,_) -> c.c_meths_normal) in
+	let base_normals = MethSet.union_list base_normals in
 
-	let new_c = { c with c_meths_normal= ans_normals } in
-	let data = Class (new_c, base_virtuals) in
+	names_print_helper ~set:base_normals "base_normals";
+	names_print_helper ~set:base_virtuals "base_virtuals";
+	let () = 
+	  let f = fun (m,_) -> 
+	    if (S.mem !cache m.m_out_name) then begin
+	      printf "Cache is: %s\n" (S.elements !cache |> String.concat ~sep:",");
+	      print_endline m.m_out_name;
+	      assert false
+	    end;
+	    put_cache m.m_out_name
+	  in
+	  print_endline "iterating base_normals";
+	  MethSet.iter base_normals ~f;
+	  MethSet.iter base_virtuals ~f
+	in
+
+	let fix_names set = MethSet.map set ~f:(fun (m,m') ->
+	  if S.mem !cache m.m_out_name then begin
+	    let new_name = make_name m.m_out_name in
+	    put_cache new_name;
+	    ({m with m_out_name=new_name},{m' with m_out_name=new_name})
+	  end else begin 
+	    put_cache m.m_out_name;
+	    (m,m')
+	  end
+	) in
+
+	let (not_impl,cur_impl,cur_new) = super_filter_meths ~base:base_virtuals ~cur:c.c_meths_normal in
+	names_print_helper ~set:not_impl "not_impl";
+	names_print_helper ~set:cur_impl "cur_impl";
+	names_print_helper ~set:cur_new  "cur_new";
+
+	let my_abstrs = fix_names c.c_meths_abstr in
+	let cur_new' = fix_names cur_new in
+	let total_abstrs = MethSet.union not_impl my_abstrs in
+	names_print_helper ~set:cur_new' "cur_new'";
+	names_print_helper ~set:my_abstrs "my_abstrs";
+	names_print_helper ~set:total_abstrs "total_abstrs";
+
+	let new_normals =  MethSet.union_list [cur_impl; cur_new'; base_normals] in
+	let ans_class = { {c with c_meths_abstr = total_abstrs } 
+			     with c_meths_normal = new_normals } in
+
+	let data = Class (ans_class, total_abstrs) in
 	index := SuperIndex.add !index ~key ~data;
 	Q.enqueue !ans_queue key
       end
