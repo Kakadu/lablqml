@@ -73,6 +73,8 @@ type clas = {
   c_slots: slt list;
   c_meths_static: MethSet.t; (* public static *)
   c_meths_abstr:  MethSet.t; (* public pure virtual *)
+  c_meths_innabstr: MethSet.t; (* private and protected pure virtuals *)
+  c_meths_innormal: MethSet.t; (* private and protected normals *)
   c_meths_normal: MethSet.t; 
   c_enums: enum list;
   c_constrs: constr list;

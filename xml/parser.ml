@@ -120,6 +120,8 @@ type clas = {
   c_slots: slt list;
   c_meths_static: MethSet.t; (* public static *)
   c_meths_abstr:  MethSet.t; (* public pure virtual *)
+  c_meths_innabstr: MethSet.t; (* private and protected pure virtuals *)
+  c_meths_innormal: MethSet.t; (* private and protected normals *)
   c_meths_normal: MethSet.t; 
   c_enums: enum list;
   c_constrs: constr list;
@@ -176,20 +178,6 @@ let rec headl c lst =
   in
   helper c [] lst
 
-(*
-let skipClass  = function
-  | "Exception" -> true (* because it extends std::exception and I cant understand what to do *)
-  | s when startswith ~prefix:"ExternalRefCount" s -> true
-  | s when startswith ~prefix:"FilterKernel" s -> true
-  | s when startswith ~prefix:"FilteredEach" s -> true
-  | s when startswith ~prefix:"FilteredReducedKernel" s -> true
-  | s when startswith ~prefix:"QList" s -> true
-  | s when endswith ~postfix:"Interface" s -> true
-  | s when startswith ~prefix:"QAccessible" s -> true
-  | "ExternalRefCount<T>" -> true
-  | _ -> false 
-    *)
-
 let skipNs = function
   | "std" | "QGL" | "internal" | "QtConcurrent" | "QtPrivate" | "QDrawBorderPixmap" 
   | "QtSharedPointer" | "QMdi" | "QAlgorithmsPrivate" | "QAccessible2" -> true
@@ -203,8 +191,6 @@ let str_replace ~patt init = List.fold_left
   ~f:(fun aggr (patt, v) -> 
     Str.global_replace (Str.regexp patt) v aggr
   ) ~init patt
-
-
 
 exception Break
 
@@ -341,28 +327,27 @@ and parse_class nsname c  =
       | Element ("destructor",_,_) -> ()
       | _ -> assert false
     );
-    let statics = ref MethSet.empty in
-    let abstrs  = ref MethSet.empty in
-    let normals = ref MethSet.empty in
-    
+    let statics = ref MethSet.empty in (* public static *)
+    let abstrs  = ref MethSet.empty in (* public pure virtuals *)
+    let normals = ref MethSet.empty in (* public normals *)
+    let inners  = ref MethSet.empty  in (* private and protected normals *)
+    let inner_abstrs = ref MethSet.empty in (* private and protected abstracts *)
+
     List.iter !mems ~f:(fun (m_name,m_args,m_res,policy,modif) ->
       let m_declared = classname 
       and m_out_name = make_out_name ~classname m_name in
       let m = { m_args; m_res; m_name; m_declared; m_out_name } in
       match (policy, modif) with
-	| (`Private,`Abstract) -> 
-	  raise (Common.Bug
-		   (Printf.sprintf "Nonsense: private pure virtual function (class %s): %s" 
-		      classname (string_of_meth m)))
-	| (`Protected,`Abstract) 	    
-	| (`Public,`Abstract) -> 
-	  (* removing defaults for normal find virtuals in graph *)
-	  abstrs := MethSet.add_meth !abstrs (remove_defaults m)
 	| (`Private,`Static)
 	| (`Protected, `Static) -> ()
 	| (`Public, `Static) -> statics := MethSet.add_meth !statics m
+	| (`Protected,`Abstract)
+	| (`Private,`Abstract) -> inner_abstrs := MethSet.add_meth !inner_abstrs m
+	| (`Public,`Abstract) ->
+	  (* removing defaults for normal find virtuals in graph ??????? *)
+	  abstrs := MethSet.add_meth !abstrs (remove_defaults m)
 	| (`Private,`Normal)
-	| (`Protected, `Normal) -> ()
+	| (`Protected, `Normal) -> inners := MethSet.add_meth !inners m
 	| (`Public, `Normal) -> normals := MethSet.add_meth !normals m
     );
       
@@ -382,6 +367,7 @@ and parse_class nsname c  =
       | `Public -> true | `Private | `Protected -> false) !constrs in
     let constrs = List.map ~f:fst constrs in
     { c_name=classname; c_constrs= constrs; c_slots= !slots; 
+      c_meths_innabstr= !inner_abstrs; c_meths_innormal = !inners;
       c_meths_static= !statics; c_meths_abstr= !abstrs; c_meths_normal= !normals;
       c_inherits= inherits; c_enums= !enums; c_props= !props; c_sigs= !sigs }
   | _ -> assert false

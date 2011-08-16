@@ -33,9 +33,8 @@ exception Break2File of string
 let break2file s = raise (Break2File s)
 
 exception BreakSilent
-class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
+class ocamlGenerator dir (index:index_t) = object (self)
   method private prefix = dir ^/ "ml"
-  val  mutable graph = g
   method toOcamlType t = match pattern index t with
     | InvalidPattern -> CastError (sprintf "Cant cast: %s" (string_of_type t) )
     | PrimitivePattern ->
@@ -84,19 +83,13 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
     with BreakSilent -> ()
 
   method private gen_meth_stubs ~is_abstract ~classname h meth =
-(*    printf "meth: %s\n" (string_of_meth meth);
-    assert (not (endswith ~postfix:"_" meth.m_name)); *)
     try   
-(*      if classname <> meth.m_declared then raise BreakSilent; *)
-(*      let (res,methname,lst) = (meth.m_res,meth.m_name,meth.m_args) in *)
-
       if not (is_good_meth ~classname meth) then 
 	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
       if List.length meth.m_args + 1 > 10 then raise BreakSilent;
       (* need additional stub for native compilation *)
       if List.length meth.m_args + 1 > 5 then raise BreakSilent;
 
-(*      let methname = ocaml_methname ~methname in *)
       let ocaml_classname = ocaml_class_name classname in
 
       fprintf h "(* method %s *)\n" (string_of_meth meth);
@@ -217,22 +210,6 @@ class ocamlGenerator dir ((index,g):index_t*G.t) = object (self)
       );
       
       let meths_normal = c.c_meths_normal in
-      (*
-      let module S = String.Set in
-      (* we chould generate different ocaml names for methods overloaded in C++ *)
-      let meth_names = ref S.empty in      
-      (* fold because no `map` =) *)
-      let target_meths = MethSet.fold ~init:MethSet.empty meths_normal ~f:(fun (m,_) acc ->
-	match m with
-	  | {m_name; m_declared; m_args; m_res; m_out_name} ->
-	    let name = ocaml_methname m_name in
-	    let rec loop name = 
-	      if S.mem !meth_names name then loop (name^"_") else name in
-
-	    let new_name = loop name in
-	    meth_names := S.add !meth_names new_name;
-	    MethSet.add_meth acc {m_name=new_name; m_declared; m_args; m_res; m_out_name }
-      ) in *)
       let target_meths = meths_normal in
       fprintf h_classes " %s me = object (self) \n" 
 (*        (if is_abstract then "virtual " else "") *) ocaml_classname;

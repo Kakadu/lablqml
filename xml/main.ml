@@ -80,16 +80,16 @@ main ();;
 
 let main () = 
   if not options.nocpp then begin
-    let (root,index,_,_) = options.base in
+    let (root,index,_,q) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
-    (new cppGenerator options.out_dir index)#generate root
+    (new cppGenerator options.out_dir index)#generate_q q
   end; 
   if not options.noml then begin
     let (root,index,g,q) = options.base in
     let open OcamlGenerator in
     print_endline "generating OCaml code";
-    (new ocamlGenerator options.out_dir (index,g) )#generate q
+    (new ocamlGenerator options.out_dir index )#generate q
   end
 ;;
 main ();;

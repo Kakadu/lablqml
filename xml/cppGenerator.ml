@@ -4,7 +4,7 @@ open Generators
 open SuperIndex
 open Printf
 open Parser
-
+module Q = Core_queue
 module List = Core_list
 module String = Core_string
 let iter = List.iter
@@ -136,7 +136,7 @@ class cppGenerator dir index = object (self)
 
   method makefile dir lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
-    let h = open_out (dir ^ "/Makefile") in
+    let h = open_out (dir ^/ "Makefile") in
     fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
     fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
@@ -148,9 +148,6 @@ class cppGenerator dir index = object (self)
 
   method private prefix = dir ^/ "cpp"
 
-    (* dir is directory where create .cpp file;
-       prefix is namespace prefix (reversed)
-    *)
   method gen_class ~prefix ~dir c : string option = 
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then begin
@@ -159,7 +156,11 @@ class cppGenerator dir index = object (self)
     end else if skipClass c then None
     else begin
       let classname = c.c_name in
-      let h = open_out (dir ^/ classname ^ ".cpp") in
+      let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
+      let dir =  dir ^/ subdir in
+      ignore (Sys.command ("mkdir -p " ^ dir ));
+      let filename = dir ^/ classname ^ ".cpp" in
+      let h = open_out filename in
       fprintf h "#include <Qt/QtOpenGL>\n#include \"headers.h\"\nextern \"C\" {\n";
 (*      let hasPureVirtualMembers = match Index.find index classname with
 	| Some (Class (c,[])) -> false
@@ -178,24 +179,36 @@ class cppGenerator dir index = object (self)
       iter ~f:(self#gen_enumOfClass c.c_name h) c.c_enums;
       fprintf h "}  // extern \"C\"\n";
       close_out h;
-      Some classname
+      Some (if subdir = "" then classname else subdir ^/ classname)
     end
 
   method gen_enumOfNs ~prefix ~dir ((_,_):enum) = None
   method gen_enumOfClass classname h (name,lst) = 
-(*    print_endline ("generating enum " ^ classname ^ "::"^ name); *)
     fprintf h "// enum %s\n" name 
   method genSlot classname h (name,lst) = 
     fprintf h "// slot %s(%s)\n" name (List.map ~f:(string_of_type $ fst ) lst |> String.concat ~sep:",")
   method genSignal classname h (name,lst) = ()
-(* fprintf h "// signal %s(%s)\n" name (List.map ~f:(string_of_type $ fst) lst |> String.concat ~sep:",") *)
   method genProp classname h (name,r,w) = ()
-(*    fprintf h "// property %s " name;
-    (match r with
-      | Some s -> fprintf h "READ %s " s
-      | None -> ());
-    (match w with
-      | Some s -> fprintf h "WRITE %s " s
-      | None -> ());
-    fprintf h "\n" *)
+
+  method generate_q q = 
+    let classes = ref [] in
+    let rec loop q = 
+      match Q.dequeue q with 
+	| None -> ()
+	| Some key -> begin
+	  (match SuperIndex.find_exn index key with
+	    | Enum  e -> ()
+	    | Class (c,_) -> begin 
+	      match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
+		| Some s -> classes := s :: !classes
+		| None -> ()
+	    end
+	  );
+	  loop q
+	end
+    in
+    loop q;
+    print_endline "Generating makefile";
+    self#makefile self#prefix !classes
+
 end
