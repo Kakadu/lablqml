@@ -57,11 +57,27 @@ let is_class_exn ~key t = match SuperIndex.find_exn t key with
 	  fprintf ch "    %s with out_name = %s, decalred in %s\n" 
 	    (string_of_meth m) m.m_out_name m.m_declared
 	);
-	fprintf ch "  Pure virtuals\n";
+	fprintf ch "  Private Pure virtuals\n";
+	MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) ->
+	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
+	    (string_of_meth m) m.m_out_name m.m_declared
+	);
+	fprintf ch "  Inner meths\n";
+	MethSet.iter c.c_meths_innormal ~f:(fun (m,_) ->
+	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
+	    (string_of_meth m) m.m_out_name m.m_declared
+	);
+	fprintf ch "  Publics abstract\n";
+	MethSet.iter c.c_meths_abstr ~f:(fun (m,_) ->
+	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
+	    (string_of_meth m) m.m_out_name m.m_declared
+	);
+	fprintf ch "  Pure virtuals (Set) \n";
 	MethSet.iter set ~f:(fun (m,_) ->
 	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
 	    (string_of_meth m) m.m_out_name m.m_declared
 	);
+
 	fprintf ch "************************************************** \n"
       end
     )
@@ -96,7 +112,7 @@ let overrides a b : bool = (MethSet.compare_items a b = 0)
 let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides a b 
 
 let names_print_helper s ~set = 
-  printf "%s: %s\n" s
+  printf "%s: %s\n\n" s
     (MethSet.elements set
 	|> List.to_string (fun (m,m') -> sprintf "(%s;%s)" m.m_out_name m'.m_out_name) ) 
 
@@ -105,6 +121,10 @@ let names_print_helper s ~set =
    и не реализованные абстрактные методы.
  *)
 let super_filter_meths ~base ~cur = 
+(*  print_endline "super_filter_meths ******";
+  names_print_helper "base" ~set:base;
+  names_print_helper "cur" ~set:cur;
+  *)
   let base_not_impl = ref MethSet.empty in
   let cur_impl = ref MethSet.empty in
   let cur_new = ref MethSet.empty in
@@ -118,17 +138,23 @@ let super_filter_meths ~base ~cur =
       if MethSet.is_empty a then begin
 	(* метод cur_el не реализует ни одного абстрактного *)
 	cur_new := MethSet.add !cur_impl cur_el;
+(*	printf "Add %s to cur_new\n" (string_of_meth (fst cur_el)); *)
 	loop b (MethSet.remove cur cur_el)
       end else begin
 	(* нашли абстрактный метод, реализованный в cur_el *)
 	let el = MethSet.min_elt_exn a |> fst in
-	cur_impl := MethSet.add_meth !cur_impl {fst cur_el with m_out_name = el.m_out_name }
+(*	printf "Add %s to cur_impl\n" (string_of_meth (fst cur_el)); *)
+	cur_impl := MethSet.add_meth !cur_impl {fst cur_el with m_out_name = el.m_out_name };
+	loop (MethSet.remove base (MethSet.min_elt_exn a)) (MethSet.remove cur cur_el)
       end
     end
   in
   loop base cur;
   (* ФИШКА: нельзя будет меня генерируемые имена у cur_impl, иначе не будет согласоваться 
      наследование с базовым (абстрактным) классом *)
+(*  names_print_helper "base_not_impl" ~set: !base_not_impl;
+  names_print_helper "cur_impl"      ~set: !cur_impl;
+  names_print_helper "cur_new"       ~set: !cur_new;*)
   (!base_not_impl,!cur_impl,!cur_new)
     
 let build_superindex root_ns = 
@@ -170,10 +196,11 @@ let build_superindex root_ns =
 
   (* simplify_graph *)
   let dead_roots = List.map ~f:NameKey.key_of_fullname 
-    [(*"QIntegerForSize>"; "QWidget"; "QEvent"; "QStyleOption"; "QAccessible"; "QStyle"; "QLayout"; 
+    ["QIntegerForSize>"; (* "QWindowsStyle"; "QS60Style" *)
+     (* "QWidget"; "QEvent"; "QStyleOption"; "QAccessible"; "QStyle"; "QLayout"; 
      "QGesture"; "QAccessible2Interface"; "QTextFormat"; "QAbstractState"; 
      "QAbstractAnimation"; "QPaintDevice"; "QAbstractItemModel"; 
-     "QTextObject"; "QFactoryInterface";  "QtSharedPointer::ExternalRefCountWithDestroyFn" *)] in
+     "QTextObject"; "QFactoryInterface"; *) "QtSharedPointer::ExternalRefCountWithDestroyFn" ] in
   List.iter dead_roots ~f:(G.kill_and_fall g);
 
   let h = open_out "./outgraph.dot" in
@@ -198,12 +225,12 @@ let build_superindex root_ns =
       | Some (Enum _) -> print_endline "In graph exists enum. nonsense"
       | Some (Class (c,_)) -> begin
 	let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
-	printf "Base classes are: %s\n" (List.to_string snd base_keys);
 	assert (List.for_all base_keys ~f:(Evaluated.mem !evaluated));
 	evaluated := Evaluated.add !evaluated key;
-	printf "Evaluating class %s\n" c.c_name;
-	names_print_helper "Normal meths" c.c_meths_normal;
-	names_print_helper "Abstract meths" c.c_meths_abstr;
+	printf "\nEvaluating class %s\n" c.c_name;
+(*	names_print_helper "Normal meths" c.c_meths_normal;
+	printf "Base classes are: %s\n" (List.to_string snd base_keys);
+	names_print_helper "Abstract meths" c.c_meths_abstr; *)
 
 	let bases_data = List.filter_map base_keys ~f:(fun key -> match SuperIndex.find !index key with
 	  | Some (Class (y,set) ) -> 
@@ -224,12 +251,23 @@ let build_superindex root_ns =
 	  if S.mem !cache s then make_name (s^"_") else s in
 
 	(* Now generate viruals for index *)
-	let base_virtuals = List.map bases_data ~f:snd |> MethSet.union_list in
+	let base_virtuals = List.map bases_data ~f:(fun (c,_) -> c.c_meths_abstr) |> MethSet.union_list in
 	let base_normals  = List.map bases_data ~f:(fun (c,_) -> c.c_meths_normal) in
 	let base_normals = MethSet.union_list base_normals in
 
-	names_print_helper ~set:base_normals "base_normals";
-	names_print_helper ~set:base_virtuals "base_virtuals";
+	let base_priv_abstr = 
+	  List.map bases_data ~f:(fun (c,_) -> c.c_meths_innabstr) |> MethSet.union_list in
+	let base_priv_normal = 
+	  List.map bases_data ~f:(fun (c,_) -> c.c_meths_innormal) |> MethSet.union_list in
+
+(*	names_print_helper ~set:base_priv_abstr "base_priv_abstr";
+	names_print_helper ~set:c.c_meths_innormal "c.c_meths_innormal"; *)
+
+	let (a, _, z) = super_filter_meths ~base:base_priv_abstr ~cur:c.c_meths_innormal in
+	let ans_priv_abstr = MethSet.union_list [a; c.c_meths_innabstr] in
+	let ans_meths_innormal = z in 
+	
+(*	names_print_helper ~set:base_normals "base_normals"; *)
 	let () = 
 	  let f = fun (m,_) -> 
 	    if (S.mem !cache m.m_out_name) then begin
@@ -239,7 +277,6 @@ let build_superindex root_ns =
 	    end;
 	    put_cache m.m_out_name
 	  in
-	  print_endline "iterating base_normals";
 	  MethSet.iter base_normals ~f;
 	  MethSet.iter base_virtuals ~f
 	in
@@ -255,21 +292,37 @@ let build_superindex root_ns =
 	  end
 	) in
 
+(*	print_endline "super_filter_meths ~base:base_virtuals ~cur:c.c_meths_normal"; *)
 	let (not_impl,cur_impl,cur_new) = super_filter_meths ~base:base_virtuals ~cur:c.c_meths_normal in
-	names_print_helper ~set:not_impl "not_impl";
-	names_print_helper ~set:cur_impl "cur_impl";
-	names_print_helper ~set:cur_new  "cur_new";
+
+	(* don't forget that private meths can override public abstract and normal meths in base classes *)
+	let not_impl = MethSet.remove_set ~base:not_impl ans_meths_innormal in
+	let base_normals = MethSet.remove_set ~base:base_normals ans_meths_innormal in
+(*	names_print_helper ~set:base_normals "base_normals"; *)
 
 	let my_abstrs = fix_names c.c_meths_abstr in
 	let cur_new' = fix_names cur_new in
 	let total_abstrs = MethSet.union not_impl my_abstrs in
-	names_print_helper ~set:cur_new' "cur_new'";
+(*	names_print_helper ~set:cur_new' "cur_new'";
 	names_print_helper ~set:my_abstrs "my_abstrs";
-	names_print_helper ~set:total_abstrs "total_abstrs";
+	names_print_helper ~set:total_abstrs "total_abstrs"; *)
 
 	let new_normals =  MethSet.union_list [cur_impl; cur_new'; base_normals] in
-	let ans_class = { {c with c_meths_abstr = total_abstrs } 
-			     with c_meths_normal = new_normals } in
+	let ans_class = {
+	  c_inherits = c.c_inherits;
+	  c_props = c.c_props;
+	  c_sigs = c.c_sigs;
+	  c_slots = c.c_slots;
+	  c_meths_static = c.c_meths_static;
+	  c_meths_abstr = total_abstrs;
+	  c_meths_innabstr = ans_priv_abstr;
+	  c_meths_innormal = ans_meths_innormal;
+	  c_meths_normal =  new_normals;
+	  c_enums = c.c_enums;
+	  c_constrs = c.c_constrs;
+	  c_name=  c.c_name
+	}
+	in
 
 	let data = Class (ans_class, total_abstrs) in
 	index := SuperIndex.add !index ~key ~data;
@@ -287,13 +340,16 @@ let build_superindex root_ns =
   print_endline "Root vertexes are:";
   List.iter roots_names ~f:(print_endline);
   *)
-  print_endline "Now printing virtuals";
+(*  print_endline "Now printing virtuals";
   SuperIndex.iter !index ~f:(fun ~key ~data -> begin
     match data with
-      | Class (c,set) ->
+      | Class (c,_) ->
 	Printf.printf "class %s extends %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits);
-	MethSet.iter set ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) )
+	printf "  inner abstr:\n";
+	MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
+	printf "  c_meths_abstr:\n";
+	MethSet.iter c.c_meths_abstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) )
       | Enum (ename,lst) -> ()
   end);
-
+*)
   (!index,g, !ans_queue)

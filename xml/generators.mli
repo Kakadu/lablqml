@@ -1,10 +1,10 @@
 open Parser
 
-val skipClass : clas -> bool
+val skipClass : prefix:string list -> clas -> bool
 val skipArgument : cpptype -> bool
 exception DoSkip
 exception DontSkip
-
+exception BreakSilent
 exception BreakS of string
 val breaks : string -> 'a
 
@@ -40,13 +40,13 @@ class virtual abstractGenerator :
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
 
     method private virtual genConstr :
-      string -> out_channel -> Parser.constr -> unit
+      prefix:string list -> string -> out_channel -> Parser.constr -> unit
     method private virtual gen_enumOfClass :
       string -> out_channel -> Parser.enum -> unit
     method private virtual gen_enumOfNs :
       prefix:string list -> dir:string -> Parser.enum -> string option
     method private virtual genMeth :
-      string -> out_channel -> Parser.meth -> unit
+      prefix:string list -> string -> out_channel -> Parser.meth -> unit
     method gen_ns : prefix:string list -> dir:string -> Parser.namespace -> unit
     method private virtual genProp :
       string -> out_channel -> Parser.prop -> unit

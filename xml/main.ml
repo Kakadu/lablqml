@@ -1,5 +1,6 @@
 open Parser
 open Core
+open Printf
 open SuperIndex
 type options = { 
   mutable reparse_xml: bool;
@@ -59,6 +60,7 @@ let main () =
     let root_ns = List.map build !root |> List.hd in
     print_endline "building superindex";
     let (index,g,q) = build_superindex root_ns in
+    printf "Queue length is %d\n" (Core_queue.length q);
     print_endline "Index builded";
     options.base <- (root_ns, index, g, q);
 
@@ -80,13 +82,13 @@ main ();;
 
 let main () = 
   if not options.nocpp then begin
-    let (root,index,_,q) = options.base in
+    let (_,index,_,q) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
     (new cppGenerator options.out_dir index)#generate_q q
   end; 
   if not options.noml then begin
-    let (root,index,g,q) = options.base in
+    let (_,index,g,q) = options.base in
     let open OcamlGenerator in
     print_endline "generating OCaml code";
     (new ocamlGenerator options.out_dir index )#generate q

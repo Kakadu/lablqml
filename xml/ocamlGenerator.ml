@@ -32,7 +32,6 @@ let ocaml_methname ~methname = match methname with
 exception Break2File of string 
 let break2file s = raise (Break2File s)
 
-exception BreakSilent
 class ocamlGenerator dir (index:index_t) = object (self)
   method private prefix = dir ^/ "ml"
   method toOcamlType t = match pattern index t with
@@ -174,13 +173,13 @@ class ocamlGenerator dir (index:index_t) = object (self)
   method makefile dir = 
     ignore (Sys.command ("touch " ^ dir ^/ ".depend"));
     let h = open_out (dir ^ "/Makefile") in
-    fprintf h "ML_MODULES=stubs.cmx classes.cmx creators.cmx \n\n";
+    fprintf h "ML_MODULES=stubs.cmo classes.cmo creators.cmo \n\n";
     fprintf h "OCAMLC=ocamlc -g\nOCAMLOPT=ocamlopt -g\n\n";
-    fprintf h "INC=-I ./../../test_gen\n";
-    fprintf h ".SUFFIXES: .ml .mli .cmi .cmx\n\n";
-    fprintf h ".ml.cmo:\n\t$(OCAMLC) -c $<\n\n";
+    fprintf h "INC=-I ./../../test_gen \n";
+    fprintf h ".SUFFIXES: .ml .mli .cmi .cmx .cmo \n\n";
+    fprintf h ".ml.cmo:\n\t$(OCAMLC)   $(INC) -c $<\n\n";
     fprintf h ".ml.cmx:\n\t$(OCAMLOPT) $(INC) -c $<\n\n";
-    fprintf h ".mli.cmi:\n\t$(OCAMLC) -c $<\n\n";
+    fprintf h ".mli.cmi:\n\t$(OCAMLC)  $(INC) -c $<\n\n";
     fprintf h "all: lablqt\n\n";
     fprintf h "depend:\n\tocamldep $(INC) *.ml *.mli > .depend\n\n";
     fprintf h "lablqt: $(ML_MODULES)\n\n";
@@ -190,10 +189,11 @@ class ocamlGenerator dir (index:index_t) = object (self)
     close_out h
     
   method gen_class ~prefix h_classes h_stubs h_constrs c = 
+    print_endline "...";
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then 
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key)      
-    else if skipClass c then ()
+    else if skipClass ~prefix c then print_endline ("Skipping class " ^ c.c_name)
     else begin
       let classname = c.c_name in
       printf "Generating class %s\n" classname;
@@ -236,20 +236,14 @@ class ocamlGenerator dir (index:index_t) = object (self)
     fprintf h2 "open Qtstubs\n\n";
     fprintf h3 "open Qtstubs\nopen Stubs\nopen Classes\n";
 
-    let rec loop q = 
-      match Q.dequeue q with 
-	| None -> ()
-	| Some key -> begin
-	  (match SuperIndex.find_exn index key with
-	    | Enum  e -> ()
-	    | Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c 
-	  );
-	  loop q
-	end
-    in
-    loop queue;
+    printf "Queue length is %d\n" (Q.length queue);
+    Q.iter queue ~f:(fun key-> 
+      match SuperIndex.find_exn index key with
+	| Enum  e -> ()
+	| Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c 
+    );
 
-    fprintf h1 "aa = object end";
+    fprintf h1 " aa = object end";
     close_out h3;
     close_out h2;
     close_out h1

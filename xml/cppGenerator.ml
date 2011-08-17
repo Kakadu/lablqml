@@ -12,14 +12,17 @@ let iter = List.iter
 class cppGenerator dir index = object (self)
   inherit abstractGenerator index as super
 
-  method genMeth classname h m =
+  method genMeth ~prefix classname h m =
     let methname = m.m_name in
     let res = m.m_res and lst= m.m_args in
 (*    let meth_name = fixElementName ~classname meth_name in *)
     try
       let skipStr = sprintf "skipped %s::%s" classname methname in
+      if m.m_declared <> classname then 
+	raise BreakSilent;
       if not (is_good_meth ~classname m) then 
-	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth m));
+	raise BreakSilent;
+(*	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth m)); *)
       
       fprintf h "// method %s \n" (string_of_meth m);
 
@@ -27,9 +30,9 @@ class cppGenerator dir index = object (self)
 
       let resCast = if isProc then ""
 	else begin match self#toCamlCast (unreference res) "ans" "_ans" with 
-	  | CastError s -> raise (BreakS (sprintf "cant cast return type (%s): " (string_of_type res) ) )
-	  | CastValueType name -> raise (BreakS ("Cast error. Return type is value-type: " ^ name))
-	  | CastTemplate str -> raise (BreakS ("Cast error. return tppe is a template: "^ str))
+	  | CastError s -> raise (BreakSilent)
+	  | CastValueType name -> raise (BreakSilent)
+	  | CastTemplate str -> raise (BreakSilent)
 	  | Success s -> s 
 	end
       in
@@ -37,7 +40,7 @@ class cppGenerator dir index = object (self)
       let argnames = "self" :: argnames in      
       let len = List.length argnames in
       if len > 10 then
-	raise (BreakS (skipStr ^ ": to many arguments"));
+	raise BreakSilent;
 
       let type_of_clas = 
 	{ t_name=classname; t_is_ref=false; t_is_const=false; t_indirections=1; t_params=[] } in
@@ -48,9 +51,9 @@ class cppGenerator dir index = object (self)
       let fail = List.find arg_casts ~f:(function Success _ -> false | _ -> true) in
 
       match fail with
-	| Some (CastError s) -> raise (BreakS s)
-	| Some (CastValueType name) -> raise (BreakS ("Casting value-type: " ^ name))
-	| Some (CastTemplate str) -> raise (BreakS ("Casting template: "^ str))
+	| Some (CastError s) -> raise (BreakSilent)
+	| Some (CastValueType name) -> raise (BreakSilent)
+	| Some (CastTemplate str) -> raise (BreakSilent)
 	| None -> begin
 	  let cpp_func_name = cpp_func_name ~classname ~methname lst in
 	  fprintf h "value %s(%s) {\n" cpp_func_name 
@@ -82,14 +85,16 @@ class cppGenerator dir index = object (self)
 	end
 	| _ -> assert false
     with BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
+      | BreakSilent -> ()
 
-  method genConstr classname h lst =
+  method genConstr ~prefix classname h lst =
 (*    print_endline ("generating constructor of " ^ classname); *)
     try
       let skipStr = sprintf "skipped %s::%s" classname classname in
       let fake_meth = meth_of_constr ~classname lst in
       if not (is_good_meth ~classname fake_meth) then 
-	breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) );
+	raise BreakSilent;
+(*      breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) ); *)
       
       fprintf h "// constructor `%s`(%s)\n"
 	classname (List.map lst ~f:(string_of_type $ fst) |> String.concat ~sep:",");
@@ -97,7 +102,7 @@ class cppGenerator dir index = object (self)
       let argnames = List.mapi lst ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
       let len = List.length argnames in
       if len > 10 then
-	raise (BreakS (skipStr ^ ": to many arguments"));
+	raise BreakSilent;
 
       let argCasts = List.map2_exn ~f:(fun name (t,default) -> 
 	self#fromCamlCast (self#index) (unreference t) ~default name
@@ -106,8 +111,8 @@ class cppGenerator dir index = object (self)
 
       match fail with
 	| Some (CastError s) -> breaks s
-	| Some (CastValueType name) -> raise (BreakS ("Casting value-type: " ^ name))
-	| Some (CastTemplate str) -> raise (BreakS ("Casting template: "^ str))
+	| Some (CastValueType name) -> raise BreakSilent
+	| Some (CastTemplate str) -> raise BreakSilent
 	| None -> begin
 	  let cpp_func_name = cpp_func_name ~classname ~methname:classname lst in
 	  fprintf h "value %s(%s) {\n" cpp_func_name 
@@ -125,14 +130,18 @@ class cppGenerator dir index = object (self)
 	  let argCasts = List.map ~f:(function Success s -> s| _ -> assert false) argCasts in
 	  List.iter ~f:(fun s -> fprintf h "  %s\n" s) argCasts;
 	  let argsCall = List.map ~f:((^)"_") argnames |> String.concat ~sep:", " in
-	  
-	  fprintf h "  %s *ans = new %s(%s);\n" classname classname argsCall;
+	  let ns_prefix = match prefix with
+	    | [] -> ""
+	    | lst -> String.concat ~sep:"::" lst ^ "::" in
+	  let full_classname = ns_prefix ^ classname in
+	  fprintf h "  %s *ans = new %s(%s);\n" full_classname full_classname argsCall;
 	  fprintf h "  _ans = (value)ans;\n";
 	  fprintf h "  CAMLreturn(_ans);\n";	    
 	  fprintf h "}\n\n"
 	end
 	| _ -> assert false
     with BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
+      | BreakSilent -> ()
 
   method makefile dir lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
@@ -147,14 +156,24 @@ class cppGenerator dir index = object (self)
     close_out h
 
   method private prefix = dir ^/ "cpp"
-
+  
+  method is_abstr_class c = begin
+(*    print_endline "checking is abstgract";
+    MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
+    MethSet.iter c.c_meths_abstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
+    print_endline "end chacking *************************"; *)
+    not ((MethSet.is_empty c.c_meths_abstr) && (MethSet.is_empty c.c_meths_innabstr))
+  end
+ 
   method gen_class ~prefix ~dir c : string option = 
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then begin
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key);
       None
-    end else if skipClass c then None
-    else begin
+    end else if skipClass ~prefix c then begin 
+      printf "skipping class %s\n" c.c_name;
+      None
+    end else begin
       let classname = c.c_name in
       let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
       let dir =  dir ^/ subdir in
@@ -167,12 +186,13 @@ class cppGenerator dir index = object (self)
 	| _ -> true
       in
       *)
-      if is_abstract_class ~prefix index classname then
+      if self#is_abstr_class c then
 	fprintf h "//class has pure virtual members - no constructors\n"
-      else
-	iter ~f:(self#genConstr classname h) c.c_constrs; 
-
-      MethSet.iter ~f:(fun m -> self#genMeth c.c_name h (fst m) ) c.c_meths_normal;
+      else begin
+	printf "Class %s is not abstract\n" classname;
+	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs
+      end;
+      MethSet.iter ~f:(fun m -> self#genMeth ~prefix c.c_name h (fst m) ) c.c_meths_normal;
       iter ~f:(self#genProp c.c_name h) c.c_props;
       iter ~f:(self#genSignal c.c_name h) c.c_sigs;
       iter ~f:(self#genSlot c.c_name h) c.c_slots;
@@ -191,23 +211,16 @@ class cppGenerator dir index = object (self)
   method genProp classname h (name,r,w) = ()
 
   method generate_q q = 
+    ignore (Sys.command ("rm -rf " ^ self#prefix ^"/*") );
     let classes = ref [] in
-    let rec loop q = 
-      match Q.dequeue q with 
-	| None -> ()
-	| Some key -> begin
-	  (match SuperIndex.find_exn index key with
-	    | Enum  e -> ()
-	    | Class (c,_) -> begin 
-	      match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
-		| Some s -> classes := s :: !classes
-		| None -> ()
-	    end
-	  );
-	  loop q
-	end
-    in
-    loop q;
+    Q.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
+      | Enum  e -> ()
+      | Class (c,_) -> begin 
+	match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
+	  | Some s -> classes := s :: !classes
+	  | None -> ()
+      end    
+    );
     print_endline "Generating makefile";
     self#makefile self#prefix !classes
 

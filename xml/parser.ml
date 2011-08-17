@@ -111,6 +111,9 @@ module MethSet = struct
     not (is_empty sames)
   let compare_items: elt -> elt -> int = MethKey.compare
   let map ~f t = fold ~init:empty ~f:(fun e acc -> add acc (f e)) t
+
+  let remove_set ~base:init w =
+    fold ~init w ~f:(fun el acc -> remove acc el)
 end
 
 type clas = { 

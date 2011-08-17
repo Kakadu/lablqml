@@ -35,6 +35,7 @@ module MethSet :
     val add_meth : t -> meth -> t
     val singleton : elt -> t
     val remove : t -> elt -> t
+    val remove_set : base:t -> t-> t
     val union : t -> t -> t
     val union_list : t list -> t
     val inter : t -> t -> t

@@ -7,7 +7,7 @@ module String = Core_string
 open SuperIndex
 
 exception BreakS of string
-
+exception BreakSilent
 let breaks s = raise (BreakS s)
 
 let cpp_func_name ~classname ~methname argslist = 
@@ -52,8 +52,7 @@ let skipMeth ~classname name =
     | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
     | _ -> false
 
-let skipClass c =
-  let classname = c.c_name in
+let skip_class_by_name ~classname =
   match classname with
     | s when isTemplateClass classname -> 
       print_endline ("skipping template class " ^ classname);
@@ -61,8 +60,15 @@ let skipClass c =
     | s when isInnerClass classname -> 
       print_endline ("skipping inner class " ^ classname);
       true
-    | "QTabletEvent" -> true (* ??? don't rember why skip it *)
+    | "QWindowsVistaStyle"  | "QWindowsXPStyle" | "QWindowsStyle" | "QWindowsCEStyle"
+    | "QWindowsMobileStyle" | "QS60Style" -> true
+    | "QString" -> true (* because we implemented it as primitive *)
     | _ -> false
+
+let skipClass ~prefix c = 
+  match prefix with
+    | ["QtConcurrent"] -> false 
+    | _ -> skip_class_by_name c.c_name
    
 let skipArgument arg = match arg.t_name with (* true when do skip *)
   | "GLfloat" | "GLint" | "GLuint"
@@ -83,7 +89,8 @@ let is_good_meth ~classname m =
   let args = m.m_args in
   let res = m.m_res in
   try
-    if skipMeth ~classname methname then false 
+    if skip_class_by_name ~classname:m.m_declared then false
+    else if skipMeth ~classname methname then false 
     else begin 
       let lst = List.map ~f:fst args in
       match List.find lst ~f:skipArgument with
@@ -146,8 +153,8 @@ class virtual abstractGenerator _index = object (self)
   method private virtual genSlot  : string -> out_channel -> slt -> unit
   method private virtual genSignal : string -> out_channel -> sgnl -> unit
   method private virtual genProp : string -> out_channel -> prop -> unit
-  method private virtual genMeth : string -> out_channel -> meth -> unit
-  method private virtual genConstr : string -> out_channel -> constr -> unit
+  method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
+  method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit
   method private virtual makefile : string -> string list -> unit
 
 
