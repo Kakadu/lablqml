@@ -150,8 +150,6 @@ class virtual abstractGenerator _index = object (self)
   method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
   method private virtual gen_enumOfNs : prefix:string list -> dir:string -> enum -> string option
   method private virtual gen_enumOfClass : string -> out_channel -> enum -> unit
-  method private virtual genSlot  : string -> out_channel -> slt -> unit
-  method private virtual genSignal : string -> out_channel -> sgnl -> unit
   method private virtual genProp : string -> out_channel -> prop -> unit
   method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
   method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit

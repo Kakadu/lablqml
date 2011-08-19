@@ -214,12 +214,61 @@ class ocamlGenerator dir (index:index_t) = object (self)
       fprintf h_classes " %s me = object (self) \n" 
 (*        (if is_abstract then "virtual " else "") *) ocaml_classname;
       fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
-      MethSet.iter target_meths ~f:(fun (m,_) -> 
-	self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
-	self#gen_meth       ~is_abstract:false ~classname h_classes m
+      List.iter c.c_sigs  ~f:(self#gen_signal h_classes); 
+      List.iter c.c_slots ~f:(fun (name,args,modif) -> 
+	self#gen_slot ~classname h_classes (name,args,modif) ;
+	self#gen_meth_stubs ~is_abstract ~classname h_stubs
+	  { m_name=name; m_args=args; m_declared=classname; m_res=void_type; m_out_name=name }
       );
+
+      MethSet.iter target_meths ~f:(fun (m,_) -> 
+	self#gen_meth_stubs ~is_abstract ~classname h_stubs m  ;
+	self#gen_meth       ~is_abstract:false ~classname h_classes m 
+      ); 
       fprintf h_classes "end\nand ";
     end
+
+  method gen_slot : classname:string -> out_channel -> Parser.slt -> unit = 
+    fun ~classname h (name,args,modif) ->
+    printf "generating slot %s; modif = %s\n" name (match modif with `Public->"public"
+      | `Private -> "private" | `Protected -> "protected");
+    try
+      let () = match modif with 
+	| `Public -> () | `Private | `Protected -> raise BreakSilent in
+      let types = List.map args ~f:(self#toOcamlType $ fst) in
+      let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
+      let types = List.map2_exn args types ~f:(fun (arg,_) sometype ->
+	match pattern index arg with
+	  | ObjectPattern -> ocaml_class_name arg.t_name
+	  | _ -> sometype) in
+      let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
+      fprintf h "  method slot_%s = object (self : (< %s .. >, %s unit) #ssslot)\n"
+	name 
+	(List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ")
+	(if List.is_empty types then "" else (String.concat ~sep:" -> " types) ^ " -> ");
+	
+      fprintf h "    method name = \"%s\"\n" name;
+      fprintf h "    method call = %s_%s' me\n" (ocaml_class_name classname) name;
+      fprintf h "  end\n"
+    with BreakSilent -> ()
+      | BreakS s -> ()
+
+  method gen_signal: out_channel -> Parser.sgnl -> unit = fun h (name,args) ->
+    let args = List.map args ~f:fst in
+    let types = List.map args ~f:(self#toOcamlType) in
+    try
+      let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
+      let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
+      let types = List.map2_exn args types ~f:(fun arg sometype ->
+	match pattern index arg with
+	  | ObjectPattern -> ocaml_class_name arg.t_name
+	  | _ -> sometype) in
+      fprintf h "  method signal_%s = object (self : <%s ..> #sssignal)\n"
+	name (List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ");
+      fprintf h "    method name = \"%s\"\n" name;
+      fprintf h "  end\n";
+    with BreakSilent -> ()
+      | BreakS s -> ()
 
 (*  method gen_enumOfNs ~prefix ~dir (_,_) = None
   method gen_enumOfClass classname h (name,lst) = ()
@@ -249,4 +298,3 @@ class ocamlGenerator dir (index:index_t) = object (self)
     close_out h1
     
 end
-

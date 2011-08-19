@@ -15,7 +15,6 @@ class cppGenerator dir index = object (self)
   method genMeth ~prefix classname h m =
     let methname = m.m_name in
     let res = m.m_res and lst= m.m_args in
-(*    let meth_name = fixElementName ~classname meth_name in *)
     try
       let skipStr = sprintf "skipped %s::%s" classname methname in
       if m.m_declared <> classname then 
@@ -181,32 +180,42 @@ class cppGenerator dir index = object (self)
       let filename = dir ^/ classname ^ ".cpp" in
       let h = open_out filename in
       fprintf h "#include <Qt/QtOpenGL>\n#include \"headers.h\"\nextern \"C\" {\n";
-(*      let hasPureVirtualMembers = match Index.find index classname with
-	| Some (Class (c,[])) -> false
-	| _ -> true
-      in
-      *)
       if self#is_abstr_class c then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else begin
 	printf "Class %s is not abstract\n" classname;
 	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs
       end;
-      MethSet.iter ~f:(fun m -> self#genMeth ~prefix c.c_name h (fst m) ) c.c_meths_normal;
+      MethSet.iter ~f:(fun (m,_) -> self#genMeth ~prefix c.c_name h m) c.c_meths_normal;
       iter ~f:(self#genProp c.c_name h) c.c_props;
-      iter ~f:(self#genSignal c.c_name h) c.c_sigs;
-      iter ~f:(self#genSlot c.c_name h) c.c_slots;
+      iter ~f:(self#genSignal c.c_name h) c.c_sigs; 
+      iter ~f:(self#genSlot ~prefix c.c_name h) c.c_slots;
       iter ~f:(self#gen_enumOfClass c.c_name h) c.c_enums;
       fprintf h "}  // extern \"C\"\n";
       close_out h;
       Some (if subdir = "" then classname else subdir ^/ classname)
     end
-
+  
   method gen_enumOfNs ~prefix ~dir ((_,_):enum) = None
   method gen_enumOfClass classname h (name,lst) = 
     fprintf h "// enum %s\n" name 
-  method genSlot classname h (name,lst) = 
-    fprintf h "// slot %s(%s)\n" name (List.map ~f:(string_of_type $ fst ) lst |> String.concat ~sep:",")
+
+  method genSlot ~prefix classname h (name,lst, modif) = 
+    try
+      let () = match modif with `Public -> () 
+	| `Protected | `Private -> raise BreakSilent in
+      fprintf h "// slot %s(%s)\n" name (List.map ~f:(string_of_type $ fst ) lst |> String.concat ~sep:",");
+      let meth = { 
+	m_res = {t_name="void"; t_is_ref=false; t_indirections=0; t_params=[]; t_is_const = false};
+	m_args=lst;
+	m_name=name;
+	m_declared = classname;
+	m_out_name=name
+      } in
+      self#genMeth ~prefix classname h meth 
+    with
+      | BreakSilent -> ()
+
   method genSignal classname h (name,lst) = ()
   method genProp classname h (name,r,w) = ()
 

@@ -50,10 +50,6 @@ class virtual abstractGenerator :
     method gen_ns : prefix:string list -> dir:string -> Parser.namespace -> unit
     method private virtual genProp :
       string -> out_channel -> Parser.prop -> unit
-    method private virtual genSignal :
-      string -> out_channel -> Parser.sgnl -> unit
-    method private virtual genSlot :
-      string -> out_channel -> Parser.slt -> unit
     method generate : namespace -> unit
     method private index : SuperIndex.index_t
     method private virtual makefile : string -> string list -> unit

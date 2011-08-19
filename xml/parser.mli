@@ -16,6 +16,8 @@ and meth = {
 }
 and func_arg = cpptype * string option (* type and default value *)
 
+val void_type : cpptype
+
 val unreference : cpptype -> cpptype
 val string_of_type : cpptype -> string
 val string_of_meth : meth -> string
@@ -84,7 +86,7 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 and enum = string * (string list)
 and constr = func_arg list
-and slt = string * (func_arg list)
+and slt = string * func_arg list *  [ `Private | `Protected | `Public ]
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 

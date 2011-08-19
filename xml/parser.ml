@@ -43,6 +43,8 @@ and meth = {
 } 
 with sexp
 
+let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+
 let remove_defaults meth = match meth with
   | {m_res;m_name; m_args; m_declared; m_out_name } -> 
     let m_args = List.map m_args ~f:(fun (a,_) -> (a,None)) in
@@ -133,7 +135,7 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 and enum = string * (string list)
 and constr = func_arg list
-and slt = string * (func_arg list)
+and slt = string * (func_arg list) * [ `Public | `Protected | `Private]
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
@@ -257,11 +259,9 @@ let rec build root = match root with
       | Element ( ("enum",_,lst) as e) -> 
 	enums := (parse_enum "" e) :: !enums
       | _ -> assert false);
-(*    let classes = List.filter (fun c -> not (isTemplateClass c.c_name) ) !classes in *)
     {ns_name=""; ns_ns= !nss; ns_classes= !classes; ns_enums= !enums }
   | _ -> print_endline "XML file is incorrect";
     assert false
-
   
 and parse_class nsname c  = 
   match c with
@@ -276,8 +276,7 @@ and parse_class nsname c  =
 	let policy = ref `Public in
 
 	List.iter lst ~f:(function
-	  | Element (("return",_,_) as e) -> 
-	    ret := Some (parse_arg e |> fst)
+	  | Element (("return",_,_) as e) ->  ret := Some (parse_arg e |> fst)
 	  | Element ("arguments",_,lst) ->
 	    List.iter lst ~f:(function
 	      | Element (("argument",_,_) as e) -> args := (parse_arg e) :: !args
@@ -294,7 +293,9 @@ and parse_class nsname c  =
 	(List.rev !args, !ret, !policy, !modif)
       in
       function
-	| Element (_,("name",name)::_,lst) -> let (a,b,c,d) = aggr lst in (name,a,b,c,d)
+	| Element (_,("name",name)::_,lst) -> let (a,b,c,d) = aggr lst in
+					      printf "Helper returns %s::%s\n" classname name;
+					      (name,a,b,c,d)
 	| _ -> assert false
     in
 
@@ -319,8 +320,13 @@ and parse_class nsname c  =
 	   | None -> assert false)
       | (Element ("constructor",_,ll)) as e -> let (_,args,_,policy,modif) = helper e in
 					       constrs := (args,policy) :: !constrs 	
-      | (Element ("slot",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
-					slots := (a,b) :: !slots
+      | (Element ("slot",_,ll)) as e -> begin
+	let (name,b,_,policy,_) = helper e in 
+	printf "Baaaah. slot\nnew slot %s::%s;\n" classname  name;
+	let s = (match policy with `Public -> "public" | _ -> "not public") in
+	printf "policy = %s\n" s;
+	slots := (name,b,policy) :: !slots
+      end
       | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
 					  sigs := (a,b) :: !sigs
       | Element (("enum",_,_) as e) -> enums := (parse_enum classname e) :: !enums

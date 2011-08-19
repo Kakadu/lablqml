@@ -5,3 +5,5 @@ main
 *#*
 *.backup
 main.opt
+.depend
+
