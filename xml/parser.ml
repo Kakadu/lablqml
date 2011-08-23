@@ -135,11 +135,18 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 and enum = string * (string list)
 and constr = func_arg list
-and slt = string * (func_arg list) * [ `Public | `Protected | `Private]
+and slt = { slt_name:string; slt_args:func_arg list; slt_access:[`Public|`Protected|`Private];
+	    slt_modif:[`Normal | `Static | `Abstract];
+	    slt_declared:string;
+	    slt_out_name:string }
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
+
+let meth_of_slot ~classname s = 
+  { m_name=s.slt_name; m_out_name=s.slt_out_name; m_args=s.slt_args; m_declared=classname;
+    m_res = void_type }
 
 (* convert class to pointer on this class *)
 let typeP_of_class c = 
@@ -321,11 +328,12 @@ and parse_class nsname c  =
       | (Element ("constructor",_,ll)) as e -> let (_,args,_,policy,modif) = helper e in
 					       constrs := (args,policy) :: !constrs 	
       | (Element ("slot",_,ll)) as e -> begin
-	let (name,b,_,policy,_) = helper e in 
-	printf "Baaaah. slot\nnew slot %s::%s;\n" classname  name;
-	let s = (match policy with `Public -> "public" | _ -> "not public") in
+	let (name,args,_,access,modif) = helper e in 
+	printf "Baaaah. slot\nnew slot %s::%s;\n" classname name;
+	let s = (match access with `Public -> "public" | _ -> "not public") in
 	printf "policy = %s\n" s;
-	slots := (name,b,policy) :: !slots
+	slots := {slt_name=name; slt_declared=classname;
+		  slt_args=args; slt_access=access; slt_out_name=name; slt_modif=modif } :: !slots
       end
       | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
 					  sigs := (a,b) :: !sigs
@@ -339,7 +347,7 @@ and parse_class nsname c  =
     let statics = ref MethSet.empty in (* public static *)
     let abstrs  = ref MethSet.empty in (* public pure virtuals *)
     let normals = ref MethSet.empty in (* public normals *)
-    let inners  = ref MethSet.empty  in (* private and protected normals *)
+    let inners  = ref MethSet.empty in (* private and protected normals *)
     let inner_abstrs = ref MethSet.empty in (* private and protected abstracts *)
 
     List.iter !mems ~f:(fun (m_name,m_args,m_res,policy,modif) ->

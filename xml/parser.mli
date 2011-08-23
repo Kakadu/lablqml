@@ -86,12 +86,15 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 and enum = string * (string list)
 and constr = func_arg list
-and slt = string * func_arg list *  [ `Private | `Protected | `Public ]
+and slt = { slt_name:string; slt_args:func_arg list; slt_access:[`Public|`Protected|`Private];
+	    slt_modif:[`Normal | `Static | `Abstract];	    
+	    slt_declared:string;
+	    slt_out_name:string }
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
 val string_of_constr : classname:string -> constr -> string
-
+val meth_of_slot: classname:string -> slt -> meth
 val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
 val remove_defaults : meth -> meth

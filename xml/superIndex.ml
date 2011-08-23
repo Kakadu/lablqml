@@ -56,7 +56,7 @@ let is_class_exn ~key t = match SuperIndex.find_exn t key with
 	MethSet.iter c.c_meths_normal ~f:(fun (m,_) ->
 	  fprintf ch "    %s with out_name = %s, decalred in %s\n" 
 	    (string_of_meth m) m.m_out_name m.m_declared
-	);
+	);(*
 	fprintf ch "  Private Pure virtuals\n";
 	MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) ->
 	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
@@ -66,17 +66,22 @@ let is_class_exn ~key t = match SuperIndex.find_exn t key with
 	MethSet.iter c.c_meths_innormal ~f:(fun (m,_) ->
 	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
 	    (string_of_meth m) m.m_out_name m.m_declared
-	);
-	fprintf ch "  Publics abstract\n";
+	); *)
+(*	fprintf ch "  Publics abstract\n";
 	MethSet.iter c.c_meths_abstr ~f:(fun (m,_) ->
 	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
 	    (string_of_meth m) m.m_out_name m.m_declared
+	); *)
+	fprintf ch "  slots\n";
+	List.iter c.c_slots ~f:(fun slt ->
+	  fprintf ch "    %s declared in %s\n" 
+	    (string_of_meth (meth_of_slot ~classname:c.c_name slt)) c.c_name
 	);
-	fprintf ch "  Pure virtuals (Set) \n";
+(*	fprintf ch "  Pure virtuals (Set) \n";
 	MethSet.iter set ~f:(fun (m,_) ->
 	  fprintf ch "    %s with out_name = %s, declared in %s\n" 
 	    (string_of_meth m) m.m_out_name m.m_declared
-	);
+	); *)
 
 	fprintf ch "************************************************** \n"
       end
@@ -102,9 +107,11 @@ module G = struct
   let edge_attributes _ = []
 
   let rec kill_and_fall g root = 
-    let lst = succ g root in
-    remove_vertex g root;
-    List.iter lst ~f:(kill_and_fall g)
+    if mem_vertex g root then (
+      let lst = succ g root in
+      remove_vertex g root;
+      List.iter lst ~f:(kill_and_fall g)
+    )
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
 
@@ -307,12 +314,49 @@ let build_superindex root_ns =
 	names_print_helper ~set:my_abstrs "my_abstrs";
 	names_print_helper ~set:total_abstrs "total_abstrs"; *)
 
-	let new_normals =  MethSet.union_list [cur_impl; cur_new'; base_normals] in
+	(* what about slots? *)
+	let base_slots = List.map bases_data ~f:(fun (c,_) -> c.c_slots) |> List.concat in
+	List.iter base_slots ~f:(fun s -> put_cache s.slt_out_name);
+
+	let my_slots = List.map c.c_slots ~f:(fun s -> 
+(*	  printf "iterating slots: %s\n" s.slt_name; *)
+	  if S.mem !cache s.slt_out_name 
+	  then { s with slt_out_name = make_name s.slt_out_name }
+	  else (put_cache s.slt_out_name; s) 
+	) in
+	
+
+	let cur_new = ref cur_new' in
+	let overrides_slot ~meth ~slot = 
+	  (meth.m_name = slot.slt_name) &&
+	    (List.map meth.m_args ~f:fst = (List.map slot.slt_args ~f:fst))
+	in
+
+	let base_slots = List.map base_slots ~f:(fun slot ->
+	  let (a,b) = MethSet.partition !cur_new ~f:(fun (meth,_) -> overrides_slot ~meth ~slot) in
+	  assert (MethSet.length a <= 1);
+	  if MethSet.is_empty a then begin
+	    slot
+	  end else begin
+	    print_endline "override found";
+	    cur_new := b;
+	    let el = MethSet.min_elt_exn a |> fst in
+	    {{{ slot with slt_out_name = el.m_out_name } with slt_declared = el.m_declared }
+	     with slt_modif=`Normal }
+	  end
+	) in
+	let ans_slots = my_slots @ base_slots in
+
+
+	printf "Class %s, Slots are: %s\n" c.c_name (List.to_string (fun s -> s.slt_out_name) my_slots);
+	
+
+	let new_normals =  MethSet.union_list [cur_impl; !cur_new; base_normals] in
 	let ans_class = {
 	  c_inherits = c.c_inherits;
 	  c_props = c.c_props;
 	  c_sigs = c.c_sigs;
-	  c_slots = c.c_slots;
+	  c_slots = ans_slots;
 	  c_meths_static = c.c_meths_static;
 	  c_meths_abstr = total_abstrs;
 	  c_meths_innabstr = ans_priv_abstr;

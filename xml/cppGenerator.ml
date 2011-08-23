@@ -200,7 +200,8 @@ class cppGenerator dir index = object (self)
   method gen_enumOfClass classname h (name,lst) = 
     fprintf h "// enum %s\n" name 
 
-  method genSlot ~prefix classname h (name,lst, modif) = 
+  method genSlot ~prefix classname h slt = 
+    let name = slt.slt_name and lst=slt.slt_args and modif = slt.slt_access in
     try
       let () = match modif with `Public -> () 
 	| `Protected | `Private -> raise BreakSilent in

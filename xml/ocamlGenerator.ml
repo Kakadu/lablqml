@@ -215,10 +215,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
 (*        (if is_abstract then "virtual " else "") *) ocaml_classname;
       fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes); 
-      List.iter c.c_slots ~f:(fun (name,args,modif) -> 
-	self#gen_slot ~classname h_classes (name,args,modif) ;
-	self#gen_meth_stubs ~is_abstract ~classname h_stubs
-	  { m_name=name; m_args=args; m_declared=classname; m_res=void_type; m_out_name=name }
+      List.iter c.c_slots ~f:(fun slot -> 
+	self#gen_slot ~classname h_classes slot;
+	self#gen_meth_stubs ~is_abstract ~classname h_stubs (meth_of_slot ~classname slot)
       );
 
       MethSet.iter target_meths ~f:(fun (m,_) -> 
@@ -229,9 +228,8 @@ class ocamlGenerator dir (index:index_t) = object (self)
     end
 
   method gen_slot : classname:string -> out_channel -> Parser.slt -> unit = 
-    fun ~classname h (name,args,modif) ->
-    printf "generating slot %s; modif = %s\n" name (match modif with `Public->"public"
-      | `Private -> "private" | `Protected -> "protected");
+    fun ~classname h slot ->
+      let (name,args,modif) = (slot.slt_name,slot.slt_args, slot.slt_access) in
     try
       let () = match modif with 
 	| `Public -> () | `Private | `Protected -> raise BreakSilent in
@@ -243,12 +241,30 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  | _ -> sometype) in
       let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
       fprintf h "  method slot_%s = object (self : (< %s .. >, %s unit) #ssslot)\n"
-	name 
+	slot.slt_out_name 
 	(List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ")
 	(if List.is_empty types then "" else (String.concat ~sep:" -> " types) ^ " -> ");
 	
       fprintf h "    method name = \"%s\"\n" name;
-      fprintf h "    method call = %s_%s' me\n" (ocaml_class_name classname) name;
+(*      fprintf h "    method call = %s_%s' me\n" (ocaml_class_name classname) slot.slt_out_name; *)
+      let argnames = List.mapi args ~f:(fun i _ -> sprintf "x%d" i) in
+      let argnames2 = List.map3_exn args types argnames ~f:(fun (start,_) ttt name ->
+	match pattern index start with
+	  | EnumPattern | InvalidPattern -> assert false
+	  | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+	  | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
+      ) in
+      let argnames3 = List.map3_exn args types argnames ~f:(fun (start,_) ttt name ->
+	match pattern index start with
+	  | EnumPattern | InvalidPattern -> assert false
+	  | PrimitivePattern -> sprintf "%s" name
+	  | ObjectPattern -> sprintf "%s#handler" name
+      ) in
+      
+      fprintf h "    method call %s = %s_%s' me %s |> ignore \n" 
+	(String.concat ~sep:" " argnames2) 
+	(ocaml_class_name classname) slot.slt_out_name
+	(String.concat ~sep:" " argnames3);
       fprintf h "  end\n"
     with BreakSilent -> ()
       | BreakS s -> ()
