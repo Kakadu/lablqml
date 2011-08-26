@@ -1,12 +1,12 @@
 OCAML=`ocamlc -where`
 INCLUDES=-I /usr/lib/ocaml -I . -I ./.. -I ./../out
 OUTFILE=test
-OCAMLC=ocamlc -g
+OCAMLC=ocamlfind c -g
 
 all: main
 
 main:
-	$(OCAMLC) $(INCLUDES) lablqt.cma main.ml 
+	$(OCAMLC) $(INCLUDES) lablqt.cma main.ml -o $(OUTFILE)
 	
 clean:
 	rm -f *.cm[xio] $(OUTFILE)

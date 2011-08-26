@@ -14,3 +14,8 @@ external make_root_widget : unit -> [`qobject] obj = "make_root_widget"
 
 
 
+module QApplication = struct
+  type t = [`qapplication]
+  external create : string array -> t obj = "ml_QApplication"
+  external exec : [> `qapplication] obj -> int = "ml_QApplication_exec"
+end
