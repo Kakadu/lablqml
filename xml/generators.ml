@@ -23,35 +23,6 @@ let isInnerClass name =
   try let _ = Str.search_forward (Str.regexp "::") name 0 in true
   with Not_found -> false
 
-let skipMeth ~classname name = 
-  if startswith ~prefix:"operator" name then true
-  else if startswith ~prefix:"d_func" name then true
-  else match name with
-    | "flush" 	
-    | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
-    | "findChild" when classname = "QWidget" -> (*TODO: add into xml generator info about generic methods *)
-      true
-      
-    | "data" when classname = "QByteArray" ->  true
-    | "bits" when classname = "QImage" ->  true
-    | "scanLine" when classname = "QImage" ->  true
-    | "invertedAppearance" when classname = "QProgressBar" ->  true
-    | "cap" when classname = "QRegExp" ->  true
-    | "pos" when classname = "QRegExp" ->  true
-    | "errorString" when classname = "QRegExp" ->  true
-    | "data" when classname = "QSharedMemory" ->  true
-    | "shortcutId" when classname = "QShortcutEvent" ->  true
-    | "isAmbiguous" when classname = "QShortcutEvent" ->  true
-    | "toUnicode" when classname = "QTextCodec" ->  true
-    | "indexOfTopLevelItem" when classname = "QTreeWidget" ->  true
-    | "data" when classname = "QVariant" ->  true
-    | "canConvert" when classname = "QVariant" ->  true 
-    | "toGraphicsObject" (* when classname = "QGraphicsItem" *) -> true (* very strange overrides *)
-    | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
-    | "QThreadStorageData::QThreadStorageData" -> true
-    | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
-    | _ -> false
-
 let skip_class_by_name ~classname =
   match classname with
     | s when isTemplateClass classname -> 
@@ -90,7 +61,7 @@ let is_good_meth ~classname m =
   let res = m.m_res in
   try
     if skip_class_by_name ~classname:m.m_declared then false
-    else if skipMeth ~classname methname then false 
+    else if skip_meth ~classname methname then false 
     else begin 
       let lst = List.map ~f:fst args in
       match List.find lst ~f:skipArgument with
@@ -136,13 +107,13 @@ let  pattern index t =
 				InvalidPattern )
 
 let is_abstract_class ~prefix index name = 
-    let key = NameKey.make_key ~prefix ~name in
-    match SuperIndex.find index key with
-      | Some (Class (_,set)) when MethSet.is_empty set -> false
-      | Some (Class _) -> true
-      | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
-      | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
-
+  let key = NameKey.make_key ~prefix ~name in
+  let f = fun m acc -> match m.m_modif with `Abstract -> true | _ -> acc in
+  match SuperIndex.find index key with
+    | Some (Class (c,_)) -> 
+      (MethSet.fold ~init:false c.c_meths ~f) or ((MethSet.fold ~init:false c.c_slots ~f))
+    | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
+    | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
 
 class virtual abstractGenerator _index = object (self)
   method private index = _index    

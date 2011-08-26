@@ -13,20 +13,21 @@ and meth = {
   m_args : func_arg list;
   m_declared : string;
   m_out_name : string;
+  m_access : [ `Private | `Protected | `Public ];
+  m_modif : [ `Abstract | `Normal | `Static ];
 }
 and func_arg = cpptype * string option (* type and default value *)
 
 val void_type : cpptype
-
+val skip_meth : classname:string -> string -> bool
 val unreference : cpptype -> cpptype
 val string_of_type : cpptype -> string
 val string_of_meth : meth -> string
 module MethSet :
   sig
-    type elt = meth*meth
+    type elt = meth
     type t
     type sexpable = t
-    val remove_meth : t -> meth -> t
     val sexp_of_t : sexpable -> Sexplib.Sexp.t
     val t_of_sexp : Sexplib.Sexp.t -> sexpable
     val empty : t
@@ -34,7 +35,6 @@ module MethSet :
     val mem : t -> elt -> bool
     val map : f:(elt -> elt) -> t -> t
     val add : t -> elt -> t
-    val add_meth : t -> meth -> t
     val singleton : elt -> t
     val remove : t -> elt -> t
     val remove_set : base:t -> t-> t
@@ -73,12 +73,8 @@ type clas = {
   c_inherits: string list;
   c_props: prop list;
   c_sigs: sgnl list;
-  c_slots: slt list;
-  c_meths_static: MethSet.t; (* public static *)
-  c_meths_abstr:  MethSet.t; (* public pure virtual *)
-  c_meths_innabstr: MethSet.t; (* private and protected pure virtuals *)
-  c_meths_innormal: MethSet.t; (* private and protected normals *)
-  c_meths_normal: MethSet.t; 
+  c_slots: MethSet.t;
+  c_meths: MethSet.t; 
   c_enums: enum list;
   c_constrs: constr list;
   c_name: string
@@ -86,15 +82,11 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 and enum = string * (string list)
 and constr = func_arg list
-and slt = { slt_name:string; slt_args:func_arg list; slt_access:[`Public|`Protected|`Private];
-	    slt_modif:[`Normal | `Static | `Abstract];	    
-	    slt_declared:string;
-	    slt_out_name:string }
+and slt = meth
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
 val string_of_constr : classname:string -> constr -> string
-val meth_of_slot: classname:string -> slt -> meth
 val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
 val remove_defaults : meth -> meth

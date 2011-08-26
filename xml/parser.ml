@@ -8,6 +8,10 @@ module Map = Core_map
 
 open Simplexmlparser
 
+let startswith ~prefix:p s = 
+  if (String.length p > (String.length s)) then false
+  else (Str.first_chars s (String.length p) = p)
+
 let make_out_name ~classname cpp_name = match (classname,cpp_name) with
   | ("QGraphicsItem", "children") -> "children1"
   | (_,"done") -> "done1"
@@ -16,12 +20,36 @@ let make_out_name ~classname cpp_name = match (classname,cpp_name) with
   | (_,"open") -> "open1"
   | (_,"type") -> "type1"
   | (_,"object") -> "object1"
-
+  | (_,"match") -> "match1"
   | _ -> cpp_name
 
-let startswith ~prefix:p s = 
-  if (String.length p > (String.length s)) then false
-  else (Str.first_chars s (String.length p) = p)
+let skip_meth ~classname name = 
+  if startswith ~prefix:"operator" name then true
+  else if startswith ~prefix:"d_func" name then true
+  else match name with
+    | "flush" 	
+    | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
+    | "findChild" when classname = "QWidget" -> (*TODO: add into xml generator info about generic methods *)
+      true      
+    | "data" when classname = "QByteArray" ->  true
+    | "bits" when classname = "QImage" ->  true
+    | "scanLine" when classname = "QImage" ->  true
+    | "invertedAppearance" when classname = "QProgressBar" ->  true
+    | "cap" when classname = "QRegExp" ->  true
+    | "pos" when classname = "QRegExp" ->  true
+    | "errorString" when classname = "QRegExp" ->  true
+    | "data" when classname = "QSharedMemory" ->  true
+    | "shortcutId" when classname = "QShortcutEvent" ->  true
+    | "isAmbiguous" when classname = "QShortcutEvent" ->  true
+    | "toUnicode" when classname = "QTextCodec" ->  true
+    | "indexOfTopLevelItem" when classname = "QTreeWidget" ->  true
+    | "data" when classname = "QVariant" ->  true
+    | "canConvert" when classname = "QVariant" ->  true 
+    | "toGraphicsObject" (* when classname = "QGraphicsItem" *) -> true (* very strange overrides *)
+    | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
+    | "QThreadStorageData::QThreadStorageData" -> true
+    | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
+    | _ -> false
 
 let endswith ~postfix:p s = 
   if String.length p > (String.length s) then false
@@ -39,16 +67,18 @@ and meth = {
   m_name:string; 
   m_args:func_arg list; 
   m_declared: string; 
-  m_out_name:string 
+  m_out_name:string;
+  m_access:[`Public | `Protected| `Private];
+  m_modif: [`Normal | `Static   | `Abstract]
 } 
 with sexp
 
 let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 
 let remove_defaults meth = match meth with
-  | {m_res;m_name; m_args; m_declared; m_out_name } -> 
+  | {m_res;m_name; m_args; m_declared; m_out_name; m_access; m_modif } -> 
     let m_args = List.map m_args ~f:(fun (a,_) -> (a,None)) in
-    {m_res;m_name; m_declared; m_args; m_out_name }
+    {m_res;m_name; m_declared; m_args; m_out_name; m_access; m_modif }
 
 let unreference = function
   | {t_name=t_name; t_indirections=t_indirections; t_is_const=t_is_const; t_params=t_params; _} ->
@@ -88,29 +118,16 @@ let compare_meth m1 m2 =
       with Ans c -> c
     
 module MethKey = struct
-  type t = meth*meth (* full method and without defaults *)
-  type sexpable = meth*meth
-  let sexp_of_t (a,_) = sexp_of_meth a
-  let t_of_sexp s = 
-    let a = meth_of_sexp s in (a,remove_defaults a)
-  let compare (a,b) (c,d) = 
-    let c = compare_meth b d in c
+  type t = meth (* full method and without defaults *)
+  type sexpable = meth
+  let sexp_of_t = sexp_of_meth
+  let t_of_sexp = meth_of_sexp
+  let compare = compare_meth
 end
 
 module MethSet = struct
   include Core_set.Make(MethKey)
-  let add_meth t item = 
-    let item' = remove_defaults item in
-    let sames = filter t ~f:(fun x -> MethKey.compare x (item,item') <> 0) in
-    add sames (item,item')
 
-  let remove_meth t item =
-    let item' = remove_defaults item in
-    remove t (item,item')
-  let contains t item = 
-    let item' = remove_defaults item in
-    let sames = filter t ~f:(fun x -> MethKey.compare x (item,item') = 0) in
-    not (is_empty sames)
   let compare_items: elt -> elt -> int = MethKey.compare
   let map ~f t = fold ~init:empty ~f:(fun e acc -> add acc (f e)) t
 
@@ -122,12 +139,8 @@ type clas = {
   c_inherits: string list;
   c_props: prop list;
   c_sigs: sgnl list;
-  c_slots: slt list;
-  c_meths_static: MethSet.t; (* public static *)
-  c_meths_abstr:  MethSet.t; (* public pure virtual *)
-  c_meths_innabstr: MethSet.t; (* private and protected pure virtuals *)
-  c_meths_innormal: MethSet.t; (* private and protected normals *)
-  c_meths_normal: MethSet.t; 
+  c_slots: MethSet.t;
+  c_meths: MethSet.t;
   c_enums: enum list;
   c_constrs: constr list;
   c_name: string
@@ -135,19 +148,11 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 and enum = string * (string list)
 and constr = func_arg list
-and slt = { slt_name:string; slt_args:func_arg list; slt_access:[`Public|`Protected|`Private];
-	    slt_modif:[`Normal | `Static | `Abstract];
-	    slt_declared:string;
-	    slt_out_name:string }
+and slt = meth
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
-
-let meth_of_slot ~classname s = 
-  { m_name=s.slt_name; m_out_name=s.slt_out_name; m_args=s.slt_args; m_declared=classname;
-    m_res = void_type }
-
 (* convert class to pointer on this class *)
 let typeP_of_class c = 
   { t_name=c.c_name; t_indirections=1; t_is_const=false; t_is_ref = false; t_params=[] }
@@ -157,7 +162,7 @@ let is_void_type t = (t.t_name = "void") && (t.t_indirections=0)
 let meth_of_constr ~classname m_args = 
   let m_declared = classname and m_name=classname and m_out_name=classname
   and m_res={ t_name=classname; t_indirections=1; t_is_ref=false; t_params=[]; t_is_const=false } in
-  { m_declared; m_name; m_args; m_res; m_out_name }
+  { m_declared; m_name; m_args; m_res; m_out_name; m_access=`Public; m_modif=`Normal }
 
 let string_of_type t = 
   String.concat  	  
@@ -315,25 +320,26 @@ and parse_class nsname c  =
     let constrs = ref [] in 
 
     List.iter lst ~f:(function
+      | (Element ("constructor",_,ll)) as e -> let (_,args,_,policy,modif) = helper e in
+					       constrs := (args,policy) :: !constrs 	
       | Element ("inherits",_,ll) ->
 	List.iter ll ~f:(function 
 	  | Element ("class",("name",nn)::_,_) -> inher := nn :: !inher
 	  |  _ -> assert false) 
-      | (Element ("function",_,ll)) as e -> 
-	(let (name,args,ret,policy,modif) = helper e 
-	 in 
-	 match ret with
+      | (Element ("function",_,ll)) as e -> begin
+	let (name,args,ret,policy,modif) = helper e in 
+	if skip_meth ~classname name then ()
+	else (match ret with
 	   | Some r -> mems := (name,args,r,policy,modif) :: !mems
-	   | None -> assert false)
-      | (Element ("constructor",_,ll)) as e -> let (_,args,_,policy,modif) = helper e in
-					       constrs := (args,policy) :: !constrs 	
+	   | _ -> assert false)
+      end
       | (Element ("slot",_,ll)) as e -> begin
-	let (name,args,_,access,modif) = helper e in 
-	printf "Baaaah. slot\nnew slot %s::%s;\n" classname name;
-	let s = (match access with `Public -> "public" | _ -> "not public") in
-	printf "policy = %s\n" s;
-	slots := {slt_name=name; slt_declared=classname;
-		  slt_args=args; slt_access=access; slt_out_name=name; slt_modif=modif } :: !slots
+	let (name,args,ret,policy,modif) = helper e in 
+	printf "slot found: %s\n" name;
+	if skip_meth ~classname name then ()
+	else (match ret with
+	   | Some r  -> slots := (name,args,r,policy,modif) :: !slots
+	   | None -> assert false)
       end
       | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
 					  sigs := (a,b) :: !sigs
@@ -344,29 +350,14 @@ and parse_class nsname c  =
       | Element ("destructor",_,_) -> ()
       | _ -> assert false
     );
-    let statics = ref MethSet.empty in (* public static *)
-    let abstrs  = ref MethSet.empty in (* public pure virtuals *)
-    let normals = ref MethSet.empty in (* public normals *)
-    let inners  = ref MethSet.empty in (* private and protected normals *)
-    let inner_abstrs = ref MethSet.empty in (* private and protected abstracts *)
 
-    List.iter !mems ~f:(fun (m_name,m_args,m_res,policy,modif) ->
-      let m_declared = classname 
-      and m_out_name = make_out_name ~classname m_name in
-      let m = { m_args; m_res; m_name; m_declared; m_out_name } in
-      match (policy, modif) with
-	| (`Private,`Static)
-	| (`Protected, `Static) -> ()
-	| (`Public, `Static) -> statics := MethSet.add_meth !statics m
-	| (`Protected,`Abstract)
-	| (`Private,`Abstract) -> inner_abstrs := MethSet.add_meth !inner_abstrs m
-	| (`Public,`Abstract) ->
-	  (* removing defaults for normal find virtuals in graph ??????? *)
-	  abstrs := MethSet.add_meth !abstrs (remove_defaults m)
-	| (`Private,`Normal)
-	| (`Protected, `Normal) -> inners := MethSet.add_meth !inners m
-	| (`Public, `Normal) -> normals := MethSet.add_meth !normals m
-    );
+    let f = fun (m_name,m_args,m_res,m_access,m_modif) ->
+      {m_name;m_args;m_res;m_access;m_modif; m_declared=classname; 
+       m_out_name=make_out_name ~classname m_name
+      } in
+
+    let meths = List.map !mems ~f |> MethSet.of_list in
+    let slots = List.map !slots ~f |> MethSet.of_list in
       
     let inherits = List.map ~f:fixTemplateClassName !inher in
     (* next remove base classes such as QSet<...>, QList<...>, QVector<...> 
@@ -383,9 +374,8 @@ and parse_class nsname c  =
     let constrs = List.filter ~f:(fun (args,policy) -> match policy with
       | `Public -> true | `Private | `Protected -> false) !constrs in
     let constrs = List.map ~f:fst constrs in
-    { c_name=classname; c_constrs= constrs; c_slots= !slots; 
-      c_meths_innabstr= !inner_abstrs; c_meths_innormal = !inners;
-      c_meths_static= !statics; c_meths_abstr= !abstrs; c_meths_normal= !normals;
+    { c_name=classname; c_constrs= constrs; c_slots= slots; 
+      c_meths= meths;
       c_inherits= inherits; c_enums= !enums; c_props= !props; c_sigs= !sigs }
   | _ -> assert false
 

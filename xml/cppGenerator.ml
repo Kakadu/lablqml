@@ -13,15 +13,15 @@ class cppGenerator dir index = object (self)
   inherit abstractGenerator index as super
 
   method genMeth ~prefix classname h m =
-    let methname = m.m_name in
-    let res = m.m_res and lst= m.m_args in
     try
-      let skipStr = sprintf "skipped %s::%s" classname methname in
-      if m.m_declared <> classname then 
-	raise BreakSilent;
+(*      let skipStr = sprintf "skipped %s::%s" classname methname in *)
+      if m.m_declared <> classname then raise BreakSilent;
+      (match m.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       if not (is_good_meth ~classname m) then 
 	raise BreakSilent;
 (*	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth m)); *)
+      let methname = m.m_name in
+      let res = m.m_res and lst= m.m_args in
       
       fprintf h "// method %s \n" (string_of_meth m);
 
@@ -89,7 +89,7 @@ class cppGenerator dir index = object (self)
   method genConstr ~prefix classname h lst =
 (*    print_endline ("generating constructor of " ^ classname); *)
     try
-      let skipStr = sprintf "skipped %s::%s" classname classname in
+(*      let skipStr = sprintf "skipped %s::%s" classname classname in *)
       let fake_meth = meth_of_constr ~classname lst in
       if not (is_good_meth ~classname fake_meth) then 
 	raise BreakSilent;
@@ -161,7 +161,11 @@ class cppGenerator dir index = object (self)
     MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
     MethSet.iter c.c_meths_abstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
     print_endline "end chacking *************************"; *)
-    not ((MethSet.is_empty c.c_meths_abstr) && (MethSet.is_empty c.c_meths_innabstr))
+    let ans = ref false in
+    let f m = match m.m_modif with `Abstract -> ans:=true | _ -> () in
+    MethSet.iter c.c_meths ~f;
+    MethSet.iter c.c_slots ~f;
+    !ans
   end
  
   method gen_class ~prefix ~dir c : string option = 
@@ -186,11 +190,12 @@ class cppGenerator dir index = object (self)
 	printf "Class %s is not abstract\n" classname;
 	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs
       end;
-      MethSet.iter ~f:(fun (m,_) -> self#genMeth ~prefix c.c_name h m) c.c_meths_normal;
-      iter ~f:(self#genProp c.c_name h) c.c_props;
+      MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_meths;
+      MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_slots;
+
+(*      iter ~f:(self#genProp c.c_name h) c.c_props; 
       iter ~f:(self#genSignal c.c_name h) c.c_sigs; 
-      iter ~f:(self#genSlot ~prefix c.c_name h) c.c_slots;
-      iter ~f:(self#gen_enumOfClass c.c_name h) c.c_enums;
+      iter ~f:(self#gen_enumOfClass c.c_name h) c.c_enums; *)
       fprintf h "}  // extern \"C\"\n";
       close_out h;
       Some (if subdir = "" then classname else subdir ^/ classname)
@@ -199,7 +204,7 @@ class cppGenerator dir index = object (self)
   method gen_enumOfNs ~prefix ~dir ((_,_):enum) = None
   method gen_enumOfClass classname h (name,lst) = 
     fprintf h "// enum %s\n" name 
-
+(*
   method genSlot ~prefix classname h slt = 
     let name = slt.slt_name and lst=slt.slt_args and modif = slt.slt_access in
     try
@@ -216,8 +221,8 @@ class cppGenerator dir index = object (self)
       self#genMeth ~prefix classname h meth 
     with
       | BreakSilent -> ()
-
-  method genSignal classname h (name,lst) = ()
+	*)
+(*  method genSignal classname h (name,lst) = () *)
   method genProp classname h (name,r,w) = ()
 
   method generate_q q = 

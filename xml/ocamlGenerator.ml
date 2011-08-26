@@ -83,6 +83,8 @@ class ocamlGenerator dir (index:index_t) = object (self)
 
   method private gen_meth_stubs ~is_abstract ~classname h meth =
     try   
+      (match meth.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
+
       if not (is_good_meth ~classname meth) then 
 	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
       if List.length meth.m_args + 1 > 10 then raise BreakSilent;
@@ -112,6 +114,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
   method gen_meth ~is_abstract ~classname h meth = 
     let (res,methname,lst) = (meth.m_res,meth.m_name,meth.m_args) in
     try
+      (match meth.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       if not (is_good_meth ~classname meth) then 
 	break2file
 	  (sprintf "skipped in class %s method %s --- not is_good_meth" classname (string_of_meth meth));
@@ -168,6 +171,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 
     with BreakS str -> ( fprintf h "(* %s *)\n" str;
 			 print_endline str )
+      | BreakSilent -> ()
       | Break2File s -> ( fprintf h "(* %s *)\n" s; print_endline s)
 
   method makefile dir = 
@@ -189,7 +193,6 @@ class ocamlGenerator dir (index:index_t) = object (self)
     close_out h
     
   method gen_class ~prefix h_classes h_stubs h_constrs c = 
-    print_endline "...";
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then 
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key)      
@@ -209,19 +212,18 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	)
       );
       
-      let meths_normal = c.c_meths_normal in
-      let target_meths = meths_normal in
+      let target_meths = c.c_meths in
       fprintf h_classes " %s me = object (self) \n" 
 (*        (if is_abstract then "virtual " else "") *) ocaml_classname;
       fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes); 
-      List.iter c.c_slots ~f:(fun slot -> 
+      MethSet.iter c.c_slots ~f:(fun slot -> 
 	self#gen_slot ~classname h_classes slot;
-	self#gen_meth_stubs ~is_abstract ~classname h_stubs (meth_of_slot ~classname slot)
+	self#gen_meth_stubs ~is_abstract ~classname h_stubs slot
       );
 
-      MethSet.iter target_meths ~f:(fun (m,_) -> 
-	self#gen_meth_stubs ~is_abstract ~classname h_stubs m  ;
+      MethSet.iter target_meths ~f:(fun m -> 
+	self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
 	self#gen_meth       ~is_abstract:false ~classname h_classes m 
       ); 
       fprintf h_classes "end\nand ";
@@ -229,10 +231,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
 
   method gen_slot : classname:string -> out_channel -> Parser.slt -> unit = 
     fun ~classname h slot ->
-      let (name,args,modif) = (slot.slt_name,slot.slt_args, slot.slt_access) in
     try
-      let () = match modif with 
-	| `Public -> () | `Private | `Protected -> raise BreakSilent in
+      (match slot.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
+      let (name,args,modif) = (slot.m_name,slot.m_args, slot.m_access) in
       let types = List.map args ~f:(self#toOcamlType $ fst) in
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
       let types = List.map2_exn args types ~f:(fun (arg,_) sometype ->
@@ -241,7 +242,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  | _ -> sometype) in
       let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
       fprintf h "  method slot_%s = object (self : (< %s .. >, %s unit) #ssslot)\n"
-	slot.slt_out_name 
+	slot.m_out_name 
 	(List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ")
 	(if List.is_empty types then "" else (String.concat ~sep:" -> " types) ^ " -> ");
 	
@@ -263,7 +264,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
       
       fprintf h "    method call %s = %s_%s' me %s |> ignore \n" 
 	(String.concat ~sep:" " argnames2) 
-	(ocaml_class_name classname) slot.slt_out_name
+	(ocaml_class_name classname) slot.m_out_name
 	(String.concat ~sep:" " argnames3);
       fprintf h "  end\n"
     with BreakSilent -> ()
