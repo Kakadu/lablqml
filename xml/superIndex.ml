@@ -56,6 +56,10 @@ let to_channel t ch =
     | Enum e -> fprintf ch "Enum %s\n" (fst e)
     | Class (c,set) -> begin
       fprintf ch "Class %s\n" (NameKey.to_string key);
+      fprintf ch "Constructors\n";
+      List.iter c.c_constrs ~f:(fun lst -> fprintf ch "  %s\n" 
+	(meth_of_constr ~classname:c.c_name lst |> string_of_meth )
+      );
       fprintf ch "  Normal meths\n";
       MethSet.iter c.c_meths ~f:(fun m ->
 	fprintf ch "    %s %s %s with out_name = %s, declared in %s\n" 

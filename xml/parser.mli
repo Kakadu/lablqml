@@ -86,7 +86,6 @@ and slt = meth
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
-val string_of_constr : classname:string -> constr -> string
 val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
 val remove_defaults : meth -> meth
@@ -94,6 +93,7 @@ val headl : int -> 'a list -> 'a list * 'a list
 val is_void_type : cpptype -> bool
 
 val meth_of_constr : classname:string -> func_arg list -> meth
+val string_of_constr : classname:string -> func_arg list -> string
 (*
 val isAbstractMeth : 'a * 'b * 'c * 'd * modifiers list -> bool
 val unreference : cpptype -> cpptype

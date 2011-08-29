@@ -56,8 +56,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
       let types = List.map types ~f:(function | Success s -> s | _ -> raise BreakSilent) in
       let ocaml_func_name = sprintf "create_%s_%d" classname i in
 
+      let no_args = (List.length types = 0) in
       fprintf h "external %s' : %s -> [>`qobject] obj = \"%s\"\n" ocaml_func_name
-	(if List.length types = 0 then "unit" else String.concat ~sep:"->" types) 
+	(if no_args then "unit" else String.concat ~sep:"->" types) 
 	cpp_func_name;
 
       let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
@@ -76,11 +77,12 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name) 
 	  | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
       ) in
-      let s1 = sprintf "let %s %s = " ocaml_func_name (String.concat ~sep:" " args1) in
+      let s1 = sprintf "let %s %s = " ocaml_func_name 
+	(if no_args then "()" else String.concat ~sep:" " args1) in
       fprintf h "%s" s1;
       if String.length s1 > 60 then fprintf h "\n    ";
       
-      fprintf h "%s' %s %s\n" ocaml_func_name (String.concat ~sep:" " args2)
+      fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
 	(sprintf "\n    |> new %s" (ocaml_class_name classname))
     with BreakSilent -> ()
 
@@ -215,7 +217,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	      (ocaml_class_name slot.m_res.t_name) "error in calling slot " slot.m_out_name
       ) in
       
-      fprintf h "    method call %s = %s_%s' me %s |> ignore \n" 
+      fprintf h "    method call %s = %s_%s' me %s  \n" 
 	(String.concat ~sep:" " argnames2) 
 	(ocaml_class_name classname) slot.m_out_name
 	(String.concat ~sep:" " argnames3);
@@ -244,9 +246,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
     let h3 = open_out (dir ^/ "creators.ml") in
-    fprintf h1 "\nopen Stubs\nopen Qtstubs\n\nclass";
-    fprintf h2 "open Qtstubs\n\n";
-    fprintf h3 "open Qtstubs\nopen Stubs\nopen Classes\n";
+    fprintf h1 "\nopen Stubs\nopen Stub_helpers\n\nclass";
+    fprintf h2 "open Stub_helpers\n\n";
+    fprintf h3 "open Stub_helpers\nopen Stubs\nopen Classes\n";
 
     printf "Queue length is %d\n" (Q.length queue);
     Q.iter queue ~f:(fun key-> 
