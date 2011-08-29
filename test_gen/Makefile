@@ -1,6 +1,6 @@
 GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/
 
-CMXS=qtstubs.cmo
+CMXS=stub_helpers.cmo qtstubs.cmo
 C_STUBS=cstubs.o
 
 BIND_CPP_OBJS=`find ./out/cpp/ -name "*.o"`
@@ -12,7 +12,7 @@ BIND_ML_OBJS=out/stubs.cmo out/classes.cmo out/creators.cmo
 all: $(CMXS) $(C_STUBS) mklib
 
 mklib:
-	ocamlmklib -o lablqt -L/usr/lib/qt4 -lQtGui -lQtCore -lQtOpenGL -lpthread  $(C_STUBS) qtstubs.cmo \
+	ocamlmklib -o lablqt -L/usr/lib/qt4 -lQtGui -lQtCore -lQtOpenGL -lpthread  $(C_STUBS) $(CMXS) \
 		$(BIND_CPP_OBJS) $(BIND_ML_OBJS) 
 
 

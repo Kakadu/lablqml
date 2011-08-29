@@ -1,4 +1,5 @@
 open Qtstubs
+open Stub_helpers
 open Classes
 open Stubs
 

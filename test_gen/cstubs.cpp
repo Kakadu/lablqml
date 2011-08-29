@@ -9,7 +9,7 @@ value make_root_widget() {
   CAMLreturn(_ans);
 }
 
-value ml_QApplication (value argv) {
+value ml_qapp_create (value argv) {
   CAMLparam1(argv);
   CAMLlocal1(_ans);
   int argc = Wosize_val(argv);
@@ -23,7 +23,7 @@ value ml_QApplication (value argv) {
   CAMLreturn(_ans);
 }
 
-value ml_QApplication_exec (value self) {
+value ml_qapp_exec (value self) {
   CAMLparam1(self);
   return Val_int (((QApplication*)self)->exec());
 }
