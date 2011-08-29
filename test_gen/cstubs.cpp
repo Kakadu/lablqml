@@ -23,4 +23,9 @@ value ml_QApplication (value argv) {
   CAMLreturn(_ans);
 }
 
+value ml_QApplication_exec (value self) {
+  CAMLparam1(self);
+  return Val_int (((QApplication*)self)->exec());
+}
+
 }  // extern "C"

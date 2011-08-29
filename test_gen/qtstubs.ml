@@ -12,7 +12,11 @@ end
 
 external make_root_widget : unit -> [`qobject] obj = "make_root_widget"
 
-
+let wrap_handler = 
+  fun funcname argname arg -> match arg with
+    | Some o -> Some (o#handler )
+    | None -> None (* Printf.printf "Error when calling #handler in %s for arg %s\n"
+    funcname argname; assert false *)
 
 module QApplication = struct
   type t = [`qapplication]
