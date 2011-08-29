@@ -9,7 +9,10 @@ BIND_ML_OBJS=out/stubs.cmo out/classes.cmo out/creators.cmo
 .SUFFIXES: .cpp .ml .cmx .cmo
 
 
-all: $(CMXS) $(C_STUBS) mklib
+all: $(CMXS) kamlo $(C_STUBS) mklib
+
+kamlo:
+	$(MAKE) -C out 
 
 mklib:
 	ocamlmklib -o lablqt -L/usr/lib/qt4 -lQtGui -lQtCore -lQtOpenGL -lpthread  $(C_STUBS) $(CMXS) \
