@@ -6,4 +6,6 @@ main
 *.backup
 main.opt
 .depend
+outgraph.dot
+superindex.log
 

@@ -78,7 +78,10 @@ class cppGenerator dir index = object (self)
 	    fprintf h "  %s ans = _self -> %s(%s);\n" 
 	      (unreference res |> string_of_type ) methname argsCall;
 	    fprintf h "  %s\n" resCast;
-	    fprintf h "  CAMLreturn(_ans);\n" 
+	    fprintf h "  CAMLreturn(%s);\n"
+	      (match pattern index (res,None) with
+		| ObjectPattern -> sprintf " (ans) ? Val_some(%s) : Val_none" "_ans"
+		| _ -> "_ans")
 	  );	  
 	  fprintf h "}\n\n"
 	end
@@ -148,7 +151,7 @@ class cppGenerator dir index = object (self)
     fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
     fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
-    fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` $(COPTS) -fpic $<\n\n";
+    fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
     fprintf h "all: lablqt\n\n";
     fprintf h "lablqt: $(C_QTOBJS)\n\n";
 (*    fptintf h ".PHONY: all"; *)

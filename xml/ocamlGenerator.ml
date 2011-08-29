@@ -101,15 +101,19 @@ class ocamlGenerator dir (index:index_t) = object (self)
       fprintf h "(* method %s *)\n" (string_of_meth meth);
       let cpp_func_name = cpp_func_name ~classname:meth.m_declared ~methname:meth.m_name meth.m_args in
 
-      let lst2 = meth.m_args @ [(meth.m_res,None)] in
-      let types = List.map lst2 ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
+(*      let lst2 = meth.m_args @ [(meth.m_res,None)] in *)
+      let types = List.map meth.m_args ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
 
-      let types = List.map types ~f:(function
-	| Success s -> s
-	| _ -> raise BreakSilent
-      ) in
+      let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
+      let res_arg = (meth.m_res,None) in
+      let res_t = (self#toOcamlType ~low_level:true res_arg) 
+         |> (function Success s -> s | _ -> raise BreakSilent) in
+      let res_t = match pattern index res_arg with
+	| ObjectPattern -> sprintf "%s option" res_t
+	| _ -> res_t
+      in
       fprintf h "external %s_%s': 'a->%s\n\t\t= \"%s\"\n" ocaml_classname meth.m_out_name 
-	(String.concat types ~sep:"->") cpp_func_name
+	(String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
     with BreakSilent -> () 
       |  BreakS str -> ( fprintf h "(* %s *)\n" str;
@@ -131,10 +135,11 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	break2file (sprintf "needs additional func for native\n");
 
       fprintf h "  (* method %s *)\n" (string_of_meth meth);
+
       let res_type = match self#toOcamlType ~low_level:false (res,None) with
 	| Success s -> s
-	| _ -> break2file "cant cast result type" in
-
+	| _ -> break2file "cant cast result type" 
+      in
       let types = List.map args ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
       let argnames = List.mapi args ~f:(fun i _ -> "x"^(string_of_int i)) in
 
@@ -145,35 +150,36 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	| CastTemplate str -> breaks ("Casting template: "^ str)
       ) 
       in
-      let args2 = List.map3_exn types args argnames ~f:(fun _ ((start,_)as arg) name ->
-	match pattern index arg with
-	  | EnumPattern | InvalidPattern -> assert false
-	  | PrimitivePattern  -> name
-	  | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
-	  | ObjectPattern -> sprintf "(%s#handler)" name) in
-      let args1 = List.map3_exn types args argnames ~f:(fun ttt ((start,_) as arg) name ->
-	match pattern index arg with
-	  | EnumPattern | InvalidPattern -> assert false
-	  | PrimitivePattern -> sprintf "(%s: %s)" name ttt
-	  | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
-	  | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
-      ) in
 	
       if is_abstract then begin
 	fprintf h "  method virtual %s : %s" meth.m_out_name (String.concat ~sep:"->" types );
 	if List.length types <> 0 then fprintf h " -> ";
 	match pattern index (res,None) with
-	  | ObjectDefaultPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
-	  | ObjectPattern -> fprintf h "%s" (ocaml_class_name res.t_name)
+	  | ObjectDefaultPattern -> assert false
+	  | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
 	  | _ -> fprintf h "%s" res_type
       end else begin
+	let args2 = List.map3_exn types args argnames ~f:(fun _ ((start,_)as arg) name ->
+	  match pattern index arg with
+	    | EnumPattern | InvalidPattern -> assert false
+	    | PrimitivePattern  -> name
+	    | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
+	    | ObjectPattern -> sprintf "(%s#handler)" name) in
+	let args1 = List.map3_exn types args argnames ~f:(fun ttt ((start,_) as arg) name ->
+	  match pattern index arg with
+	    | EnumPattern | InvalidPattern -> assert false
+	    | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+	    | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
+	    | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
+	) in
 	fprintf h "  method %s %s = %s_%s' me %s " meth.m_out_name (String.concat ~sep:" " args1)
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
 	(match pattern index (res,None) with
-	  | ObjectPattern -> fprintf h "|> new %s" (ocaml_class_name res.t_name)
-	  | ObjectDefaultPattern -> 
-	    fprintf h "|> (function Some s -> new %s s | None -> print_endline \"%s%s\"; assert false)"
-	      (ocaml_class_name res.t_name) "bad constructor of class" res.t_name
+	  | ObjectPattern -> 
+	    fprintf h "|> (function Some o -> Some (new %s o) | None -> None)" (ocaml_class_name res.t_name)
+	  | ObjectDefaultPattern -> assert false
+(*	    fprintf h "|> (function Some s -> new %s s | None -> print_endline \"%s%s\"; assert false)"
+	    (ocaml_class_name res.t_name) "bad constructor of class" res.t_name *)
 	  | _ -> ());	
       end;
       fprintf h "\n";
@@ -309,7 +315,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
     fprintf h ".ml.cmo:\n\t$(OCAMLC)   $(INC) -c $<\n\n";
     fprintf h ".ml.cmx:\n\t$(OCAMLOPT) $(INC) -c $<\n\n";
     fprintf h ".mli.cmi:\n\t$(OCAMLC)  $(INC) -c $<\n\n";
-    fprintf h "all: clean lablqt\n\n";
+    fprintf h "all: lablqt\n\n";
     fprintf h "depend:\n\tocamldep $(INC) *.ml *.mli > .depend\n\n";
     fprintf h "lablqt: $(ML_MODULES)\n\n";
     fprintf h ".PHONY: all clean\n\n";
