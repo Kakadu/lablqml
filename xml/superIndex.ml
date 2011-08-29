@@ -141,9 +141,9 @@ let super_filter_meths ~base ~cur =
     end
   in
   loop base cur;
-  names_print_helper "base_not_impl" ~set: !base_not_impl;
+(*  names_print_helper "base_not_impl" ~set: !base_not_impl;
   names_print_helper "cur_impl"      ~set: !cur_impl;
-  names_print_helper "cur_new"       ~set: !cur_new;  
+  names_print_helper "cur_new"       ~set: !cur_new;   *)
   assert (let len = MethSet.length !cur_impl in
 	  let x = MethSet.length !base_not_impl and y = MethSet.length !cur_new in
 (*	  printf "(x,y,len) = (%d,%d,%d)\n" x y len;
@@ -271,9 +271,7 @@ let build_superindex root_ns =
 	let module MS = MethSet in
 	let base_meths = List.map bases_data ~f:(fun c -> c.c_meths) |> MethSet.union_list in
 	let base_slots = List.map bases_data ~f:(fun c -> c.c_slots) |> MethSet.union_list in
-	print_endline "adding base_meth's names to cache";
 	add2name_set base_meths;
-	print_endline "adding base_slot's names to cache";
 	add2name_set base_slots;
 
 	let f = fun el (a,b) ->
@@ -286,33 +284,33 @@ let build_superindex root_ns =
 	let base_abstr_slots,base_normal_slots = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_slots in
 
 	(* base abstracts meths can be overrided in any way *)
-	print_endline "Fixing base abstr meths";
+(*	print_endline "Fixing base abstr meths"; *)
 	let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) = 
 	  super_filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
-	printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
+(*	printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
 	  (MS.length meths_abstr_not_impl) (MS.length meths_abstr_implemented) (MS.length meths_last);
 	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
 
-	print_endline "Fixing base normal meths";
+	print_endline "Fixing base normal meths"; *)
 	let (meths_normal_inherited, meths_overriden, meths_last) = 
 	  super_filter_meths ~base:base_normal_meths ~cur:meths_last in
-	printf "meths_normal_inherited: %d, meths_overriden: %d, meths_last: %d\n"
+(*	printf "meths_normal_inherited: %d, meths_overriden: %d, meths_last: %d\n"
 	  (MS.length meths_normal_inherited) (MS.length meths_overriden) (MS.length meths_last);
 	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
 
-	print_endline "Fixing abstr slots:";
+	print_endline "Fixing abstr slots:"; *)
 	let (slots_abstr_inherited, slots_implemented, meths_last) =
 	  super_filter_meths ~base:base_abstr_slots ~cur:meths_last in
-	printf "slots_inherited: %d, slots_overriden: %d, meths_last: %d\n"
+(*	printf "slots_inherited: %d, slots_overriden: %d, meths_last: %d\n"
 	  (MS.length slots_abstr_inherited) (MS.length slots_implemented) (MS.length meths_last);
 	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
-	print_endline "Fixing normal slots:";
+	print_endline "Fixing normal slots:"; *)
 	let (slots_inherited, slots_overriden, meths_last) = 
 	  super_filter_meths ~base:base_normal_slots ~cur:meths_last in
-	printf "slots_inherited: %d, slots_overriden: %d, meths_last: %d\n"
+(*	printf "slots_inherited: %d, slots_overriden: %d, meths_last: %d\n"
 	  (MS.length slots_inherited) (MS.length slots_overriden) (MS.length meths_last);
 	printf "meths_last names are: %s\n" (List.to_string (fun m -> m.m_name) (MS.to_list meths_last) );
-
+*)
 	let meths_last = fix_names meths_last in
 	
 	let my_slots = fix_names c.c_slots in
@@ -326,7 +324,6 @@ let build_superindex root_ns =
 	  [meths_abstr_not_impl; meths_abstr_implemented; 
 	   meths_normal_inherited; meths_overriden;
 	   meths_last] in
-
 
 	let ans_class = {
 	  c_inherits = c.c_inherits;

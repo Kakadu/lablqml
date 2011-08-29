@@ -4,9 +4,11 @@ open Generators
 open SuperIndex
 open Printf
 open Parser
+
 module Q = Core_queue
 module List = Core_list
 module String = Core_string
+
 let iter = List.iter
 
 class cppGenerator dir index = object (self)
@@ -14,12 +16,10 @@ class cppGenerator dir index = object (self)
 
   method genMeth ~prefix classname h m =
     try
-(*      let skipStr = sprintf "skipped %s::%s" classname methname in *)
       if m.m_declared <> classname then raise BreakSilent;
       (match m.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       if not (is_good_meth ~classname m) then 
 	raise BreakSilent;
-(*	breaks (sprintf "skipped %s --- not is_good_method." (string_of_meth m)); *)
       let methname = m.m_name in
       let res = m.m_res and lst= m.m_args in
       
@@ -28,7 +28,7 @@ class cppGenerator dir index = object (self)
       let isProc = (res.t_name = "void") in
 
       let resCast = if isProc then ""
-	else begin match self#toCamlCast (unreference res) "ans" "_ans" with 
+	else begin match self#toCamlCast (unreference res,None) "ans" "_ans" with 
 	  | CastError s -> raise (BreakSilent)
 	  | CastValueType name -> raise (BreakSilent)
 	  | CastTemplate str -> raise (BreakSilent)

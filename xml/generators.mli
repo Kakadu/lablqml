@@ -19,24 +19,27 @@ exception BreakOk of t1
 exception BreakFail of t2
 exception BreakResult of castResult
 type pattern =
-    InvalidPattern
+  | InvalidPattern
   | PrimitivePattern
   | ObjectPattern
+  | ObjectDefaultPattern
   | EnumPattern
 
 val cpp_func_name : classname:string -> methname:string -> func_arg list -> string
 val is_good_meth : classname:string -> meth -> bool
 
 
-val pattern : SuperIndex.index_t -> cpptype -> pattern
+val pattern : SuperIndex.index_t -> Parser.func_arg -> pattern
 val is_abstract_class : prefix:string list -> SuperIndex.index_t -> string -> bool
 
 class virtual abstractGenerator :
   SuperIndex.index_t ->
   object
+    method private toCamlCast :
+      Parser.func_arg -> string -> string -> castResult
     method private fromCamlCast :
       SuperIndex.index_t ->
-      Parser.cpptype -> ?default:string option -> string -> castResult
+      Parser.cpptype -> default:string option -> string -> castResult
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
 
     method private virtual genConstr :
@@ -54,6 +57,4 @@ class virtual abstractGenerator :
     method private index : SuperIndex.index_t
     method private virtual makefile : string -> string list -> unit
     method private virtual prefix : string
-    method private toCamlCast :
-      Parser.cpptype -> string -> string -> castResult
   end

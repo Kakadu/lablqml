@@ -78,9 +78,11 @@ exception BreakOk of t1
 exception BreakFail of t2
 exception BreakResult of castResult
 
-type pattern = InvalidPattern | PrimitivePattern | ObjectPattern | EnumPattern
+type pattern = 
+  | InvalidPattern | PrimitivePattern | ObjectPattern | ObjectDefaultPattern (* when `=0` *)
+  | EnumPattern 
 
-let  pattern index t = 
+let pattern index (t,default) = 
     let name = t.t_name in
     let indir = t.t_indirections in
     if indir>1 then InvalidPattern 
@@ -93,7 +95,10 @@ let  pattern index t =
       | "qreal" | "double" | "float" -> InvalidPattern
       | s when indir = 1 -> 
 	let key = NameKey.key_of_fullname name in
-	if SuperIndex.mem index key  then ObjectPattern
+	if SuperIndex.mem index key then (
+	  match default with 
+	    | Some "0" -> ObjectDefaultPattern
+	    | _ -> ObjectPattern)
 	else InvalidPattern
       | s when indir > 1 -> InvalidPattern
       | _ -> try
@@ -128,12 +133,11 @@ class virtual abstractGenerator _index = object (self)
 
 
   method private fromCamlCast 
-    : index_data SuperIndex.t -> cpptype -> ?default:string option -> string -> castResult
-      = fun index t ?(default=None) (argname(*arg name*):string) -> 
-	let _ = default in
-	let tname = t.t_name in
+    : index_data SuperIndex.t -> cpptype -> default:string option -> string -> castResult
+      = fun index t ~default (argname:string) -> 
+	let _ : string option = default in	
 	let is_const = t.t_is_const in
-	match pattern _index t with
+	match pattern _index (t,default) with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
 	  | PrimitivePattern ->
  	    (match t.t_name with
@@ -151,16 +155,23 @@ class virtual abstractGenerator _index = object (self)
 		Success (String.concat ["char* _"; argname; " = String_val("; argname; ");"])
 	      | _ -> assert false)
 
-	  | ObjectPattern -> Success (String.concat 
-					[if is_const then "const " else ""; tname; "* _"; argname; 
-					 " = (";tname;"*)"; argname; ";"])
+	  | ObjectPattern -> 
+	    let tail_list = [" = (";t.t_name;"*)"; argname; ";"] in
+	    Success (String.concat 
+		       ([if is_const then "const " else ""; t.t_name; "* _"; argname] @ tail_list) )
+		       
+	  | ObjectDefaultPattern -> (* default value is 0 *)
+	    let tail_list = 
+	      [sprintf " = (%s==Val_none) ? NULL : ((%s*)(Some_val(%s)));" argname t.t_name argname ] in
+	    Success (String.concat 
+		       ([if is_const then "const " else ""; t.t_name; "* _"; argname] @ tail_list) )
 
 	  | EnumPattern -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
 	      
 
   method private toCamlCast 
-      = fun t arg ansVarName -> 
-	match pattern _index t with
+      = fun (t,default) arg ansVarName -> 
+	match pattern _index (t,default) with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t))
 	  | PrimitivePattern ->
 	    (match t.t_name with
@@ -173,6 +184,7 @@ class virtual abstractGenerator _index = object (self)
 		Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
 	      | _ -> assert false)
 	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
+	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((value)(%s));" ansVarName arg)
 	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
 
   (* prefix is namespace preifx (reversed) 
