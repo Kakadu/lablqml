@@ -38,45 +38,10 @@ let skip_class_by_name ~classname =
 
 let skipClass ~prefix c = 
   match prefix with
-    | ["QtConcurrent"] -> false 
-    | _ -> skip_class_by_name c.c_name
-   
-let skipArgument arg = match arg.t_name with (* true when do skip *)
-  | "GLfloat" | "GLint" | "GLuint"
-  | "void" | "uchar"
-  | "qreal" -> true
-  | s when isTemplateClass s -> true
-  | s when isInnerClass s -> true
-  | _ -> false
-    
-let skip_ns ~prefix _ = false
-
-
-exception DoSkip
-exception DontSkip
-
-let is_good_meth ~classname m = 
-  let methname = m.m_name in
-  let args = m.m_args in
-  let res = m.m_res in
-  try
-    if skip_class_by_name ~classname:m.m_declared then false
-    else if skip_meth ~classname methname then false 
-    else begin 
-      let lst = List.map ~f:fst args in
-      match List.find lst ~f:skipArgument with
-	| None -> (* all arguments are OK *)
-	  (is_void_type res) or (not (skipArgument res))
-	| Some x -> (printf "Method %s skipped: %s\n" methname (string_of_type x); false)
-    end
-  with DoSkip -> false
-    | DontSkip | Not_found -> true
-
-type t1 = string and t2 = string 
-and castResult = Success of t1 | CastError of t2 | CastValueType of t2 | CastTemplate of t2
-exception BreakOk of t1
-exception BreakFail of t2
-exception BreakResult of castResult
+    | _ when skip_class_by_name c.c_name -> true
+    | [] -> false
+    | lst when List.hd_exn (List.rev lst) = "QtConcurrent" -> true
+    | _ -> false
 
 type pattern = 
   | InvalidPattern | PrimitivePattern | ObjectPattern | ObjectDefaultPattern (* when `=0` *)
@@ -110,6 +75,58 @@ let pattern index (t,default) =
 	with
 	    Not_found  -> (print_endline ("!!! Not in index: " ^ name);
 				InvalidPattern )
+   
+let skipArgument ~index ((t,default) as arg) =  (* true when do skip *)
+    match t.t_name with
+      | "GLfloat" | "GLint" | "GLuint"
+      | "void" | "uchar"
+      | "qreal" -> true
+      | s when isTemplateClass s -> true
+      | s when isInnerClass s -> true
+      | _ -> begin
+(*	printf "Here!!! name = %s\n" t.t_name; *)
+	match pattern index arg with
+	  | ObjectPattern
+	  | ObjectDefaultPattern  ->
+(*	    print_endline "Object Pattern"; *)
+	    let key = NameKey.key_of_fullname t.t_name in
+(*	    printf "key = %s\n" (NameKey.to_string key); *)
+	    if not (SuperIndex.mem index key) then (
+(*	      let v = SuperIndex.find index key in *)
+	      
+	      print_endline "return true"; true
+	    )
+	    else false
+	  | _ -> false
+      end
+    
+let skip_ns ~prefix _ = false
+
+
+exception DoSkip
+exception DontSkip
+
+let is_good_meth ~classname ~index m = 
+  let methname = m.m_name in
+  let args = m.m_args in
+  let res = m.m_res in
+  try
+    if skip_class_by_name ~classname:m.m_declared then false
+    else if skip_meth ~classname methname then false 
+    else begin 
+      match List.find args ~f:(skipArgument ~index) with
+	| None -> (* all arguments are OK *)
+	  (is_void_type res) or (not (skipArgument ~index (res,None) ))
+	| Some (x,_) -> (printf "Method %s skipped: %s\n" methname (string_of_type x); false)
+    end
+  with DoSkip -> false
+    | DontSkip | Not_found -> true
+
+type t1 = string and t2 = string 
+and castResult = Success of t1 | CastError of t2 | CastValueType of t2 | CastTemplate of t2
+exception BreakOk of t1
+exception BreakFail of t2
+exception BreakResult of castResult
 
 let is_abstract_class ~prefix index name = 
   let key = NameKey.make_key ~prefix ~name in
@@ -124,8 +141,8 @@ class virtual abstractGenerator _index = object (self)
   method private index = _index    
   method private virtual prefix : string  
   method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
-  method private virtual gen_enumOfNs : prefix:string list -> dir:string -> enum -> string option
-  method private virtual gen_enumOfClass : string -> out_channel -> enum -> unit
+  method private virtual gen_enum_in_ns : key:NameKey.t -> dir:string -> enum -> string option
+(*  method private virtual gen_enumOfClass : string -> out_channel -> enum -> unit *)
   method private virtual genProp : string -> out_channel -> prop -> unit
   method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
   method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit
@@ -186,7 +203,7 @@ class virtual abstractGenerator _index = object (self)
 	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
 	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((value)(%s));" ansVarName arg)
 	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
-
+(*
   (* prefix is namespace preifx (reversed) 
      dir is directory where create subdirectory
   *)
@@ -204,10 +221,11 @@ class virtual abstractGenerator _index = object (self)
       let prefix = ns.ns_name :: prefix in
       List.iter ~f:(self#gen_ns ~prefix ~dir) ns.ns_ns;
       List.iter ~f:(fun c -> self#gen_class ~prefix ~dir c |> wrap) ns.ns_classes;
-      List.iter ~f:(fun e -> self#gen_enumOfNs ~prefix ~dir e |> wrap) ns.ns_enums;
+      List.iter ~f:(fun e -> self#gen_enum_in_ns ~prefix ~dir e |> wrap) ns.ns_enums;
       self#makefile dir !classes;
     end
-
+      *)
+(*
   (* root namespace needs special magic (it doesn't have name) *)
   method generate ns = 
     let dir = self#prefix in
@@ -221,7 +239,7 @@ class virtual abstractGenerator _index = object (self)
     List.iter ~f:(fun c -> self#gen_class ~prefix ~dir c |> wrap) ns.ns_classes;
     List.iter ~f:(fun e -> self#gen_enumOfNs ~prefix ~dir e |> wrap) ns.ns_enums;
     self#makefile dir !classes
-    
+*)  
 
 (*    let curdir = self#prefix in
     SuperIndex.iter index ~f:(fun ~key ~data -> match data with

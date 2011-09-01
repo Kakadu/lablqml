@@ -1,7 +1,7 @@
 open Parser
 
 val skipClass : prefix:string list -> clas -> bool
-val skipArgument : cpptype -> bool
+val skipArgument : index:SuperIndex.index_t -> func_arg -> bool
 exception DoSkip
 exception DontSkip
 exception BreakSilent
@@ -26,7 +26,7 @@ type pattern =
   | EnumPattern
 
 val cpp_func_name : classname:string -> methname:string -> func_arg list -> string
-val is_good_meth : classname:string -> meth -> bool
+val is_good_meth : classname:string -> index:SuperIndex.index_t -> meth -> bool
 
 
 val pattern : SuperIndex.index_t -> Parser.func_arg -> pattern
@@ -44,16 +44,16 @@ class virtual abstractGenerator :
 
     method private virtual genConstr :
       prefix:string list -> string -> out_channel -> Parser.constr -> unit
-    method private virtual gen_enumOfClass :
-      string -> out_channel -> Parser.enum -> unit
-    method private virtual gen_enumOfNs :
-      prefix:string list -> dir:string -> Parser.enum -> string option
+(*    method private virtual gen_enumOfClass :
+	string -> out_channel -> Parser.enum -> unit *)
+    method private virtual gen_enum_in_ns :
+      key:SuperIndex.NameKey.t -> dir:string -> Parser.enum -> string option
     method private virtual genMeth :
       prefix:string list -> string -> out_channel -> Parser.meth -> unit
-    method gen_ns : prefix:string list -> dir:string -> Parser.namespace -> unit
+(*    method gen_ns : prefix:string list -> dir:string -> Parser.namespace -> unit *)
     method private virtual genProp :
       string -> out_channel -> Parser.prop -> unit
-    method generate : namespace -> unit
+(*    method generate : namespace -> unit *)
     method private index : SuperIndex.index_t
     method private virtual makefile : string -> string list -> unit
     method private virtual prefix : string

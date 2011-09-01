@@ -21,6 +21,7 @@ let make_out_name ~classname cpp_name = match (classname,cpp_name) with
   | (_,"type") -> "type1"
   | (_,"object") -> "object1"
   | (_,"match") -> "match1"
+  | (_,"method") -> "method1"
   | _ -> cpp_name
 
 let skip_meth ~classname name = 
@@ -55,8 +56,6 @@ let endswith ~postfix:p s =
   if String.length p > (String.length s) then false
   else (Str.last_chars s (String.length p) = p)
 
-type modifiers = Static | Abstract | Virtual
-
 let (|>) a b = b a
 let ($) a b = fun x -> a (b x)
 
@@ -72,6 +71,8 @@ and meth = {
   m_modif: [`Normal | `Static   | `Abstract]
 } 
 with sexp
+
+let is_public = function `Public -> true | `Private -> false | `Protected -> false
 
 let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 
@@ -146,7 +147,7 @@ type clas = {
   c_name: string
 }
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
-and enum = string * (string list)
+and enum = string * (string list) * [`Public | `Protected | `Private]
 and constr = func_arg list
 and slt = meth
 and sgnl = string * (func_arg list)	
@@ -263,8 +264,11 @@ let rec build root = match root with
 	classes := (parse_class "" e) :: !classes
       | Element (("namespace",_,lst) as e) -> 
 	nss := (parse_ns "" e) :: !nss
-      | Element ( ("enum",_,lst) as e) -> 
-	enums := (parse_enum "" e) :: !enums
+      | Element ( ("enum",_,lst) as e) -> begin
+	match parse_enum "" e with
+	  | None -> () 
+	  | Some e -> Ref.replace enums (fun lst -> e::lst)
+      end
       | _ -> assert false);
     {ns_name=""; ns_ns= !nss; ns_classes= !classes; ns_enums= !enums }
   | _ -> print_endline "XML file is incorrect";
@@ -282,7 +286,7 @@ and parse_class nsname c  =
 	let modif  = ref `Normal in
 	let policy = ref `Public in
 
-	List.iter lst ~f:(function
+	List.iter lst ~f:(fun x -> match x with
 	  | Element (("return",_,_) as e) ->  ret := Some (parse_arg e |> fst)
 	  | Element ("arguments",_,lst) ->
 	    List.iter lst ~f:(function
@@ -296,13 +300,16 @@ and parse_class nsname c  =
 		  if List.mem "abstract" ~set then modif := `Abstract 
 		  else if List.mem "static" ~set then modif := `Static
 		  else modif := `Normal)
-	  |  _ -> assert false);
+	  | PCData x -> print_endline x; assert false
+	  | Element (name,_,_) -> print_endline name; assert false);
 	(List.rev !args, !ret, !policy, !modif)
       in
       function
-	| Element (_,("name",name)::_,lst) -> let (a,b,c,d) = aggr lst in
-					      printf "Helper returns %s::%s\n" classname name;
-					      (name,a,b,c,d)
+	| Element (_,("name",name)::_,lst) -> 
+(*	  printf "class name = %s\n" name; *)
+	  let (a,b,c,d) = aggr lst in
+(*	  printf "Helper returns %s::%s\n" classname name; *)
+	  (name,a,b,c,d)
 	| _ -> assert false
     in
 
@@ -330,7 +337,7 @@ and parse_class nsname c  =
       end
       | (Element ("slot",_,ll)) as e -> begin
 	let (name,args,ret,policy,modif) = helper e in 
-	printf "slot found: %s\n" name;
+(*	printf "slot found: %s\n" name; *)
 	if skip_meth ~classname name then ()
 	else (match ret with
 	   | Some r  -> slots := (name,args,r,policy,modif) :: !slots
@@ -338,7 +345,10 @@ and parse_class nsname c  =
       end
       | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
 					  sigs := (a,b) :: !sigs
-      | Element (("enum",_,_) as e) -> enums := (parse_enum classname e) :: !enums
+      | Element (("enum",_,_) as e) -> (
+	match (parse_enum classname e) with
+	  | None -> ()
+	  | Some e -> Ref.replace enums (fun lst -> e::lst))
       | Element (("property",_,_) as e) -> props := (parse_prop e) :: !props
       | Element ("class",("name",nn)::_,_) ->
 	printf "skipping inner class %s::%s\n" classname (fixTemplateClassName nn)
@@ -374,15 +384,24 @@ and parse_class nsname c  =
       c_inherits= inherits; c_enums= !enums; c_props= !props; c_sigs= !sigs }
   | _ -> assert false
 
-and parse_enum superName = function
-  | ("enum",("name",name)::_,lst) -> 
+and parse_enum superName node : enum option = match node with
+  | ("enum",attr,lst) -> 
+    let name = ref (List.Assoc.find attr "name") in
     let mems = ref [] in
+    let access = ref `Public in
     let foo = function
+      | Element ("anonymous",_,_) -> name := None
       | Element ("enumerator",_,[PCData name]) -> mems := name :: !mems
+      | Element ("accessPolicy",("value","public")::_,_) -> access := `Public
+      | Element ("accessPolicy",("value","private")::_,_) -> access := `Private
+      | Element ("accessPolicy",("value","protected")::_,_) -> access := `Protected
       | _ -> assert false
     in
     List.iter ~f:foo lst;
-    (strip_dd ~prefix:superName name,!mems)
+    (match !name with
+      | Some name -> Some (strip_dd ~prefix:superName name, !mems, !access)
+      | None -> None)
+(*    (Option.bind !name (fun n -> Some (strip_dd ~prefix:superName n)),!mems, !access) *)
   | _ -> assert false
     
 and parse_ns superName = function
@@ -396,8 +415,11 @@ and parse_ns superName = function
 	nss := (parse_ns name e) :: !nss
       | Element (("class",_,_)  as e) ->
 	clas := (parse_class name e) :: !clas
-      | Element ( ("enum",_,_) as e) ->
-	enums := (parse_enum name e) :: !enums
+      | Element ( ("enum",_,_) as e) -> begin
+	match parse_enum name e with
+	  | Some x -> Ref.replace enums (fun lst -> x::lst)
+	  | None -> ()
+      end
       | _ -> assert false
     in
     List.iter ~f lst;

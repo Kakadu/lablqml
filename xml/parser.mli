@@ -1,5 +1,4 @@
 
-type modifiers = Static | Abstract | Virtual
 val ( |> ) : 'a -> ('a -> 'b) -> 'b
 val ( $ ) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 
@@ -80,12 +79,13 @@ type clas = {
   c_name: string
 }
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
-and enum = string * (string list)
+and enum = string  * (string list) * [`Public | `Protected| `Private]
 and constr = func_arg list
 and slt = meth
 and sgnl = string * (func_arg list)	
 and prop = string * string option * string option	
 
+val is_public: [`Public | `Protected| `Private] -> bool
 val empty_namespace : namespace
 val typeP_of_class : clas -> cpptype
 val remove_defaults : meth -> meth

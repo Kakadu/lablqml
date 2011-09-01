@@ -18,7 +18,7 @@ class cppGenerator dir index = object (self)
     try
       if m.m_declared <> classname then raise BreakSilent;
       (match m.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
-      if not (is_good_meth ~classname m) then 
+      if not (is_good_meth ~classname ~index m) then 
 	raise BreakSilent;
       let methname = m.m_name in
       let res = m.m_res and lst= m.m_args in
@@ -94,7 +94,7 @@ class cppGenerator dir index = object (self)
     try
 (*      let skipStr = sprintf "skipped %s::%s" classname classname in *)
       let fake_meth = meth_of_constr ~classname lst in
-      if not (is_good_meth ~classname fake_meth) then 
+      if not (is_good_meth ~classname ~index fake_meth) then 
 	raise BreakSilent;
 (*      breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) ); *)
       
@@ -190,50 +190,63 @@ class cppGenerator dir index = object (self)
       if self#is_abstr_class c then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else begin
-	printf "Class %s is not abstract\n" classname;
-	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs
+(*	printf "Class %s is not abstract\n" classname; *)
+	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs 
       end;
       MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_meths;
-      MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_slots;
+      MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_slots; 
 
 (*      iter ~f:(self#genProp c.c_name h) c.c_props; 
       iter ~f:(self#genSignal c.c_name h) c.c_sigs; 
       iter ~f:(self#gen_enumOfClass c.c_name h) c.c_enums; *)
+
+      List.iter c.c_enums ~f:(self#gen_enum_in_class ~classname h);
+
       fprintf h "}  // extern \"C\"\n";
       close_out h;
       Some (if subdir = "" then classname else subdir ^/ classname)
     end
   
-  method gen_enumOfNs ~prefix ~dir ((_,_):enum) = None
-  method gen_enumOfClass classname h (name,lst) = 
-    fprintf h "// enum %s\n" name 
-(*
-  method genSlot ~prefix classname h slt = 
-    let name = slt.slt_name and lst=slt.slt_args and modif = slt.slt_access in
-    try
-      let () = match modif with `Public -> () 
-	| `Protected | `Private -> raise BreakSilent in
-      fprintf h "// slot %s(%s)\n" name (List.map ~f:(string_of_type $ fst ) lst |> String.concat ~sep:",");
-      let meth = { 
-	m_res = {t_name="void"; t_is_ref=false; t_indirections=0; t_params=[]; t_is_const = false};
-	m_args=lst;
-	m_name=name;
-	m_declared = classname;
-	m_out_name=name
-      } in
-      self#genMeth ~prefix classname h meth 
-    with
-      | BreakSilent -> ()
-	*)
-(*  method genSignal classname h (name,lst) = () *)
   method genProp classname h (name,r,w) = ()
+  
+  method gen_enum_in_ns ~key ~dir:string (e_name,e_vars,e_access) = 
+    if not (SuperIndex.mem index key) then None
+    else if not (is_public e_access) then None
+    else begin
+      let prefix = fst key |> List.tl_exn in
+      let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
+      let dir =  dir ^/ subdir in
+      ignore (Sys.command ("mkdir -p " ^ dir ));
+      let filename = sprintf "enum_%s.cpp" e_name in
+      let h = open_out (dir ^/ filename) in
+      fprintf h "enum %s %s\n" e_name (List.to_string (fun x -> x) e_vars);
+      close_out h;
+      Some (if subdir = "" then filename else subdir ^/ filename)
+    end
+
+  method gen_enum_in_class h ~classname (e_name,e_vars,e_access) = 
+    if is_public e_access then begin
+      let _ : string = classname in
+      fprintf h "// %s of %s\n" e_name (String.concat ~sep:"|" e_vars);
+      let funcname = sprintf "enum_conv_%s_%s" classname e_name in
+      fprintf h "%s::%s %s(int v) {\n  switch(v) {\n" classname e_name funcname;
+      let strs = List.mapi 
+	~f:(fun i v -> sprintf "    case %d: return %s::%s; break;\n" i classname v) e_vars in
+      List.iter strs ~f:(fun s -> fprintf h "%s" s);
+      fprintf h "    default: caml_invalid_argument(\"In function %s invalid arg\");\n" funcname;
+      fprintf h "  }\n  printf(\"You cant see this\");\n  return (%s::%s)0;\n}\n\n" classname e_name
+    end
 
   method generate_q q = 
     ignore (Sys.command ("rm -rf " ^ self#prefix ^"/*") );
     let classes = ref [] in
     Q.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
-      | Enum  e -> ()
-      | Class (c,_) -> begin 
+      | Enum  e -> begin
+	match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
+	  | Some s -> Ref.replace classes (fun lst -> s::lst)
+	  | None -> ()
+      end
+      | Class (c,_) ->  begin 
 	match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
 	  | Some s -> classes := s :: !classes
 	  | None -> ()

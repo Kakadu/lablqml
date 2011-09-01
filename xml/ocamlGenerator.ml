@@ -90,7 +90,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
     try   
       (match meth.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
 
-      if not (is_good_meth ~classname meth) then 
+      if not (is_good_meth ~classname ~index meth) then 
 	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
       if List.length meth.m_args + 1 > 10 then raise BreakSilent;
       (* need additional stub for native compilation *)
@@ -124,7 +124,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
     try
       (match meth.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
-      if not (is_good_meth ~classname meth) then 
+      if not (is_good_meth ~classname ~index meth) then 
 	break2file
 	  (sprintf "skipped in class %s method %s --- not is_good_meth" classname (string_of_meth meth));
 

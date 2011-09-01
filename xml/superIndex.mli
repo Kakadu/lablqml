@@ -156,7 +156,7 @@ module G :
     val get_subgraph : 'a -> 'b option
     val default_edge_attributes : 'a -> 'b list
     val edge_attributes : 'a -> 'b list
-    val kill_and_fall : t -> vertex -> unit
+(*    val kill_and_fall : t -> vertex -> unit *)
   end
 
 val build_superindex : Parser.namespace  -> index_data SuperIndex.t * G.t * SuperIndex.key Core.Core_queue.t

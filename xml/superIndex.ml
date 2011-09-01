@@ -10,7 +10,7 @@ module NameKey = struct
   let sexp_of_t t = Core_string.sexp_of_t (snd t)
 
   let key_of_fullname b = 
-    let a =  Str.split (Str.regexp "::")  b |> List.rev in
+    let a = Str.split (Str.regexp "::")  b |> List.rev in
     (a,b) 
 
   let key_of_prefix lst = match lst with
@@ -52,12 +52,16 @@ let to_channel t ch =
     | `Abstract -> "abstract" | `Normal -> "" | `Static -> "static  " in
   let of_access = function
     | `Public -> "public   " | `Private -> "private  " | `Protected -> "protected" in
+  let print_enum (e_name,lst,acc) = sprintf "%s enum %s %s" (of_access acc)
+    e_name (List.to_string (fun x->x) lst) in
   SuperIndex.iter t ~f:(fun ~key ~data -> match data with
-    | Enum e -> fprintf ch "Enum %s\n" (fst e)
+    | Enum e -> fprintf ch "%s\n" (print_enum e)
     | Class (c,set) -> begin
       fprintf ch "Class %s\n" (NameKey.to_string key);
-      fprintf ch "Constructors\n";
-      List.iter c.c_constrs ~f:(fun lst -> fprintf ch "  %s\n" 
+      fprintf ch "  Enums:\n";
+      List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n" (print_enum e));
+      fprintf ch "  Constructors\n";
+      List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n" 
 	(meth_of_constr ~classname:c.c_name lst |> string_of_meth )
       );
       fprintf ch "  Normal meths\n";
@@ -96,12 +100,23 @@ module G = struct
   let default_edge_attributes _ = []
   let edge_attributes _ = []
 
-  let rec kill_and_fall g root = 
-    if mem_vertex g root then (
-      let lst = succ g root in
-      remove_vertex g root;
-      List.iter lst ~f:(kill_and_fall g)
-    )
+  let kill_and_fall g ?(index=SuperIndex.empty) root = 
+    let ans = ref index in
+    let rec helper node =       
+      if mem_vertex g node then (
+	let lst = succ g node in
+	remove_vertex g root;
+	Ref.replace ans (fun map -> SuperIndex.remove map node);
+	List.iter lst ~f:helper
+      )
+    in
+    helper root;
+    !ans
+
+  let rec remove_subtrees ~cond ?(index=SuperIndex.empty) g = 
+    let lst = fold_vertex (fun v acc -> if cond v then v::acc else acc) g [] in
+    List.fold_left ~init:index lst ~f:(fun acc x -> kill_and_fall ~index:acc g x)
+
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
 
@@ -145,15 +160,12 @@ let super_filter_meths ~base ~cur =
     end
   in
   loop base cur;
-(*  names_print_helper "base_not_impl" ~set: !base_not_impl;
-  names_print_helper "cur_impl"      ~set: !cur_impl;
-  names_print_helper "cur_new"       ~set: !cur_new;   *)
   assert (let len = MethSet.length !cur_impl in
 	  let x = MethSet.length !base_not_impl and y = MethSet.length !cur_new in
 (*	  printf "(x,y,len) = (%d,%d,%d)\n" x y len;
 	  printf "(base_len, cur_len) = (%d, %d)\n" (MethSet.length base) (MethSet.length cur); *)
 	  (x+len = MethSet.length base) && (y+len = MethSet.length cur)); 
-  (* ФИШКА: нельзя будет меня генерируемые имена у cur_impl, иначе не будет согласоваться 
+  (* ФИШКА: нельзя будет менять генерируемые имена у cur_impl, иначе не будет согласоваться 
      наследование с базовым (абстрактным) классом *)
   (!base_not_impl,!cur_impl,!cur_new)
     
@@ -173,8 +185,7 @@ let build_superindex root_ns =
 
     List.iter bases ~f:(fun from -> G.add_edge g from curvertex);
     index := SuperIndex.add ~key ~data !index
-  and on_enum_found prefix e = 
-    let name = fst e in
+  and on_enum_found prefix ((name,_,_) as e) = 
     let key = NameKey.make_key ~name ~prefix in
     let data = Enum e in
     index:= SuperIndex.add ~key ~data !index
@@ -196,13 +207,35 @@ let build_superindex root_ns =
 
   (* simplify_graph *)
   let dead_roots = List.map ~f:NameKey.key_of_fullname 
-    ["QIntegerForSize>"; (* "QWindowsStyle"; "QS60Style" *)
-     (* "QWidget"; "QEvent"; "QStyleOption"; "QAccessible"; "QStyle"; "QLayout"; 
-     "QGesture"; "QAccessible2Interface"; "QTextFormat"; "QAbstractState"; 
-     "QAbstractAnimation"; "QPaintDevice"; "QAbstractItemModel"; 
-     "QTextObject"; "QFactoryInterface"; *) "QtSharedPointer::ExternalRefCountWithDestroyFn" ] in
-  List.iter dead_roots ~f:(G.kill_and_fall g);
+    [
+     (* to avoid bugs *)
+     "QIntegerForSize>"; "QtSharedPointer::ExternalRefCountWithDestroyFn";
+     (* i think this class is useless in OCaml *)
+     "QNoDebug"; "QDebug"; "QBool"; "QFlag"; "QForeachContainerBase";
+     (* class feom Network namespace. implement later *)
+     "QAbstractSocket"; "QAbstractXmlNodeModel"; "QAbstractXmlReceiver"; "QAuthenticator";
+     "QFtp"; "QIPv6Address"; "QLocalSocket"; "QAbstractNetworkCache"; "QLocalServer"; "QTcpServer";
+     (* to speed up remove not the most useful classes *)
+     "QFactoryInterface";
+     (* QtXmlPatterns module *)
+     "QSourceLocation";
+     (* part of QtWebKit namespace *)
+     "QGraphicsWebView"
+      ] in
+  List.iter dead_roots ~f:(fun x -> index := G.kill_and_fall ~index:(!index) g x);
 
+  let prefixes = ["QXml"; "QHost"; "QHttp"; "QNetwork"; "QScript"; "QSsl"; "QUrl"; "QGL"; "QThread" ] @
+  ["QIconEngine"; "QWeb"] (* QWebKit namespace *) in
+
+  Ref.replace index 
+    (fun index -> G.remove_subtrees g ~index ~cond:(
+      function 
+	| (name::_,_) -> 
+	  List.fold_left ~init:false ~f:(fun acc prefix -> acc or (startswith ~prefix name)) prefixes
+	| _ -> assert false)
+    );
+
+  
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
   close_out h;
