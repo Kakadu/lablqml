@@ -12,7 +12,7 @@ let breaks s = raise (BreakS s)
 
 let cpp_func_name ~classname ~methname argslist = 
   String.concat ~sep:"_" ("ml"::classname::methname::(
-    List.map argslist ~f:(fun (t,_) -> t.t_name)
+    List.map argslist ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name)
   ))
 
 let isTemplateClass name = 
@@ -44,10 +44,11 @@ let skipClass ~prefix c =
     | _ -> false
 
 type pattern = 
-  | InvalidPattern | PrimitivePattern | ObjectPattern | ObjectDefaultPattern (* when `=0` *)
-  | EnumPattern 
+  | InvalidPattern | PrimitivePattern | ObjectPattern 
+  | EnumPattern  of enum * NameKey.t
+  | ObjectDefaultPattern (* when `=0` *) (* default pattern when parameter has default value *)
 
-let pattern index (t,default) = 
+let pattern index (t,default) =
     let name = t.t_name in
     let indir = t.t_indirections in
     if indir>1 then InvalidPattern 
@@ -58,51 +59,39 @@ let pattern index (t,default) =
       | "char" when indir = 1 -> PrimitivePattern
       | "char"
       | "qreal" | "double" | "float" -> InvalidPattern
-      | s when indir = 1 -> 
+      | s when indir = 1 -> begin
 	let key = NameKey.key_of_fullname name in
-	if SuperIndex.mem index key then (
-	  match default with 
-	    | Some "0" -> ObjectDefaultPattern
-	    | _ -> ObjectPattern)
-	else InvalidPattern
+	match SuperIndex.find index key with
+	  | Some (Class _) when default=Some "0" -> ObjectDefaultPattern
+	  | Some (Class _)  -> ObjectPattern
+	  | Some (Enum _)
+	  | None  -> InvalidPattern
+      end
       | s when indir > 1 -> InvalidPattern
-      | _ -> try
-	       let key = NameKey.key_of_fullname name in
-	       if is_enum_exn ~key index then EnumPattern
-	       else if is_class_exn ~key index then InvalidPattern
-	       else ( print_endline "you cant see this line. some fucking shit";
-		      assert false )
-	with
-	    Not_found  -> (print_endline ("!!! Not in index: " ^ name);
-				InvalidPattern )
+      | _ -> begin
+	let key = NameKey.key_of_fullname name in
+	match SuperIndex.find index key  with
+	  | Some (Class _) -> InvalidPattern
+	  | Some (Enum e) -> EnumPattern (e, key)
+	  | None -> (print_endline ("!!! Not in index: " ^ name); InvalidPattern)
+      end
    
-let skipArgument ~index ((t,default) as arg) =  (* true when do skip *)
+let skipArgument ~index ((t,_) as arg) =  (* true when do skip *)
     match t.t_name with
       | "GLfloat" | "GLint" | "GLuint"
       | "void" | "uchar"
       | "qreal" -> true
       | s when isTemplateClass s -> true
-      | s when isInnerClass s -> true
       | _ -> begin
-(*	printf "Here!!! name = %s\n" t.t_name; *)
 	match pattern index arg with
-	  | ObjectPattern
-	  | ObjectDefaultPattern  ->
-(*	    print_endline "Object Pattern"; *)
+	  | EnumPattern _
+	  | ObjectDefaultPattern
+	  | ObjectPattern -> 
 	    let key = NameKey.key_of_fullname t.t_name in
-(*	    printf "key = %s\n" (NameKey.to_string key); *)
-	    if not (SuperIndex.mem index key) then (
-(*	      let v = SuperIndex.find index key in *)
-	      
-	      print_endline "return true"; true
-	    )
-	    else false
+	    not (SuperIndex.mem index key) 
 	  | _ -> false
       end
     
-let skip_ns ~prefix _ = false
-
-
 exception DoSkip
 exception DontSkip
 
@@ -128,6 +117,10 @@ exception BreakOk of t1
 exception BreakFail of t2
 exception BreakResult of castResult
 
+let enum_conv_func_names (lst,_) = 
+  let f s lst = String.concat ~sep:"_" (s :: (List.rev lst)) in
+  (f "enum_of_caml" lst, f "enum_to_caml" lst)
+
 let is_abstract_class ~prefix index name = 
   let key = NameKey.make_key ~prefix ~name in
   let f = fun m acc -> match m.m_modif with `Abstract -> true | _ -> acc in
@@ -142,7 +135,6 @@ class virtual abstractGenerator _index = object (self)
   method private virtual prefix : string  
   method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
   method private virtual gen_enum_in_ns : key:NameKey.t -> dir:string -> enum -> string option
-(*  method private virtual gen_enumOfClass : string -> out_channel -> enum -> unit *)
   method private virtual genProp : string -> out_channel -> prop -> unit
   method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
   method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit
@@ -156,8 +148,8 @@ class virtual abstractGenerator _index = object (self)
 	let is_const = t.t_is_const in
 	match pattern _index (t,default) with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
-	  | PrimitivePattern ->
- 	    (match t.t_name with
+	  | PrimitivePattern -> begin
+ 	    match t.t_name with
 	      | "int" -> Success (String.concat  
 				    ["int _";   argname; " = Int_val("; argname; ");"])
 	      | "double" -> CastError "double_value!"
@@ -170,25 +162,29 @@ class virtual abstractGenerator _index = object (self)
 	      | "void" -> Success "Val_unit"
 	      | "char" when t.t_indirections = 1 ->
 		Success (String.concat ["char* _"; argname; " = String_val("; argname; ");"])
-	      | _ -> assert false)
-
+	      | _ -> assert false
+	  end
 	  | ObjectPattern -> 
-	    let tail_list = [" = (";t.t_name;"*)"; argname; ";"] in
 	    Success (String.concat 
-		       ([if is_const then "const " else ""; t.t_name; "* _"; argname] @ tail_list) )
-		       
-	  | ObjectDefaultPattern -> (* default value is 0 *)
-	    let tail_list = 
-	      [sprintf " = (%s==Val_none) ? NULL : ((%s*)(Some_val(%s)));" argname t.t_name argname ] in
-	    Success (String.concat 
-		       ([if is_const then "const " else ""; t.t_name; "* _"; argname] @ tail_list) )
+		       [if is_const then "const " else ""; t.t_name; "* _"; argname; 
+			sprintf " = (%s* ) (%s);" t.t_name argname])
+	  | ObjectDefaultPattern ->
+	    Success 
+	      (String.concat 
+		 [if is_const then "const " else ""; t.t_name; "* _"; argname; 
+		  sprintf " = (%s==Val_none) ? NULL : ((%s* )(Some_val(%s)));" argname t.t_name argname] )
+	  | EnumPattern (e,k) ->
+	    let func_name = enum_conv_func_names k |> fst in
+	    let tail = sprintf "%s(%s);" func_name argname in
+	    let ans = sprintf "%s _%s = %s" (snd k) argname tail in
+	    Success ans	      
 
-	  | EnumPattern -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
-	      
-
-  method private toCamlCast 
-      = fun (t,default) arg ansVarName -> 
-	match pattern _index (t,default) with
+  method private toCamlCast
+      = fun ?(forcePattern=None) (t,default) arg ansVarName ->
+	let patt = match forcePattern with
+	  | Some x -> x
+	  | None -> pattern _index (t,default) in
+	match patt with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t))
 	  | PrimitivePattern ->
 	    (match t.t_name with
@@ -200,54 +196,10 @@ class virtual abstractGenerator _index = object (self)
 	      | "char" when t.t_indirections=1 ->
 		Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
 	      | _ -> assert false)
-	  | ObjectPattern -> Success (ansVarName ^ " = (value)(" ^ arg  ^ ");")
+	  | ObjectPattern ->        Success (sprintf "%s = (value)(%s);" ansVarName arg)
 	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((value)(%s));" ansVarName arg)
-	  | EnumPattern   -> CastError ("cant't cast enum: " ^ (string_of_type t)) 
-(*
-  (* prefix is namespace preifx (reversed) 
-     dir is directory where create subdirectory
-  *)
-  method gen_ns ~prefix ~dir ns =     
-    if not (skip_ns ~prefix ns.ns_name) then begin 
-      let dir = dir ^/ ns.ns_name in
-      if Sys.file_exists dir then
-	ignore (Sys.command ("rm -rf " ^ dir) );
-      ignore (Sys.command ("mkdir -p -m 755 " ^ dir));
-(*      Unix.mkdir dir 0o755; (* line above is recursive mkdir *) *)
-      let classes = ref [] in (* classes and enums which was successfully generated *)
-      let wrap = function
-	| Some name -> classes := name :: !classes | None -> ()
-      in
-      let prefix = ns.ns_name :: prefix in
-      List.iter ~f:(self#gen_ns ~prefix ~dir) ns.ns_ns;
-      List.iter ~f:(fun c -> self#gen_class ~prefix ~dir c |> wrap) ns.ns_classes;
-      List.iter ~f:(fun e -> self#gen_enum_in_ns ~prefix ~dir e |> wrap) ns.ns_enums;
-      self#makefile dir !classes;
-    end
-      *)
-(*
-  (* root namespace needs special magic (it doesn't have name) *)
-  method generate ns = 
-    let dir = self#prefix in
-    if Sys.file_exists dir then
-      ignore (Sys.command ("rm -rf " ^ dir) );
-    ignore (Unix.mkdir dir 0o755);
-    let classes = ref [] in
-    let wrap = Option.iter ~f:(fun name -> classes:= name :: !classes) in
-    let prefix = [] in
-    List.iter ~f:(self#gen_ns ~prefix ~dir) ns.ns_ns;
-    List.iter ~f:(fun c -> self#gen_class ~prefix ~dir c |> wrap) ns.ns_classes;
-    List.iter ~f:(fun e -> self#gen_enumOfNs ~prefix ~dir e |> wrap) ns.ns_enums;
-    self#makefile dir !classes
-*)  
+	  | EnumPattern (e,k) -> 
+	    let func_name = enum_conv_func_names k |> snd in
+	    Success (sprintf "%s = %s(%s);" ansVarName func_name arg)
 
-(*    let curdir = self#prefix in
-    SuperIndex.iter index ~f:(fun ~key ~data -> match data with
-      | Enum e -> self#gen_enum curdir e
-      | Class (c,lst) ->
-	let is_abstract = List.length lst > 0 in
-	self#gen_class ~is_abstract curdir c
-    );
-    (self#prefix) |> self#genNs |> List.iter
-      *)
 end

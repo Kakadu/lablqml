@@ -22,13 +22,13 @@ type pattern =
   | InvalidPattern
   | PrimitivePattern
   | ObjectPattern
+  | EnumPattern  of enum * SuperIndex.NameKey.t
   | ObjectDefaultPattern
-  | EnumPattern
 
 val cpp_func_name : classname:string -> methname:string -> func_arg list -> string
 val is_good_meth : classname:string -> index:SuperIndex.index_t -> meth -> bool
 
-
+val enum_conv_func_names : (string list * string) -> string*string
 val pattern : SuperIndex.index_t -> Parser.func_arg -> pattern
 val is_abstract_class : prefix:string list -> SuperIndex.index_t -> string -> bool
 
@@ -36,7 +36,7 @@ class virtual abstractGenerator :
   SuperIndex.index_t ->
   object
     method private toCamlCast :
-      Parser.func_arg -> string -> string -> castResult
+      ?forcePattern: pattern option -> Parser.func_arg -> string -> string -> castResult
     method private fromCamlCast :
       SuperIndex.index_t ->
       Parser.cpptype -> default:string option -> string -> castResult

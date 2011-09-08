@@ -8,8 +8,13 @@ BIND_ML_OBJS=out/stubs.cmo out/classes.cmo out/creators.cmo
 
 .SUFFIXES: .cpp .ml .cmx .cmo
 
-
 all: $(CMXS) kamlo $(C_STUBS) mklib
+
+test:
+	$(MAKE) -C test
+	$(MAKE) -C test2
+	$(MAKE) -C test3
+
 
 kamlo:
 	$(MAKE) -C out 
@@ -30,4 +35,7 @@ mklib:
 
 clean:
 	rm -f *.o *.a *.cm[iaox] dlllablqt.so 
+	$(MAKE) -C test  clean
+	$(MAKE) -C test2 clean
+	$(MAKE) -C test3 clean
 

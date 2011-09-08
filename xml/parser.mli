@@ -1,4 +1,3 @@
-
 val ( |> ) : 'a -> ('a -> 'b) -> 'b
 val ( $ ) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 
@@ -79,7 +78,12 @@ type clas = {
   c_name: string
 }
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
-and enum = string  * (string list) * [`Public | `Protected| `Private]
+and enum = {
+  e_flag_name : string;
+  e_name : string;
+  e_items : string list;
+  e_access : [ `Private | `Protected | `Public ];
+}
 and constr = func_arg list
 and slt = meth
 and sgnl = string * (func_arg list)	
@@ -101,7 +105,6 @@ val skipNs : string -> bool
 val isTemplateClass : string -> bool
 val isInnerClass : string -> bool
 val fixTemplateClassName : string -> string
-val str_replace : patt:(string * string) list -> string -> string
 val startswith : prefix:string -> string -> bool
 val endswith : postfix:string -> string -> bool
 val skipMeth : classname:string -> string -> bool
@@ -113,7 +116,7 @@ val attrib : 'a -> ('a * 'b) list -> 'b
   *)
 val build : Simplexmlparser.xml -> namespace
 
-
+val str_replace : patt:(string * string) list -> string -> string
 (** The same as fun n list -> (Core_list.take n list, Core_list.drop n list) *)
 val headl: int -> 'a list -> 'a list * 'a list
 

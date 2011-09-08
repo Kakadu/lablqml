@@ -8,6 +8,19 @@ module Map = Core_map
 
 open Simplexmlparser
 
+(** receives pairs (enum_member,value) and returns list where map ~f:snd lst is disjunct 
+ *  Needed to make compilable C++ switch statement when casting to Caml
+ *)
+let filter_enum_members lst = 
+  let module S = String.Set in
+  let value_set = ref S.empty in
+  List.fold lst ~init:[] ~f:(fun acc (x,y) -> 
+    value_set := S.add !value_set x;    
+    match y with
+      | None  -> acc
+      | Some y when S.mem !value_set y -> acc 
+      | Some y -> value_set := S.add !value_set y; x::acc )
+
 let startswith ~prefix:p s = 
   if (String.length p > (String.length s)) then false
   else (Str.first_chars s (String.length p) = p)
@@ -147,7 +160,12 @@ type clas = {
   c_name: string
 }
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
-and enum = string * (string list) * [`Public | `Protected | `Private]
+and enum = {
+  e_flag_name: string;
+  e_name: string;
+  e_items: string list;
+  e_access: [`Public | `Protected | `Private]
+}
 and constr = func_arg list
 and slt = meth
 and sgnl = string * (func_arg list)	
@@ -213,6 +231,18 @@ let strip_dd ~prefix:p s =
   else if (Str.first_chars s plen = (p^"::") ) then Str.string_after s plen 
   else s 
 
+let qtFlags = [ ("WindowStates", "WindowState");
+		("WindowFlags",  "WindowType");
+		("GestureFlags", "GestureFlag");
+		("Alignment",    "AlignmentFlag");
+	        ("MouseButtons", "MouseButton")
+	      ]
+
+let fixEnumName s =
+  try
+    List.Assoc.find_exn qtFlags s
+  with
+    | Not_found -> s
 
 let str2policy = function
   | "public" -> `Public
@@ -221,7 +251,7 @@ let str2policy = function
   | _ -> raise (Invalid_argument "str2policy") 
 
 (********************* Parsing code *********************************)
-let  parse_prop = function
+let parse_prop = function
   | ("property",("name",name)::_,lst) -> 
     let read = ref None in
     let wr = ref None in
@@ -233,13 +263,16 @@ let  parse_prop = function
     List.iter ~f:foo lst;
     (name,!read,!wr)
   | _ -> assert false
+
 (****** Parsing argument ************************)
 let rec parse_arg (_,attr,lst) = 
   let default = List.Assoc.find attr "default" in
   let t_indirections = List.Assoc.find_exn attr "indirections" |> int_of_string in
   let t_is_ref = List.Assoc.find_exn attr "isReference" |> bool_of_string in
   let t_is_const = List.Assoc.find_exn attr "isConstant" |> bool_of_string in
-  let t_name = List.Assoc.find_exn attr "type" |> fixTemplateClassName in
+  let t_name = List.Assoc.find_exn attr "type" |> fixTemplateClassName 
+  |> fixEnumName
+  in
   let t_params = 
     match lst with 
       | [Element ("arguments",_,lst)] ->
@@ -251,9 +284,39 @@ let rec parse_arg (_,attr,lst) =
       | _ -> []
   in
   ({t_name; t_is_const; t_is_ref; t_indirections; t_params}, default)
+
+let parse_enum superName node : enum option = match node with
+  | ("enum",attr,lst) -> 
+    let name = ref (List.Assoc.find attr "name") in
+    let mems = ref [] in
+    let access = ref `Public in
+    List.iter lst ~f:(function
+      | Element ("anonymous",_,_) -> name := None
+      | Element ("enumerator",attr, [PCData name]) -> mems := (name,List.Assoc.find attr "value") :: !mems
+      | Element ("accessPolicy",("value","public")::_,_) -> access := `Public
+      | Element ("accessPolicy",("value","private")::_,_) -> access := `Private
+      | Element ("accessPolicy",("value","protected")::_,_) -> access := `Protected
+      | _ -> assert false);
+    let mems = List.rev !mems in
+    let mems = filter_enum_members mems in
+    let mems = List.filter mems ~f:(fun item ->
+      String.fold item ~init:0 ~f:(fun acc c-> acc+(if Core_char.is_uppercase c then 1 else 0)) < 4
+    ) in
+    (match !name with
+      | _ when List.length mems =0 -> None
+      | Some name ->
+	let e_name = strip_dd ~prefix:superName name in
+	let e_flag_name = try
+			    List.Assoc.find_exn (List.Assoc.inverse qtFlags) e_name
+	  with Not_found -> e_name in
+	let e_items = mems in
+	let e_access = !access in
+	Some { e_name; e_flag_name; e_items; e_access }
+      | None -> None)
+  | _ -> assert false
   
 let rec build root = match root with
-  | PCData _ -> assert false
+  | PCData x -> (print_endline x; assert false)
   | Element ("code",_,lst) -> 
     let classes = ref [] in
     let nss = ref [] in
@@ -382,26 +445,6 @@ and parse_class nsname c  =
     { c_name=classname; c_constrs= constrs; c_slots= slots; 
       c_meths= meths;
       c_inherits= inherits; c_enums= !enums; c_props= !props; c_sigs= !sigs }
-  | _ -> assert false
-
-and parse_enum superName node : enum option = match node with
-  | ("enum",attr,lst) -> 
-    let name = ref (List.Assoc.find attr "name") in
-    let mems = ref [] in
-    let access = ref `Public in
-    let foo = function
-      | Element ("anonymous",_,_) -> name := None
-      | Element ("enumerator",_,[PCData name]) -> mems := name :: !mems
-      | Element ("accessPolicy",("value","public")::_,_) -> access := `Public
-      | Element ("accessPolicy",("value","private")::_,_) -> access := `Private
-      | Element ("accessPolicy",("value","protected")::_,_) -> access := `Protected
-      | _ -> assert false
-    in
-    List.iter ~f:foo lst;
-    (match !name with
-      | Some name -> Some (strip_dd ~prefix:superName name, !mems, !access)
-      | None -> None)
-(*    (Option.bind !name (fun n -> Some (strip_dd ~prefix:superName n)),!mems, !access) *)
   | _ -> assert false
     
 and parse_ns superName = function

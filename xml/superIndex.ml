@@ -39,6 +39,10 @@ end
 
 type index_t = index_data SuperIndex.t
 
+let skip_enum key e = match List.hd_exn (List.rev (fst key)) with
+  | "QSsl" -> true
+  | _ -> false
+
 let is_enum_exn ~key t = match SuperIndex.find_exn t key with
   | Class _ -> false
   | Enum _ -> true
@@ -52,14 +56,15 @@ let to_channel t ch =
     | `Abstract -> "abstract" | `Normal -> "" | `Static -> "static  " in
   let of_access = function
     | `Public -> "public   " | `Private -> "private  " | `Protected -> "protected" in
-  let print_enum (e_name,lst,acc) = sprintf "%s enum %s %s" (of_access acc)
-    e_name (List.to_string (fun x->x) lst) in
+  let print_enum ~key {e_name;e_items; e_access; e_flag_name} = 
+    sprintf "%s enum %s %s with flag=%s,name=%s" (of_access e_access)
+    (snd key) (List.to_string (fun x->x) e_items) e_flag_name e_name in
   SuperIndex.iter t ~f:(fun ~key ~data -> match data with
-    | Enum e -> fprintf ch "%s\n" (print_enum e)
+    | Enum e -> fprintf ch "%s\n" (print_enum ~key e)
     | Class (c,set) -> begin
       fprintf ch "Class %s\n" (NameKey.to_string key);
       fprintf ch "  Enums:\n";
-      List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n" (print_enum e));
+      List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n"  (print_enum ~key e));
       fprintf ch "  Constructors\n";
       List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n" 
 	(meth_of_constr ~classname:c.c_name lst |> string_of_meth )
@@ -185,10 +190,11 @@ let build_superindex root_ns =
 
     List.iter bases ~f:(fun from -> G.add_edge g from curvertex);
     index := SuperIndex.add ~key ~data !index
-  and on_enum_found prefix ((name,_,_) as e) = 
-    let key = NameKey.make_key ~name ~prefix in
-    let data = Enum e in
-    index:= SuperIndex.add ~key ~data !index
+  and on_enum_found prefix e = 
+    let key = NameKey.make_key ~name:e.e_flag_name ~prefix in
+    if not (skip_enum key e) then
+      let data = Enum e in
+      index:= SuperIndex.add ~key ~data !index
   in
 
   let rec iter_ns prefix ns = 
@@ -362,15 +368,21 @@ let build_superindex root_ns =
 	   meths_normal_inherited; meths_overriden;
 	   meths_last] in
 
+	List.iter c.c_enums ~f:(fun ({e_name;_} as e) ->
+	  let new_key = NameKey.key_of_fullname (snd key ^"::" ^ e_name) in
+	  if SuperIndex.mem !index new_key then assert false;
+	  if not (skip_enum new_key e) then
+	    Ref.replace index (SuperIndex.add ~key:new_key ~data:(Enum e))
+	);
 	let ans_class = {
 	  c_inherits = c.c_inherits;
 	  c_props = c.c_props;
 	  c_sigs = c.c_sigs;
 	  c_slots = ans_slots;
 	  c_meths = ans_meths;
-	  c_enums = c.c_enums;
+	  c_enums = [];
 	  c_constrs = c.c_constrs;
-	  c_name=  c.c_name
+	  c_name = c.c_name
 	}
 	in
 
@@ -378,6 +390,10 @@ let build_superindex root_ns =
 	index := SuperIndex.add !index ~key ~data;
 	Q.enqueue !ans_queue key
       end
+  );
+  SuperIndex.iter !index ~f:(fun ~key ~data -> match data with
+    | Class _ -> ()
+    | Enum _ -> Q.enqueue !ans_queue key
   );
 (*
   let get_vertexes_names lst = 

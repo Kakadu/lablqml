@@ -75,8 +75,12 @@ class cppGenerator dir index = object (self)
 	    fprintf h "  _self -> %s(%s);\n" methname argsCall;
 	    fprintf h "  CAMLreturn(Val_unit);\n" 
 	  ) else (
+	    let res = unreference res in
+	    let ans_type_str = match pattern index (res,None) with
+	      | EnumPattern (e,key) -> snd key
+	      | _ -> string_of_type res in
 	    fprintf h "  %s ans = _self -> %s(%s);\n" 
-	      (unreference res |> string_of_type ) methname argsCall;
+	      (ans_type_str ) methname argsCall;
 	    fprintf h "  %s\n" resCast;
 	    fprintf h "  CAMLreturn(%s);\n"
 	      (match pattern index (res,None) with
@@ -148,7 +152,7 @@ class cppGenerator dir index = object (self)
   method makefile dir lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
-    fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ \n\n";
+    fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ -I. \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
     fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
@@ -160,10 +164,6 @@ class cppGenerator dir index = object (self)
   method private prefix = dir ^/ "cpp"
   
   method is_abstr_class c = begin
-(*    print_endline "checking is abstgract";
-    MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
-    MethSet.iter c.c_meths_abstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
-    print_endline "end chacking *************************"; *)
     let ans = ref false in
     let f m = match m.m_modif with `Abstract -> ans:=true | _ -> () in
     MethSet.iter c.c_meths ~f;
@@ -186,11 +186,12 @@ class cppGenerator dir index = object (self)
       ignore (Sys.command ("mkdir -p " ^ dir ));
       let filename = dir ^/ classname ^ ".cpp" in
       let h = open_out filename in
-      fprintf h "#include <Qt/QtOpenGL>\n#include \"headers.h\"\nextern \"C\" {\n";
+      fprintf h "#include <Qt/QtOpenGL>\n";
+      fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
+      fprintf h "#include \"enum_headers.h\"\n";
       if self#is_abstr_class c then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else begin
-(*	printf "Class %s is not abstract\n" classname; *)
 	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs 
       end;
       MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_meths;
@@ -198,9 +199,8 @@ class cppGenerator dir index = object (self)
 
 (*      iter ~f:(self#genProp c.c_name h) c.c_props; 
       iter ~f:(self#genSignal c.c_name h) c.c_sigs; 
-      iter ~f:(self#gen_enumOfClass c.c_name h) c.c_enums; *)
+*)
 
-      List.iter c.c_enums ~f:(self#gen_enum_in_class ~classname h);
 
       fprintf h "}  // extern \"C\"\n";
       close_out h;
@@ -209,41 +209,53 @@ class cppGenerator dir index = object (self)
   
   method genProp classname h (name,r,w) = ()
   
-  method gen_enum_in_ns ~key ~dir:string (e_name,e_vars,e_access) = 
+  method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} = 
     if not (SuperIndex.mem index key) then None
     else if not (is_public e_access) then None
     else begin
       let prefix = fst key |> List.tl_exn in
       let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
-      let dir =  dir ^/ subdir in
+      let dir = self#prefix ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
-      let filename = sprintf "enum_%s.cpp" e_name in
-      let h = open_out (dir ^/ filename) in
-      fprintf h "enum %s %s\n" e_name (List.to_string (fun x -> x) e_vars);
+      let filename = String.concat ~sep:"_" ("enum" :: (fst key|> List.rev)) in
+      let h = open_out (dir ^/ filename ^".cpp") in
+      fprintf h "//enum %s %s\n\n" e_name (List.to_string (fun x -> x) e_items);
+
+      fprintf h "#include <Qt/QtOpenGL>\n";
+      fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
+      let (fname1,fname2) = enum_conv_func_names key in
+      let s =  List.tl_exn (fst key) |> List.rev |> String.concat ~sep:"::" in
+      fprintf h "%s %s(value v) {\n" (snd key) fname1;
+
+      List.iter e_items ~f:(fun e ->
+	fprintf h "  if (v==caml_hash_variant(\"%s\")) return %s::%s;\n" e s e
+      );
+      fprintf h "  printf(\"%s\");\n" "if u see this line, the thereis a bug in enum generation";
+      fprintf h "  return %s::%s;\n" s (List.hd_exn e_items);
+      fprintf h "}\n\n";
+
+      fprintf h "value %s(%s e) {\n" fname2 (snd key);
+      fprintf h "  switch (e) {\n";
+
+      List.iter e_items ~f:(fun e ->
+	fprintf h "    case %s::%s: return hash_variant(\"%s\");\n" s e e
+      );
+      fprintf h "  }\n";
+      fprintf h "  printf(\"%s\");\n" "if u see this line, the thereis a bug in enum generation";
+      fprintf h "  return %s::%s;\n" s (List.hd_exn e_items);
+      fprintf h "\n}\n\n}\n";
       close_out h;
       Some (if subdir = "" then filename else subdir ^/ filename)
-    end
-
-  method gen_enum_in_class h ~classname (e_name,e_vars,e_access) = 
-    if is_public e_access then begin
-      let _ : string = classname in
-      fprintf h "// %s of %s\n" e_name (String.concat ~sep:"|" e_vars);
-      let funcname = sprintf "enum_conv_%s_%s" classname e_name in
-      fprintf h "%s::%s %s(int v) {\n  switch(v) {\n" classname e_name funcname;
-      let strs = List.mapi 
-	~f:(fun i v -> sprintf "    case %d: return %s::%s; break;\n" i classname v) e_vars in
-      List.iter strs ~f:(fun s -> fprintf h "%s" s);
-      fprintf h "    default: caml_invalid_argument(\"In function %s invalid arg\");\n" funcname;
-      fprintf h "  }\n  printf(\"You cant see this\");\n  return (%s::%s)0;\n}\n\n" classname e_name
     end
 
   method generate_q q = 
     ignore (Sys.command ("rm -rf " ^ self#prefix ^"/*") );
     let classes = ref [] in
+    let enums = ref [] in
     Q.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
-      | Enum  e -> begin
+      | Enum e -> begin
 	match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
-	  | Some s -> Ref.replace classes (fun lst -> s::lst)
+	  | Some s -> Ref.replace enums (fun lst -> (key,s)::lst)
 	  | None -> ()
       end
       | Class (c,_) ->  begin 
@@ -253,6 +265,13 @@ class cppGenerator dir index = object (self)
       end    
     );
     print_endline "Generating makefile";
-    self#makefile self#prefix !classes
+    self#makefile self#prefix (List.map ~f:snd !enums @ !classes );
+    let enums_h = open_out (self#prefix ^/ "enum_headers.h") in
+    List.iter !enums ~f:(fun ((_,fullname) as key,_) ->
+      let (fname1,fname2) = enum_conv_func_names key in
+      fprintf enums_h "extern %s %s(value);\n" fullname fname1;
+      fprintf enums_h "extern value %s(%s);\n\n" fname2 fullname
+    );
+    close_out enums_h;
 
 end
