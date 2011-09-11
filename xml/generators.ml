@@ -140,7 +140,7 @@ class virtual abstractGenerator _index = object (self)
   method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit
   method private virtual makefile : string -> string list -> unit
 
-
+(* TODO: decide what index to use: from object or from parameter *)
   method private fromCamlCast 
     : index_data SuperIndex.t -> cpptype -> default:string option -> string -> castResult
       = fun index t ~default (argname:string) -> 

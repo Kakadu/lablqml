@@ -81,7 +81,11 @@ let to_channel t ch =
 	  (of_access slt.m_access) (of_modif slt.m_modif)
 	    (string_of_meth slt) c.c_name
       );
-      
+      fprintf ch "  signals:\n";
+      List.iter c.c_sigs ~f:(fun (name,args) ->
+	fprintf ch "    (void) %s(%s)\n" name
+	  (List.map args ~f:(string_of_type$fst) |> String.concat ~sep:",")
+      );
       fprintf ch "************************************************** \n"
     end
   )
@@ -368,6 +372,9 @@ let build_superindex root_ns =
 	   meths_normal_inherited; meths_overriden;
 	   meths_last] in
 
+	let ans_signals = List.map bases_data ~f:(fun c -> c.c_sigs)
+	  |> List.concat |>  ((@) c.c_sigs) |> List.dedup in
+
 	List.iter c.c_enums ~f:(fun ({e_name;_} as e) ->
 	  let new_key = NameKey.key_of_fullname (snd key ^"::" ^ e_name) in
 	  if SuperIndex.mem !index new_key then assert false;
@@ -377,7 +384,7 @@ let build_superindex root_ns =
 	let ans_class = {
 	  c_inherits = c.c_inherits;
 	  c_props = c.c_props;
-	  c_sigs = c.c_sigs;
+	  c_sigs = ans_signals;
 	  c_slots = ans_slots;
 	  c_meths = ans_meths;
 	  c_enums = [];
