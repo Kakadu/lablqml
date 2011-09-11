@@ -1,0 +1,4 @@
+let foo: int -> int -> unit
+let goo: int -> qWidget -> qWidget
+let boo: qWidget -> unit
+
