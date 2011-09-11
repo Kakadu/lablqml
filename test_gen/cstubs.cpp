@@ -25,7 +25,36 @@ value ml_qapp_create (value argv) {
 
 value ml_qapp_exec (value self) {
   CAMLparam1(self);
-  return Val_int (((QApplication*)self)->exec());
+  CAMLreturn( Val_int (((QApplication*)self)->exec()) );
+}
+CAMLprim 
+value ml_QObject_connect (value sender, value signal, value receiver, value member) {
+  CAMLparam4(sender,signal,receiver,member);
+  char *sg = String_val(signal);
+  char *sl = String_val(member);
+  int len1 = strlen(sg), len2 = strlen(sl);
+  char cc1[len1+2];
+  char cc2[len2+2];
+//  printf("signal = %s, slot = %s\n", sg, sl);
+  cc1[len1+1] = cc2[len2+1] = '\0';
+  cc1[0] = '2'; cc2[0] = '1';
+  int i=1;
+  for (   ;i<=len1; ++i) cc1[i] = sg[i-1];
+  for (i=1;i<=len2; ++i) cc2[i] = sl[i-1];
+
+//  QString s1 = QString("2%1").arg(QString(sg)),
+//	  s2 = QString("1%1").arg(QString(sl));
+//  printf("signal = %s, slot = %s\n", s1.toLocal8Bit().data(), s2.toLocal8Bit().data() );
+//  const char *loc1 = s1.toLocal8Bit().data();
+//  const char *loc2 = s2.toLocal8Bit().data();
+  printf ("trying to connect %s -> %s\n", cc1, cc2);
+  CAMLreturn( 
+    Val_bool
+      (QObject::connect(QObject_val(sender),  
+                        cc1,
+                        QObject_val(receiver),
+                        cc2) ) );
 }
 
 }  // extern "C"
+

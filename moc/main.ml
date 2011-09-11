@@ -119,6 +119,12 @@ let gen_header lst =
   fprintf h "}\n";
   close_out h
 
+let to_cpp_type s = match s with
+  | "int" -> "int"
+  | "bool" -> "bool"
+  | s when is_qt_classname s -> sprintf "%s*" (to_qt_classname s)
+  | _ -> assert false
+
 let gen_ml lst =
   let h = open_out (classname ^ "_stubs.ml") in
   fprintf h "open Stub_helpers\n";
@@ -146,7 +152,9 @@ let gen_ml lst =
     fprintf h "  method slot_%s = object (self: (<%s..>, %s) #ssslot)\n" name
       (List.map2_exn argnames lst' ~f:(fun name typ -> sprintf "%s:%s; " name typ) |> String.concat)
       (String.concat ~sep:"->" lst);
-    fprintf h "    method name = \"%s\"\n" name;
+    fprintf h "    method name = \"%s(%s)\"\n" name
+      (List.map ~f:to_cpp_type lst' |> String.concat ~sep:",")
+    ;
     fprintf h "    method call = UserSlots.%s\n" name;
     fprintf h "  end\n"
   );
