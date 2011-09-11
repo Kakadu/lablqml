@@ -293,8 +293,12 @@ class ocamlGenerator dir (index:index_t) = object (self)
       );
 
       MethSet.iter target_meths ~f:(fun m -> 
-	self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
-	self#gen_meth       ~is_abstract:false ~classname h_classes m 
+	match m.m_modif with
+	  | `Abstract -> ()
+	  | `Normal ->
+	    self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
+	    self#gen_meth       ~is_abstract:false ~classname h_classes m 
+	  | `Static -> printf "Skipped static method %s\n" (string_of_meth m)
       ); 
       fprintf h_classes "end\nand ";
     end

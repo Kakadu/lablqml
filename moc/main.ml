@@ -62,7 +62,7 @@ let gen_header lst =
   fprintf h "class %s : public QObject {\nQ_OBJECT\n" classname;
   fprintf h "public slots:\n";
   
-  List.iter lst ~f:(fun (name,lst) -> 
+  List.iter lst ~f:(fun ((name,lst) as slot) -> 
     let lst = List.map lst ~f:to_cpp_type in
     let (res,args) = 
       let l'= List.rev lst in
@@ -72,7 +72,7 @@ let gen_header lst =
     let arg' = List.map2_exn args argnames ~f:(fun typ name -> sprintf "%s %s" typ name) in
     fprintf h "  %s %s(%s) {\n" res name (String.concat ~sep:"," arg');
     (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
-    fprintf h "    value *closure = caml_named_value(\"%s\");\n" (name_for_slot (name,lst));
+    fprintf h "    value *closure = caml_named_value(\"%s\");\n" (name_for_slot slot);
     let n = List.length argnames in
     fprintf h "    value *args = new value[%d];\n" n;
     iter2i args argnames ~f:(fun i arg name ->
@@ -87,6 +87,7 @@ let gen_header lst =
 	end
 	| _ -> assert false
     );
+    fprintf h "    if (closure==NULL)\n      printf(\"closure not found. crash.\\n\");\n";
     if res = "void" then
       fprintf h "    caml_callbackN(*closure, %d, args);\n" n
     else begin
