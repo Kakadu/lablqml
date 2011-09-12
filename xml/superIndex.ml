@@ -221,7 +221,8 @@ let build_superindex root_ns =
      (* to avoid bugs *)
      "QIntegerForSize>"; "QtSharedPointer::ExternalRefCountWithDestroyFn";
      (* i think this class is useless in OCaml *)
-     "QNoDebug"; "QDebug"; "QBool"; "QFlag"; "QForeachContainerBase";
+     "QNoDebug"; "QDebug"; "QBool"; "QFlag"; "QForeachContainerBase"; "QBitRef";
+     "QByteRef"; "QCharRef"; "QTemporaryFile";
      (* class feom Network namespace. implement later *)
      "QAbstractSocket"; "QAbstractXmlNodeModel"; "QAbstractXmlReceiver"; "QAuthenticator";
      "QFtp"; "QIPv6Address"; "QLocalSocket"; "QAbstractNetworkCache"; "QLocalServer"; "QTcpServer";
@@ -234,7 +235,8 @@ let build_superindex root_ns =
       ] in
   List.iter dead_roots ~f:(fun x -> index := G.kill_and_fall ~index:(!index) g x);
 
-  let prefixes = ["QXml"; "QHost"; "QHttp"; "QNetwork"; "QScript"; "QSsl"; "QUrl"; "QGL"; "QThread" ] @
+  let prefixes = ["QXml"; "QHost"; "QHttp"; "QNetwork"; "QScript"; "QSsl";
+  "QUrl"; "QGL"; "QThread"; "QVFb" ] @
   ["QIconEngine"; "QWeb"] (* QWebKit namespace *) in
 
   Ref.replace index 

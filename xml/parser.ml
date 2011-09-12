@@ -63,6 +63,8 @@ let skip_meth ~classname name =
     | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
     | "QThreadStorageData::QThreadStorageData" -> true
     | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
+    | "eventFilter" -> true (* QObject::eventFilter is usually hided in
+subclasses and we can't coerce type *)
     | _ -> false
 
 let endswith ~postfix:p s = 
