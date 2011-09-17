@@ -103,7 +103,7 @@ class cppGenerator dir index = object (self)
 (*      breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) ); *)
       
       fprintf h "// constructor `%s`(%s)\n"
-	classname (List.map lst ~f:(string_of_type $ fst) |> String.concat ~sep:",");
+	classname (List.map lst ~f:(string_of_type %< fst) |> String.concat ~sep:",");
 
       let argnames = List.mapi lst ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
       let len = List.length argnames in

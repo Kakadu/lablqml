@@ -84,7 +84,7 @@ let to_channel t ch =
       fprintf ch "  signals:\n";
       List.iter c.c_sigs ~f:(fun (name,args) ->
 	fprintf ch "    (void) %s(%s)\n" name
-	  (List.map args ~f:(string_of_type$fst) |> String.concat ~sep:",")
+	  (List.map args ~f:(string_of_type %< fst) |> String.concat ~sep:",")
       );
       fprintf ch "************************************************** \n"
     end

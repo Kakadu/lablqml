@@ -1,5 +1,5 @@
 val ( |> ) : 'a -> ('a -> 'b) -> 'b
-val ( $ ) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
+val (%<) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 
 val startswith : prefix:string -> string -> bool
 val endswith : postfix:string -> string -> bool
@@ -43,12 +43,12 @@ module MethSet :
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val subset : t -> t -> bool
-    val iter : f:(elt -> unit) -> t -> unit
-    val fold : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
-    val for_all : f:(elt -> bool) -> t -> bool
-    val exists : f:(elt -> bool) -> t -> bool
-    val filter : f:(elt -> bool) -> t -> t
-    val partition : f:(elt -> bool) -> t -> t * t
+    val iter : t -> f:(elt -> unit) -> unit
+    val fold : t -> init:'a -> f:(elt -> 'a -> 'a) -> 'a
+    val for_all : t -> f:(elt -> bool) -> bool
+    val exists : t -> f:(elt -> bool) -> bool
+    val filter : t -> f:(elt -> bool) -> t
+    val partition : t -> f:(elt -> bool) -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt option

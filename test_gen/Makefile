@@ -14,6 +14,8 @@ test:
 	$(MAKE) -C test
 	$(MAKE) -C test2
 	$(MAKE) -C test3
+	$(MAKE) -C test4
+	$(MAKE) -C test5
 
 
 kamlo:

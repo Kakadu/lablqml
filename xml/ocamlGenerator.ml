@@ -221,7 +221,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	(String.concat ~sep:" -> " (types @ [res_t]));
       let wrap_type t = { { t with t_is_const=false } with t_is_ref=false } in
       fprintf h "    method name = \"%s(%s)\"\n" name 
-	(List.map slot.m_args ~f:fst |> List.map ~f:(string_of_type$wrap_type) |> String.concat ~sep:",");
+	(List.map slot.m_args ~f:fst |> List.map ~f:(string_of_type %< wrap_type) |> String.concat ~sep:",");
       self#gen_meth ~new_name:"call" ~is_abstract:false ~classname h slot;
       fprintf h "  end\n"
     with BreakSilent -> ()
@@ -236,7 +236,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	name (List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ");
       let wrap_type t = {{ t with t_is_ref=false } with t_is_const = false } in
       fprintf h "    method name = \"%s(%s)\"\n" name
-	(List.map args ~f:(string_of_type$wrap_type$fst) |> String.concat ~sep:",");
+	(List.map args ~f:(string_of_type %< wrap_type %< fst ) |> String.concat ~sep:",");
       fprintf h "  end\n";
     with BreakSilent -> ()
       | BreakS s -> ()

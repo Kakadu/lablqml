@@ -8,6 +8,8 @@ module Map = Core_map
 
 open Simplexmlparser
 
+let (%<) f g = fun x -> f (g x)
+
 (** receives pairs (enum_member,value) and returns list where map ~f:snd lst is disjunct 
  *  Needed to make compilable C++ switch statement when casting to Caml
  *)
@@ -72,7 +74,6 @@ let endswith ~postfix:p s =
   else (Str.last_chars s (String.length p) = p)
 
 let (|>) a b = b a
-let ($) a b = fun x -> a (b x)
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
 and func_arg = cpptype * string option (* type and default value *)
@@ -216,9 +217,9 @@ let skipNs = function
   | "QtSharedPointer" | "QMdi" | "QAlgorithmsPrivate" | "QAccessible2" -> true
   | _ -> false
 
-let fixTemplateClassName = 
-  (Str.global_replace (Str.regexp "&lt;") "<") $
-  (Str.global_replace (Str.regexp "&gt;") ">")
+let fixTemplateClassName x = 
+  x |> (Str.global_replace (Str.regexp "&gt;") ">")
+    |> (Str.global_replace (Str.regexp "&lt;") "<") 
 
 let str_replace ~patt init = List.fold_left 
   ~f:(fun aggr (patt, v) -> 
