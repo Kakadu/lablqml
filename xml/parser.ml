@@ -175,9 +175,12 @@ and sgnl = string * (func_arg list)
 and prop = string * string option * string option	
 
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
+
 (* convert class to pointer on this class *)
-let typeP_of_class c = 
+let ptrtype_of_class c = 
   { t_name=c.c_name; t_indirections=1; t_is_const=false; t_is_ref = false; t_params=[] }
+let ptrtype_of_classname name =
+  { t_name=name; t_indirections=1; t_is_const=false; t_is_ref = false; t_params=[] }
 
 let is_void_type t = (t.t_name = "void") && (t.t_indirections=0) 
 

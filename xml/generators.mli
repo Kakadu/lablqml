@@ -25,7 +25,7 @@ type pattern =
   | EnumPattern  of enum * SuperIndex.NameKey.t
   | ObjectDefaultPattern
 
-val cpp_func_name : classname:string -> methname:string -> func_arg list -> string
+val cpp_func_name : classname:string -> methname:string -> ?is_byte:bool -> func_arg list -> string
 val is_good_meth : classname:string -> index:SuperIndex.index_t -> meth -> bool
 
 val enum_conv_func_names : (string list * string) -> string*string

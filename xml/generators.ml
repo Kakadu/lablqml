@@ -10,8 +10,8 @@ exception BreakS of string
 exception BreakSilent
 let breaks s = raise (BreakS s)
 
-let cpp_func_name ~classname ~methname argslist = 
-  String.concat ~sep:"_" ("ml"::classname::methname::(
+let cpp_func_name ~classname ~methname ?(is_byte=true) argslist = 
+  String.concat ~sep:"_" ((if is_byte then "byte" else "native")::classname::methname::(
     List.map argslist ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name)
   ))
 

@@ -91,7 +91,8 @@ and prop = string * string option * string option
 
 val is_public: [`Public | `Protected| `Private] -> bool
 val empty_namespace : namespace
-val typeP_of_class : clas -> cpptype
+val ptrtype_of_class : clas -> cpptype
+val ptrtype_of_classname: string -> cpptype
 val remove_defaults : meth -> meth
 val headl : int -> 'a list -> 'a list * 'a list
 val is_void_type : cpptype -> bool
