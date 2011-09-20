@@ -1,1 +1,7 @@
 My thoughts about which bindings for qt should be
+
+./xml --- binding generator
+./moc --- helper utility to define user slots
+./simple_signals --- hand-written bindings (only proof-of-concept)
+./test_gen       --- environment for compiling bindings from generated code
+
