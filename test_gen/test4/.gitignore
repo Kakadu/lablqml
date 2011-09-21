@@ -1,0 +1,6 @@
+moc_*
+UserSlots.h
+UserSlots.cpp
+UserSlots_stubs.ml
+test
+mocml

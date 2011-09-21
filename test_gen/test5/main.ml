@@ -38,9 +38,8 @@ let () =
           layout#addWidget_ (label   :> qWidget) (i+1) 0 `AlignLeft;
           layout#addWidget_ (lineEdit:> qWidget) (i+1) 1 `AlignLeft
         done;
-(*        let smallEditor = create_QTextEdit_0 None in
-        smallEditor#setPlainText "This widget takes up about two thirds of the grid layout";
-        layout#addWidget (smallEditor :> qWidget) 0 2 4 1 *)
+        let smallEditor = create_QTextEdit_1 "This widget takes up about two thirds of the grid layout" None in
+        layout#addWidget__ (smallEditor :> qWidget) 0 2 4 1 `AlignRight;
         layout#setColumnStretch 1 10;
         layout#setColumnStretch 2 20;
         gridGroupBox#setLayout (layout :> qLayout)
@@ -69,6 +68,10 @@ let bigEditor = create_QTextEdit_1
 let () = () 
 (*  bigEditor#setPlainText --- this function is suspicious *)
     (* let buttonBox =     *)
+let buttonBox = create_QDialogButtonBox_0 None 
+let () =
+    let _ = buttonBox#addButton `Ok in
+    let _ = buttonBox#addButton `Cancel in ()
 
 let () = 
         mainLayout#setMenuBar (menuBar :> qWidget);
@@ -76,6 +79,7 @@ let () =
         mainLayout#addWidget  (gridGroupBox :> qWidget);
         mainLayout#addWidget  (formGroupBox :> qWidget);
         mainLayout#addWidget  (bigEditor    :> qWidget);
+        mainLayout#addWidget  (buttonBox    :> qWidget);
         dialog#setLayout      (mainLayout :> qLayout)
 (*        dialog#setWindowTitle "Basic Layouts" *)
 

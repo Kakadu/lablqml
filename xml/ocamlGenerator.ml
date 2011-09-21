@@ -111,7 +111,6 @@ class ocamlGenerator dir (index:index_t) = object (self)
 
       if not (is_good_meth ~classname ~index meth) then 
 	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
-      if List.length meth.m_args + 1 > 10 then raise BreakSilent;
 
       let ocaml_classname = ocaml_class_name classname in
 
@@ -153,10 +152,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  (sprintf "skipped in class %s method %s --- not is_good_meth" classname (string_of_meth meth));
 
       if List.length args + 1 > 10 then 
-	break2file (sprintf "skipped meth %s: too many arguments\n" (string_of_meth meth) );
-
-      if List.length args +1 > 5 then
-	break2file (sprintf "needs additional func for native\n");
+	break2file (sprintf "skipped meth %s: too many arguments\n" (string_of_meth meth) ); 
 
       fprintf h "  (* method %s *)\n" (string_of_meth meth);
 
@@ -296,8 +292,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
       );
       
       let target_meths = c.c_meths in
-      fprintf h_classes " %s me = object (self) \n" 
-(*        (if is_abstract then "virtual " else "") *) ocaml_classname;
+      fprintf h_classes " %s me = object (self) \n" ocaml_classname;
       fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes); 
       MethSet.iter c.c_slots ~f:(fun slot -> 
