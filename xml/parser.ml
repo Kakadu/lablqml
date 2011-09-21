@@ -194,11 +194,11 @@ let string_of_type t =
     [if t.t_is_const then "const " else "";
      t.t_name; String.make t.t_indirections '*'; if t.t_is_ref then " &" else ""]
 
+let string_of_arg (t,def) = 
+  (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)
+
 let string_of_meth m = 
-  let args_str = Core_list.map m.m_args ~f:(fun (t,def) ->
-    (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)) 
-	   |> String.concat ~sep:", "
-  in
+  let args_str = Core_list.map m.m_args ~f:string_of_arg |> String.concat ~sep:", " in
   (* additional space for OCaml compiler (comments) *)
   Printf.sprintf "%s %s(%s )"
     (string_of_type m.m_res) m.m_name args_str

@@ -57,7 +57,14 @@ class ocamlGenerator dir (index:index_t) = object (self)
       if List.length argslist > 5 then break2file "more then 5 parameters";
       fprintf h "\n(* constructor %s *)\n" (string_of_constr ~classname argslist);
       let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in
-      let cpp_func_name = cpp_func_name ~classname ~methname:classname argslist in
+      let cpp_func_name = 
+	let native_name = cpp_stub_name ~classname ?res_n_name:None ~is_byte:false argslist in
+	if List.length argslist > 5 then
+	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ?res_n_name:None ~is_byte:true argslist)
+	    native_name
+	else
+	  native_name
+      in
 
       let types = List.map argslist ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
@@ -105,14 +112,20 @@ class ocamlGenerator dir (index:index_t) = object (self)
       if not (is_good_meth ~classname ~index meth) then 
 	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
       if List.length meth.m_args + 1 > 10 then raise BreakSilent;
-      (* need additional stub for native compilation *)
-      if List.length meth.m_args + 1 > 5 then raise BreakSilent;
 
       let ocaml_classname = ocaml_class_name classname in
 
-      let cpp_func_name = cpp_func_name ~classname:meth.m_declared ~methname:meth.m_name meth.m_args in
+      let cpp_func_name = 
+	let classname = meth.m_declared in
+	let res_n_name = (meth.m_res,meth.m_name) in
+	let native_name = 
+	  cpp_stub_name ~classname ~res_n_name ~is_byte:false meth.m_args in
+	if List.length meth.m_args > 5 then
+	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ~res_n_name ~is_byte:true meth.m_args) native_name
+	else
+	  native_name
+      in
 
-(*      let lst2 = meth.m_args @ [(meth.m_res,None)] in *)
       let types = List.map meth.m_args ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
 
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in

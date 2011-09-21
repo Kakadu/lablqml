@@ -14,46 +14,30 @@ let iter = List.iter
 class cppGenerator dir index = object (self)
   inherit abstractGenerator index as super
 
-  method gen_stub ~prefix classname args ?res_n_name  h =
-    let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) args =
-      let argslist = List.map args ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name) in
-      let sort = if is_byte then "byte" else "native" in
-      match res_n_name with
-	| Some (res_t,name) -> String.concat ~sep:"_" (sort::classname::name::argslist)
-	| None -> String.concat ~sep:"_" (sort::"create"::classname::argslist)
-    in
+  method gen_stub ~prefix classname (args: func_arg list) ?res_n_name  h =
     try
-(*      if not (is_good_meth ~classname ~index m) then
-	raise BreakSilent; *)
-      let argslen = List.length args in
       let is_constr = Option.is_none res_n_name in
-      let native_func_name = cpp_stub_name ~classname args ?res_n_name ~is_byte:false in
-      let argnames =
-	let lst = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
-	if is_constr then "self"::lst else lst
-       in
-      (*fprintf h "// method %s \n" (string_of_meth m); *)
-
-      fprintf h "value %s(" native_func_name;
-      List.map argnames ~f:(fun x -> "value "^x) |> String.concat ~sep:"," |> fprintf h "%s";
-      fprintf h ") {\n";
-
-      if not is_constr then (
-	match res_n_name with None -> assert false | Some (res,_) -> (
-	  match self#toCamlCast (unreference res,None) "ans" "_ans" with
-	    | Success s -> ()
-	    | CastError _
-	    | CastValueType _
-	    | CastTemplate _ -> raise (BreakSilent)
-	)
-      );
-
-      if argslen > (if is_constr then 9 else 10) then raise BreakSilent;
-
-      let args = if not is_constr then
-	(ptrtype_of_classname classname, None) :: args
-	else args
+      let get_name is_byte = cpp_stub_name ~classname args ?res_n_name ~is_byte in 
+      let native_func_name = get_name false in
+      let () = 
+	let args_str = args |> List.map ~f:string_of_arg |> String.concat ~sep:"," in
+	match res_n_name with
+	| Some (res_type,name) -> 
+	  fprintf h "// method %s %s(%s)\n" (string_of_type res_type) name args_str
+	| None ->
+	  fprintf h "// constructor %s(%s)\n" classname args_str
       in
+      let argslen = List.length args + (if is_constr then 0 else 1) in
+      if argslen > 10 then raise BreakSilent;
+(*      fprintf h "// argslen = %d\n" argslen; *)
+      let (args,argnames) =
+	let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
+	if not is_constr then
+	  ((ptrtype_of_classname classname, None) :: args, "self"::argnames)
+	else
+	  (args, argnames)
+      in
+      assert (List.length argnames = (List.length args));
       let arg_casts = List.map2_exn argnames args ~f:(fun name (t,default) -> 
 	self#fromCamlCast (self#index) (unreference t) ~default name
       ) in
@@ -66,10 +50,16 @@ class cppGenerator dir index = object (self)
 	  | None -> ptrtype_of_classname classname
 	  | Some (res,_) -> res
       in
-      let () = match self#fromCamlCast self#index (unreference res_type) ~default:None "resname" with
+      let () = 
+	if res_type <> void_type then
+	match self#fromCamlCast self#index (unreference res_type) ~default:None "resname" with
 	| Success _ -> ()
 	| _ -> raise BreakSilent
       in
+
+      fprintf h "value %s(" native_func_name;
+      List.map argnames ~f:(fun x -> "value "^x) |> String.concat ~sep:"," |> fprintf h "%s";
+      fprintf h ") {\n";
 
       if argslen>5 then (
 	let l1,l2 = headl 5 argnames in
@@ -83,7 +73,12 @@ class cppGenerator dir index = object (self)
 	fprintf h "  CAMLlocal1(_ans);\n";
 
       List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
-      let argsCall = List.map (List.tl_exn argnames) ~f:((^)"_") |> String.concat ~sep:", " in
+      let argsCall = 
+	let lst = if not is_constr then (
+	  assert (List.length argnames >0);
+	  List.tl_exn argnames
+	) else argnames in
+	List.map lst ~f:((^)"_") |> String.concat ~sep:", " in
       if is_constr then (
 	let ns_prefix = match prefix with
 	  | [] -> ""
@@ -115,11 +110,21 @@ class cppGenerator dir index = object (self)
 		| _ -> "_ans")
 	end
       end;
-      fprintf h "}\n\n"
+      fprintf h "}\n";
+      if argslen > 5 then begin
+	let stub_name = get_name true in
+	fprintf h "value %s(value *argv, int) {\n" stub_name;
+        fprintf h "  return %s(\n    %s);\n" (get_name false)
+	  (List.init argslen ~f:(fun x -> x) 
+	      |> List.map ~f:(fun i-> sprintf "argv[%d]" i) 
+	      |> String.concat ~sep:",");
+	fprintf h "}\n\n"
+      end
+      else fprintf h "\n"
     with
       | BreakSilent -> ()
       | BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
-
+(*
   method genMeth ~prefix classname h m =
     try
       if m.m_declared <> classname then raise BreakSilent;
@@ -254,7 +259,7 @@ class cppGenerator dir index = object (self)
 	| _ -> assert false
     with BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
       | BreakSilent -> ()
-
+	*)
   method makefile dir lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
@@ -298,15 +303,19 @@ class cppGenerator dir index = object (self)
       if self#is_abstr_class c then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else begin
-	iter ~f:(self#genConstr ~prefix classname h) c.c_constrs 
+	let f args =
+	  let m = meth_of_constr ~classname args in
+          if is_good_meth ~index ~classname m then 
+	    self#gen_stub ~prefix classname args ?res_n_name:None h
+	in
+	iter ~f c.c_constrs 
       end;
-      MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_meths;
-      MethSet.iter ~f:(self#genMeth ~prefix c.c_name h) c.c_slots; 
-
-(*      iter ~f:(self#genProp c.c_name h) c.c_props; 
-      iter ~f:(self#genSignal c.c_name h) c.c_sigs; 
-*)
-
+      let f m = 
+	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) then
+	  self#gen_stub ~prefix classname m.m_args ?res_n_name:(Some (m.m_res, m.m_name)) h
+      in
+      MethSet.iter ~f c.c_meths;
+      MethSet.iter ~f c.c_slots; 
 
       fprintf h "}  // extern \"C\"\n";
       close_out h;

@@ -20,6 +20,7 @@ val void_type : cpptype
 val skip_meth : classname:string -> string -> bool
 val unreference : cpptype -> cpptype
 val string_of_type : cpptype -> string
+val string_of_arg : func_arg -> string
 val string_of_meth : meth -> string
 module MethSet :
   sig

@@ -9,18 +9,25 @@ open SuperIndex
 exception BreakS of string
 exception BreakSilent
 let breaks s = raise (BreakS s)
-
+(*
 let cpp_func_name ~classname ~methname ?(is_byte=true) argslist = 
   String.concat ~sep:"_" ((if is_byte then "byte" else "native")::classname::methname::(
     List.map argslist ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name)
   ))
+  *)
+let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) args =
+  let argslist = List.map args ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name) in
+  let sort = if is_byte then "byte" else "native" in
+  match res_n_name with
+    | Some (res_t,name) -> String.concat ~sep:"_" (sort::classname::name::argslist)
+    | None -> String.concat ~sep:"_" (sort::"create"::classname::argslist)
 
 let isTemplateClass name = 
-    try ignore (String.index_exn name '<' : int); true
-    with Not_found -> false
+  try ignore (String.index_exn name '<' : int); true
+  with Not_found -> false
 
 let isInnerClass name = 
-  try let _ = Str.search_forward (Str.regexp "::") name 0 in true
+  try let _ : int = Str.search_forward (Str.regexp "::") name 0 in true
   with Not_found -> false
 
 let skip_class_by_name ~classname =
@@ -73,7 +80,9 @@ let pattern index (t,default) =
 	match SuperIndex.find index key  with
 	  | Some (Class _) -> InvalidPattern
 	  | Some (Enum e) -> EnumPattern (e, key)
-	  | None -> (print_endline ("!!! Not in index: " ^ name); InvalidPattern)
+	  | None -> 
+	    printf "Warning. Not in index: %s. skipped.\n"  name; 
+	    InvalidPattern
       end
    
 let skipArgument ~index ((t,_) as arg) =  (* true when do skip *)
@@ -100,6 +109,7 @@ let is_good_meth ~classname ~index m =
   let args = m.m_args in
   let res = m.m_res in
   try
+    (match m.m_access with `Public -> () | `Private | `Protected -> raise DoSkip);
     if skip_class_by_name ~classname:m.m_declared then false
     else if skip_meth ~classname methname then false 
     else begin 
@@ -136,8 +146,8 @@ class virtual abstractGenerator _index = object (self)
   method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
   method private virtual gen_enum_in_ns : key:NameKey.t -> dir:string -> enum -> string option
   method private virtual genProp : string -> out_channel -> prop -> unit
-  method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
-  method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit
+(*  method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
+  method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit *)
   method private virtual makefile : string -> string list -> unit
 
 (* TODO: decide what index to use: from object or from parameter *)
@@ -195,7 +205,8 @@ class virtual abstractGenerator _index = object (self)
 							".toLocal8Bit().data() );"])
 	      | "char" when t.t_indirections=1 ->
 		Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
-	      | _ -> assert false)
+	      | _ -> raise (Common.Bug (sprintf "unexpected primitive: %s" t.t_name))
+	    )
 	  | ObjectPattern ->        Success (sprintf "%s = (value)(%s);" ansVarName arg)
 	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((value)(%s));" ansVarName arg)
 	  | EnumPattern (e,k) -> 

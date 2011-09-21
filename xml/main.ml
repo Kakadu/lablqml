@@ -27,7 +27,6 @@ let options = { reparse_xml= false;
 open Core_arg
 let () = Core_arg.parse [
   ("-xml", Unit (fun () -> (options.reparse_xml <- true)), "reparse xml file aaa.xml");
-  ("-base", Unit (fun () -> (options.reparse_xml <- true)), "reparse xml file aaa.xml");
   ("-nocpp", Unit (fun () -> (options.nocpp <- true)), "don't generate cpp");
   ("-file" , String (fun s -> options.input_file <- s), "XML file of classess");
   ("-noml", Unit (fun () -> (options.noml <- true)), "don't generate ml");
@@ -81,68 +80,19 @@ let main () =
 main ();;
 
 let main () = 
-  if not options.nocpp then begin
-    let (_,index,_,q) = options.base in
-    let open CppGenerator in
-    print_endline "generating C++ code";
-    (new cppGenerator options.out_dir index)#generate_q q
-  end; 
-  if not options.noml then begin
-    let (_,index,g,q) = options.base in
-    let open OcamlGenerator in
-    print_endline "generating OCaml code";
-    (new ocamlGenerator options.out_dir index )#generate q
-  end
+  try
+    if not options.nocpp then begin
+      let (_,index,_,q) = options.base in
+      let open CppGenerator in
+	  print_endline "generating C++ code";
+	  (new cppGenerator options.out_dir index)#generate_q q
+    end; 
+    if not options.noml then begin
+      let (_,index,g,q) = options.base in
+      let open OcamlGenerator in
+	  print_endline "generating OCaml code";
+	  (new ocamlGenerator options.out_dir index )#generate q
+    end
+  with e -> print_endline (Exn.backtrace ()); raise e
 ;;
 main ();;
-
-
-(*
-let index = ref Index.empty;;
-let main () = 
-  print_endline "Parsing xml tree..";
-  let ans = (List.map build !root) in
-  print_endline "\ngenerating index\n";
-  index := build_index ans;
-  print_endline "index is generated.";
-  index := removeClassesWithoutBases !index;
-  print_endline "call postBuildIndex";
-  index := postBuildIndex !index;
-  print_endline "end of post_build index";
-  ans
-;; 
-
-let ans = main ();;
-
-let main () = 
-  if options.print_virtuals then begin
-    print_endline "***  virtual meths in classes";
-    print_endline "call removeClassesWithoutBases";
-    
-    let f ~key ~data = match data with
-      | Ns _ | Enum _ -> ()
-      | Class (c,lst) -> 
-	Core_list.iter ~f:(fun (name,args) ->
-	  Printf.printf "%s(%s)\n" name (List.map Parser.type2str args |>  String.concat ", " )
-	) lst 
-    in
-    Index.iter !index ~f
-end;;
-let () = main ();;
-
-let main () =
-  if not options.nocpp then begin
-    print_endline "\ngenerating cpp code\n";
-    let _ = (new cppGenerator out_dir !index)#generate ans in ()
-  end
-in
-main ();;
-
-let main () =
-  if not options.noml then begin
-    print_endline "\ngenerating OCaml code\n";
-    let _ = (new ocamlGenerator out_dir !index)#generate ans in ()
-  end
-in
-main ();;
-*)
