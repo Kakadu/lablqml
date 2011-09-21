@@ -337,6 +337,7 @@ class cppGenerator dir index = object (self)
       fprintf h "//enum %s %s\n\n" e_name (List.to_string (fun x -> x) e_items);
 
       fprintf h "#include <Qt/QtOpenGL>\n";
+      fprintf h "#pragma GCC diagnostic ignored \"-Wswitch\"\n";
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       let (fname1,fname2) = enum_conv_func_names key in
       let s =  List.tl_exn (fst key) |> List.rev |> String.concat ~sep:"::" in

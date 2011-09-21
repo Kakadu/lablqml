@@ -5,3 +5,5 @@ My thoughts about which bindings for qt should be
 ./simple_signals --- hand-written bindings (only proof-of-concept)
 ./test_gen       --- environment for compiling bindings from generated code
 
+You can use build.ml script for pseudo-autobuidld.
+

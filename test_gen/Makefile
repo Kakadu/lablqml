@@ -15,7 +15,7 @@ test:
 	$(MAKE) -C test2
 	$(MAKE) -C test3
 	$(MAKE) -C test4
-	$(MAKE) -C test5
+	$(MAKE) -C test5 depend all
 
 
 kamlo:
@@ -40,4 +40,6 @@ clean:
 	$(MAKE) -C test  clean
 	$(MAKE) -C test2 clean
 	$(MAKE) -C test3 clean
+	$(MAKE) -C test4 clean
+	$(MAKE) -C test5 clean
 

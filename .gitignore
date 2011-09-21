@@ -9,3 +9,5 @@
 *~
 *.swp
 *.so
+.depend
+main.opt

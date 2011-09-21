@@ -8,6 +8,7 @@ GCC=g++ -g $(CPP_INCLUDES)
 all: main
 
 .SUFFIXES: .cpp .ml .cmo .o
+
 .cpp.o:
 	$(GCC) -c $<
 
