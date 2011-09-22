@@ -10,12 +10,12 @@ let app = QApplication.create [| "1";"2";"3";"4";"5";"6" |]
  (* HACK to avoid bug with optimization levels *)
 
 let dialog = create_QDialog_0 None `Dialog
-(* create menu *)
 let menuBar = create_QMenuBar_0 None
 let fileMenu = create_QMenu_1 "&File" (Some (dialog:> qWidget) )
 let exitAction = match fileMenu#addAction_ "E&xit" with
   | Some x -> x
   | None -> assert false
+let _ = connect exitAction exitAction#signal_triggered dialog dialog#slot_accept
 let _ = menuBar#addMenu fileMenu
 
 (* create horizaontal group box *)
@@ -65,14 +65,16 @@ let () =
 let mainLayout = create_QVBoxLayout_0 ()
 let bigEditor = create_QTextEdit_1 
     "This widget takes up all the remaining space in the top-level layout." None
-let () = () 
-(*  bigEditor#setPlainText --- this function is suspicious *)
-    (* let buttonBox =     *)
 let buttonBox = create_QDialogButtonBox_0 None 
 let () =
     let _ = buttonBox#addButton `Ok in
-    let _ = buttonBox#addButton `Cancel in ()
-
+    let _ = buttonBox#addButton `Cancel in
+    let () = 
+      connect buttonBox buttonBox#signal_accepted dialog  dialog#slot_accept in
+    let () = 
+      connect buttonBox buttonBox#signal_rejected dialog  dialog#slot_reject in
+    ()
+    
 let () = 
         mainLayout#setMenuBar (menuBar :> qWidget);
         mainLayout#addWidget  (horGroupBox :> qWidget);
@@ -80,10 +82,9 @@ let () =
         mainLayout#addWidget  (formGroupBox :> qWidget);
         mainLayout#addWidget  (bigEditor    :> qWidget);
         mainLayout#addWidget  (buttonBox    :> qWidget);
-        dialog#setLayout      (mainLayout :> qLayout)
-(*        dialog#setWindowTitle "Basic Layouts" *)
+        dialog#setLayout      (mainLayout :> qLayout);
+        dialog#slot_setWindowTitle#call "Basic Layouts"
 
-        
 (* WARNING: in Qt you should add something on a widget and that show this widget
  * in reverse order you'll not see this `something` *)
 
