@@ -4,9 +4,16 @@ open UnixLabels;;
 open Sys;;
 open Printf;;
 
-let cores_count = 3;; (* mkae -j parameter *)
+let cores_count = 3;; (* make -j parameter *)
+
+(* let api_xml = "../aaa.xml";; *)
 let api_xml = "../for_test5.xml";; 
-(* .. because this file will be accesses from ./xml *)
+(* .. because this file will be accesses from ./xml 
+ *
+ * This is a XML api file. Then most biggest and most interesting file is
+ * aaa.xml but Building with it is too long. You can simplify aaa.xml using 
+ * xmltool/4test5 script.
+ * *)
 
 let touch s =
   if not (Sys.file_exists s) then 

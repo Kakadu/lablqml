@@ -4,6 +4,9 @@ My thoughts about which bindings for qt should be
 ./moc --- helper utility to define user slots
 ./simple_signals --- hand-written bindings (only proof-of-concept)
 ./test_gen       --- environment for compiling bindings from generated code
+./xmltool        --- a tool for simplifying XML api
 
 You can use build.ml script for pseudo-autobuidld.
+
+aaa.xml is XML API representation of QtCore and QtGui namespaces in Qt 4.7.3 (Debian testing).
 
