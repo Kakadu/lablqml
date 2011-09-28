@@ -3,7 +3,7 @@ INCLUDES=-I /usr/lib/ocaml -I . -I ./.. -I ./../out
 OUTFILE=test
 OCAMLC=ocamlfind c -g 
 OCAMLOPT=ocamlfind opt -g
-CPP_INCLUDES=-I.. -I/usr/include/qt4/ -I/usr/include/qt4/QtCore  
+CPP_INCLUDES=-I.. -I/usr/include/qt4/ -I/usr/include/qt4/QtCore -I`ocamlc -where`/caml 
 GCC=g++ -g $(CPP_INCLUDES) 
 all: main
 
