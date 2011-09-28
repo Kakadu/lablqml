@@ -159,4 +159,5 @@ module G :
 (*    val kill_and_fall : t -> vertex -> unit *)
   end
 
+val build_graph      : Parser.namespace -> (index_data SuperIndex.t ref) * G.t
 val build_superindex : Parser.namespace  -> index_data SuperIndex.t * G.t * SuperIndex.key Core.Core_queue.t

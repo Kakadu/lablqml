@@ -178,7 +178,7 @@ let super_filter_meths ~base ~cur =
      наследование с базовым (абстрактным) классом *)
   (!base_not_impl,!cur_impl,!cur_new)
     
-let build_superindex root_ns = 
+let build_graph root_ns =         
   let index = ref SuperIndex.empty in
   let g = G.create () in
 
@@ -246,8 +246,10 @@ let build_superindex root_ns =
 	  List.fold_left ~init:false ~f:(fun acc prefix -> acc or (startswith ~prefix name)) prefixes
 	| _ -> assert false)
     );
+  (index,g)
 
-  
+let build_superindex root_ns = 
+  let (index,g) = build_graph root_ns in
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
   close_out h;
@@ -404,27 +406,4 @@ let build_superindex root_ns =
     | Class _ -> ()
     | Enum _ -> Q.enqueue !ans_queue key
   );
-(*
-  let get_vertexes_names lst = 
-    List.map ~f:(fun v -> G.V.label v |> snd) lst |> List.stable_sort ~cmp:String.compare 
-  in
-
-  let roots = ref [] in
-  G.iter_vertex (fun v -> if G.pred_e g v |> List.length = 0 then roots := v :: !roots) g; 
-  let roots_names = get_vertexes_names !roots in
-  print_endline "Root vertexes are:";
-  List.iter roots_names ~f:(print_endline);
-  *)
-(*  print_endline "Now printing virtuals";
-  SuperIndex.iter !index ~f:(fun ~key ~data -> begin
-    match data with
-      | Class (c,_) ->
-	Printf.printf "class %s extends %s\n" c.c_name (List.to_string (fun x->x) c.c_inherits);
-	printf "  inner abstr:\n";
-	MethSet.iter c.c_meths_innabstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) );
-	printf "  c_meths_abstr:\n";
-	MethSet.iter c.c_meths_abstr ~f:(fun (m,_) -> Printf.printf "\t%s\n" (string_of_meth m) )
-      | Enum (ename,lst) -> ()
-  end);
-*)
   (!index,g, !ans_queue)

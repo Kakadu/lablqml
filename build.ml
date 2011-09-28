@@ -1,8 +1,12 @@
-#!/usr/bin/ocaml
 print_endline "Configure script for lablqt";;
 #load "unix.cma";;
 open UnixLabels;;
 open Sys;;
+open Printf;;
+
+let cores_count = 3;; (* mkae -j parameter *)
+let api_xml = "../for_test5.xml";; 
+(* .. because this file will be accesses from ./xml *)
 
 let touch s =
   if not (Sys.file_exists s) then 
@@ -27,19 +31,16 @@ if not (file_exists "xml/out") then
         symlink ~src:"../test_gen/out" ~dst:"xml/out";;
 
 (* compiling xml *)
-let x = command "make -C xml depend clean all" in
-if x<>0 then failwith "error while compiling xml";;
+wrap_cmd "make -C xml depend clean all" "error while compiling xml";;
 
 (* executing generator *)
 chdir "xml";;
-let x = command "./main.opt -xml -file ../aaa.xml" in
-if x<>0 then failwith "error while generating code";;
+wrap_cmd (sprintf "./main.opt -xml -file %s" api_xml) "error while generating code";;
 chdir "..";;
 
 print_endline "\ncompiling generated C++ files\n";;
-let x = command "make -j3 -C test_gen/out/cpp" in
-if x<>0 then failwith "error while compiling generated C++ files";;
-
+wrap_cmd (Printf.sprintf "make -j%d -C test_gen/out/cpp" cores_count) 
+  "error while compiling generated C++ files";;
 
 print_endline "\ncompiling mocml\n";;
 touch "moc/.depend";;
@@ -53,8 +54,7 @@ let add_mocml where =
 List.iter add_mocml ["test_gen/test4";"test_gen/test5"];;
 
 print_endline "\ncompiling the lablqt library";;
-let x = command "make -C test_gen clean all" in
-if x<>0 then failwith "error while building library";;
+wrap_cmd "make -C test_gen clean all" "error while building library";;
 
 print_endline "making tests";;
 let tests = ["test";"test2";"test3";"test4"] in
