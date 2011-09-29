@@ -41,5 +41,6 @@ clean:
 	$(MAKE) -C test2 clean
 	$(MAKE) -C test3 clean
 	$(MAKE) -C test4 clean
+	echo "" > test5/.depend
 	$(MAKE) -C test5 clean
 

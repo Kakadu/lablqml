@@ -23,7 +23,7 @@ let wrap_cmd cmd err =
   let x = command cmd in
   if x<>0 then failwith err;;
 
-
+(*
 touch "xml/.depend";;
 print_endline "Now you can build xml generator using:";;
 print_endline "\tcd xml; make depend; make\n";;
@@ -38,11 +38,16 @@ if not (file_exists "xml/out") then
         symlink ~src:"../test_gen/out" ~dst:"xml/out";;
 
 (* compiling xml *)
-wrap_cmd "make -C xml depend clean all" "error while compiling xml";;
+chdir "xml";;
+wrap_cmd "make clean" "error while compiling xml";;
+wrap_cmd "make depend" "error while compiling xml";;
+wrap_cmd "make all" "error while compiling xml";;
+chdir "..";;
 print_endline "Generator is compiled\n";;
 
 print_endline "Building XML tool for simplifing API";;
 wrap_cmd "make -C xmltool" "error while compiling xmltool";;
+
 print_endline "executing xmltool";;
 chdir "xmltool";;
 wrap_cmd "./4test5" "Error while generating tests for test N5";;
@@ -76,7 +81,7 @@ print_endline "making tests";;
 let tests = ["test";"test2";"test3";"test4"] in
 List.iter (fun s -> wrap_cmd ("make -C test_gen/"^s) ("can't make test " ^ s)) tests;;
 
-
+*)
 print_endline "\npreconfigure for test 5\n";;
 chdir "test_gen/test5";;
 touch ".depend";;
@@ -84,7 +89,8 @@ touch ".depend";;
 wrap_cmd "make depend" "can't make test5 (depend failed)";;
 
 print_endline "\tThere are some problems with compiling test5 now";;
-print_endline "\tYou can do `cd test_gen/test5; mkae depend; make` manually";; 
+print_endline "\tYou can do `cd test_gen/test5; mkae depend; make` manually (if
+        something is wrong)";; 
 
 wrap_cmd "make"       "can't make test5 (make failed)";;
 chdir "../..";;
