@@ -18,9 +18,9 @@ all: main
 depend:
 	./mocml input
 	ocamldep *.ml *.mli > .depend
+	moc UserSlots.h > moc_UserSlots.cpp
 
 userslots.h:
-	moc UserSlots.h > moc_UserSlots.cpp
 
 main: userslots.h moc_UserSlots.o UserSlots.o UserSlots.cmo UserSlots_stubs.cmo main.cmo
 	$(OCAMLC) -custom $(INCLUDES) lablqt.cma UserSlots.o moc_UserSlots.o \
