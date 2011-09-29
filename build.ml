@@ -23,7 +23,7 @@ let wrap_cmd cmd err =
   let x = command cmd in
   if x<>0 then failwith err;;
 
-(*
+
 touch "xml/.depend";;
 print_endline "Now you can build xml generator using:";;
 print_endline "\tcd xml; make depend; make\n";;
@@ -81,7 +81,7 @@ print_endline "making tests";;
 let tests = ["test";"test2";"test3";"test4"] in
 List.iter (fun s -> wrap_cmd ("make -C test_gen/"^s) ("can't make test " ^ s)) tests;;
 
-*)
+
 print_endline "\npreconfigure for test 5\n";;
 chdir "test_gen/test5";;
 touch ".depend";;
