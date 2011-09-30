@@ -10,3 +10,12 @@ You can use build.ml script for pseudo-autobuidld.
 
 aaa.xml is XML API representation of QtCore and QtGui namespaces in Qt 4.7.3 (Debian testing).
 
+You can download and compile lablqt automatically (if all depends are installed) using script:
+
+    #!/bin/sh
+    #getting git-readonly
+    git clone git://github.com/Kakadu/lablqt.git
+    cd lablqt
+    ocaml build.ml
+
+
