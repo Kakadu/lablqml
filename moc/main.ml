@@ -58,7 +58,7 @@ let gen_header lst =
   fprintf h "extern \"C\" {\n";
   fprintf h "#include \"headers.h\"\n";
   fprintf h "}\n";
-  fprintf h "#include <QObject>\n";
+  fprintf h "#include <QtCore/QObject>\n";
   fprintf h "class %s : public QObject {\nQ_OBJECT\n" classname;
   fprintf h "public slots:\n";
   
