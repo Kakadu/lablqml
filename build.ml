@@ -15,6 +15,12 @@ let api_xml = "../for_test5.xml";;
  * xmltool/4test5 script.
  * *)
 
+(* You can setup GCC include files specific for your system *)
+let includes = ["/usr/include/qt4"; "/opt/local/include"];;
+
+
+let cpp_includes () = " -I " ^ (String.concat " -I " includes );;
+
 let touch s =
   if not (Sys.file_exists s) then 
         close_out (open_out s);;
@@ -56,7 +62,7 @@ chdir "..";;
 
 print_endline "executing generator\n";;
 chdir "xml";;
-wrap_cmd (sprintf "./main.opt -xml -file %s" api_xml) "error while generating code";;
+wrap_cmd (sprintf "./main.opt -xml %s -file %s" (cpp_includes ()) api_xml) "error while generating code";;
 chdir "..";;
 
 print_endline "\ncompiling generated C++ files\n";;

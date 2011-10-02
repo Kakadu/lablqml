@@ -10,7 +10,8 @@ type options = {
   mutable noml: bool;
   mutable reparse_base: bool;
   mutable base: Parser.namespace * index_data SuperIndex.t * G.t * SuperIndex.key Core_queue.t;
-  mutable out_dir: string
+  mutable out_dir: string;
+  mutable includes: string list
 }
 let options = { reparse_xml= false; 
 		input_file= "../aaa.xml";
@@ -19,7 +20,8 @@ let options = { reparse_xml= false;
 		noml=false;
 		reparse_base=false;
 		base=(empty_namespace, SuperIndex.empty, G.create (), Core.Core_queue.create ());
-		out_dir = "./out"
+		out_dir = "./out";
+		includes = ["/usr/include/qt4"]
 	      }
 
 (* TODO: experiment with Gc max heap size to speedup generator *)
@@ -30,6 +32,7 @@ let () = Core_arg.parse [
   ("-nocpp", Unit (fun () -> (options.nocpp <- true)), "don't generate cpp");
   ("-file" , String (fun s -> options.input_file <- s), "XML file of classess");
   ("-noml", Unit (fun () -> (options.noml <- true)), "don't generate ml");
+  ("-I", String (fun s -> options.includes <- s :: options.includes), "add include to cpp generated files");
   ("-virt", Unit (fun () -> options.print_virtuals <- true), 
    "print virtual meths of all classes and return")
   ] (fun _ -> print_endline "fuck. anonymous function") "usage_msg"
@@ -85,7 +88,7 @@ let main () =
       let (_,index,_,q) = options.base in
       let open CppGenerator in
 	  print_endline "generating C++ code";
-	  (new cppGenerator options.out_dir index)#generate_q q
+	  (new cppGenerator ~includes:options.includes options.out_dir index)#generate_q q
     end; 
     if not options.noml then begin
       let (_,index,g,q) = options.base in

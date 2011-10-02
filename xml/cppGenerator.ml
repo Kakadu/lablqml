@@ -11,7 +11,7 @@ module String = Core_string
 
 let iter = List.iter
 
-class cppGenerator dir index = object (self)
+class cppGenerator ~includes dir index = object (self)
   inherit abstractGenerator index as super
 
   method gen_stub ~prefix classname (args: func_arg list) ?res_n_name  h =
@@ -124,146 +124,14 @@ class cppGenerator dir index = object (self)
     with
       | BreakSilent -> ()
       | BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
-(*
-  method genMeth ~prefix classname h m =
-    try
-      if m.m_declared <> classname then raise BreakSilent;
-      (match m.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
-      if not (is_good_meth ~classname ~index m) then 
-	raise BreakSilent;
-      let methname = m.m_name in
-      let res = m.m_res and lst= m.m_args in
-      
-      fprintf h "// method %s \n" (string_of_meth m);
 
-      let isProc = (res.t_name = "void") in
-
-      let resCast = if isProc then ""
-	else begin match self#toCamlCast (unreference res,None) "ans" "_ans" with 
-	  | CastError s -> raise (BreakSilent)
-	  | CastValueType name -> raise (BreakSilent)
-	  | CastTemplate str -> raise (BreakSilent)
-	  | Success s -> s 
-	end
-      in
-      let argnames = List.mapi lst ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
-      let argnames = "self" :: argnames in      
-      let len = List.length argnames in
-      if len > 10 then
-	raise BreakSilent;
-
-      let type_of_clas = 
-	{ t_name=classname; t_is_ref=false; t_is_const=false; t_indirections=1; t_params=[] } in
-      let lst2 = (type_of_clas, None) :: lst in
-      let arg_casts = List.map2_exn argnames lst2 ~f:(fun name (t,default) -> 
-	self#fromCamlCast (self#index) (unreference t) ~default name
-      ) in
-      let fail = List.find arg_casts ~f:(function Success _ -> false | _ -> true) in
-
-      match fail with
-	| Some (CastError s) -> raise (BreakSilent)
-	| Some (CastValueType name) -> raise (BreakSilent)
-	| Some (CastTemplate str) -> raise (BreakSilent)
-	| None -> begin
-	  let cpp_func_name = cpp_func_name ~classname ~methname lst in
-	  fprintf h "value %s(%s) {\n" cpp_func_name 
-	    (List.map argnames ~f:(fun s->"value "^s) |> String.concat ~sep:", ");
-	  	  
-	  if len>5 then (
-	    let l1,l2 = headl 5 argnames in
-	    fprintf h "  CAMLparam5(%s);\n"           (l1 |> String.concat ~sep:",");
-	    fprintf h "  CAMLxparam%d(%s);\n" (len-5) (l2 |> String.concat ~sep:",") 
-	  ) else (
-	    fprintf h "  CAMLparam%d(%s);\n" len (argnames |> String.concat ~sep:",")
-	  );
-	  if not isProc then 
-	    fprintf h "  CAMLlocal1(_ans);\n";
-	  
-	  let arg_casts = List.map arg_casts ~f:(function Success s -> s| _ -> assert false) in
-	  List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
-	  let argsCall = List.map (List.tl_exn argnames) ~f:((^)"_") |> String.concat ~sep:", " in
-	  if isProc then (
-	    fprintf h "  _self -> %s(%s);\n" methname argsCall;
-	    fprintf h "  CAMLreturn(Val_unit);\n" 
-	  ) else (
-	    let res = unreference res in
-	    let ans_type_str = match pattern index (res,None) with
-	      | EnumPattern (e,key) -> snd key
-	      | _ -> string_of_type res in
-	    fprintf h "  %s ans = _self -> %s(%s);\n" 
-	      (ans_type_str ) methname argsCall;
-	    fprintf h "  %s\n" resCast;
-	    fprintf h "  CAMLreturn(%s);\n"
-	      (match pattern index (res,None) with
-		| ObjectPattern -> sprintf " (ans) ? Val_some(%s) : Val_none" "_ans"
-		| _ -> "_ans")
-	  );	  
-	  fprintf h "}\n\n"
-	end
-	| _ -> assert false
-    with BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
-      | BreakSilent -> ()
-
-  method genConstr ~prefix classname h lst =
-(*    print_endline ("generating constructor of " ^ classname); *)
-    try
-(*      let skipStr = sprintf "skipped %s::%s" classname classname in *)
-      let fake_meth = meth_of_constr ~classname lst in
-      if not (is_good_meth ~classname ~index fake_meth) then 
-	raise BreakSilent;
-(*      breaks (sprintf "Skipped constructor %s\n" (string_of_meth fake_meth) ); *)
-      
-      fprintf h "// constructor `%s`(%s)\n"
-	classname (List.map lst ~f:(string_of_type %< fst) |> String.concat ~sep:",");
-
-      let argnames = List.mapi lst ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
-      let len = List.length argnames in
-      if len > 10 then
-	raise BreakSilent;
-
-      let argCasts = List.map2_exn ~f:(fun name (t,default) -> 
-	self#fromCamlCast (self#index) (unreference t) ~default name
-      ) argnames lst in
-      let fail = Core_list.find argCasts ~f:(function Success _ -> false | _ -> true) in
-
-      match fail with
-	| Some (CastError s) -> breaks s
-	| Some (CastValueType name) -> raise BreakSilent
-	| Some (CastTemplate str) -> raise BreakSilent
-	| None -> begin
-	  let cpp_func_name = cpp_func_name ~classname ~methname:classname lst in
-	  fprintf h "value %s(%s) {\n" cpp_func_name 
-	    (List.map ~f:(fun s->"value "^s) argnames |> String.concat ~sep:", ");
-	  	  
-	  if len>5 then (
-	    let l1,l2 = headl 5 argnames in
-	    fprintf h "  CAMLparam5(%s);\n" (                   l1 |> String.concat ~sep:",");
-	    fprintf h "  CAMLxparam%d(%s);\n" (len-5) (                  l2 |> String.concat ~sep:",") 
-	  ) else (
-	    fprintf h "  CAMLparam%d(%s);\n" len (                  argnames |> String.concat ~sep:",")
-	  );
-	  fprintf h "  CAMLlocal1(_ans);\n";
-	  
-	  let argCasts = List.map ~f:(function Success s -> s| _ -> assert false) argCasts in
-	  List.iter ~f:(fun s -> fprintf h "  %s\n" s) argCasts;
-	  let argsCall = List.map ~f:((^)"_") argnames |> String.concat ~sep:", " in
-	  let ns_prefix = match prefix with
-	    | [] -> ""
-	    | lst -> String.concat ~sep:"::" lst ^ "::" in
-	  let full_classname = ns_prefix ^ classname in
-	  fprintf h "  %s *ans = new %s(%s);\n" full_classname full_classname argsCall;
-	  fprintf h "  _ans = (value)ans;\n";
-	  fprintf h "  CAMLreturn(_ans);\n";	    
-	  fprintf h "}\n\n"
-	end
-	| _ -> assert false
-    with BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
-      | BreakSilent -> ()
-	*)
   method makefile dir lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
-    fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/ -I./../../ -I. \n\n";
+    fprintf h "INCLUDES=-I./../../ -I.";
+    List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
+    fprintf h "\n";
+    fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED $(INCLUDES) \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
     fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
