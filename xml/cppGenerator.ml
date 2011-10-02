@@ -128,10 +128,10 @@ class cppGenerator ~includes dir index = object (self)
   method makefile dir lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
-    fprintf h "INCLUDES=-I./../../ -I.";
+    fprintf h "INCLUDES=-I./../../ -I. `pkg-config --cflags QtOpenGL` ";
     List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
     fprintf h "\n";
-    fprintf h "GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED $(INCLUDES) \n\n";
+    fprintf h "GCC=g++ -c -pipe -g -Wall -W $(INCLUDES) \n\n";
     fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
     fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";

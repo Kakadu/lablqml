@@ -1,4 +1,4 @@
-GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/include/qt4/
+GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT `pkg-config --cflags QtOpenGL`
 
 CMXS=stub_helpers.cmo qtstubs.cmo
 C_STUBS=cstubs.o

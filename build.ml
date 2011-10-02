@@ -3,6 +3,13 @@ print_endline "Configure script for lablqt";;
 open UnixLabels;;
 open Sys;;
 open Printf;;
+(* Configure part *)
+let wrap_cmd cmd err = 
+  let x = command cmd in
+  if x<>0 then failwith err;;
+
+wrap_cmd "pkg-config --cflags QtOpenGL" "can't find Qt OpenGL header files";;
+(* Configure end ***************************)
 
 let cores_count = 3;; (* make -j parameter *)
 
@@ -16,19 +23,16 @@ let api_xml = "../for_test5.xml";;
  * *)
 
 (* You can setup GCC include files specific for your system *)
-let includes = ["/usr/include/qt4"; "/opt/local/include"];;
+let includes = [];;
 
 
-let cpp_includes () = " -I " ^ (String.concat " -I " includes );;
+let cpp_includes () = match includes with 
+  | [] -> ""
+  | _  -> " -I " ^ (String.concat " -I " includes );;
 
 let touch s =
   if not (Sys.file_exists s) then 
         close_out (open_out s);;
-
-let wrap_cmd cmd err = 
-  let x = command cmd in
-  if x<>0 then failwith err;;
-
 
 touch "xml/.depend";;
 print_endline "Now you can build xml generator using:";;
