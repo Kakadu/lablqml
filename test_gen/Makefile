@@ -22,7 +22,7 @@ kamlo:
 	$(MAKE) -C out 
 
 mklib:
-	ocamlmklib -o lablqt `pkg-config --libs QtOpenGL` -lpthread  $(C_STUBS) $(CMXS) \
+	ocamlmklib -o lablqt `pkg-config --libs QtOpenGL` -lstdc++ -lpthread  $(C_STUBS) $(CMXS) \
 		$(BIND_CPP_OBJS) $(BIND_ML_OBJS) 
 
 
