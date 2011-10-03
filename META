@@ -1,0 +1,4 @@
+version = "0.1"
+description = "OCaml bindings to Qt"
+requires = "core"
+archive(byte) = "lablqt.cma"

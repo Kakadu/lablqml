@@ -115,8 +115,16 @@ let () = match !target with
           chdir "../.."
         ) ["test5";"test6"]
   end
-  | `Install -> ()
-  | `Uninstall -> ()
+  | `Install -> 
+    print_endline "installing...";
+    let instcmd = "ocamlfind install lablqt test_gen/lablqt.cma test_gen/dlllablqt.so META " ^ 
+      " test_gen/out/*.cmi test_gen/liblablqt.a test_gen/*.cmi " in                  
+    wrap_cmd instcmd "can't do install"
+                  
+                  
+  | `Uninstall -> 
+    print_endline "uninstalling...";
+    wrap_cmd "ocamlfind remove lablqt" "can't remove package"
 ;;  
 
 
