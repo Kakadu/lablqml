@@ -82,7 +82,7 @@ let add_mocml where =
   let file = where ^ "/mocml" in 
   if not (file_exists file) then
     symlink ~src:"../../moc/main.opt" ~dst:file;;
-List.iter add_mocml ["test_gen/test4";"test_gen/test5"];;
+List.iter add_mocml ["test_gen/test4";"test_gen/test5"; "test_gen/test6"];;
 
 print_endline "\ncompiling the lablqt library";;
 wrap_cmd "make -C test_gen clean all" "error while building library";;
@@ -91,19 +91,16 @@ print_endline "making tests";;
 let tests = ["test";"test2";"test3";"test4"] in
 List.iter (fun s -> wrap_cmd ("make -C test_gen/"^s) ("can't make test " ^ s)) tests;;
 
+List.iter (fun test ->
+  print_endline "\npreconfigure for ";
+  print_endline (test ^ "\n");
+  chdir (sprintf "test_gen/%s" test);
+  touch ".depend";
 
-print_endline "\npreconfigure for test 5\n";;
-chdir "test_gen/test5";;
-touch ".depend";;
-
-wrap_cmd "make depend" "can't make test5 (depend failed)";;
-
-print_endline "\tThere are some problems with compiling test5 now";;
-print_endline "\tYou can do `cd test_gen/test5; mkae depend; make` manually (if
-        something is wrong)";; 
-
-wrap_cmd "make"       "can't make test5 (make failed)";;
-chdir "../..";;
+  wrap_cmd "make depend" (sprintf "can't make %s (depend failed)" test);
+  wrap_cmd "make"        (sprintf "can't make %s (make failed)" test);
+  chdir "../.."
+) ["test5";"test6"];;
 
 
 

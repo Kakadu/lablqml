@@ -1,5 +1,5 @@
 #!/bin/bash
 
-lst="QDialog QMenuBar QMenu QAction QGroupBox QHBoxLayout QGridLayout QLabel QLineEdit QTextEdit QFormLayout QComboBox QLabel QSpinBox QHBoxLayout QVBoxLayout QPushButton QDialogButtonBox Qt QAbstractSlider QScrollBar QTabWidget QCheckBox QListWidget"
+lst="QDialog QMenuBar QMenu QAction QGroupBox QHBoxLayout QGridLayout QLabel QLineEdit QTextEdit QFormLayout QComboBox QLabel QSpinBox QHBoxLayout QVBoxLayout QPushButton QDialogButtonBox Qt QAbstractSlider QScrollBar QTabWidget QCheckBox QListWidget QTreeWidget"
 
 ./main.opt -in ../aaa.xml -out ../for_test5.xml $lst 
