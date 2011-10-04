@@ -118,7 +118,8 @@ let () = match !target with
   | `Install -> 
     print_endline "installing...";
     let instcmd = "ocamlfind install lablqt test_gen/lablqt.cma test_gen/dlllablqt.so META " ^ 
-      " test_gen/out/*.cmi test_gen/liblablqt.a test_gen/*.cmi " in                  
+      " test_gen/out/*.cmi test_gen/liblablqt.a test_gen/*.cmi test_gen/lablqt.a" ^
+      " test_gen/lablqt.cmxa"  in
     wrap_cmd instcmd "can't do install"
                   
                   
