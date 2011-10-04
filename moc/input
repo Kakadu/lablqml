@@ -1,2 +1,1 @@
-let foo: int -> int -> unit
-let goo: qWidget -> qWidget
+let goo:unit -> unit

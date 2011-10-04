@@ -68,6 +68,9 @@ let gen_header lst =
       let l'= List.rev lst in
       (l' |> List.hd_exn, l' |> List.tl_exn |> List.rev)
     in
+(*    print_endline "args are:";
+    List.iter args ~f:(fun x -> printf "`%s`\n" x); *)
+    let args = if args = ["void"] then [] else args in
     let argnames = List.mapi args ~f:(fun i _ -> sprintf "x%d" i) in
     let arg' = List.map2_exn args argnames ~f:(fun typ name -> sprintf "%s %s" typ name) in
     fprintf h "  %s %s(%s) {\n" res name (String.concat ~sep:"," arg');
@@ -123,6 +126,7 @@ let gen_header lst =
 let to_cpp_type s = match s with
   | "int" -> "int"
   | "bool" -> "bool"
+  | "unit" -> "void"
   | s when is_qt_classname s -> sprintf "%s*" (to_qt_classname s)
   | _ -> assert false
 
@@ -130,13 +134,16 @@ let gen_ml lst =
   let h = open_out (classname ^ "_stubs.ml") in
   fprintf h "open Stub_helpers\n";
   fprintf h "open Classes\n\n";
+
   List.iter lst ~f:(fun ((name,lst) as slot) -> 
     let lst = List.rev lst |> List.tl_exn |> List.rev in
-    let argnames = List.mapi lst ~f:(fun i _ -> sprintf "x%d" i) in
+    let argnames = if lst = ["unit"] then ["()"] 
+      else List.mapi lst ~f:(fun i _ -> sprintf "x%d" i) in
     let stub_name = name_for_slot slot in
     fprintf h "let %s %s =\n" stub_name (String.concat ~sep:" " argnames);
     let args' = List.map2_exn argnames lst ~f:(fun argname typ -> match typ with
       | "int" | "bool" -> argname
+      | "unit" -> sprintf " () "
       | s when is_qt_classname s -> sprintf "(new %s %s)" s argname
       | _ -> Std_internal.failwithf "Cant cast type: %s" typ ()
     ) in
