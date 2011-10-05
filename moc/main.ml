@@ -68,35 +68,41 @@ let gen_header lst =
       let l'= List.rev lst in
       (l' |> List.hd_exn, l' |> List.tl_exn |> List.rev)
     in
-(*    print_endline "args are:";
-    List.iter args ~f:(fun x -> printf "`%s`\n" x); *)
     let args = if args = ["void"] then [] else args in
     let argnames = List.mapi args ~f:(fun i _ -> sprintf "x%d" i) in
     let arg' = List.map2_exn args argnames ~f:(fun typ name -> sprintf "%s %s" typ name) in
     fprintf h "  %s %s(%s) {\n" res name (String.concat ~sep:"," arg');
     (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
     fprintf h "    value *closure = caml_named_value(\"%s\");\n" (name_for_slot slot);
-    let n = List.length argnames in
-    fprintf h "    value *args = new value[%d];\n" n;
-    iter2i args argnames ~f:(fun i arg name ->
-      match arg with 
-	| "int"  -> fprintf h "    args[%d] = Val_int (%s);\n" i name
-	| "bool" -> fprintf h "    args[%d] = Val_bool(%s);\n" i name
-	| "float" -> Std_internal.failwithf "float values are not yet supported" ()
-	| "string" -> fprintf h "    args[%d] = caml_copy_string(%s.toLocal8Bit().data() );\n" i name
-	| _ when is_qt_classname arg -> begin
-	  let classname = to_qt_classname arg in
-	  fprintf h "    args[%d] = (%s!=0)? Some_val((%s)%s) : Val_none;\n" i name classname name
-	end
-	| _ -> assert false
-    );
     fprintf h "    if (closure==NULL)\n      printf(\"closure not found. crash.\\n\");\n";
+    let n = List.length argnames in
+
+    let call_closure_str = match n with 
+      | 0 -> "caml_callback(*closure, Val_unit)"
+      | _ -> begin
+	fprintf h "    value *args = new value[%d];\n" n;
+	iter2i args argnames ~f:(fun i arg name ->
+	  match arg with 
+	    | "int"  -> fprintf h "    args[%d] = Val_int (%s);\n" i name
+	    | "bool" -> fprintf h "    args[%d] = Val_bool(%s);\n" i name
+	    | "float" -> Std_internal.failwithf "float values are not yet supported" ()
+	    | "string" -> fprintf h "    args[%d] = caml_copy_string(%s.toLocal8Bit().data() );\n" i name
+	    | _ when is_qt_classname arg -> begin
+(*	      let classname = to_qt_classname arg in *)
+	      fprintf h "    args[%d] = (%s!=0)? Some_val(%s) : Val_none;\n" i name name
+	    end
+	    | _ -> assert false
+	);
+	fprintf h "    // delete args or not?\n";
+	sprintf "caml_callbackN(*closure, %d, args)" n
+      end
+    in
     if res = "void" then
-      fprintf h "    caml_callbackN(*closure, %d, args);\n" n
+      fprintf h "    %s;\n" call_closure_str
     else begin
       let is_class = is_qt_classname res in
-      fprintf h "    %s _ans = caml_callbackN(closure, %d, args);\n"
-	(if is_class  then "value" else res) n;
+      fprintf h "    %s _ans = %s;\n"
+	(if is_class then "value" else res) call_closure_str;
       let ret = match res with
 	| "int" -> "Int_val(_ans)"
 	| "double" | "float" -> assert false
@@ -120,7 +126,7 @@ let gen_header lst =
   fprintf h "  CAMLparam1(x);\n";
   fprintf h "  CAMLreturn((value)(new %s()));\n" classname;
   fprintf h "}\n";
-  fprintf h "}\n";
+  fprintf h "}\n\n";
   close_out h
 
 let to_cpp_type s = match s with
@@ -144,7 +150,8 @@ let gen_ml lst =
     let args' = List.map2_exn argnames lst ~f:(fun argname typ -> match typ with
       | "int" | "bool" -> argname
       | "unit" -> sprintf " () "
-      | s when is_qt_classname s -> sprintf "(new %s %s)" s argname
+      | s when is_qt_classname s -> 
+	sprintf "(match %s with Some x -> Some (new %s x) | None -> None)" argname s 
       | _ -> Std_internal.failwithf "Cant cast type: %s" typ ()
     ) in
     fprintf h "  UserSlots.%s %s\n" name (String.concat ~sep:" " args');

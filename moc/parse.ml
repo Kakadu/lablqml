@@ -21,6 +21,7 @@ let parse_slots =
       | [name;typ] -> let args = Str.split_delim (Str.regexp "->") typ |> List.map ~f:String.strip in
 		      let name = if String.is_prefix name ~prefix then String.drop_prefix name 4
 			else name in
+                      let name = String.strip name in
 		      if List.for_all args ~f:is_good_arg then
 			Some (name,args)
 		      else ( (* printf "not all args are corrent\n"; *) None)

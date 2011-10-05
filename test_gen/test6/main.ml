@@ -8,6 +8,10 @@ open Printf
 
 let app = QApplication.create [| "1";"2";"3";"4";"5";"6" |] 
  (* HACK to avoid bug with optimization levels *)
+
+let user_obj = UserSlots_stubs.create_UserSlots () 
+
+
 let rootWidget = create_QWidget_0 None `Widget;;
 let rootLayout = create_QVBoxLayout_1 rootWidget ;;
 
@@ -21,7 +25,7 @@ let create_conf_tab name =
         lay#addWidget (text :> qWidget);
         lay#addWidget (users :> qWidget);
         ignore(tabWidget#addTab tab name);
-        tab
+       tab
 ;;
 
 let tab1 = create_conf_tab "tab1" ;;
@@ -30,6 +34,8 @@ rootLayout#addWidget (tabWidget :> qWidget);;
 
 let messageEdit = create_QLineEdit_1 "text" None;;
 rootLayout#addWidget (messageEdit :> qWidget);;
+let () = Stub_helpers.connect messageEdit messageEdit#signal_returnPressed 
+user_obj user_obj#slot_on_return_pressed;;
 (* *************** Menu ********************** *)
 
 let menuBar = create_QMenuBar_0 None

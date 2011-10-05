@@ -22,6 +22,7 @@ test:
 	$(MAKE) -C test3
 	$(MAKE) -C test4
 	$(MAKE) -C test5 depend all
+	$(MAKE) -C test6 depend all
 
 kamlo:
 	$(MAKE) -C out 
@@ -43,8 +44,10 @@ mklib_opt:
 .ml.cmo:
 	ocamlc -c $<
 
-clean:
+clean: clean_tests
 	rm -f *.o *.a *.cm[iaox] *.cmxa dlllablqt.so 
+
+clean_tests:
 	$(MAKE) -C test  clean
 	$(MAKE) -C test2 clean
 	$(MAKE) -C test3 clean
