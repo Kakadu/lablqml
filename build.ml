@@ -9,7 +9,8 @@ let target = ref `Build;;
 open Arg;;
 let () = Arg.parse [
         ("-build", Unit( fun () -> target := `Build ), "");
-        ("-install", Unit (fun () -> target := `Install),"");
+        ("-clean", Unit( fun () -> target := `Clean ), "");
+        ("-install", Unit (fun () -> target := `Install), "");
         ("-uninstall", Unit (fun () -> target := `Uninstall), "")
 ] (fun _ -> ()) "";;
 
@@ -34,7 +35,6 @@ let api_xml = "../for_test5.xml";;
 
 (* You can setup GCC include files specific for your system *)
 let includes = [];;
-
 
 let cpp_includes () = match includes with 
   | [] -> ""
@@ -126,7 +126,23 @@ let () = match !target with
   | `Uninstall -> 
     print_endline "uninstalling...";
     wrap_cmd "ocamlfind remove lablqt" "can't remove package"
+
+  | `Clean -> 
+    List.iter (fun s -> 
+      wrap_cmd (sprintf "rm -f %s" s) (sprintf "Can't remove %s" s);
+      touch s
+    ) ["xmltool/.depend"; "xml/.depend"; "moc/.depend"];
+
+    wrap_cmd "make -C xml clean" "error while cleaning in xml";
+    
+    wrap_cmd "make -C xmltool clean" "error while cleaning in xml_tool";
+
+    
+    wrap_cmd "make -C test_gen clean" "error while cleaning in test_gen";
+    wrap_cmd "rm -rf test_gen/out/*"  "error while removing generated files";
+
+    wrap_cmd "make -C moc clean" "error while cleaning in moc";
+
+    (* I dont remove XML API file **)
+    ()
 ;;  
-
-
-
