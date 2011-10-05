@@ -1,8 +1,8 @@
 OCAML=`ocamlc -where`
-INCLUDES=-I /usr/lib/ocaml -I .
+INCLUDES=-I /usr/lib/ocaml -I . -I .. -I ../out
 OUTFILE=test
-OCAMLC=ocamlfind c -g -vmthread -package lablqt
-OCAMLOPT=ocamlfind opt -thread -g -package lablqt
+OCAMLC=ocamlfind c -g #-vmthread -package lablqt
+OCAMLOPT=ocamlfind opt -g #-thread -package lablqt
 CPP_INCLUDES=-I.. `pkg-config --cflags QtOpenGL` -I`ocamlc -where` 
 GCC=g++ -g $(CPP_INCLUDES) 
 all: main
