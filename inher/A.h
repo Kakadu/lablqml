@@ -1,7 +1,14 @@
+#include <stdio.h>
+
 class A {
-	public:
-		A();
-		int foo() { return boo() +1 ; }
-		int virtual boo() = 0;
+public:
+	A();
+	void foo() { 
+		printf ("inside A::foo\n");
+	  	boo();
+		printf ("exit from A::foo\n");
+
+	}
+	void virtual boo() = 0;
 };
 

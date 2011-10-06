@@ -9,7 +9,8 @@ GCC=g++ -c
 .ml.cmx:
 	ocamlopt -c $<
 
-all: A.o AA.o classes.cmx
+all: A.o WrapperClass.o AA.o classes.cmx main.cmx
+	ocamlopt -cclib -lstdc++ A.o WrapperClass.o AA.o classes.cmx main.cmx -o main
 
 clean:
 	rm -f *.o *.cm[oix]
