@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 A::A() {
-  printf("inside A constructor\n");
+  printf("inside A constructor, this = %d\n", this);
 }
 
 #include <caml/mlvalues.h>
@@ -12,6 +12,7 @@ A::A() {
 extern "C" {
   value call_A_foo(value obj) {
     CAMLparam1(obj);
+    printf ("inside call_A_foo, obj = %d\n", obj);
     A* a = (A*) obj;
     a->foo();
     printf("let's return from call_A_foo\n");

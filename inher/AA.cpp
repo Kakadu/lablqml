@@ -30,12 +30,15 @@ extern "C" {
 value create_AA(value unit_x) {
   CAMLparam1(unit_x);
   AA* aa = new AA;
+  printf("new AA created: this = %d\n", aa);
+  ((OCamlBindingObject*)aa) -> setCamlObj(NULL);
   CAMLreturn((value)aa);
 }
 value set_caml_obj(value cpp_obj, value caml_obj) {
   CAMLparam2(cpp_obj, caml_obj);
   OCamlBindingObject *o = (OCamlBindingObject*) cpp_obj;
   o -> setCamlObj(caml_obj);
+  printf ("Setting caml_obj %d\n",caml_obj);
   CAMLreturn(Val_unit);
 }
 
