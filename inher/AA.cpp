@@ -15,7 +15,7 @@ public:
       printf ("total fail\n");
     caml_callback(meth, _camlobj);
     printf ("exit from AA::foo\n");
-    CAMLreturn0;
+    CAMLreturn0();
   }
   virtual void boo() {
     CAMLparam0();

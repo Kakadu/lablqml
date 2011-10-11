@@ -15,3 +15,5 @@ all: A.o WrapperClass.o AA.o classes.cmx main.cmx
 clean:
 	rm -f *.o *.cm[oix]
 
+test:
+	$(MAKE) all && $(MAKE) clean && ./main
