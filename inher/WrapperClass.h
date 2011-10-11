@@ -10,7 +10,8 @@ public:
 	  if (_camlobj != 0)
    	    caml_remove_global_root(&_camlobj);
 	  _camlobj = x; 
-	  caml_register_global_root(&_camlobj);
+	  if (_camlobj !=0)
+            caml_register_global_root(&_camlobj);
 	}
 };
 
