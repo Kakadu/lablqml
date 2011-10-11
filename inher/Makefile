@@ -1,5 +1,5 @@
 INC=-I ../simple_signals -I `ocamlc -where` -I .
-GCC=g++ -c
+GCC=g++ -c -g -O0 -fno-inline
 
 .SUFFIXES: .ml .cpp .mli .cmx
 
