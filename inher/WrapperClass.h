@@ -6,6 +6,7 @@ class OCamlBindingObject {
 protected:	
 	value _camlobj;
 public:
+	virtual ~OCamlBindingObject() {}
 	void setCamlObj(value x) { 
 	  if (_camlobj != 0)
    	    caml_remove_global_root(&_camlobj);

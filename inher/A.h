@@ -3,6 +3,7 @@
 class A {
 public:
 	A();
+	virtual ~A() {}
 	void foo() { 
                 printf ("inside A::foo\n"); fflush(stdout);
                 boo();

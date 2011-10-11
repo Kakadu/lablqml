@@ -13,6 +13,7 @@ public:
     meth = caml_get_public_method( _camlobj, caml_hash_variant("foo"));
     if (meth==0)
       printf ("total fail\n");
+    printf("calling callback of meth = %x\n",meth);
     caml_callback(meth, _camlobj);
     printf ("exit from AA::foo\n");
     CAMLreturn0;
@@ -20,8 +21,11 @@ public:
   void virtual boo() {
     CAMLparam0();
     CAMLlocal1(meth);
-    printf ("inside AA::boo\n");
+    printf ("inside AA::boo, camlobj = %x\n", _camlobj);
     meth = caml_get_public_method( _camlobj, caml_hash_variant("boo"));
+    if (meth==0)
+      printf ("total fail\n");
+    printf("calling callback of meth = %x\n",meth);
     caml_callback(meth, _camlobj);
     printf ("exit from AA::boo\n");
     CAMLreturn0;
@@ -41,12 +45,10 @@ value set_caml_obj(value cpp_obj, value caml_obj) {
   CAMLparam2(cpp_obj, caml_obj);
   aa_obj = (AA*)cpp_obj;
 
-  /*
-  OCamlBindingObject *o = (OCamlBindingObject*) cpp_obj;
-  o -> setCamlObj(caml_obj);
-  */
-
-  OCamlBindingObject* o = dynamic_cast<OCamlBindingObject*>(aa_obj);
+  
+  OCamlBindingObject *o = (OCamlBindingObject*) cpp_obj;  
+  //OCamlBindingObject* o = dynamic_cast<OCamlBindingObject*>(aa_obj);
+  
   o->setCamlObj(caml_obj);
 
   printf ("Setting caml_obj %x to c++ obj %x\n", caml_obj, cpp_obj);
