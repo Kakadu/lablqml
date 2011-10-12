@@ -292,8 +292,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
       );
       
       let target_meths = c.c_meths in
-      fprintf h_classes " %s me = object (self) \n" ocaml_classname;
-      fprintf h_classes "  method handler : [ `qobject ] obj = me\n";
+      fprintf h_classes " %s = object (self) \n" ocaml_classname;
+      fprintf h_classes "  val mutable handler : [ `qobject ] obj = Obj.magic 1 \n";
+      fprintf h_classes "  initializer ()\n";
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes); 
       MethSet.iter c.c_slots ~f:(fun slot -> 
 	self#gen_slot ~classname h_classes slot;
@@ -332,3 +333,4 @@ class ocamlGenerator dir (index:index_t) = object (self)
     close_out h
         
 end
+

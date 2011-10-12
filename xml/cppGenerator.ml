@@ -163,8 +163,14 @@ class cppGenerator ~includes dir index = object (self)
       let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
       let dir =  dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
-      let filename = dir ^/ classname ^ ".cpp" in
-      let h = open_out filename in
+      let (stubs_filename, twin_cppname, twin_header_name) = 
+	let d = dir ^/ classname in
+	(d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
+        (* I'll find some problems with adding include files for every class. 
+	   Maybe fix makefile to cut directory from cpp and add it to includes of gcc
+	*)
+      in
+      let h = open_out stubs_filename in
       fprintf h "#include <Qt/QtOpenGL>\n";
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
@@ -187,9 +193,18 @@ class cppGenerator ~includes dir index = object (self)
 
       fprintf h "}  // extern \"C\"\n";
       close_out h;
+      (* Now let's write twin class *)
+      let h = open_out twin_header_name in
+      self#gen_twin_header ~prefix c h;
+      close_out h;
       Some (if subdir = "" then classname else subdir ^/ classname)
     end
   
+  method gen_twin_header ~prefix c h = 
+    
+
+    ()
+
   method genProp classname h (name,r,w) = ()
   
   method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} = 

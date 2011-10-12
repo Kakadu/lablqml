@@ -25,9 +25,6 @@ type pattern =
   | EnumPattern  of enum * SuperIndex.NameKey.t
   | ObjectDefaultPattern
 
-(*
-val cpp_func_name : classname:string -> methname:string -> ?is_byte:bool -> func_arg list -> string
-*)
 val cpp_stub_name: classname:string -> ?res_n_name:cpptype*string -> ?is_byte:bool -> func_arg list 
   -> string
 val is_good_meth : classname:string -> index:SuperIndex.index_t -> meth -> bool
@@ -45,21 +42,12 @@ class virtual abstractGenerator :
       SuperIndex.index_t ->
       Parser.cpptype -> default:string option -> string -> castResult
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
-(*
-    method private virtual genConstr :
-	prefix:string list -> string -> out_channel -> Parser.constr -> unit *)
-(*    method private virtual gen_enumOfClass :
-	string -> out_channel -> Parser.enum -> unit *)
     method private virtual gen_enum_in_ns :
       key:SuperIndex.NameKey.t -> dir:string -> Parser.enum -> string option
-(*
-    method private virtual genMeth :
-      prefix:string list -> string -> out_channel -> Parser.meth -> unit *)
-(*    method gen_ns : prefix:string list -> dir:string -> Parser.namespace -> unit *)
     method private virtual genProp :
       string -> out_channel -> Parser.prop -> unit
-(*    method generate : namespace -> unit *)
     method private index : SuperIndex.index_t
     method private virtual makefile : string -> string list -> unit
     method private virtual prefix : string
   end
+
