@@ -16,7 +16,7 @@ let cpp_func_name ~classname ~methname ?(is_byte=true) argslist =
   ))
   *)
 let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) args =
-  let argslist = List.map args ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name) in
+  let argslist = List.map args ~f:(fun {arg_type=t;_}-> Str.global_replace (Str.regexp "::") "_" t.t_name) in
   let sort = if is_byte then "byte" else "native" in
   match res_n_name with
     | Some (res_t,name) -> String.concat ~sep:"_" (sort::classname::name::argslist)
@@ -55,7 +55,7 @@ type pattern =
   | EnumPattern  of enum * NameKey.t
   | ObjectDefaultPattern (* when `=0` *) (* default pattern when parameter has default value *)
 
-let pattern index (t,default) =
+let pattern index {arg_type=t; arg_default=default; _} =
     let name = t.t_name in
     let indir = t.t_indirections in
     if indir>1 then InvalidPattern 
@@ -85,8 +85,8 @@ let pattern index (t,default) =
 	    InvalidPattern
       end
    
-let skipArgument ~index ((t,_) as arg) =  (* true when do skip *)
-    match t.t_name with
+let skipArgument ~index ({arg_type; arg_name; arg_default} as arg) =  (* true when do skip *)
+    match arg_type.t_name with
       | "GLfloat" | "GLint" | "GLuint"
       | "void" | "uchar"
       | "qreal" -> true
@@ -96,7 +96,7 @@ let skipArgument ~index ((t,_) as arg) =  (* true when do skip *)
 	  | EnumPattern _
 	  | ObjectDefaultPattern
 	  | ObjectPattern -> 
-	    let key = NameKey.key_of_fullname t.t_name in
+	    let key = NameKey.key_of_fullname arg_type.t_name in
 	    not (SuperIndex.mem index key) 
 	  | _ -> false
       end
@@ -115,8 +115,8 @@ let is_good_meth ~classname ~index m =
     else begin 
       match List.find args ~f:(skipArgument ~index) with
 	| None -> (* all arguments are OK *)
-	  (is_void_type res) or (not (skipArgument ~index (res,None) ))
-	| Some (x,_) -> (printf "Method %s skipped: %s\n" methname (string_of_type x); false)
+	  (is_void_type res) or (not (skipArgument ~index (simple_arg res) ))
+	| Some {arg_type;_} -> (printf "Method %s skipped: %s\n" methname (string_of_type arg_type); false)
     end
   with DoSkip -> false
     | DontSkip | Not_found -> true
@@ -156,7 +156,7 @@ class virtual abstractGenerator _index = object (self)
       = fun index t ~default (argname:string) -> 
 	let _ : string option = default in	
 	let is_const = t.t_is_const in
-	match pattern _index (t,default) with
+	match pattern _index (simple_arg t) with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
 	  | PrimitivePattern -> begin
  	    match t.t_name with
@@ -190,10 +190,10 @@ class virtual abstractGenerator _index = object (self)
 	    Success ans	      
 
   method private toCamlCast
-      = fun ?(forcePattern=None) (t,default) arg ansVarName ->
+      = fun ?(forcePattern=None) {arg_type=t;arg_default=default;_} arg ansVarName ->
 	let patt = match forcePattern with
 	  | Some x -> x
-	  | None -> pattern _index (t,default) in
+	  | None -> pattern _index (simple_arg t) in
 	match patt with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t))
 	  | PrimitivePattern ->

@@ -24,7 +24,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
   method private prefix = dir ^/ "ml"
 
   (* low_level means, for example, to generate [`qobject] obj instead of qObject *)
-  method toOcamlType ?forcePattern ~low_level ((t,default) as arg) =
+  method toOcamlType ?forcePattern ~low_level ({arg_type=t;arg_default=default;_} as arg) =
     let patt = match forcePattern with
       | None   -> pattern index arg 
       | Some x  -> x in
@@ -78,7 +78,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
       let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
 
-      let args2 = List.map3_exn types argslist argnames ~f:(fun _ ((start,default)as arg) name ->
+      let args2 = List.map3_exn types argslist argnames ~f:(fun _ arg name ->
 	match pattern index arg with
 	  | InvalidPattern -> assert false
 	  | EnumPattern _
@@ -86,7 +86,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  | ObjectPattern    -> sprintf " (%s#handler) " name
 	  | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" cpp_func_name name name
       ) in
-      let args1 = List.map3_exn types argslist argnames ~f:(fun ttt ((start,default)as arg) name ->
+      let args1 = List.map3_exn types argslist argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
 	match pattern index arg with
 	  | InvalidPattern -> assert false
 	  | EnumPattern _
@@ -128,7 +128,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
       let types = List.map meth.m_args ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
 
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
-      let res_arg = (meth.m_res,None) in
+      let res_arg = simple_arg meth.m_res in
       let res_t = (match pattern index res_arg with
 	| ObjectPattern -> self#toOcamlType  ~forcePattern:ObjectDefaultPattern ~low_level:true res_arg
 	| ObjectDefaultPattern -> assert false
@@ -155,14 +155,15 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	break2file (sprintf "skipped meth %s: too many arguments\n" (string_of_meth meth) ); 
 
       fprintf h "  (* method %s *)\n" (string_of_meth meth);
-
-      let res_type = (match pattern index (res,None) with
-	| ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:false (res,None) 
-	| ObjectDefaultPattern -> assert false
-	| _ -> self#toOcamlType ~low_level:false (res,None) )
-      |> (function
-	  | Success s -> s
-	  | _ -> break2file "cant cast result type" )
+      let res_type = 
+	let res_arg = simple_arg res in
+	(match pattern index res_arg with
+	  | ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:false res_arg 
+	  | ObjectDefaultPattern -> assert false
+	  | _ -> self#toOcamlType ~low_level:false res_arg)
+        |> (function
+	    | Success s -> s
+	    | _ -> break2file "cant cast result type" )
       in
       let types = List.map args ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
       let argnames = List.mapi args ~f:(fun i _ -> "x"^(string_of_int i)) in
@@ -178,11 +179,11 @@ class ocamlGenerator dir (index:index_t) = object (self)
       if is_abstract then begin
 	fprintf h "  method virtual %s : %s" meth.m_out_name (String.concat ~sep:"->" types );
 	if List.length types <> 0 then fprintf h " -> ";
-	match pattern index (res,None) with
+	match pattern index (simple_arg res) with
 	  | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
 	  | _ -> fprintf h "%s" res_type
       end else begin
-	let args2 = List.map3_exn types args argnames ~f:(fun _ ((start,_)as arg) name ->
+	let args2 = List.map3_exn types args argnames ~f:(fun _ arg name ->
 	  match pattern index arg with
 	    | InvalidPattern -> assert false
 	    | EnumPattern _
@@ -190,7 +191,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	    | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
 	    | ObjectPattern -> sprintf "(%s#handler)" name
 	) in
-	let args1 = List.map3_exn types args argnames ~f:(fun ttt ((start,_) as arg) name ->
+	let args1 = List.map3_exn types args argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
 	  match pattern index arg with
 	    | InvalidPattern -> assert false
 	    | EnumPattern _
@@ -201,7 +202,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
 	fprintf h "  method %s %s = %s_%s' me %s " meth_name (String.concat ~sep:" " args1)
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
-	(match pattern index (res,None) with
+	(match pattern index (simple_arg res) with
 	  | ObjectPattern -> 
 	    fprintf h "|> (function Some o -> Some (new %s o) | None -> None)" (ocaml_class_name res.t_name)
 	  | _ -> ());	
@@ -218,7 +219,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
     try
       (match slot.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       let (name,args) = (slot.m_name,slot.m_args) in
-      let res = (slot.m_res,None) in
+      let res = simple_arg slot.m_res in
       let types = List.map args ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
       let res_t = match self#toOcamlType ~low_level:false res with
@@ -230,7 +231,8 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	(String.concat ~sep:" -> " (types @ [res_t]));
       let wrap_type t = { { t with t_is_const=false } with t_is_ref=false } in
       fprintf h "    method name = \"%s(%s)\"\n" name 
-	(List.map slot.m_args ~f:fst |> List.map ~f:(string_of_type %< wrap_type) |> String.concat ~sep:",");
+	(slot.m_args |> List.map ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) 
+	    |> String.concat ~sep:",");
       self#gen_meth ~new_name:"call" ~is_abstract:false ~classname h slot;
       fprintf h "  end\n"
     with BreakSilent -> ()
@@ -245,7 +247,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	name (List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ");
       let wrap_type t = {{ t with t_is_ref=false } with t_is_const = false } in
       fprintf h "    method name = \"%s(%s)\"\n" name
-	(List.map args ~f:(string_of_type %< wrap_type %< fst ) |> String.concat ~sep:",");
+	(List.map args ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) |> String.concat ~sep:",");
       fprintf h "  end\n";
     with BreakSilent -> ()
       | BreakS s -> ()

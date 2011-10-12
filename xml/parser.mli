@@ -5,7 +5,12 @@ val startswith : prefix:string -> string -> bool
 val endswith : postfix:string -> string -> bool
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
-and meth = {
+type func_arg = {
+  arg_type : cpptype;
+  arg_name : string option;
+  arg_default : string option;
+}
+type meth = {
   m_res : cpptype;
   m_name : string;
   m_args : func_arg list;
@@ -14,8 +19,8 @@ and meth = {
   m_access : [ `Private | `Protected | `Public ];
   m_modif : [ `Abstract | `Normal | `Static ];
 }
-and func_arg = cpptype * string option (* type and default value *)
 
+val simple_arg : cpptype -> func_arg
 val void_type : cpptype
 val skip_meth : classname:string -> string -> bool
 val unreference : cpptype -> cpptype

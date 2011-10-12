@@ -33,12 +33,13 @@ class cppGenerator ~includes dir index = object (self)
       let (args,argnames) =
 	let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
 	if not is_constr then
-	  ((ptrtype_of_classname classname, None) :: args, "self"::argnames)
+	  ((simple_arg (ptrtype_of_classname classname)) :: args, 
+	   "self"::argnames)
 	else
 	  (args, argnames)
       in
       assert (List.length argnames = (List.length args));
-      let arg_casts = List.map2_exn argnames args ~f:(fun name (t,default) -> 
+      let arg_casts = List.map2_exn argnames args ~f:(fun name {arg_type=t;arg_default=default;_} -> 
 	self#fromCamlCast (self#index) (unreference t) ~default name
       ) in
       let arg_casts = List.map arg_casts ~f:(function Success s  -> s
@@ -93,19 +94,19 @@ class cppGenerator ~includes dir index = object (self)
 	  fprintf h "  _self -> %s(%s);\n" methname argsCall;
 	  fprintf h "  CAMLreturn(Val_unit);\n"
 	) else begin
-	  let res = unreference res_type in
-	  let ans_type_str = match pattern index (res,None) with
+	  let res_arg = simple_arg (unreference res_type) in
+	  let ans_type_str = match pattern index res_arg with
 	    | EnumPattern (e,key) -> snd key
-	    | _ -> string_of_type res 
+	    | _ -> string_of_type res_arg.arg_type
 	  in
-	  let resCast = match self#toCamlCast (unreference res,None) "ans" "_ans" with 
+	  let resCast = match self#toCamlCast res_arg "ans" "_ans" with 
 	    | Success s -> s
 	    | CastError _ | CastValueType _ | CastTemplate _ -> raise (BreakSilent)
 	  in
 	  fprintf h "  %s ans = _self -> %s(%s);\n" ans_type_str methname argsCall;
 	  fprintf h "  %s\n" resCast;
 	  fprintf h "  CAMLreturn(%s);\n"
-	      (match pattern index (res,None) with
+	      (match pattern index res_arg with
 		| ObjectPattern -> sprintf " (ans) ? Val_some(%s) : Val_none" "_ans"
 		| _ -> "_ans")
 	end

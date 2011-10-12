@@ -76,7 +76,7 @@ let endswith ~postfix:p s =
 let (|>) a b = b a
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
-and func_arg = cpptype * string option (* type and default value *)
+and func_arg = { arg_type:cpptype; arg_name:string option; arg_default: string option }
 and meth = { 
   m_res:cpptype; 
   m_name:string; 
@@ -88,13 +88,15 @@ and meth = {
 } 
 with sexp
 
+let simple_arg arg_type = { arg_type; arg_name=None; arg_default = None }
+
 let is_public = function `Public -> true | `Private -> false | `Protected -> false
 
 let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 
 let remove_defaults meth = match meth with
   | {m_res;m_name; m_args; m_declared; m_out_name; m_access; m_modif } -> 
-    let m_args = List.map m_args ~f:(fun (a,_) -> (a,None)) in
+    let m_args = List.map m_args ~f:(fun x -> {x with arg_default=None} ) in
     {m_res;m_name; m_declared; m_args; m_out_name; m_access; m_modif }
 
 let unreference = function
@@ -194,8 +196,11 @@ let string_of_type t =
     [if t.t_is_const then "const " else "";
      t.t_name; String.make t.t_indirections '*'; if t.t_is_ref then " &" else ""]
 
-let string_of_arg (t,def) = 
-  (string_of_type t) ^ (match def with None -> "" | Some x -> " = " ^ x)
+let string_of_arg {arg_type;arg_name;arg_default} =
+  String.concat ~sep:" " 
+    [string_of_type arg_type; 
+     Option.value arg_name ~default:"";
+     match arg_default with None -> "" | Some x -> " = " ^ x]
 
 let string_of_meth m = 
   let args_str = Core_list.map m.m_args ~f:string_of_arg |> String.concat ~sep:", " in
@@ -271,8 +276,9 @@ let parse_prop = function
   | _ -> assert false
 
 (****** Parsing argument ************************)
-let rec parse_arg (_,attr,lst) = 
-  let default = List.Assoc.find attr "default" in
+let rec parse_arg (_,attr,lst) : func_arg = 
+  let arg_default = List.Assoc.find attr "default" in
+  let arg_name = List.Assoc.find attr "argname" in
   let t_indirections = List.Assoc.find_exn attr "indirections" |> int_of_string in
   let t_is_ref = List.Assoc.find_exn attr "isReference" |> bool_of_string in
   let t_is_const = List.Assoc.find_exn attr "isConstant" |> bool_of_string in
@@ -283,13 +289,14 @@ let rec parse_arg (_,attr,lst) =
     match lst with 
       | [Element ("arguments",_,lst)] ->
 	let foo = function
-	  | Element (("argument",_,_) as e) -> fst (parse_arg e)
+	  | Element (("argument",_,_) as e) -> (parse_arg e).arg_type
 	  | _ -> assert false
 	in
 	List.map ~f:foo lst
       | _ -> []
   in
-  ({t_name; t_is_const; t_is_ref; t_indirections; t_params}, default)
+  let arg_type = {t_name; t_is_const; t_is_ref; t_indirections; t_params} in
+  { arg_type; arg_name; arg_default }
 
 let parse_enum superName node : enum option = match node with
   | ("enum",attr,lst) -> 
@@ -356,7 +363,7 @@ and parse_class nsname c  =
 	let policy = ref `Public in
 
 	List.iter lst ~f:(fun x -> match x with
-	  | Element (("return",_,_) as e) ->  ret := Some (parse_arg e |> fst)
+	  | Element (("return",_,_) as e) ->  ret := Some ((parse_arg e).arg_type)
 	  | Element ("arguments",_,lst) ->
 	    List.iter lst ~f:(function
 	      | Element (("argument",_,_) as e) -> args := (parse_arg e) :: !args
