@@ -33,26 +33,11 @@ public:
 };
 
 extern "C" {
-value create_AA(value unit_x) {
-  CAMLparam1(unit_x);
+value create_AA(value camlobj) {
+  CAMLparam1(camlobj);
   AA* aa = new AA;
-  printf("new AA created: this = %x\n", aa);
-  ((OCamlBindingObject*)aa) -> setCamlObj(0);
+  aa -> setCamlObj(camlobj);
   CAMLreturn((value)aa);
-}
-value set_caml_obj(value cpp_obj, value caml_obj) {
-  AA* aa_obj;
-  CAMLparam2(cpp_obj, caml_obj);
-  aa_obj = (AA*)cpp_obj;
-
-  
-  OCamlBindingObject *o = (OCamlBindingObject*) cpp_obj;  
-  //OCamlBindingObject* o = dynamic_cast<OCamlBindingObject*>(aa_obj);
-  
-  o->setCamlObj(caml_obj);
-
-  printf ("Setting caml_obj %x to c++ obj %x\n", caml_obj, cpp_obj);
-  CAMLreturn(Val_unit);
 }
 
 }

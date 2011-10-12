@@ -16,4 +16,4 @@ clean:
 	rm -f *.o *.cm[oix]
 
 test:
-	$(MAKE) all && $(MAKE) clean && ./main
+	$(MAKE) clean && $(MAKE) all && ./main
