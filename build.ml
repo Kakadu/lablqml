@@ -6,6 +6,10 @@ open Printf;;
 
 let target = ref `Build;;
 
+let touch s =
+(*  if not (Sys.file_exists s) then *)
+        close_out (open_out s)
+;;
 open Arg;;
 let () = Arg.parse [
         ("-build", Unit( fun () -> target := `Build ), "");
@@ -19,10 +23,27 @@ let wrap_cmd cmd err =
   let x = command cmd in
   if x<>0 then failwith err;;
 
+let cores_count = 3;; (* make -j parameter *)
+
+let make ?(dir=".") ?j cmd err_msg = 
+  let make_cmd = "make" in
+  let cmd = String.concat " " [
+          make_cmd; "-C " ^ dir; 
+          match j with Some x -> sprintf "-j%d" x | None -> "";
+          cmd] in
+  match command cmd with
+  | 0 -> ()
+  | _ -> begin
+    if Sys.file_exists (dir ^ "/.depend") then
+      ignore (command (String.concat " " [make_cmd; "-C " ^ dir; "depend"]));
+    ignore (command (String.concat " " [make_cmd; "-C " ^ dir; "clean"]));
+    wrap_cmd cmd err_msg
+  end
+;;
+
 wrap_cmd "pkg-config --cflags QtOpenGL" "can't find Qt OpenGL header files";;
 (* Configure end ***************************)
 
-let cores_count = 3;; (* make -j parameter *)
 
 (* let api_xml = "../aaa.xml";; *)
 let api_xml = "../for_test5.xml";; 
@@ -39,10 +60,6 @@ let includes = [];;
 let cpp_includes () = match includes with 
   | [] -> ""
   | _  -> " -I " ^ (String.concat " -I " includes );;
-
-let touch s =
-  if not (Sys.file_exists s) then 
-        close_out (open_out s);;
 
 let () = match !target with 
   | `Build -> begin
@@ -61,14 +78,13 @@ let () = match !target with
 
         (* compiling xml *)
         chdir "xml";
-        wrap_cmd "make clean" "error while compiling xml";
-        wrap_cmd "make depend" "error while compiling xml";
-        wrap_cmd "make all" "error while compiling xml";
+        make "depend" "error while compiling xml";
+        make "all" "error while compiling xml";
         chdir "..";
         print_endline "Generator is compiled\n";
 
         print_endline "Building XML tool for simplifing API";
-        wrap_cmd "make -C xmltool" "error while compiling xmltool";
+        make ~dir:"xmltool" "" "error while compiling xmltool";
 
         print_endline "executing xmltool";
         chdir "xmltool";
@@ -82,13 +98,14 @@ let () = match !target with
         chdir "..";
 
         print_endline "\ncompiling generated C++ files\n";
-        wrap_cmd (Printf.sprintf "make -j%d -C test_gen/out/cpp" cores_count) 
+        make ~dir:"test_gen/out/cpp" ~j:cores_count "" 
           "error while compiling generated C++ files";
 
         print_endline "\ncompiling mocml\n";
         touch "moc/.depend";
-        wrap_cmd "make -C moc depend" "can't make depend on mocml";
-        let () = wrap_cmd "make -C moc" "error while building mocml" in
+        
+        make ~dir:"moc" "depend" "can't make depend on mocml";
+        make ~dir:"moc" ""       "error while building mocml";
 
         let add_mocml where =
           let file = where ^ "/mocml" in 
@@ -98,11 +115,11 @@ let () = match !target with
         List.iter add_mocml ["test_gen/test4";"test_gen/test5"; "test_gen/test6"];
 
         print_endline "\ncompiling the lablqt library";
-        wrap_cmd "make -C test_gen clean all" "error while building library";
+        make ~dir:"test_gen" "all" "error while building library";
 
         print_endline "making tests";
         let tests = ["test";"test2";"test3";"test4"] in
-        List.iter (fun s -> wrap_cmd ("make -C test_gen/"^s) ("can't make test " ^ s)) tests;
+        List.iter (fun s -> make ~dir:("test_gen/"^s)  "" ("can't make test " ^ s)) tests;
 
         List.iter (fun test ->
           print_endline "\npreconfigure for ";
@@ -110,8 +127,8 @@ let () = match !target with
           chdir (sprintf "test_gen/%s" test);
           touch ".depend";
 
-          wrap_cmd "make depend" (sprintf "can't make %s (depend failed)" test);
-          wrap_cmd "make"        (sprintf "can't make %s (make failed)" test);
+          make "depend" (sprintf "can't make %s (depend failed)" test);
+          make ""       (sprintf "can't make %s (make failed)"   test);
           chdir "../.."
         ) ["test5";"test6"]
   end
