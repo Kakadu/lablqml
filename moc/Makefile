@@ -1,7 +1,7 @@
 ML_OBJS=parse.cmo main.cmo 
 ML_OBJS_OPT=parse.cmx main.cmx
 
-PACKAGES=dynlink,str,threads,unix,core,core_extended,tyxml,ocamlgraph,sexplib.syntax
+PACKAGES=dynlink,str,threads,unix,core,tyxml,ocamlgraph,sexplib.syntax
 
 OCAMLDEP=ocamlfind ocamldep -package $(PACKAGES) -syntax camlp4o
 OCAMLC=ocamlfind ocamlc -g -vmthread -package $(PACKAGES) -syntax camlp4o 

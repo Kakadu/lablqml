@@ -1,7 +1,7 @@
 ML_OBJS=simplexmlwriter.cmo main.cmo 
 ML_OBJS_OPT=simplexmlwriter.cmx main.cmx
 
-PACKAGES=dynlink,str,tyxml,ocamlgraph,sexplib,core,core_extended
+PACKAGES=dynlink,str,tyxml,ocamlgraph,sexplib,core
 
 OCAMLDEP=ocamlfind ocamldep -package $(PACKAGES)
 OCAMLC=ocamlfind ocamlc -g -package $(PACKAGES) 
