@@ -1,5 +1,5 @@
-ML_OBJS=parser.cmo superIndex.cmo generators.cmo cppGenerator.cmo ocamlGenerator.cmo main.cmo 
-ML_OBJS_OPT=parser.cmx superIndex.cmx generators.cmx cppGenerator.cmx ocamlGenerator.cmx main.cmx
+ML_OBJS=parser.cmo superIndex.cmo generators.cmo filter.cmo cppGenerator.cmo ocamlGenerator.cmo main.cmo 
+ML_OBJS_OPT=parser.cmx superIndex.cmx generators.cmx filter.cmx cppGenerator.cmx ocamlGenerator.cmx main.cmx
 
 PACKAGES=dynlink,str,threads,unix,core,tyxml,ocamlgraph,sexplib.syntax
 

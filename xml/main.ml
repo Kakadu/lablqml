@@ -64,6 +64,7 @@ let main () =
     let (index,g,q) = build_superindex root_ns in
     printf "Queue length is %d\n" (Core_queue.length q);
     print_endline "Index builded";
+    let index = Filter.filter_constrs index in
     options.base <- (root_ns, index, g, q);
 
     let ch = open_out "superindex.log" in

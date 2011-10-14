@@ -98,6 +98,7 @@ let skipArgument ~index ({arg_type; arg_name; arg_default} as arg) =  (* true wh
 	  | ObjectPattern -> 
 	    let key = NameKey.key_of_fullname arg_type.t_name in
 	    not (SuperIndex.mem index key) 
+	  | InvalidPattern -> true
 	  | _ -> false
       end
     
