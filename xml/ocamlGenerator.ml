@@ -75,7 +75,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	(if no_args then "unit" else String.concat ~sep:"->" types) 
 	cpp_func_name;
 
-      let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
+(*      let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
 
       let args2 = List.map3_exn types argslist argnames ~f:(fun _ arg name ->
@@ -100,7 +100,8 @@ class ocamlGenerator dir (index:index_t) = object (self)
       if String.length s1 > 60 then fprintf h "\n    ";
       
       fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
-	(sprintf "\n    |> new %s" (ocaml_class_name classname))
+	(sprintf "\n    |> new %s" (ocaml_class_name classname)); *)
+      ()
     with BreakSilent -> ()
       | Break2File s -> fprintf h "(* %s *)\n" s
 
@@ -273,6 +274,35 @@ class ocamlGenerator dir (index:index_t) = object (self)
     close_out h2;
     close_out h1
 
+  method private gen_constr_data ~classname ~index argslist =
+(*    let arg_count = List.length constr in *)
+    (* TODO: construct argnames using C++ argument names *)
+    let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in
+    let types = List.map argslist ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
+    (* With_return  ???? *)
+    let types = List.map types ~f:(function Success s -> s 
+      | _ -> assert false (*because we've checked that all constructors are correct in Filter module *)) in
+    (* paramters of create* function or class's parameters *)
+    let args1 = List.map3_exn types argslist argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
+        match pattern index arg with
+          | InvalidPattern -> assert false
+          | EnumPattern _
+          | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+          | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
+          | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
+      ) in
+    (* arguments for calling external function *)
+    let args2 = List.map3_exn types argslist argnames ~f:(fun _ arg name ->
+        match pattern index arg with
+          | InvalidPattern -> assert false
+          | EnumPattern _
+	      (* We do low_level casts here because  we call low_level creator when class's initializer *)
+          | PrimitivePattern -> name
+          | ObjectPattern    -> sprintf " (%s#handler) " name
+          | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" "don't know" name name
+      ) in    
+    (String.concat ~sep:" " args1, String.concat ~sep:" " args2)
+
   method gen_class ~prefix h_classes h_stubs h_constrs c = 
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then 
@@ -293,17 +323,24 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	)
       );
       
-      let target_meths = c.c_meths in
-      fprintf h_classes " %s = object (self) \n" ocaml_classname;
-      fprintf h_classes "  val mutable handler : [ `qobject ] obj = Obj.magic 1 \n";
-      fprintf h_classes "  initializer ()\n";
-      List.iter c.c_sigs  ~f:(self#gen_signal h_classes); 
+      if is_abstract then begin
+	fprintf h_classes " virtual %s = object(self)\n" ocaml_classname ;
+	fprintf h_classes " val mutable handler : [`qobject] obj = Obj.magic 1\n\n";	
+      end else begin
+	let constr = List.hd_exn c.c_constrs in
+	let lst1,lst2 = self#gen_constr_data  ~classname ~index constr in
+	fprintf h_classes " %s %s = object(self)\n" ocaml_classname lst1;
+	fprintf h_classes " val mutable handler : [`qobject] obj = Obj.magic 1\n\n";	
+	fprintf h_classes " initializer handler <- %s self %s\n\n"
+	  (sprintf "create_%s_0'" ocaml_classname) lst2	
+      end;
+
+      List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
       MethSet.iter c.c_slots ~f:(fun slot -> 
 	self#gen_slot ~classname h_classes slot;
 	self#gen_meth_stubs ~is_abstract ~classname h_stubs slot
       );
-
-      MethSet.iter target_meths ~f:(fun m -> 
+      MethSet.iter c.c_meths ~f:(fun m -> 
 	match m.m_modif with
 	  | `Abstract -> ()
 	  | `Normal ->
@@ -311,6 +348,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	    self#gen_meth       ~is_abstract:false ~classname h_classes m 
 	  | `Static -> printf "Skipped static method %s\n" (string_of_meth m)
       ); 
+
       fprintf h_classes "end\nand ";
     end
 
@@ -335,4 +373,3 @@ class ocamlGenerator dir (index:index_t) = object (self)
     close_out h
         
 end
-

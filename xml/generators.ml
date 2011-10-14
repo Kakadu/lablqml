@@ -138,6 +138,7 @@ let is_abstract_class ~prefix index name =
   match SuperIndex.find index key with
     | Some (Class (c,_)) -> 
       (MethSet.fold ~init:false c.c_meths ~f) or ((MethSet.fold ~init:false c.c_slots ~f))
+	or (c.c_constrs = [] )
     | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
     | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
 
