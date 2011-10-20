@@ -40,14 +40,11 @@ class virtual abstractGenerator :
       ?forcePattern: pattern option -> Parser.func_arg -> string -> string -> castResult
     method private fromCamlCast :
       SuperIndex.index_t ->
-      Parser.cpptype -> default:string option -> string -> castResult
+      Parser.cpptype -> default:string option -> ?cpp_argname:string option  -> string -> castResult
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
     method private virtual gen_enum_in_ns :
       key:SuperIndex.NameKey.t -> dir:string -> Parser.enum -> string option
-    method private virtual genProp :
-      string -> out_channel -> Parser.prop -> unit
     method private index : SuperIndex.index_t
-    method private virtual makefile : string -> string list -> unit
     method private virtual prefix : string
   end
 

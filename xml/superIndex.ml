@@ -35,6 +35,7 @@ type index_data =
 
 module SuperIndex = struct
   include Core_map.Make(NameKey)
+
 end
 
 type index_t = index_data SuperIndex.t

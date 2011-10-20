@@ -1,13 +1,6 @@
 #include <Qt/QtOpenGL>
 #include "headers.h"
 extern "C" {
-value make_root_widget() {
-  CAMLparam0();
-  CAMLlocal1(_ans);
-  QWidget *ans = new QWidget();
-  _ans = (value)ans;
-  CAMLreturn(_ans);
-}
 
 value ml_qapp_create (value argv) {
   CAMLparam1(argv);
@@ -55,6 +48,26 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
                         QObject_val(receiver),
                         cc2) ) );
 }
+  //============================ settting and getting caml object from QObject
+  #define CAMLOBJ_PROPERTY "_camlobj"
+  CAMLprim // [`qobject] obj -> 'a option
+  value hasCamlObj(value cppobj) {
+    CAMLparam1(cppobj);
+    QObject *o = (QObject*)cppobj;
+    QVariant ans = o->property(CAMLOBJ_PROPERTY);
+    if (ans.isValid())
+      CAMLreturn(Some_val((value)( ans.toLongLong() ) ) );
+    else
+      CAMLreturn(Val_none);
+  }
+
+  CAMLprim
+  value setCamlObject(value cppobj, value camlobj) {
+    CAMLparam2(cppobj, camlobj);
+    QObject *o = (QObject*)cppobj;
+    o->setProperty(CAMLOBJ_PROPERTY, (qlonglong)camlobj);
+    CAMLreturn(Val_unit);
+  }
 
 }  // extern "C"
 

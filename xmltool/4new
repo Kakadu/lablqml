@@ -1,0 +1,5 @@
+#!/bin/sh
+
+lst="QObject QPushButton"
+
+./main.opt -in ../aaa.xml -out ../for_new.xml $lst 

@@ -9,15 +9,20 @@ module Q = Core_queue
 module List = Core_list
 module String = Core_string
 
-let iter = List.iter
+let map2i la lb ~f = 
+  let i = ref 0 in
+  Core_list.map2_exn la lb ~f:(fun x y -> let ans = f !i x y in incr i; ans)
 
 class cppGenerator ~includes dir index = object (self)
   inherit abstractGenerator index as super
 
-  method gen_stub ~prefix classname (args: func_arg list) ?res_n_name  h =
+  method get_name ~classname args ?res_n_name is_byte =
+    cpp_stub_name ~classname args ?res_n_name ~is_byte
+
+  method gen_stub ~prefix classname (args: func_arg list) ?res_n_name h =
     try
       let is_constr = Option.is_none res_n_name in
-      let get_name is_byte = cpp_stub_name ~classname args ?res_n_name ~is_byte in 
+      let get_name is_byte = self#get_name ~classname args ?res_n_name is_byte in 
       let native_func_name = get_name false in
       let () = 
 	let args_str = args |> List.map ~f:string_of_arg |> String.concat ~sep:"," in
@@ -126,19 +131,21 @@ class cppGenerator ~includes dir index = object (self)
       | BreakSilent -> ()
       | BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
 
-  method makefile dir lst = 
+  method makefile dir ~twins lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
     fprintf h "INCLUDES=-I./../../ -I. `pkg-config --cflags QtOpenGL` ";
     List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
     fprintf h "\n";
     fprintf h "GCC=g++ -c -pipe -g -Wall -W $(INCLUDES) \n\n";
-    fprintf h "C_QTOBJS=%s\n\n" (List.map ~f:(fun s -> s ^ ".o") lst |> String.concat ~sep:" ");
-    fprintf h ".SUFFIXES: .ml .mli .cmo .cmi .var .cpp .cmx\n\n";
+    fprintf h "C_QTOBJS=%s %s\n\n"
+      (lst   |> List.map ~f:(fun s -> sprintf "%s.o" s) |> String.concat ~sep:" ")
+      (twins |> List.map ~f:(fun s -> sprintf "%s_twin.o" s) |> String.concat ~sep:" ");
+    fprintf h ".SUFFIXES: .cpp .o\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
-    fprintf h "all: lablqt\n\n";
-    fprintf h "lablqt: $(C_QTOBJS)\n\n";
-(*    fptintf h ".PHONY: all"; *)
+    fprintf h "all: $(C_QTOBJS)\n\n";
+    fprintf h "clean: \n\trm -f *.o\n\n";
+    fprintf h ".PHONY: all clean\n\n"; 
     close_out h
 
   method private prefix = dir ^/ "cpp"
@@ -164,7 +171,7 @@ class cppGenerator ~includes dir index = object (self)
       let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
       let dir =  dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
-      let (stubs_filename, twin_cppname, twin_header_name) = 
+      let (stubs_filename, twin_cppname, _) = 
 	let d = dir ^/ classname in
 	(d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
         (* I'll find some problems with adding include files for every class. 
@@ -183,7 +190,7 @@ class cppGenerator ~includes dir index = object (self)
           if is_good_meth ~index ~classname m then 
 	    self#gen_stub ~prefix classname args ?res_n_name:None h
 	in
-	iter ~f c.c_constrs 
+	List.iter ~f c.c_constrs 
       end;
       let f m = 
 	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) then
@@ -195,18 +202,104 @@ class cppGenerator ~includes dir index = object (self)
       fprintf h "}  // extern \"C\"\n";
       close_out h;
       (* Now let's write twin class *)
-      let h = open_out twin_header_name in
+      let h = open_out twin_cppname in
       self#gen_twin_header ~prefix c h;
       close_out h;
       Some (if subdir = "" then classname else subdir ^/ classname)
     end
   
   method gen_twin_header ~prefix c h = 
+    let classname  = c.c_name in
+    fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include \"headers.h\"\n";
+    fprintf h "#include \"WrapperClass.h\"\n";
+    fprintf h "#include <stdio.h>\n\n";
     
+    fprintf h "class %s_twin : public %s, public OCamlBindingObject {\npublic:\n" classname classname;
+    MethSet.filter c.c_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
+      fprintf h "%s %s(" (string_of_type m.m_res) m.m_name;
 
+      let argslen = List.length m.m_args in
+      let argnames = List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i) in
+      let argsstr = List.map2_exn argnames m.m_args ~f:(fun name arg ->
+	string_of_arg {arg with arg_name=Some name}) |> String.concat ~sep:", " in
+      fprintf h "%s) {\n" argsstr;
+      fprintf h "  CAMLparam0();\n";
+      if not (is_void_type m.m_res) then 
+        fprintf h "  CAMLlocal2(_ans,meth);\n"
+      else
+	fprintf h "  CAMLlocal1(meth);\n";
+      fprintf h "  meth = caml_get_public_method( _camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
+      fprintf h "  if (meth == 0)\n    printf(\"total fail\\n\");\n";
+
+      let call_closure_str = match argslen with 
+	| 0 -> "caml_callback(meth, _camlobj);"
+	| _ -> begin
+          fprintf h "  value *args = new value[%d];\n" (argslen+1);
+	  fprintf h "  args[0] = _camlobj;\n";
+	  let arg_casts = map2i m.m_args argnames ~f:(fun i arg name -> 
+	    self#toCamlCast arg name (sprintf "args[%d]" (i+1) )
+	  ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
+	  List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
+          fprintf h "    // delete args or not?\n";
+          sprintf "caml_callbackN(meth, %d, args);" (argslen+1)
+	end
+      in
+      if is_void_type m.m_res then begin
+	fprintf h "  %s;\n" call_closure_str;
+	fprintf h "  CAMLreturn0;\n"
+
+      end else begin
+	let res = { arg_type=m.m_res; arg_name=None; arg_default=None} in
+	fprintf h "  _ans = %s;\n" call_closure_str;
+	let cast = self#fromCamlCast index res.arg_type ~default:None ~cpp_argname:(Some "ans")  "_ans" |> 
+	    (function Success s -> s | _ -> assert false) in
+	fprintf h "  %s;\n" cast;
+	fprintf h "  Q_UNUSED(caml__frame); //caml_local_roots = caml__frame;\n";
+	fprintf h "  return ans;\n"
+      end;
+      fprintf h "}\n\n"      
+    );
+    (* Now generate constructors*)
+    List.iter c.c_constrs ~f:(fun lst ->
+      let argnames = List.mapi lst ~f:(fun i _ -> sprintf "x%d" i) in
+      fprintf h "  %s_twin(%s) : %s(%s) {}\n" 
+	classname
+	(List.map2_exn argnames lst  ~f:(fun name arg ->
+	  string_of_arg {arg with arg_name = Some name})
+	    |> String.concat ~sep:",")
+	classname
+	(String.concat ~sep:"," argnames)
+    );
+    fprintf h "};\n\n";
+    List.iter c.c_constrs ~f:(fun args ->
+      let classname = c.c_name ^ "_twin" in
+      let native_func_name = self#get_name ~classname args ?res_n_name:None false in
+      fprintf h "value %s" native_func_name;
+      let caml_argnames = self#gen_stub_arguments args h in (* they has type `value` *)
+      let cpp_argnames = List.map caml_argnames ~f:(fun s -> "_"^s) in
+      fprintf h "  %s *_ans = new %s(%s);\n"classname classname (String.concat ~sep:"," cpp_argnames);
+      fprintf h "  CAMLreturn((value)_ans);\n}\n\n"			     
+    );
     ()
 
-  method genProp classname h (name,r,w) = ()
+  method gen_stub_arguments args h =
+    let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
+    let argslen = List.length args in
+    fprintf h "(%s) {\n" (String.concat ~sep:"," (List.map argnames ~f:(fun s -> "value "^s)));
+    if argslen>5 then (
+      let l1,l2 = headl 5 argnames in
+      fprintf h "  CAMLparam5(%s);\n" (l1 |> String.concat ~sep:",");
+      fprintf h "  CAMLxparam%d(%s);\n" (argslen-5) (l2 |> String.concat ~sep:",")
+    ) else (
+      fprintf h "  CAMLparam%d(%s);\n" argslen (argnames |> String.concat ~sep:",")
+    );
+    let arg_casts = List.map2_exn argnames args ~f:(fun name {arg_type=t;arg_default=default;_} ->
+      self#fromCamlCast self#index (unreference t) ~default name
+    ) in
+    let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
+    List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
+    argnames
   
   method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} = 
     if not (SuperIndex.mem index key) then None
@@ -265,7 +358,8 @@ class cppGenerator ~includes dir index = object (self)
       end    
     );
     print_endline "Generating makefile";
-    self#makefile self#prefix (List.map ~f:snd !enums @ !classes );
+    let classnames = !classes in
+    self#makefile self#prefix ~twins:classnames (List.map ~f:snd !enums @ classnames );
     let enums_h = open_out (self#prefix ^/ "enum_headers.h") in
     List.iter !enums ~f:(fun ((_,fullname) as key,_) ->
       let (fname1,fname2) = enum_conv_func_names key in

@@ -56,8 +56,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
     try
       if List.length argslist > 5 then break2file "more then 5 parameters";
       fprintf h "\n(* constructor %s *)\n" (string_of_constr ~classname argslist);
-      let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in
-      let cpp_func_name = 
+      let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in 
+
+      let cpp_func_name classname = 
 	let native_name = cpp_stub_name ~classname ?res_n_name:None ~is_byte:false argslist in
 	if List.length argslist > 5 then
 	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ?res_n_name:None ~is_byte:true argslist)
@@ -65,17 +66,25 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	else
 	  native_name
       in
+      let cpp_twin_func_name = cpp_func_name (classname^"_twin") in
+      let cpp_func_name  = cpp_func_name classname in
 
       let types = List.map argslist ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
-      let ocaml_func_name = sprintf "create_%s_%d" classname i in
-
       let no_args = (List.length types = 0) in
-      fprintf h "external %s' : %s -> [>`qobject] obj = \"%s\"\n" ocaml_func_name
-	(if no_args then "unit" else String.concat ~sep:"->" types) 
-	cpp_func_name;
 
-(*      let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
+      let ocaml_func_name = sprintf "create_%s_%d" classname i in
+      let ocaml_twin_func_name =  sprintf "create_%s_twin_%d" classname i in
+      
+      let print_stub caml_name stub_name =
+	fprintf h "external %s' : %s -> [>`qobject] obj = \"%s\"\n" caml_name
+	  (if no_args then "unit" else ( String.concat ~sep:"->" types) )
+	  stub_name
+      in
+      print_stub ocaml_func_name cpp_func_name;
+      print_stub ocaml_twin_func_name cpp_twin_func_name;
+
+      let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
 
       let args2 = List.map3_exn types argslist argnames ~f:(fun _ arg name ->
@@ -94,13 +103,17 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
 	  | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
       ) in
-      let s1 = sprintf "let %s %s = " ocaml_func_name 
-	(if no_args then "()" else String.concat ~sep:" " args1) in
-      fprintf h "%s" s1;
-      if String.length s1 > 60 then fprintf h "\n    ";
-      
-      fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
-	(sprintf "\n    |> new %s" (ocaml_class_name classname)); *)
+      let print_main_creator ocaml_func_name =
+	let s1 = sprintf "let %s %s = " ocaml_func_name 
+	  (if no_args then "()" else String.concat ~sep:" " args1) in
+	fprintf h "%s" s1;
+	if String.length s1 > 60 then fprintf h "\n    ";
+	
+	fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
+	  (sprintf "\n    |> new %s" (ocaml_class_name classname))
+      in
+      print_main_creator ocaml_func_name;
+      print_main_creator ocaml_twin_func_name;      
       ()
     with BreakSilent -> ()
       | Break2File s -> fprintf h "(* %s *)\n" s
@@ -201,11 +214,16 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	    | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
 	) in
 	let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
-	fprintf h "  method %s %s = %s_%s' me %s " meth_name (String.concat ~sep:" " args1)
+	fprintf h "  method %s %s = %s_%s' self#handler %s " meth_name (String.concat ~sep:" " args1)
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
 	(match pattern index (simple_arg res) with
 	  | ObjectPattern -> 
-	    fprintf h "|> (function Some o -> Some (new %s o) | None -> None)" (ocaml_class_name res.t_name)
+	    let res_classname = ocaml_class_name res.t_name in
+	    fprintf h "|> (function Some o -> ( match get_caml_obj o with\n";
+	    fprintf h "                       | Some x -> (x:>%s)\n" res_classname;
+	    fprintf h "                       | None -> new %s o)\n" res_classname;
+	    fprintf h "   | None -> None)\n"
+
 	  | _ -> ());	
       end;
       fprintf h "\n";
@@ -258,9 +276,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
     let h3 = open_out (dir ^/ "creators.ml") in
-    fprintf h1 "\nopen Stubs\nopen Stub_helpers\n\nclass";
+    fprintf h1 "\nopen Stubs\nopen Stub_helpers\nclass";
     fprintf h2 "open Stub_helpers\n\n";
-    fprintf h3 "open Stub_helpers\nopen Stubs\nopen Classes\n";
+    fprintf h3 "open Stub_helpers\nopen Classes\nopen Stubs\n";
 
     printf "Queue length is %d\n" (Q.length queue);
     Q.iter queue ~f:(fun key ->
@@ -324,20 +342,21 @@ class ocamlGenerator dir (index:index_t) = object (self)
       );
       
       if is_abstract then begin
-	fprintf h_classes " virtual %s = object(self)\n" ocaml_classname ;
-	fprintf h_classes " val mutable handler : [`qobject] obj = Obj.magic 1\n\n";	
+	fprintf h_classes " virtual %s me = object(self)\n" ocaml_classname;
+	fprintf h_classes " method handler : [`qobject] obj = me \n\n"
       end else begin
 	let constr = List.hd_exn c.c_constrs in
-	let lst1,lst2 = self#gen_constr_data  ~classname ~index constr in
-	fprintf h_classes " %s %s = object(self)\n" ocaml_classname lst1;
-	fprintf h_classes " val mutable handler : [`qobject] obj = Obj.magic 1\n\n";	
-	fprintf h_classes " initializer handler <- %s self %s\n\n"
-	  (sprintf "create_%s_0'" ocaml_classname) lst2	
+(*	let lst1,lst2 = self#gen_constr_data  ~classname ~index constr in *)
+	fprintf h_classes " %s me = object(self)\n" ocaml_classname;
+	fprintf h_classes " method handler : [`qobject] obj = me\n";
+(*	fprintf h_classes " method get_handler = handler\n\n"; 
+	fprintf h_classes " initializer handler <- %s self %s\n\n" 
+	  (sprintf "create_%s_0'" classname) lst2	*)
       end;
 
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
       MethSet.iter c.c_slots ~f:(fun slot -> 
-	self#gen_slot ~classname h_classes slot;
+(*	self#gen_slot ~classname h_classes slot; *)
 	self#gen_meth_stubs ~is_abstract ~classname h_stubs slot
       );
       MethSet.iter c.c_meths ~f:(fun m -> 
@@ -355,8 +374,8 @@ class ocamlGenerator dir (index:index_t) = object (self)
   method makefile dir = 
     ignore (Sys.command ("touch " ^ dir ^/ ".depend"));
     let h = open_out (dir ^ "/Makefile") in
-    fprintf h "ML_MODULES=stubs.cmo classes.cmo creators.cmo \n";
-    fprintf h "ML_MODULES_OPT=stubs.cmx classes.cmx creators.cmx \n\n";
+    fprintf h "ML_MODULES=stubs.cmo creators.cmo classes.cmo \n";
+    fprintf h "ML_MODULES_OPT=stubs.cmx creators.cmx classes.cmx  \n\n";
     fprintf h "OCAMLC=ocamlc -g\nOCAMLOPT=ocamlopt -g\n\n";
     fprintf h "INC=-I ./../../test_gen \n";
     fprintf h ".SUFFIXES: .ml .mli .cmi .cmx .cmo \n\n";

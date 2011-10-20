@@ -147,48 +147,50 @@ class virtual abstractGenerator _index = object (self)
   method private virtual prefix : string  
   method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
   method private virtual gen_enum_in_ns : key:NameKey.t -> dir:string -> enum -> string option
-  method private virtual genProp : string -> out_channel -> prop -> unit
+(*  method private virtual genProp : string -> out_channel -> prop -> unit *)
 (*  method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
   method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit *)
-  method private virtual makefile : string -> string list -> unit
 
 (* TODO: decide what index to use: from object or from parameter *)
   method private fromCamlCast 
-    : index_data SuperIndex.t -> cpptype -> default:string option -> string -> castResult
-      = fun index t ~default (argname:string) -> 
-	let _ : string option = default in	
+      = fun (index:index_t) t ~default ?(cpp_argname=None)  (argname:string) -> 
+	let _ : string option = default in
+	let cpp_argname = match cpp_argname with
+	  | Some x -> x 
+	  | None   -> "_"^argname
+	in
 	let is_const = t.t_is_const in
 	match pattern _index (simple_arg t) with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
 	  | PrimitivePattern -> begin
  	    match t.t_name with
 	      | "int" -> Success (String.concat  
-				    ["int _";   argname; " = Int_val("; argname; ");"])
+				    ["int "; cpp_argname; " = Int_val("; argname; ");"])
 	      | "double" -> CastError "double_value!"
 	      | "bool" -> Success (String.concat 
-				     ["bool _"; argname; " = Bool_val("; argname; ");"])
+				     ["bool "; cpp_argname; " = Bool_val("; argname; ");"])
 	      | "QString" -> Success (String.concat 
 					["  "; if t.t_is_const then "const " else "";
 					 "QString"; if t.t_is_ref then "&" else "";
-					 " _"; argname; " = "; "QString(String_val("; argname; "));" ])
+					 " "; cpp_argname; " = "; "QString(String_val("; argname; "));" ])
 	      | "void" -> Success "Val_unit"
 	      | "char" when t.t_indirections = 1 ->
-		Success (String.concat ["char* _"; argname; " = String_val("; argname; ");"])
+		Success (String.concat ["char* "; cpp_argname; " = String_val("; argname; ");"])
 	      | _ -> assert false
 	  end
 	  | ObjectPattern -> 
 	    Success (String.concat 
-		       [if is_const then "const " else ""; t.t_name; "* _"; argname; 
+		       [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
 			sprintf " = (%s* ) (%s);" t.t_name argname])
 	  | ObjectDefaultPattern ->
 	    Success 
 	      (String.concat 
-		 [if is_const then "const " else ""; t.t_name; "* _"; argname; 
+		 [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
 		  sprintf " = (%s==Val_none) ? NULL : ((%s* )(Some_val(%s)));" argname t.t_name argname] )
 	  | EnumPattern (e,k) ->
 	    let func_name = enum_conv_func_names k |> fst in
 	    let tail = sprintf "%s(%s);" func_name argname in
-	    let ans = sprintf "%s _%s = %s" (snd k) argname tail in
+	    let ans = sprintf "%s %s = %s" (snd k) cpp_argname tail in
 	    Success ans	      
 
   method private toCamlCast

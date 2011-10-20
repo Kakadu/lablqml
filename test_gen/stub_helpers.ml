@@ -18,16 +18,6 @@ let wrap_handler =
 external connect': [`qobject] obj -> signal:string -> dst:[`qobject] obj -> slot:string -> bool
     = "ml_QObject_connect"
 
-(*
-let connect: _ -> <name:string; ..> sssignal -> 
-             _ -> <name:string; ..> ssslot   -> unit = 
-  fun sender signal target slot ->
-    let b = QObject.connect sender#handler ~signal:signal#name
-                                           ~dst:target#handler
-                                           ~slot:slot#name 
-    in ()
-*)
-
 let connect: 'a 'b. 'c -> 'a sssignal -> 'd -> ('a, 'b) ssslot -> unit = 
   fun sender si receiver sl -> (
         Printf.printf "Connecting %s -> %s\n" si#name sl#name;

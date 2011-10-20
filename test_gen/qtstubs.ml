@@ -1,6 +1,7 @@
 open Stub_helpers
 
-external make_root_widget : unit -> [`qobject] obj = "make_root_widget"
+external get_caml_object: [`qobject] obj -> 'a option
+external set_caml_objet: [`qobject] obj -> <..> -> unit
 
 module QApplication = struct
   type t = [`qapplication]

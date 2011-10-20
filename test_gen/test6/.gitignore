@@ -1,1 +1,6 @@
 mocml
+UserSlots.cpp
+UserSlots.h
+UserSlots_stubs.ml
+moc_UserSlots.cpp
+test
