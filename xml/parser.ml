@@ -86,7 +86,7 @@ and meth = {
   m_access:[`Public | `Protected| `Private];
   m_modif: [`Normal | `Static   | `Abstract]
 } 
-with sexp
+with sexp 
 
 let simple_arg arg_type = { arg_type; arg_name=None; arg_default = None }
 
@@ -154,6 +154,15 @@ module MethSet = struct
     fold ~init w ~f:(fun el acc -> remove acc el)
 end
 
+type enum = {
+  e_flag_name: string;
+  e_name: string;
+  e_items: string list;
+  e_access: [`Public | `Protected | `Private]
+} with sexp 
+type constr = func_arg list
+type prop = string * string option * string option
+type sgnl = string * (func_arg list)	
 type clas = { 
   c_inherits: string list;
   c_props: prop list;
@@ -165,16 +174,10 @@ type clas = {
   c_name: string
 }
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
-and enum = {
-  e_flag_name: string;
-  e_name: string;
-  e_items: string list;
-  e_access: [`Public | `Protected | `Private]
-}
-and constr = func_arg list
+
 and slt = meth
-and sgnl = string * (func_arg list)	
-and prop = string * string option * string option	
+
+
 
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
 

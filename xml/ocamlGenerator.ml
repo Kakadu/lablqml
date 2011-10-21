@@ -24,7 +24,8 @@ class ocamlGenerator dir (index:index_t) = object (self)
   method private prefix = dir ^/ "ml"
 
   (* low_level means, for example, to generate [`qobject] obj instead of qObject *)
-  method toOcamlType ?forcePattern ~low_level ({arg_type=t;arg_default=default;_} as arg) =
+  method toOcamlType ?forcePattern ~low_level ( arg: Parser.func_arg) =
+    let {arg_type=t; arg_default=default; _} = arg in
     let patt = match forcePattern with
       | None   -> pattern index arg 
       | Some x  -> x in
@@ -69,7 +70,12 @@ class ocamlGenerator dir (index:index_t) = object (self)
       let cpp_twin_func_name = cpp_func_name (classname^"_twin") in
       let cpp_func_name  = cpp_func_name classname in
 
-      let types = List.map argslist ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
+      let types = List.map argslist ~f:(fun arg -> 
+(*	let patt = pattern index arg in
+	printf "ocaml====pattern of %s is %s\n" (arg |> sexp_of_func_arg |> Sexplib.Sexp.to_string_hum) 
+	  (patt |> sexp_of_pattern |> Sexplib.Sexp.to_string); 	*)
+	self#toOcamlType ~low_level:true arg
+      ) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
       let no_args = (List.length types = 0) in
 
@@ -139,7 +145,9 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	  native_name
       in
 
-      let types = List.map meth.m_args ~f:(fun arg -> self#toOcamlType ~low_level:true arg) in
+      let types = List.map meth.m_args ~f:(fun arg -> 
+	self#toOcamlType ~low_level:true arg
+      ) in
 
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
       let res_arg = simple_arg meth.m_res in
@@ -214,14 +222,14 @@ class ocamlGenerator dir (index:index_t) = object (self)
 	    | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
 	) in
 	let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
-	fprintf h "  method %s %s = %s_%s' self#handler %s " meth_name (String.concat ~sep:" " args1)
+	fprintf h "  method %s %s = %s_%s' self#handler %s\n" meth_name (String.concat ~sep:" " args1)
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
 	(match pattern index (simple_arg res) with
 	  | ObjectPattern -> 
 	    let res_classname = ocaml_class_name res.t_name in
-	    fprintf h "|> (function Some o -> ( match get_caml_obj o with\n";
-	    fprintf h "                       | Some x -> (x:>%s)\n" res_classname;
-	    fprintf h "                       | None -> new %s o)\n" res_classname;
+	    fprintf h "|> (function Some o -> Some ( match Qtstubs.get_caml_object o with\n";
+	    fprintf h "                            | Some x -> (x:>%s)\n" res_classname;
+	    fprintf h "                            | None -> new %s o)\n" res_classname;
 	    fprintf h "   | None -> None)\n"
 
 	  | _ -> ());	
@@ -233,7 +241,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
       | BreakSilent -> ()
       | Break2File s -> ( fprintf h "(* %s *)\n" s; print_endline s)
 
-  method gen_slot : classname:string -> out_channel -> Parser.slt -> unit = 
+  method gen_slot = 
     fun ~classname h slot ->
     try
       (match slot.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
@@ -257,7 +265,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
     with BreakSilent -> ()
       | BreakS s -> ()
 
-  method gen_signal: out_channel -> Parser.sgnl -> unit = fun h (name,args) ->
+  method gen_signal = fun h (name,args) ->
     try
       let types = List.map args ~f:(self#toOcamlType ~low_level:false) in
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
@@ -349,6 +357,7 @@ class ocamlGenerator dir (index:index_t) = object (self)
 (*	let lst1,lst2 = self#gen_constr_data  ~classname ~index constr in *)
 	fprintf h_classes " %s me = object(self)\n" ocaml_classname;
 	fprintf h_classes " method handler : [`qobject] obj = me\n";
+	fprintf h_classes " initializer Qtstubs.set_caml_object me self\n"
 (*	fprintf h_classes " method get_handler = handler\n\n"; 
 	fprintf h_classes " initializer handler <- %s self %s\n\n" 
 	  (sprintf "create_%s_0'" classname) lst2	*)

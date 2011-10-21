@@ -25,6 +25,7 @@ type pattern =
   | EnumPattern  of enum * SuperIndex.NameKey.t
   | ObjectDefaultPattern
 
+val sexp_of_pattern : pattern -> Sexplib.Sexp.t 
 val cpp_stub_name: classname:string -> ?res_n_name:cpptype*string -> ?is_byte:bool -> func_arg list 
   -> string
 val is_good_meth : classname:string -> index:SuperIndex.index_t -> meth -> bool
@@ -40,7 +41,7 @@ class virtual abstractGenerator :
       ?forcePattern: pattern option -> Parser.func_arg -> string -> string -> castResult
     method private fromCamlCast :
       SuperIndex.index_t ->
-      Parser.cpptype -> default:string option -> ?cpp_argname:string option  -> string -> castResult
+      Parser.func_arg ->  ?cpp_argname:string option  -> string -> castResult
     method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
     method private virtual gen_enum_in_ns :
       key:SuperIndex.NameKey.t -> dir:string -> Parser.enum -> string option

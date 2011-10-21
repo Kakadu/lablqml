@@ -44,8 +44,11 @@ class cppGenerator ~includes dir index = object (self)
 	  (args, argnames)
       in
       assert (List.length argnames = (List.length args));
-      let arg_casts = List.map2_exn argnames args ~f:(fun name {arg_type=t;arg_default=default;_} -> 
-	self#fromCamlCast (self#index) (unreference t) ~default name
+      let arg_casts = List.map2_exn argnames args ~f:(fun name ({arg_type=t;arg_default=default;_} as arg)-> 
+(*	let patt = pattern index arg in
+	printf "patter of %s is %s\n" (arg |> sexp_of_func_arg |> Sexplib.Sexp.to_string_hum)
+	  (patt |> sexp_of_pattern |> Sexplib.Sexp.to_string); *)
+	self#fromCamlCast (self#index) {arg with arg_type=unreference t} name
       ) in
       let arg_casts = List.map arg_casts ~f:(function Success s  -> s
 	| CastError _
@@ -58,9 +61,10 @@ class cppGenerator ~includes dir index = object (self)
       in
       let () = 
 	if res_type <> void_type then
-	match self#fromCamlCast self#index (unreference res_type) ~default:None "resname" with
-	| Success _ -> ()
-	| _ -> raise BreakSilent
+	  let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
+	  match self#fromCamlCast self#index res_arg "resname" with
+	    | Success _ -> ()
+	    | _ -> raise BreakSilent
       in
 
       fprintf h "value %s(" native_func_name;
@@ -226,10 +230,12 @@ class cppGenerator ~includes dir index = object (self)
       fprintf h "%s) {\n" argsstr;
       fprintf h "  CAMLparam0();\n";
       if not (is_void_type m.m_res) then 
-        fprintf h "  CAMLlocal2(_ans,meth);\n"
+        fprintf h "  CAMLlocal3(camlobj,_ans,meth);\n"
       else
-	fprintf h "  CAMLlocal1(meth);\n";
-      fprintf h "  meth = caml_get_public_method( _camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
+	fprintf h "  CAMLlocal2(camlobj,meth);\n";
+      fprintf h "  GET_CAML_OBJECT(this,the_caml_object)\n";
+      fprintf h "  camlobj = (value) the_caml_object;\n";
+      fprintf h "  meth = caml_get_public_method( camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
       fprintf h "  if (meth == 0)\n    printf(\"total fail\\n\");\n";
 
       let call_closure_str = match argslen with 
@@ -252,8 +258,8 @@ class cppGenerator ~includes dir index = object (self)
       end else begin
 	let res = { arg_type=m.m_res; arg_name=None; arg_default=None} in
 	fprintf h "  _ans = %s;\n" call_closure_str;
-	let cast = self#fromCamlCast index res.arg_type ~default:None ~cpp_argname:(Some "ans")  "_ans" |> 
-	    (function Success s -> s | _ -> assert false) in
+	let cast = self#fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
+	  |> (function Success s -> s | _ -> assert false) in
 	fprintf h "  %s;\n" cast;
 	fprintf h "  Q_UNUSED(caml__frame); //caml_local_roots = caml__frame;\n";
 	fprintf h "  return ans;\n"
@@ -272,6 +278,7 @@ class cppGenerator ~includes dir index = object (self)
 	(String.concat ~sep:"," argnames)
     );
     fprintf h "};\n\n";
+    fprintf h "extern \"C\" {\n";
     List.iter c.c_constrs ~f:(fun args ->
       let classname = c.c_name ^ "_twin" in
       let native_func_name = self#get_name ~classname args ?res_n_name:None false in
@@ -281,7 +288,7 @@ class cppGenerator ~includes dir index = object (self)
       fprintf h "  %s *_ans = new %s(%s);\n"classname classname (String.concat ~sep:"," cpp_argnames);
       fprintf h "  CAMLreturn((value)_ans);\n}\n\n"			     
     );
-    ()
+    fprintf h "\n}\n"
 
   method gen_stub_arguments args h =
     let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
@@ -294,8 +301,8 @@ class cppGenerator ~includes dir index = object (self)
     ) else (
       fprintf h "  CAMLparam%d(%s);\n" argslen (argnames |> String.concat ~sep:",")
     );
-    let arg_casts = List.map2_exn argnames args ~f:(fun name {arg_type=t;arg_default=default;_} ->
-      self#fromCamlCast self#index (unreference t) ~default name
+    let arg_casts = List.map2_exn argnames args ~f:(fun name ({arg_type=t;arg_default=default;_} as arg) ->
+      self#fromCamlCast self#index {arg with arg_type=unreference t} name
     ) in
     let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
     List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);

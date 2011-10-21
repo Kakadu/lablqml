@@ -1,3 +1,4 @@
+open Sexplib
 val ( |> ) : 'a -> ('a -> 'b) -> 'b
 val (%<) : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 
@@ -20,6 +21,8 @@ type meth = {
   m_modif : [ `Abstract | `Normal | `Static ];
 }
 
+val sexp_of_func_arg : func_arg -> Sexp.t 
+  
 val simple_arg : cpptype -> func_arg
 val void_type : cpptype
 val skip_meth : classname:string -> string -> bool
@@ -27,6 +30,7 @@ val unreference : cpptype -> cpptype
 val string_of_type : cpptype -> string
 val string_of_arg : func_arg -> string
 val string_of_meth : meth -> string
+
 module MethSet :
   sig
     type elt = meth
@@ -73,28 +77,31 @@ module MethSet :
     val length : t -> int
   end
 
+type enum = {
+  e_flag_name: string;
+  e_name: string;
+  e_items: string list;
+  e_access: [`Public | `Protected | `Private]
+} 
+type constr = func_arg list
+type prop = string * string option * string option
+type sgnl = string * (func_arg list)	
 type clas = { 
   c_inherits: string list;
   c_props: prop list;
   c_sigs: sgnl list;
   c_slots: MethSet.t;
-  c_meths: MethSet.t; 
+  c_meths: MethSet.t;
   c_enums: enum list;
   c_constrs: constr list;
   c_name: string
 }
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
-and enum = {
-  e_flag_name : string;
-  e_name : string;
-  e_items : string list;
-  e_access : [ `Private | `Protected | `Public ];
-}
-and constr = func_arg list
-and slt = meth
-and sgnl = string * (func_arg list)	
-and prop = string * string option * string option	
 
+and slt = meth
+
+val enum_of_sexp: Sexplib.Sexp.t -> enum
+val sexp_of_enum: enum -> Sexplib.Sexp.t 
 val is_public: [`Public | `Protected| `Private] -> bool
 val empty_namespace : namespace
 val ptrtype_of_class : clas -> cpptype
@@ -105,22 +112,6 @@ val is_void_type : cpptype -> bool
 
 val meth_of_constr : classname:string -> func_arg list -> meth
 val string_of_constr : classname:string -> func_arg list -> string
-(*
-val isAbstractMeth : 'a * 'b * 'c * 'd * modifiers list -> bool
-val unreference : cpptype -> cpptype
-val skipNs : string -> bool
-val isTemplateClass : string -> bool
-val isInnerClass : string -> bool
-val fixTemplateClassName : string -> string
-val startswith : prefix:string -> string -> bool
-val endswith : postfix:string -> string -> bool
-val skipMeth : classname:string -> string -> bool
-exception Break
-val strip_dd : prefix:string -> string -> string
-val attrib_opt : 'a -> ('a * 'b) list -> 'b option
-val xname : Simplexmlparser.xml -> string
-val attrib : 'a -> ('a * 'b) list -> 'b
-  *)
 val build : Simplexmlparser.xml -> namespace
 
 val str_replace : patt:(string * string) list -> string -> string

@@ -9,12 +9,7 @@ open SuperIndex
 exception BreakS of string
 exception BreakSilent
 let breaks s = raise (BreakS s)
-(*
-let cpp_func_name ~classname ~methname ?(is_byte=true) argslist = 
-  String.concat ~sep:"_" ((if is_byte then "byte" else "native")::classname::methname::(
-    List.map argslist ~f:(fun (t,_) -> Str.global_replace (Str.regexp "::") "_" t.t_name)
-  ))
-  *)
+
 let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) args =
   let argslist = List.map args ~f:(fun {arg_type=t;_}-> Str.global_replace (Str.regexp "::") "_" t.t_name) in
   let sort = if is_byte then "byte" else "native" in
@@ -54,6 +49,7 @@ type pattern =
   | InvalidPattern | PrimitivePattern | ObjectPattern 
   | EnumPattern  of enum * NameKey.t
   | ObjectDefaultPattern (* when `=0` *) (* default pattern when parameter has default value *)
+with sexp
 
 let pattern index {arg_type=t; arg_default=default; _} =
     let name = t.t_name in
@@ -147,49 +143,45 @@ class virtual abstractGenerator _index = object (self)
   method private virtual prefix : string  
   method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
   method private virtual gen_enum_in_ns : key:NameKey.t -> dir:string -> enum -> string option
-(*  method private virtual genProp : string -> out_channel -> prop -> unit *)
-(*  method private virtual genMeth : prefix:string list -> string -> out_channel -> meth -> unit
-  method private virtual genConstr : prefix:string list -> string -> out_channel -> constr -> unit *)
 
 (* TODO: decide what index to use: from object or from parameter *)
   method private fromCamlCast 
-      = fun (index:index_t) t ~default ?(cpp_argname=None)  (argname:string) -> 
-	let _ : string option = default in
+      = fun (index:index_t) ({arg_default; arg_type=t; _} as arg) ?(cpp_argname=None) arg_name -> 
 	let cpp_argname = match cpp_argname with
 	  | Some x -> x 
-	  | None   -> "_"^argname
+	  | None   -> "_"^arg_name
 	in
 	let is_const = t.t_is_const in
-	match pattern _index (simple_arg t) with
+	match pattern _index arg with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
 	  | PrimitivePattern -> begin
  	    match t.t_name with
 	      | "int" -> Success (String.concat  
-				    ["int "; cpp_argname; " = Int_val("; argname; ");"])
+				    ["int "; cpp_argname; " = Int_val("; arg_name; ");"])
 	      | "double" -> CastError "double_value!"
 	      | "bool" -> Success (String.concat 
-				     ["bool "; cpp_argname; " = Bool_val("; argname; ");"])
+				     ["bool "; cpp_argname; " = Bool_val("; arg_name; ");"])
 	      | "QString" -> Success (String.concat 
 					["  "; if t.t_is_const then "const " else "";
 					 "QString"; if t.t_is_ref then "&" else "";
-					 " "; cpp_argname; " = "; "QString(String_val("; argname; "));" ])
+					 " "; cpp_argname; " = "; "QString(String_val("; arg_name; "));" ])
 	      | "void" -> Success "Val_unit"
 	      | "char" when t.t_indirections = 1 ->
-		Success (String.concat ["char* "; cpp_argname; " = String_val("; argname; ");"])
+		Success (String.concat ["char* "; cpp_argname; " = String_val("; arg_name; ");"])
 	      | _ -> assert false
 	  end
 	  | ObjectPattern -> 
 	    Success (String.concat 
 		       [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
-			sprintf " = (%s* ) (%s);" t.t_name argname])
+			sprintf " = (%s* ) (%s);" t.t_name arg_name])
 	  | ObjectDefaultPattern ->
 	    Success 
 	      (String.concat 
 		 [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
-		  sprintf " = (%s==Val_none) ? NULL : ((%s* )(Some_val(%s)));" argname t.t_name argname] )
+		  sprintf " = (%s==Val_none) ? NULL : ((%s* )(Some_val(%s)));" arg_name t.t_name arg_name] )
 	  | EnumPattern (e,k) ->
 	    let func_name = enum_conv_func_names k |> fst in
-	    let tail = sprintf "%s(%s);" func_name argname in
+	    let tail = sprintf "%s(%s);" func_name arg_name in
 	    let ans = sprintf "%s %s = %s" (snd k) cpp_argname tail in
 	    Success ans	      
 
