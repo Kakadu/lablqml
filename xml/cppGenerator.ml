@@ -6,12 +6,15 @@ open Printf
 open Parser
 
 module Q = Core_queue
-module List = Core_list
 module String = Core_string
 
-let map2i la lb ~f = 
-  let i = ref 0 in
-  Core_list.map2_exn la lb ~f:(fun x y -> let ans = f !i x y in incr i; ans)
+module List = struct
+  include Core_list
+  (** Like map2_exn but with index parameter *)
+  let map2i_exn la lb ~f = 
+    let i = ref 0 in
+    map2_exn la lb ~f:(fun x y -> let ans = f !i x y in incr i; ans)
+end
 
 class cppGenerator ~includes dir index = object (self)
   inherit abstractGenerator index as super
@@ -243,7 +246,7 @@ class cppGenerator ~includes dir index = object (self)
 	| _ -> begin
           fprintf h "  value *args = new value[%d];\n" (argslen+1);
 	  fprintf h "  args[0] = _camlobj;\n";
-	  let arg_casts = map2i m.m_args argnames ~f:(fun i arg name -> 
+	  let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
 	    self#toCamlCast arg name (sprintf "args[%d]" (i+1) )
 	  ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
 	  List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
