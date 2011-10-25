@@ -50,13 +50,20 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
 }
   //============================ settting and getting caml object from QObject
   #define CAMLOBJ_PROPERTY "_camlobj"
+  value camlObj(const QObject* o) {
+    QVariant ans = o -> property(CAMLOBJ_PROPERTY);
+    if (ans.isValid())
+	    return ans.toLongLong();
+    else
+	    return 0;
+  }
   CAMLprim // [`qobject] obj -> 'a option
   value hasCamlObj(value cppobj) {
     CAMLparam1(cppobj);
     QObject *o = (QObject*)cppobj;
-    QVariant ans = o->property(CAMLOBJ_PROPERTY);
-    if (ans.isValid())
-      CAMLreturn(Some_val((value)( ans.toLongLong() ) ) );
+    value ans = camlObj(o);
+    if (ans != 0)
+      CAMLreturn( Some_val((value)ans) );
     else
       CAMLreturn(Val_none);
   }
@@ -67,6 +74,16 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
     QObject *o = (QObject*)cppobj;
     o->setProperty(CAMLOBJ_PROPERTY, (qlonglong)camlobj);
     CAMLreturn(Val_unit);
+  }
+  
+  CAMLprim // [`qobject ] obj -> string option 
+  value getClassName(value cppobj) {
+    CAMLparam1(cppobj);
+    QObject *qobj = (QObject*)cppobj;
+    if (qobj == NULL)
+      CAMLreturn(Val_none);
+    else 
+      CAMLreturn(Some_val(caml_copy_string(qobj -> metaObject() -> className() ) ) );
   }
 
 }  // extern "C"

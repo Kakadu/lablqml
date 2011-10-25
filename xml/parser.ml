@@ -91,6 +91,7 @@ with sexp
 let simple_arg arg_type = { arg_type; arg_name=None; arg_default = None }
 
 let is_public = function `Public -> true | `Private -> false | `Protected -> false
+let is_virtual = function `Virtual -> true | `Static | `Abstract -> false
 
 let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 

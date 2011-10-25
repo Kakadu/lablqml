@@ -26,8 +26,8 @@ type pattern =
   | ObjectDefaultPattern
 
 val sexp_of_pattern : pattern -> Sexplib.Sexp.t 
-val cpp_stub_name: classname:string -> ?res_n_name:cpptype*string -> ?is_byte:bool -> func_arg list 
-  -> string
+val cpp_stub_name: classname:string -> ?res_n_name:cpptype*string -> ?is_byte:bool 
+  ->  [< `Private | `Protected | `Public ] -> func_arg list -> string
 val is_good_meth : classname:string -> index:SuperIndex.index_t -> meth -> bool
 
 val enum_conv_func_names : (string list * string) -> string*string

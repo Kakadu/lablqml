@@ -83,7 +83,7 @@ type enum = {
   e_items: string list;
   e_access: [`Public | `Protected | `Private]
 } 
-type constr = func_arg list
+type constr = func_arg list (* add access modifiers for constructors *)
 type prop = string * string option * string option
 type sgnl = string * (func_arg list)	
 type clas = { 
@@ -103,6 +103,7 @@ and slt = meth
 val enum_of_sexp: Sexplib.Sexp.t -> enum
 val sexp_of_enum: enum -> Sexplib.Sexp.t 
 val is_public: [`Public | `Protected| `Private] -> bool
+val is_virtual : [`Virtual | `Abstract | `Static] -> bool
 val empty_namespace : namespace
 val ptrtype_of_class : clas -> cpptype
 val ptrtype_of_classname: string -> cpptype

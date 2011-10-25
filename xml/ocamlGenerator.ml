@@ -53,16 +53,16 @@ class ocamlGenerator dir (index:index_t) = object (self)
       Success (sprintf "[%s]" s)
 
   method gen_constr ~classname ~i h argslist = 
-    (* TODO: maybe diable copy constructors *)
+    (* TODO: maybe disable copy constructors *)
     try
       if List.length argslist > 5 then break2file "more then 5 parameters";
       fprintf h "\n(* constructor %s *)\n" (string_of_constr ~classname argslist);
       let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in 
 
       let cpp_func_name classname = 
-	let native_name = cpp_stub_name ~classname ?res_n_name:None ~is_byte:false argslist in
+	let native_name = cpp_stub_name ~classname ?res_n_name:None ~is_byte:false `Public argslist in
 	if List.length argslist > 5 then
-	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ?res_n_name:None ~is_byte:true argslist)
+	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ?res_n_name:None ~is_byte:true `Public argslist)
 	    native_name
 	else
 	  native_name
@@ -125,34 +125,30 @@ class ocamlGenerator dir (index:index_t) = object (self)
       | Break2File s -> fprintf h "(* %s *)\n" s
 
   method private gen_meth_stubs ~is_abstract ~classname h meth =
-    try   
-      fprintf h "(* method %s *)\n" (string_of_meth meth);
-      (match meth.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
-
-      if not (is_good_meth ~classname ~index meth) then 
-	breaks (sprintf "not is_good_meth %s" (string_of_meth meth) );
+      fprintf h "  (* method %s *)\n" (string_of_meth meth);
 
       let ocaml_classname = ocaml_class_name classname in
 
       let cpp_func_name = 
+	(* Some hack. If this meth has < 5 parameters that string format is similiar to [a-z]+ 
+	   But if it needs to functions  for stubs format is [a-z]+" "[a-z]+
+	*)
 	let classname = meth.m_declared in
 	let res_n_name = (meth.m_res,meth.m_name) in
-	let native_name = 
-	  cpp_stub_name ~classname ~res_n_name ~is_byte:false meth.m_args in
+	let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte meth.m_access meth.m_args in
+	let native_name = helper false in
 	if List.length meth.m_args > 5 then
-	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ~res_n_name ~is_byte:true meth.m_args) native_name
+	  sprintf "%s\" \"%s" (helper true) native_name
 	else
 	  native_name
       in
 
-      let types = List.map meth.m_args ~f:(fun arg -> 
-	self#toOcamlType ~low_level:true arg
-      ) in
+      let types = List.map meth.m_args ~f:(fun arg -> self#toOcamlType ~low_level:true arg ) in
+      let types = List.map types ~f:(function Success s -> s | _ -> assert false) in
 
-      let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
       let res_arg = simple_arg meth.m_res in
       let res_t = (match pattern index res_arg with
-	| ObjectPattern -> self#toOcamlType  ~forcePattern:ObjectDefaultPattern ~low_level:true res_arg
+	| ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:true res_arg
 	| ObjectDefaultPattern -> assert false
 	| _ -> self#toOcamlType ~low_level:true res_arg)
       |> (function Success s -> s | _ -> raise BreakSilent) in
@@ -160,18 +156,11 @@ class ocamlGenerator dir (index:index_t) = object (self)
       fprintf h "external %s_%s': 'a->%s\n\t\t= \"%s\"\n" ocaml_classname meth.m_out_name 
 	(String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
-    with BreakSilent -> () 
-      |  BreakS str -> ( fprintf h "(* %s *)\n" str;
-			 print_endline str )
-
   (* generates member code*)
   method gen_meth ?new_name ~is_abstract ~classname h meth = 
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
     try
-      (match meth.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
-      if not (is_good_meth ~classname ~index meth) then 
-	break2file
-	  (sprintf "skipped in class %s method %s --- not is_good_meth" classname (string_of_meth meth));
+      let () = match meth.m_access with `Private -> raise BreakSilent | _ -> () in
 
       if List.length args + 1 > 10 then 
 	break2file (sprintf "skipped meth %s: too many arguments\n" (string_of_meth meth) ); 
@@ -364,17 +353,18 @@ class ocamlGenerator dir (index:index_t) = object (self)
       end;
 
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
-      MethSet.iter c.c_slots ~f:(fun slot -> 
-(*	self#gen_slot ~classname h_classes slot; *)
-	self#gen_meth_stubs ~is_abstract ~classname h_stubs slot
-      );
+(*      MethSet.iter c.c_slots ~f:(fun slot -> 
+	if is_good_meth ~classname ~index slot then begin
+	  (*self#gen_slot ~classname h_classes slot; *)
+	  self#gen_meth_stubs ~is_abstract ~classname h_stubs slot
+	end 
+      ); *)
       MethSet.iter c.c_meths ~f:(fun m -> 
 	match m.m_modif with
-	  | `Abstract -> ()
-	  | `Normal ->
+	  | `Normal when is_good_meth ~classname ~index m ->	    
 	    self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
 	    self#gen_meth       ~is_abstract:false ~classname h_classes m 
-	  | `Static -> printf "Skipped static method %s\n" (string_of_meth m)
+	  | _ -> ()
       ); 
 
       fprintf h_classes "end\nand ";

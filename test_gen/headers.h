@@ -1,4 +1,5 @@
 #pragma once
+#include <QtCore/QObject>
 
 #include "ml_headers.h"
 #define Some_val(v) Field(v,0)
@@ -8,3 +9,4 @@
 QVariant camlobj_variant = cppobj->property(CAMLOBJ_PROPERTY);\
  qlonglong varname = (camlobj_variant.isValid()) ? camlobj_variant.toLongLong() : 0;
 
+value camlObj(QObject*);

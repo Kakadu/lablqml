@@ -10,12 +10,13 @@ exception BreakS of string
 exception BreakSilent
 let breaks s = raise (BreakS s)
 
-let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) args =
+let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) modif args =
   let argslist = List.map args ~f:(fun {arg_type=t;_}-> Str.global_replace (Str.regexp "::") "_" t.t_name) in
   let sort = if is_byte then "byte" else "native" in
+  let modifstr = match modif with `Public -> "pub" | `Private -> "private" | `Protected -> "prot" in
   match res_n_name with
-    | Some (res_t,name) -> String.concat ~sep:"_" (sort::classname::name::argslist)
-    | None -> String.concat ~sep:"_" (sort::"create"::classname::argslist)
+    | Some (res_t,name) -> String.concat ~sep:"_" (sort::modifstr::classname::name::argslist)
+    | None              -> String.concat ~sep:"_" (sort::modifstr::"createeee"::classname::argslist)
 
 let isTemplateClass name = 
   try ignore (String.index_exn name '<' : int); true
@@ -106,7 +107,7 @@ let is_good_meth ~classname ~index m =
   let args = m.m_args in
   let res = m.m_res in
   try
-    (match m.m_access with `Public -> () | `Private | `Protected -> raise DoSkip);
+    let () = match m.m_access with `Private -> raise DoSkip | `Public | `Protected -> () in
     if skip_class_by_name ~classname:m.m_declared then false
     else if skip_meth ~classname methname then false 
     else begin 
