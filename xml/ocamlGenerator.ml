@@ -376,7 +376,7 @@ class ocamlGenerator graph dir index = object (self)
     let h = open_out (dir ^ "/Makefile") in
     fprintf h "ML_MODULES=stubs.cmo creators.cmo classes.cmo \n";
     fprintf h "ML_MODULES_OPT=stubs.cmx creators.cmx classes.cmx  \n\n";
-    fprintf h "OCAMLC=ocamlc -g\nOCAMLOPT=ocamlopt -g\n\n";
+    fprintf h "OCAMLC=ocamlc.opt -g\nOCAMLOPT=ocamlopt.opt -g\n\n";
     fprintf h "INC=-I ./../../test_gen \n";
     fprintf h ".SUFFIXES: .ml .mli .cmi .cmx .cmo \n\n";
     fprintf h ".ml.cmo:\n\t$(OCAMLC)   $(INC) -c $<\n\n";
