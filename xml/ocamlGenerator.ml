@@ -20,7 +20,8 @@ let ocaml_class_name classname =
 exception Break2File of string 
 let break2file s = raise (Break2File s)
 
-class ocamlGenerator dir (index:index_t) = object (self)
+class ocamlGenerator graph dir index = object (self)
+  inherit abstractGenerator graph index as super
   method private prefix = dir ^/ "ml"
 
   (* low_level means, for example, to generate [`qobject] obj instead of qObject *)

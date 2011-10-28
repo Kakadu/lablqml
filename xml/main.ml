@@ -86,16 +86,16 @@ main ();;
 let main () = 
   try
     if not options.nocpp then begin
-      let (_,index,_,q) = options.base in
+      let (_,index,graph,q) = options.base in
       let open CppGenerator in
 	  print_endline "generating C++ code";
-	  (new cppGenerator ~includes:options.includes options.out_dir index)#generate_q q
+	  (new cppGenerator ~graph ~includes:options.includes options.out_dir index)#generate_q q
     end; 
     if not options.noml then begin
-      let (_,index,g,q) = options.base in
+      let (_,index,graph,q) = options.base in
       let open OcamlGenerator in
 	  print_endline "generating OCaml code";
-	  (new ocamlGenerator options.out_dir index )#generate q
+	  (new ocamlGenerator graph options.out_dir index )#generate q
     end
   with e -> print_endline (Exn.backtrace ()); raise e
 ;;

@@ -34,18 +34,15 @@ val enum_conv_func_names : (string list * string) -> string*string
 val pattern : SuperIndex.index_t -> Parser.func_arg -> pattern
 val is_abstract_class : prefix:string list -> SuperIndex.index_t -> string -> bool
 
-class virtual abstractGenerator :
-  SuperIndex.index_t ->
+class virtual abstractGenerator : SuperIndex.G.t -> SuperIndex.index_t ->
   object
     method private toCamlCast :
       ?forcePattern: pattern option -> Parser.func_arg -> string -> string -> castResult
     method private fromCamlCast :
       SuperIndex.index_t ->
       Parser.func_arg ->  ?cpp_argname:string option  -> string -> castResult
-    method private virtual gen_class : prefix:string list -> dir:string -> Parser.clas -> string option
-    method private virtual gen_enum_in_ns :
-      key:SuperIndex.NameKey.t -> dir:string -> Parser.enum -> string option
     method private index : SuperIndex.index_t
     method private virtual prefix : string
+    method isQObject: SuperIndex.NameKey.t -> bool
   end
 

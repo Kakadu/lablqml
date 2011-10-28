@@ -16,8 +16,13 @@ module List = struct
     map2_exn la lb ~f:(fun x y -> let ans = f !i x y in incr i; ans)
 end
 
-class cppGenerator ~includes dir index = object (self)
-  inherit abstractGenerator index as super
+type comp_target = {
+  comp_class : string;
+  comp_twin : string option
+}
+
+class cppGenerator ~graph ~includes dir index = object (self)
+  inherit abstractGenerator graph index as super
   
   method get_name ~classname modif args ?res_n_name is_byte =
     cpp_stub_name ~classname modif args ?res_n_name ~is_byte
@@ -34,7 +39,6 @@ class cppGenerator ~includes dir index = object (self)
 
   method gen_stub ~prefix classname modif args ?res_n_name h =
     try
-      
       let is_constr = Option.is_none res_n_name in
       let get_name is_byte = self#get_name ~classname modif args ?res_n_name is_byte in 
       let native_func_name = get_name false in
@@ -167,9 +171,8 @@ class cppGenerator ~includes dir index = object (self)
     List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
     fprintf h "\n";
     fprintf h "GCC=g++ -c -pipe -g -Wall -W $(INCLUDES) \n\n";
-    fprintf h "C_QTOBJS=%s %s\n\n"
-      (twins |> List.map ~f:(fun s -> sprintf "%s_twin.o" s) |> String.concat ~sep:" ")
-      (lst   |> List.map ~f:(fun s -> sprintf "%s.o" s) |> String.concat ~sep:" ");
+    let f x = x |> List.map ~f:(fun s -> sprintf "%s.o" s) |> String.concat ~sep:" " in
+    fprintf h "C_QTOBJS=%s %s\n\n" (f twins) (f lst);
     fprintf h ".SUFFIXES: .cpp .o\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
     fprintf h "all: $(C_QTOBJS)\n\n";
@@ -187,7 +190,7 @@ class cppGenerator ~includes dir index = object (self)
     !ans
   end
  
-  method gen_class ~prefix ~dir c : string option = 
+  method gen_class ~prefix ~dir c =
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then begin
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key);
@@ -200,6 +203,7 @@ class cppGenerator ~includes dir index = object (self)
       let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
       let dir =  dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
+      let is_QObject = self#isQObject key in
       let (stubs_filename, twin_cppname, _) = 
 	let d = dir ^/ classname in
 	(d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
@@ -209,7 +213,8 @@ class cppGenerator ~includes dir index = object (self)
       in
       let h = open_out stubs_filename in
       fprintf h "#include <Qt/QtOpenGL>\n";
-      fprintf h "#include <%s_twin.h>\n" classname;
+(*      if is_QObject then
+	fprintf h "#include <%s_twin.h>\n" classname; *)
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
       if self#is_abstr_class c then
@@ -223,7 +228,7 @@ class cppGenerator ~includes dir index = object (self)
 	List.iter ~f c.c_constrs 
       end;
       let f m = 
-	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) then
+	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
 	  self#gen_stub ~prefix classname m.m_access m.m_args ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
       MethSet.iter ~f c.c_meths;
@@ -231,11 +236,18 @@ class cppGenerator ~includes dir index = object (self)
 
       fprintf h "}  // extern \"C\"\n";
       close_out h;
+      let ans =
+	let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
+	let comp_twin = if is_QObject then Some (comp_class ^ "_twin") else None in
+	{ comp_class; comp_twin }
+      in
       (* Now let's write twin class *)
-      let h = open_out twin_cppname in
-      self#gen_twin_header ~prefix c h;
-      close_out h;
-      Some (if subdir = "" then classname else subdir ^/ classname)
+      let () = if is_QObject then (
+	let h = open_out twin_cppname in
+	self#gen_twin_header ~prefix c h;
+	close_out h
+      ) in
+      Some ans
     end
   
   method twin_methname cpp_methname modif = match modif with
@@ -399,6 +411,7 @@ class cppGenerator ~includes dir index = object (self)
   method generate_q q = 
     ignore (Sys.command ("rm -rf " ^ self#prefix ^"/*") );
     let classes = ref [] in
+    let twin_classes = ref [] in
     let enums = ref [] in
     Q.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
       | Enum e -> begin
@@ -408,13 +421,15 @@ class cppGenerator ~includes dir index = object (self)
       end
       | Class (c,_) ->  begin 
 	match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
-	  | Some s -> classes := s :: !classes
+	  | Some {comp_class;comp_twin} ->
+	    classes := comp_class :: !classes;
+	    (match comp_twin with None -> () | Some x -> twin_classes := x :: !twin_classes)
 	  | None -> ()
       end    
     );
     print_endline "Generating makefile";
     let classnames = !classes in
-    self#makefile self#prefix ~twins:classnames (List.map ~f:snd !enums @ classnames );
+    self#makefile self#prefix ~twins: (!twin_classes) (List.map ~f:snd !enums @ classnames );
     let enums_h = open_out (self#prefix ^/ "enum_headers.h") in
     List.iter !enums ~f:(fun ((_,fullname) as key,_) ->
       let (fname1,fname2) = enum_conv_func_names key in

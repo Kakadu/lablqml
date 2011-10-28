@@ -139,13 +139,22 @@ let is_abstract_class ~prefix index name =
     | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
     | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
 
-class virtual abstractGenerator _index = object (self)
+class virtual abstractGenerator graph _index = object (self)
   method private index = _index    
   method private virtual prefix : string  
-  method private virtual gen_class : prefix:string list -> dir:string -> clas -> string option
-  method private virtual gen_enum_in_ns : key:NameKey.t -> dir:string -> enum -> string option
 
-(* TODO: decide what index to use: from object or from parameter *)
+  val pathChecker =
+    let module M = Graph.Path.Check(G) in
+    let checker = M.create graph in
+    M.check_path checker
+
+  method isQObject key =
+    let qObjectKey = NameKey.key_of_fullname "QObject" in
+    if qObjectKey = key then false else
+    if not (G.mem_vertex graph qObjectKey) then false
+    else pathChecker qObjectKey key
+
+  (* TODO: decide what index to use: from object or from parameter *)
   method private fromCamlCast 
       = fun (index:index_t) ({arg_default; arg_type=t; _} as arg) ?(cpp_argname=None) arg_name -> 
 	let cpp_argname = match cpp_argname with
