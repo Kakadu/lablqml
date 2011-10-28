@@ -2,6 +2,7 @@ open Stub_helpers
 
 external get_caml_object: [`qobject] obj -> 'a option = "hasCamlObj"
 external set_caml_object: [`qobject] obj -> < .. > -> unit = "setCamlObj"
+external get_class_name : [`qobject] obj -> string option  = "getClassName"
 
 module QApplication = struct
   type t = [`qapplication]
