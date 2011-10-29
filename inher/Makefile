@@ -1,5 +1,5 @@
-INC=-I ../simple_signals -I `ocamlc -where` -I .
-GCC=g++ -c -g -O0 -fno-inline
+INC= -I `ocamlc -where` -I . -I /usr/include/qt4
+GCC=g++ -c -g -O0 -fno-inline 
 
 .SUFFIXES: .ml .cpp .mli .cmx
 
@@ -9,8 +9,8 @@ GCC=g++ -c -g -O0 -fno-inline
 .ml.cmx:
 	ocamlopt -c $<
 
-all: A.o WrapperClass.o AA.o classes.cmx main.cmx
-	ocamlopt -cclib -lstdc++ A.o WrapperClass.o AA.o classes.cmx main.cmx -o main
+all: cstubs.o enums.o AA.o classes.cmx main.cmx
+	ocamlopt -cclib -lstdc++ -cclib -lQtGui -cclib -lQtCore cstubs.o enums.o AA.o classes.cmx main.cmx -o main
 
 clean:
 	rm -f *.o *.cm[oix]
