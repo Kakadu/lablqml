@@ -3,13 +3,9 @@
 #include <caml/mlvalues.h>
 #include <stdio.h>
 #include <QtGui/QWidget>
+#include "AA.h"
 
-class QWidget_twin : public QWidget {
-Q_OBJECT
-public:
-  QWidget_twin(QWidget* x0) : QWidget(x0,0) {}
-
-  void virtual keyPressEvent(QKeyEvent *ev) {
+void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     CAMLparam0();
     CAMLlocal2(meth,camlobj);
     GET_CAML_OBJECT(this,the_caml_object);
@@ -22,8 +18,7 @@ public:
     caml_callback2(meth, camlobj, (value)ev);
     printf ("exit from QWidget_twin::keyPressedEvent\n");
     CAMLreturn0;
-  }
-};
+}
 
 extern "C" {
 
