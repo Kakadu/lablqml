@@ -171,11 +171,17 @@ class cppGenerator ~graph ~includes dir index = object (self)
     List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
     fprintf h "\n";
     fprintf h "GCC=g++ -c -pipe -g -Wall -W $(INCLUDES) \n\n";
-    let f x = x |> List.map ~f:(fun s -> sprintf "%s.o" s) |> String.concat ~sep:" " in
-    fprintf h "C_QTOBJS=%s %s\n\n" (f twins) (f lst);
-    fprintf h ".SUFFIXES: .cpp .o\n\n";
+    let f tl x = x |> List.map ~f:(fun s -> sprintf "%s%s" s tl) |> String.concat ~sep:" " in
+    fprintf h "HEADERS=%s\n" (f ".h" twins);
+    fprintf h "HEADERS2=$(addprefix moc_,$(HEADERS))\n";
+    fprintf h "MOCS=$(HEADERS2:.h=.o)\n";
+    fprintf h "C_QTOBJS=%s %s\n\n" (f ".o" twins) (f ".o" lst);
+    fprintf h ".SUFFIXES: .h .cpp .o\n\n";
+    fprintf h "all: step1 step2\n\n";
+    fprintf h "step2: $(MOCS)\n\n";
+    fprintf h "step1: $(C_QTOBJS) $(HEADERS)\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
-    fprintf h "all: $(C_QTOBJS)\n\n";
+    fprintf h ".cpp.h:\n\tmoc $@ > moc_$<\n\n";
     fprintf h "clean: \n\trm -f *.o\n\n";
     fprintf h ".PHONY: all clean\n\n"; 
     close_out h
@@ -204,7 +210,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let dir =  dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
       let is_QObject = self#isQObject key in
-      let (stubs_filename, twin_cppname, _) = 
+      let (stubs_filename, twin_cppname, twin_hname) = 
 	let d = dir ^/ classname in
 	(d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
         (* I'll find some problems with adding include files for every class. 
@@ -244,6 +250,9 @@ class cppGenerator ~graph ~includes dir index = object (self)
       (* Now let's write twin class *)
       let () = if is_QObject then (
 	let h = open_out twin_cppname in
+	self#gen_twin_source ~prefix c h;
+	close_out h;
+	let h = open_out  twin_hname in
 	self#gen_twin_header ~prefix c h;
 	close_out h
       ) in
@@ -255,6 +264,39 @@ class cppGenerator ~graph ~includes dir index = object (self)
     | `Public -> cpp_methname
     | `Protected -> sprintf "prot_%s" cpp_methname
 
+  method gen_twin_source ~prefix c h = 
+    let classname  = c.c_name in
+    fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include \"headers.h\"\n";
+    fprintf h "#include \"enum_headers.h\"\n";
+    fprintf h "#include <stdio.h>\n\n";
+    fprintf h "#include \"%s_twin.h\"\n" classname;
+    fprintf h "extern \"C\" {\n";
+
+    List.iter c.c_constrs ~f:(fun args ->
+      let classname = c.c_name ^ "_twin" in
+      let native_func_name = self#get_name ~classname `Public args ?res_n_name:None false in
+      fprintf h "value %s" native_func_name;
+      let caml_argnames = self#gen_stub_arguments args h in (* they has type `value` *)
+      let cpp_argnames = List.map caml_argnames ~f:(fun s -> "_"^s) in
+      fprintf h "  %s *_ans = new %s(%s);\n" classname classname (String.concat ~sep:"," cpp_argnames);
+      fprintf h "  CAMLreturn((value)_ans);\n}\n\n"			     
+    );
+    let (_,prot_meths) = 
+      MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
+	| `Public -> (MethSet.add a m,b)
+	| `Private -> (a,b)
+	| `Protected -> (a,MethSet.add b m) ) in
+    (* Also we have to generate caller stubs for protected meths of twin object *)
+    MethSet.iter prot_meths ~f:(fun m -> 
+      printf "generating a protected meth %s\n" (string_of_meth m);
+(*      if m.m_declared = classname then *)
+	self#gen_stub ~prefix (sprintf "%s" classname) m.m_access
+	  m.m_args ?res_n_name:(Some (m.m_res, (m.m_name) )) h
+    );
+    fprintf h "\n}\n";
+    ()
+
   method gen_twin_header ~prefix c h = 
     let classname  = c.c_name in
     fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
@@ -262,7 +304,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
     
-    fprintf h "class %s_twin : public %s {\npublic:\n" classname classname;
+    fprintf h "class %s_twin : public %s {\nQ_OBJECT\npublic:\n" classname classname;
+    fprintf h "  virtual ~%s_twin() {}\n" classname;
     let (pub_meths,prot_meths) = 
       MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
 	| `Public -> (MethSet.add a m,b)
@@ -271,6 +314,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
     let new_meths = MethSet.union pub_meths(MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
+      
       fprintf h "%s %s(" (string_of_type m.m_res) (self#twin_methname m.m_name m.m_access);
 
       let argslen = List.length m.m_args in
@@ -329,25 +373,6 @@ class cppGenerator ~graph ~includes dir index = object (self)
     );
     fprintf h "};\n\n";
 
-    fprintf h "extern \"C\" {\n";
-    List.iter c.c_constrs ~f:(fun args ->
-      let classname = c.c_name ^ "_twin" in
-      let native_func_name = self#get_name ~classname `Public args ?res_n_name:None false in
-      fprintf h "value %s" native_func_name;
-      let caml_argnames = self#gen_stub_arguments args h in (* they has type `value` *)
-      let cpp_argnames = List.map caml_argnames ~f:(fun s -> "_"^s) in
-      fprintf h "  %s *_ans = new %s(%s);\n" classname classname (String.concat ~sep:"," cpp_argnames);
-      fprintf h "  CAMLreturn((value)_ans);\n}\n\n"			     
-    );
-    fprintf h "\n}\n";
-
-    (* Also we have to generate caller stubs for protected meths of twin object *)
-    MethSet.iter prot_meths ~f:(fun m -> 
-      printf "generating a protected meth %s\n" (string_of_meth m);
-(*      if m.m_declared = classname then *)
-	self#gen_stub ~prefix (sprintf "%s" classname) m.m_access
-	  m.m_args ?res_n_name:(Some (m.m_res, (m.m_name) )) h
-    );
     ()
 
   method gen_stub_arguments args h =

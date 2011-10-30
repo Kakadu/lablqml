@@ -125,7 +125,7 @@ class ocamlGenerator graph dir index = object (self)
     with BreakSilent -> ()
       | Break2File s -> fprintf h "(* %s *)\n" s
 
-  method private gen_meth_stubs ~is_abstract ~classname h meth =
+  method private gen_meth_stubs ~isQObject ~is_abstract ~classname h meth =
       fprintf h "  (* method %s *)\n" (string_of_meth meth);
 
       let ocaml_classname = ocaml_class_name classname in
@@ -158,7 +158,7 @@ class ocamlGenerator graph dir index = object (self)
 	(String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
   (* generates member code*)
-  method gen_meth ?new_name ~is_abstract ~classname h meth = 
+  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h meth = 
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
     try
       let () = match meth.m_access with `Private -> raise BreakSilent | _ -> () in
@@ -212,7 +212,12 @@ class ocamlGenerator graph dir index = object (self)
 	    | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
 	) in
 	let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
-	fprintf h "  method %s %s = %s_%s' self#handler %s\n" meth_name (String.concat ~sep:" " args1)
+	fprintf h "  method %s %s = " meth_name (String.concat ~sep:" " args1);
+	let need_magic = isQObject && (meth.m_access = `Protected) in
+	if need_magic then begin
+	  fprintf h " match Qtstubs.get_class_name me with\n    | Some \"%s\" -> " classname
+	end;
+	fprintf h " %s_%s' self#handler %s\n" 
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
 	(match pattern index (simple_arg res) with
 	  | ObjectPattern -> 
@@ -223,6 +228,8 @@ class ocamlGenerator graph dir index = object (self)
 	    fprintf h "   | None -> None)\n"
 
 	  | _ -> ());	
+	if need_magic then
+	  fprintf h "    | Some _ | None -> failwith \"Calling protected method of non-twin type\"\n"
       end;
       fprintf h "\n";
 
@@ -250,7 +257,7 @@ class ocamlGenerator graph dir index = object (self)
       fprintf h "    method name = \"%s(%s)\"\n" name 
 	(slot.m_args |> List.map ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) 
 	    |> String.concat ~sep:",");
-      self#gen_meth ~new_name:"call" ~is_abstract:false ~classname h slot;
+      self#gen_meth ~isQObject:false ~new_name:"call" ~is_abstract:false ~classname h slot;
       fprintf h "  end\n"
     with BreakSilent -> ()
       | BreakS s -> ()
@@ -329,7 +336,7 @@ class ocamlGenerator graph dir index = object (self)
       printf "Generating class %s\n" classname;
       let is_abstract = is_abstract_class ~prefix index classname in
       let ocaml_classname = ocaml_class_name classname in
-      
+      let isQObject = self#isQObject key in
       fprintf h_stubs "\n(* ********** class %s *********** *)\n" classname;
       if is_abstract then
 	fprintf h_constrs "(* class %s has pure virtual members - no constructors *)\n" classname
@@ -362,9 +369,10 @@ class ocamlGenerator graph dir index = object (self)
       ); *)
       MethSet.iter c.c_meths ~f:(fun m -> 
 	match m.m_modif with
-	  | `Normal when is_good_meth ~classname ~index m ->	    
-	    self#gen_meth_stubs ~is_abstract ~classname h_stubs m;
-	    self#gen_meth       ~is_abstract:false ~classname h_classes m 
+	  | `Abstract -> ()
+	  | _ when is_good_meth ~classname ~index m ->	    
+	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
+	    self#gen_meth       ~isQObject ~is_abstract:false ~classname h_classes m 
 	  | _ -> ()
       ); 
 
