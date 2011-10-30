@@ -7,22 +7,19 @@ open Creators
 let app = QApplication.create [| "1";"2";"3";"4";"5";"6" |];; 
  (* HACK to avoid bug with optimization levels *)
 
-print_endline "creating normal QObject";;
-let qobj = create_QObject_0 None;;
-print_endline "normal qobject created";;
+print_endline "creating normal QWidget";;
+let w = create_QWidget_0' None `Window;;
+print_endline "normal QWidget created";;
 
-class myqObject me = object (self)
-  inherit qObject me as super
-  method! setObjectName name = 
-          Printf.printf "setting name of myqObject to %s\n" name;
-          flush stdout;
-          super#setObjectName name
+class mywidget me = object (self)
+  inherit qWidget me as super
+  method! keyPressEvent event = 
+          Printf.printf "catching keyPressEvent\n";
+          flush stdout
 end;;
 
-print_endline "creating my qObject";;
-let myqobj = create_QObject_0' None |> new myqObject;;
-print_endline "setting name of my qobject";;
-let () = myqobj#setObjectName "somename";;
+let myobj = new mywidget w;;
+
 let _ = QApplication.exec app
 
 
