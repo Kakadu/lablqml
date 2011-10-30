@@ -7,6 +7,7 @@
 *.cmxa
 *.cma
 *~
+moc_*.cpp
 *.swp
 *.so
 .depend

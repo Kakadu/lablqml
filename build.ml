@@ -78,8 +78,7 @@ let () = match !target with
 
         (* compiling xml *)
         chdir "xml";
-        make "depend" "error while compiling xml";
-        make "all" "error while compiling xml";
+        make "" "error while compiling xml";
         chdir "..";
         print_endline "Generator is compiled\n";
 
@@ -93,7 +92,7 @@ let () = match !target with
 
         print_endline "executing generator\n";
         chdir "xml";
-        wrap_cmd (sprintf "./main.opt -xml %s -file %s" (cpp_includes ()) api_xml) 
+        wrap_cmd (sprintf "./main.native -xml %s -file %s" (cpp_includes ()) api_xml) 
           "error while generating code";
         chdir "..";
 
