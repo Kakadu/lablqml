@@ -23,7 +23,7 @@ let isTemplateClass name =
   with Not_found -> false
 
 let isInnerClass name = 
-  try let _ : int = Str.search_forward (Str.regexp "::") name 0 in true
+  try let (_ : int) = Str.search_forward (Str.regexp "::") name 0 in true
   with Not_found -> false
 
 let skip_class_by_name ~classname =

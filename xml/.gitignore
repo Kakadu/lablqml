@@ -1,11 +1,9 @@
 *~
-*.cmo
-*.cmi
-main
 *#*
 *.backup
-main.opt
-.depend
 outgraph.dot
 superindex.log
 out
+*.native
+*.byte
+_build
