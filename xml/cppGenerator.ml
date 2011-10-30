@@ -180,6 +180,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h "all: step1 step2\n\n";
     fprintf h "step2: $(MOCS)\n\n";
     fprintf h "step1: $(C_QTOBJS) $(HEADERS)\n\n";
+    fprintf h "moc_%%.cpp: %%.h\n\t\tmoc $< > $@\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
     fprintf h ".cpp.h:\n\tmoc $@ > moc_$<\n\n";
     fprintf h "clean: \n\trm -f *.o\n\n";
