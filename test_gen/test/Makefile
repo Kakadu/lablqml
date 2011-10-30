@@ -1,5 +1,5 @@
 OCAML=`ocamlc -where`
-INCLUDES=-I /usr/lib/ocaml -I . -I ./.. -I ./../out
+INCLUDES=-I . -I ./.. -I ./../out
 OUTFILE=test
 OCAMLC=ocamlfind opt -g
 

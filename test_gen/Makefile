@@ -12,9 +12,9 @@ BIND_ML_OBJS_OPT=out/stubs.cmx out/classes.cmx out/creators.cmx
 
 all: byte opt
 
-byte: stub_helpers.cmo qtstubs.cmo  kamlo $(C_STUBS) mklib
+byte: $(CMOS) kamlo $(C_STUBS) mklib
 
-opt: stub_helpers.cmx qtstubs.cmx kamlo $(C_STUBS) mklib_opt
+opt: $(CMXS) kamlo $(C_STUBS) mklib_opt
 
 test:
 	$(MAKE) -C test

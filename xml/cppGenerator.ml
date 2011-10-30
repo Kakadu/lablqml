@@ -459,8 +459,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
     let enums_h = open_out (self#prefix ^/ "enum_headers.h") in
     List.iter !enums ~f:(fun ((_,fullname) as key,_) ->
       let (fname1,fname2) = enum_conv_func_names key in
-      fprintf enums_h "extern %s %s(value);\n" fullname fname1;
-      fprintf enums_h "extern value %s(%s);\n\n" fname2 fullname
+      fprintf enums_h "extern \"C\" %s %s(value);\n" fullname fname1;
+      fprintf enums_h "extern \"C\" value %s(%s);\n\n" fname2 fullname
     );
     close_out enums_h;
 
