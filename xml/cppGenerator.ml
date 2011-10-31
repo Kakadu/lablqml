@@ -117,13 +117,15 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	  List.tl_exn argnames
 	) else argnames in
 	List.map lst ~f:((^)"_") |> String.concat ~sep:", " in
+
       if is_constr then (
 	let ns_prefix = match prefix with
 	  | [] -> ""
 	  | lst -> String.concat ~sep:"::" lst ^ "::" in
 	let full_classname = ns_prefix ^ classname in
 	fprintf h "  %s* ans = new %s(%s);\n" full_classname full_classname argsCall;
-	fprintf h "  _ans = (value) ans;\n";
+	fprintf h "  _ans = caml_alloc_small(1, Abstract_tag);\n";
+	fprintf h "  (*((%s **) &Field(_ans, 0))) = ans;\n" full_classname;
 	fprintf h "  CAMLreturn(_ans);\n"
       ) else begin
 	let methname = match res_n_name with Some (_,x) -> x | None -> assert false in
