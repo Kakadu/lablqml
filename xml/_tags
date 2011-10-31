@@ -1,3 +1,4 @@
 true: thread
 true: package(str), package(core), package(tyxml.parser), package(ocamlgraph), package(sexplib.syntax)
 "generators.ml" or "parser.ml": syntax(camlp4o)
+<xmltool.*>: package(tyxml)
