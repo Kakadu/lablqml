@@ -1,0 +1,32 @@
+crash 1
+
+Starting program: /media/disk/kakadu/prog/lablqt_new/crashes/test1/test/test 
+[Thread debugging using libthread_db enabled]
+
+QApplication created
+creating normal QWidget
+normal QWidget created
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffff7aa6510 in vtable for QWidget () from /usr/lib/libQtGui.so.4
+(gdb) bt
+#0  0x00007ffff7aa6510 in vtable for QWidget () from /usr/lib/libQtGui.so.4
+#1  0x00007ffff6af01e7 in QObject::setProperty(char const*, QVariant const&) () from /usr/lib/libQtCore.so.4
+#2  0x00000000004208af in setCamlObj (cppobj=140737240376280, camlobj=140737240369632) at cstubs.cpp:75
+#3  0x000000000042fd0c in caml_c_call ()
+#4  0x00007ffff13809e0 in ?? ()
+#5  0x000000000041e6ef in camlCamlinternalOO__iter_f_1312 ()
+#6  0x00007ffff13809e0 in ?? ()
+#7  0x0000000000000001 in ?? ()
+#8  0x0000000000000001 in ?? ()
+#9  0x000000000041e75d in camlCamlinternalOO__run_initializers_opt_1320 ()
+#10 0x00007ffff13809e0 in ?? ()
+#11 0x000000000040b63c in camlMain__entry ()
+#12 0x000000000063c6f8 in camlMain__4 ()
+#13 0x000000000063c6c0 in camlMain__3 ()
+#14 0x000000000063ca38 in camlStub_helpers__4 ()
+#15 0x000000000040a749 in caml_program ()
+#16 0x0000000000115094 in ?? ()
+#17 0x000000000042fd62 in caml_start_program ()
+#18 0x0000000000000000 in ?? ()
+
