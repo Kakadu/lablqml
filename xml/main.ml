@@ -20,7 +20,7 @@ let options = { reparse_xml= false;
 		noml=false;
 		reparse_base=false;
 		base=(empty_namespace, SuperIndex.empty, G.create (), Core.Core_queue.create ());
-		out_dir = "./out";
+		out_dir = "../test_gen/out";
 		includes = ["/usr/include/qt4"]
 	      }
 

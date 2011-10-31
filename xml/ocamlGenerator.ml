@@ -249,7 +249,7 @@ class ocamlGenerator graph dir index = object (self)
       let res_t = match self#toOcamlType ~low_level:false res with
 	| Success s -> s | _ -> raise BreakSilent in
       let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
-      fprintf h "  method slot_%s = object (self : (< %s .. >, %s ) #ssslot)\n"
+      fprintf h "  method slot_%s = object (_ : (< %s .. >, %s ) #ssslot)\n"
 	slot.m_out_name 
 	(List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ")
 	(String.concat ~sep:" -> " (types @ [res_t]));
@@ -361,12 +361,12 @@ class ocamlGenerator graph dir index = object (self)
       end;
 
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
-(*      MethSet.iter c.c_slots ~f:(fun slot -> 
-	if is_good_meth ~classname ~index slot then begin
-	  (*self#gen_slot ~classname h_classes slot; *)
-	  self#gen_meth_stubs ~is_abstract ~classname h_stubs slot
-	end 
-      ); *)
+      MethSet.iter c.c_slots ~f:(fun slot ->
+	if (is_good_meth ~classname ~index slot) && (slot.m_access = `Public) then begin
+	  self#gen_slot ~classname h_classes slot;
+	  self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs slot
+	end
+      );
       MethSet.iter c.c_meths ~f:(fun m -> 
 	match m.m_modif with
 	  | `Abstract -> ()
