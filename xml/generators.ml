@@ -131,13 +131,20 @@ let enum_conv_func_names (lst,_) =
 
 let is_abstract_class ~prefix index name = 
   let key = NameKey.make_key ~prefix ~name in
-  let f = fun m acc -> match m.m_modif with `Abstract -> true | _ -> acc in
-  match SuperIndex.find index key with
+  let f = fun m acc -> match m.m_modif with 
+    | `Abstract -> 
+(*      printf "Abstract meth found in class %s: %s\n" name (string_of_meth m); *)
+      true
+    | _ -> acc in
+  let ans = match SuperIndex.find index key with
     | Some (Class (c,_)) -> 
       (MethSet.fold ~init:false c.c_meths ~f) or ((MethSet.fold ~init:false c.c_slots ~f))
-	or (c.c_constrs = [] )
+	or (c.c_constrs = [])
     | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
     | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
+  in
+  printf "is_abstract_class of %s says %b\n" (NameKey.to_string key) ans;
+  ans
 
 class virtual abstractGenerator graph _index = object (self)
   method private index = _index    

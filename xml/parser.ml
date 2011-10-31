@@ -116,7 +116,7 @@ let rec compare_cpptype a b =
     List.iter2_exn a.t_params b.t_params ~f:(fun a b -> compare_cpptype a b |> wrap);
     0
   with Ans x -> x
-    
+    (*
 let compare_func_arg (t1,o1) (t2,o2) = 
   let c = compare_cpptype t1 t2 in
   if c<>0 then c else match (o1,o2) with
@@ -124,7 +124,7 @@ let compare_func_arg (t1,o1) (t2,o2) =
     | (Some _,None) -> 1
     | (None, Some _) -> -1
     | (None,None) -> 0
-  
+      *)
 let compare_meth m1 m2 = 
   match (m1,m2) with
     | ({ m_name=name1; m_args=lst1;m_res=res1; _}, { m_name=name2; m_args=lst2;m_res=res2; _}) ->      
@@ -161,9 +161,9 @@ type enum = {
   e_items: string list;
   e_access: [`Public | `Protected | `Private]
 } with sexp 
-type constr = func_arg list
-type prop = string * string option * string option
-type sgnl = string * (func_arg list)	
+type constr = func_arg list with sexp
+type prop = string * string option * string option with sexp
+type sgnl = string * (func_arg list)	with sexp
 type clas = { 
   c_inherits: string list;
   c_props: prop list;
@@ -177,7 +177,7 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 
 and slt = meth
-
+with sexp
 
 
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }

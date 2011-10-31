@@ -130,7 +130,20 @@ module G = struct
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
 
-let overrides a b : bool = (MethSet.compare_items a b = 0) 
+let overrides : MethSet.elt -> MethSet.elt -> bool = fun a b ->
+  let len = List.length in
+  let open With_return in
+  With_return.with_return (fun r ->
+    if (a.m_name <> b.m_name) then r.return false;
+    if len a.m_args <> len b.m_args then r.return false;
+    List.iter2_exn  a.m_args b.m_args ~f:(fun a b ->
+      if compare_cpptype a.arg_type b.arg_type <> 0
+      then r.return false
+    );
+    true
+  )
+(*  let wrap x = if (x<>0) then raise Ans 
+      (MethSet.compare_items a b = 0) *)
 let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides a b 
 
 let names_print_helper s ~set = 
@@ -342,29 +355,17 @@ let build_superindex root_ns =
 (*	printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
 	  (MS.length meths_abstr_not_impl) (MS.length meths_abstr_implemented) (MS.length meths_last);
 	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
-
-	print_endline "Fixing base normal meths"; *)
+*)
 	let (meths_normal_inherited, meths_overriden, meths_last) = 
 	  super_filter_meths ~base:base_normal_meths ~cur:meths_last in
-(*	printf "meths_normal_inherited: %d, meths_overriden: %d, meths_last: %d\n"
-	  (MS.length meths_normal_inherited) (MS.length meths_overriden) (MS.length meths_last);
-	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
 
-	print_endline "Fixing abstr slots:"; *)
 	let (slots_abstr_inherited, slots_implemented, meths_last) =
 	  super_filter_meths ~base:base_abstr_slots ~cur:meths_last in
-(*	printf "slots_inherited: %d, slots_overriden: %d, meths_last: %d\n"
-	  (MS.length slots_abstr_inherited) (MS.length slots_implemented) (MS.length meths_last);
-	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
-	print_endline "Fixing normal slots:"; *)
+
 	let (slots_inherited, slots_overriden, meths_last) = 
 	  super_filter_meths ~base:base_normal_slots ~cur:meths_last in
-(*	printf "slots_inherited: %d, slots_overriden: %d, meths_last: %d\n"
-	  (MS.length slots_inherited) (MS.length slots_overriden) (MS.length meths_last);
-	printf "meths_last names are: %s\n" (List.to_string (fun m -> m.m_name) (MS.to_list meths_last) );
-*)
-	let meths_last = fix_names meths_last in
-	
+
+	let meths_last = fix_names meths_last in	
 	let my_slots = fix_names c.c_slots in
 
 	let ans_slots = MS.union_list 

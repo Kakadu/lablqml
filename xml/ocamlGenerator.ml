@@ -335,6 +335,7 @@ class ocamlGenerator graph dir index = object (self)
       let classname = c.c_name in
       printf "Generating class %s\n" classname;
       let is_abstract = is_abstract_class ~prefix index classname in
+
       let ocaml_classname = ocaml_class_name classname in
       let isQObject = self#isQObject key in
       fprintf h_stubs "\n(* ********** class %s *********** *)\n" classname;

@@ -22,11 +22,13 @@ type meth = {
 }
 
 val sexp_of_func_arg : func_arg -> Sexp.t 
+
   
 val simple_arg : cpptype -> func_arg
 val void_type : cpptype
 val skip_meth : classname:string -> string -> bool
 val unreference : cpptype -> cpptype
+val compare_cpptype: cpptype -> cpptype -> int
 val string_of_type : cpptype -> string
 val string_of_arg : func_arg -> string
 val string_of_meth : meth -> string
@@ -100,6 +102,7 @@ and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_n
 
 and slt = meth
 
+val sexp_of_clas : clas -> Sexplib.Sexp.t
 val enum_of_sexp: Sexplib.Sexp.t -> enum
 val sexp_of_enum: enum -> Sexplib.Sexp.t 
 val is_public: [`Public | `Protected| `Private] -> bool

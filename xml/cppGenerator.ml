@@ -37,7 +37,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  CAMLlocal%d(%s);\n" len (String.concat ~sep:"," argnames)
     end
 
-  method gen_stub ~prefix classname modif args ?res_n_name h =
+  method gen_stub ~prefix ~isQObject classname modif args ?res_n_name h =
     try
       let is_constr = Option.is_none res_n_name in
       let get_name is_byte = self#get_name ~classname modif args ?res_n_name is_byte in 
@@ -68,7 +68,10 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	if not is_constr then begin
 	  let is_protected = function `Public | `Private -> false | `Protected -> true in
 	  let classname = sprintf "%s%s" classname (if is_protected modif then "_twin" else "") in
-	  let self_cast = sprintf "%s *_self = (%s*)self;" classname  classname in
+	  let self_cast = if isQObject 
+	    then sprintf "%s *_self = dynamic_cast<%s *>((QObject*)self);" classname  classname 
+	    else sprintf "%s *_self = (%s*)self;" classname  classname  in
+
 	  ( self_cast :: arg_casts, "self" :: argnames)
 	end else
 	  (arg_casts, argnames)
@@ -212,7 +215,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
       let dir =  dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
-      let is_QObject = self#isQObject key in
+      let isQObject = self#isQObject key in
       let (stubs_filename, twin_cppname, twin_hname) = 
 	let d = dir ^/ classname in
 	(d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
@@ -222,38 +225,42 @@ class cppGenerator ~graph ~includes dir index = object (self)
       in
       let h = open_out stubs_filename in
       fprintf h "#include <Qt/QtOpenGL>\n";
-(*      if is_QObject then
-	fprintf h "#include <%s_twin.h>\n" classname; *)
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
-      if self#is_abstr_class c then
+      let isAbstract = self#is_abstr_class c in
+      printf "class %s is abstract? %b\n" c.c_name isAbstract;
+      if isAbstract then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else begin
 	let f args =
 	  let m = meth_of_constr ~classname args in
           if is_good_meth ~index ~classname m then 
-	    self#gen_stub ~prefix classname m.m_access args ?res_n_name:None h
+	    self#gen_stub ~prefix ~isQObject classname m.m_access args ?res_n_name:None h
 	in
 	List.iter ~f c.c_constrs 
       end;
       let f m = 
+	fprintf h "// %s, declared in %s\n" (string_of_meth m) m.m_declared;
+	fprintf h "// declared\n";
 	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
-	  self#gen_stub ~prefix classname m.m_access m.m_args ?res_n_name:(Some (m.m_res, m.m_name)) h
+	  self#gen_stub ~prefix ~isQObject classname m.m_access m.m_args 
+	    ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
       MethSet.iter ~f c.c_meths;
       MethSet.iter ~f c.c_slots; 
 
       fprintf h "}  // extern \"C\"\n";
       close_out h;
+      let need_twin = isQObject && (not isAbstract) in
       let ans =
 	let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
-	let comp_twin = if is_QObject then Some (comp_class ^ "_twin") else None in
+	let comp_twin = if need_twin then Some (comp_class ^ "_twin") else None in
 	{ comp_class; comp_twin }
       in
       (* Now let's write twin class *)
-      let () = if is_QObject then (
+      let () = if need_twin then (
 	let h = open_out twin_cppname in
-	self#gen_twin_source ~prefix c h;
+	self#gen_twin_source ~prefix ~isQObject c h;
 	close_out h;
 	let h = open_out  twin_hname in
 	self#gen_twin_header ~prefix c h;
@@ -267,7 +274,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     | `Public -> cpp_methname
     | `Protected -> sprintf "prot_%s" cpp_methname
 
-  method gen_twin_source ~prefix c h = 
+  method gen_twin_source ~prefix ~isQObject c h = 
     let classname  = c.c_name in
     fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
@@ -294,7 +301,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     MethSet.iter prot_meths ~f:(fun m -> 
       printf "generating a protected meth %s\n" (string_of_meth m);
 (*      if m.m_declared = classname then *)
-	self#gen_stub ~prefix (sprintf "%s" classname) m.m_access
+	self#gen_stub ~prefix ~isQObject (sprintf "%s" classname) m.m_access
 	  m.m_args ?res_n_name:(Some (m.m_res, (m.m_name) )) h
     );
     fprintf h "\n}\n";
@@ -317,7 +324,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
     let new_meths = MethSet.union pub_meths(MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
-      
+      fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
       fprintf h "%s %s(" (string_of_type m.m_res) (self#twin_methname m.m_name m.m_access);
 
       let argslen = List.length m.m_args in
