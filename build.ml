@@ -98,16 +98,14 @@ let () = match !target with
           "error while compiling generated C++ files";
 
         print_endline "\ncompiling mocml\n";
-        touch "moc/.depend";
-        
-        make ~dir:"moc" "depend" "can't make depend on mocml";
+
         make ~dir:"moc" ""       "error while building mocml";
 
         let add_mocml where =
           let file = where ^ "/mocml" in 
           if not (file_exists file) then
-            symlink ~src:"../../moc/main.opt" ~dst:file
-        in    
+            symlink ~src:"../../moc/_build/main.native" ~dst:file
+        in
         List.iter add_mocml ["test_gen/test4";"test_gen/test5"; "test_gen/test6"];
 
         print_endline "\ncompiling the lablqt library";
@@ -141,13 +139,8 @@ let () = match !target with
     wrap_cmd "ocamlfind remove lablqt" "can't remove package"
 
   | `Clean -> 
-    List.iter (fun s -> 
-      wrap_cmd (sprintf "rm -f %s" s) (sprintf "Can't remove %s" s);
-      touch s
-    ) ["moc/.depend"];
-
     wrap_cmd "make -C xml clean" "error while cleaning in xml";
-    
+
     wrap_cmd "make -C test_gen clean" "error while cleaning in test_gen";
     wrap_cmd "rm -rf test_gen/out/*"  "error while removing generated files";
 
@@ -155,4 +148,4 @@ let () = match !target with
 
     (* I dont remove XML API file **)
     ()
-;;  
+;;
