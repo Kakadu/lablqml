@@ -2,4 +2,6 @@ UserSlots.cpp
 UserSlots.h
 UserSlots_stubs.ml
 cppmoc.ml
-
+_build
+*.native
+*.byte
