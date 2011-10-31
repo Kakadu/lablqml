@@ -51,7 +51,7 @@ let api_xml = "../for_test5.xml";;
  *
  * This is a XML api file. Then most biggest and most interesting file is
  * aaa.xml but Building with it is too long. You can simplify aaa.xml using 
- * xmltool/4test5 script.
+ * xml/4test5 script.
  * *)
 
 (* You can setup GCC include files specific for your system *)
@@ -82,11 +82,8 @@ let () = match !target with
         chdir "..";
         print_endline "Generator is compiled\n";
 
-        print_endline "Building XML tool for simplifing API";
-        make ~dir:"xmltool" "" "error while compiling xmltool";
-
         print_endline "executing xmltool";
-        chdir "xmltool";
+        chdir "xml";
         wrap_cmd "./4test5" "Error while generating tests for test N5";
         chdir "..";
 
@@ -147,12 +144,9 @@ let () = match !target with
     List.iter (fun s -> 
       wrap_cmd (sprintf "rm -f %s" s) (sprintf "Can't remove %s" s);
       touch s
-    ) ["xmltool/.depend"; "xml/.depend"; "moc/.depend"];
+    ) ["moc/.depend"];
 
     wrap_cmd "make -C xml clean" "error while cleaning in xml";
-    
-    wrap_cmd "make -C xmltool clean" "error while cleaning in xml_tool";
-
     
     wrap_cmd "make -C test_gen clean" "error while cleaning in test_gen";
     wrap_cmd "rm -rf test_gen/out/*"  "error while removing generated files";
