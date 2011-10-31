@@ -19,7 +19,7 @@ class mywidget me = object (self)
 end;;
 
 let myobj = new mywidget w;;
-
+let () = myobj#slot_show#call ;;
 let _ = QApplication.exec app
 
 

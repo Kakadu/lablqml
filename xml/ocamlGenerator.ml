@@ -138,7 +138,7 @@ class ocamlGenerator graph dir index = object (self)
 	let res_n_name = (meth.m_res,meth.m_name) in
 	let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte meth.m_access meth.m_args in
 	let native_name = helper false in
-	if List.length meth.m_args > 5 then
+	if List.length meth.m_args > 4 then
 	  sprintf "%s\" \"%s" (helper true) native_name
 	else
 	  native_name
