@@ -1,5 +1,5 @@
 INC= -I `ocamlc -where` -I . -I /usr/include/qt4
-GCC=g++ -c -g -O0 -fno-inline 
+GCC=g++ -c -g -O5 -fno-inline 
 
 .SUFFIXES: .ml .cpp .mli .cmx
 .PHONY: all
@@ -18,7 +18,6 @@ moc2: moc1
 
 .ml.cmx:
 	ocamlopt -c $<
-
 
 clean:
 	rm -f *.o *.cm[oix] moc_AA.cpp

@@ -11,7 +11,7 @@ void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     GET_CAML_OBJECT(this,the_caml_object);
     camlobj = (value)the_caml_object;
     printf ("inside QWidget_twin::keyPressedEvent, camlobj = %x\n", camlobj);
-    meth = caml_get_public_method( camlobj, caml_hash_variant("keyPressedEvent"));
+    meth = caml_get_public_method( camlobj, caml_hash_variant("keyPressEvent"));
     if (meth==0)
       printf ("total fail\n");
     printf("calling callback of meth = %x\n",meth);
@@ -22,18 +22,26 @@ void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
 
 extern "C" {
 
-value native_pub_createeee_QWidget_twin_QWidget_Qt_WindowFlags(value arg0) {
+value create_QWidget_twin(value arg0) {
   CAMLparam1(arg0);
   QWidget* _arg0 = (arg0==Val_none) ? NULL : ((QWidget* )(Some_val(arg0)));
   QWidget_twin *_ans = new QWidget_twin(_arg0);
   CAMLreturn((value)_ans);
 }
 
-value native_prot_QWidget_keyPressEvent_QKeyEvent(value self,value arg0) {
+value qWidget_twin_super_keyPressEvent(value self,value arg0) {
   CAMLparam2(self,arg0);
+  printf("inside // qWidget_twin_super_keyPressEvent\n");
   QWidget_twin *_self = (QWidget_twin*)self;
   QKeyEvent* _arg0 = (QKeyEvent* ) (arg0);
-  _self -> keyPressEvent(_arg0);
+  _self -> call_super_keyPressEvent(_arg0);
+  CAMLreturn(Val_unit);
+}
+
+value qWidget_twin_show(value self) {
+  CAMLparam1(self);
+  QWidget_twin *_self = (QWidget_twin*)self;
+  _self -> show();
   CAMLreturn(Val_unit);
 }
 
