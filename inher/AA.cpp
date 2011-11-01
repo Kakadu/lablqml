@@ -10,10 +10,12 @@ void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     CAMLlocal2(meth,camlobj);
     GET_CAML_OBJECT(this,the_caml_object);
     camlobj = (value)the_caml_object;
+    printf ("tag of camlobj is %d\n", Tag_val(camlobj));
     printf ("inside QWidget_twin::keyPressedEvent, camlobj = %x\n", camlobj);
     meth = caml_get_public_method( camlobj, caml_hash_variant("keyPressEvent"));
     if (meth==0)
       printf ("total fail\n");
+    printf ("tag of meth is %d\n", Tag_val(meth) );
     printf("calling callback of meth = %x\n",meth);
     caml_callback2(meth, camlobj, (value)ev);
     printf ("exit from QWidget_twin::keyPressedEvent\n");

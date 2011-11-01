@@ -11,6 +11,7 @@ let () = b#boo ()
 *)
 
 let aa = new qwidget (create_qwidget' None)
+let () = Printf.printf "(Obj.magic aa#keyPressEvent) =  %i\n%!" ((Obj.magic aa#keyPressEvent) )
 let () = aa#show;;
 
 let _ =  exec app

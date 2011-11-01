@@ -71,8 +71,10 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
   CAMLprim
   value setCamlObj(value cppobj, value camlobj) {
     CAMLparam2(cppobj, camlobj);
+    printf("setting caml objs = %x\n", camlobj);
     QObject *o = (QObject*)cppobj;
     o->setProperty(CAMLOBJ_PROPERTY, (qlonglong)camlobj);
+    caml_register_global_root(&camlobj);
     CAMLreturn(Val_unit);
   }
   
