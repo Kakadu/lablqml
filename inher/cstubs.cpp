@@ -87,6 +87,10 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
     else 
       CAMLreturn(Some_val(caml_copy_string(qobj -> metaObject() -> className() ) ) );
   }
-
+  CAMLprim
+  value getNullObject(value x) {
+    CAMLparam1(x);
+    CAMLreturn((value)NULL);
+  }
 }  // extern "C"
 

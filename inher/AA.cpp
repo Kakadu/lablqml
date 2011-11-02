@@ -33,16 +33,17 @@ value create_QWidget_twin(value arg0) {
 
 value qWidget_twin_super_keyPressEvent(value self,value arg0) {
   CAMLparam2(self,arg0);
-  printf("inside // qWidget_twin_super_keyPressEvent\n");
-  QWidget_twin *_self = (QWidget_twin*)self;
+  printf("inside qWidget_twin_super_keyPressEvent\n");
+  QWidget_twin *_self = qobject_cast<QWidget_twin*>((QObject*)self);
   QKeyEvent* _arg0 = (QKeyEvent* ) (arg0);
+  printf ("keyEvent parameter = %d\n", _arg0);
   _self -> call_super_keyPressEvent(_arg0);
   CAMLreturn(Val_unit);
 }
 
 value qWidget_twin_show(value self) {
   CAMLparam1(self);
-  QWidget_twin *_self = (QWidget_twin*)self;
+  QWidget_twin *_self = qobject_cast<QWidget_twin*>((QObject*)self);
   _self -> show();
   CAMLreturn(Val_unit);
 }

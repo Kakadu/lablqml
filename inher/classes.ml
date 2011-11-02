@@ -7,6 +7,7 @@ external create_qwidget' : [`qobject] obj option -> [`qobject ] obj = "create_QW
 external qWidget_keyPressEvent': 'a->[> `qobject] obj->unit
                 = "qWidget_twin_super_keyPressEvent"
 external qWidget_show : [`qobject] obj -> unit = "qWidget_twin_show"
+external nullObject : unit -> [`qobject] obj = "getNullObject"
 
 class qKeyEvent me = object 
   method handler : [`qobject] obj = me
