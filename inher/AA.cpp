@@ -5,6 +5,16 @@
 #include <QtGui/QWidget>
 #include "AA.h"
 
+void QWidget_twin::call_super_keyPressEvent(QKeyEvent *ev) {
+  foo(1);
+  QWidget::keyPressEvent(ev);
+}
+void QWidget_twin::foo(int x) {
+  if (x>0)
+    foo(x-1);
+  else 
+    return;
+}
 void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     CAMLparam0();
     CAMLlocal2(meth,camlobj);
