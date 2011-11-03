@@ -1,20 +1,17 @@
 INC= -I `ocamlc -where` -I . -I /usr/include/qt4
 GCC=g++ -c -g -O5 -fno-inline 
 
-.SUFFIXES: .ml .cpp .mli .cmx
+.SUFFIXES: .ml .cpp .cmx .h
 .PHONY: all
 
-all: cstubs.o enums.o moc2 AA.o moc_AA.cpp classes.cmx main.cmx
+all: AA.h AA.o moc_AA.o cstubs.o enums.o classes.cmx main.cmx
 	ocamlopt -cclib -lstdc++ -cclib -lQtGui -cclib -lQtCore cstubs.o enums.o AA.o moc_AA.o classes.cmx main.cmx -o main
 
 .cpp.o:
 	$(GCC) $(INC) -fpic $<
 
-moc1: 
-	moc AA.h > moc_AA.cpp
-
-moc2: moc1
-	$(GCC) $(INC) -fpic moc_AA.cpp
+moc_%.cpp: %.h
+	moc $< > $@
 
 .ml.cmx:
 	ocamlopt -c $<
