@@ -351,7 +351,7 @@ class ocamlGenerator graph dir index = object (self)
 	fprintf h_classes " virtual %s me = object(self)\n" ocaml_classname;
 	fprintf h_classes " method handler : [`qobject] obj = me \n\n"
       end else begin
-	let constr = List.hd_exn c.c_constrs in
+	let _constr = List.hd_exn c.c_constrs in
 (*	let lst1,lst2 = self#gen_constr_data  ~classname ~index constr in *)
 	fprintf h_classes " %s me = object(self)\n" ocaml_classname;
 	fprintf h_classes " method handler : [`qobject] obj = me\n";
