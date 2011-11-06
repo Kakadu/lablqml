@@ -25,12 +25,14 @@ let wrap_cmd cmd err =
 
 let cores_count = 3;; (* make -j parameter *)
 
-let make ?(dir=".") ?j cmd err_msg = 
+let make ?(dir=".") ?j target err_msg = 
   let make_cmd = "make" in
   let cmd = String.concat " " [
           make_cmd; "-C " ^ dir; 
-          match j with Some x -> sprintf "-j%d" x | None -> "";
-          cmd] in
+          (match j with Some x -> sprintf "-j%d" x | None -> "");
+          target] in
+  wrap_cmd cmd ("error while " ^ err_msg)
+(*
   match command cmd with
   | 0 -> ()
   | _ -> begin
@@ -39,19 +41,19 @@ let make ?(dir=".") ?j cmd err_msg =
     ignore (command (String.concat " " [make_cmd; "-C " ^ dir; "clean"]));
     wrap_cmd cmd err_msg
   end
+*)
 ;;
 
 wrap_cmd "pkg-config --cflags QtOpenGL" "can't find Qt OpenGL header files";;
 (* Configure end ***************************)
 
 
-(* let api_xml = "../aaa.xml";; *)
-let api_xml = "../for_test5.xml";; 
-(* .. because this file will be accesses from ./xml 
- *
- * This is a XML api file. Then most biggest and most interesting file is
- * aaa.xml but Building with it is too long. You can simplify aaa.xml using 
- * xml/4test5 script.
+(* let api_xml = "aaa.xml";; *)
+let api_xml = "for_test5.xml";; 
+(* 
+ * This is a XML api file. Then biggest and more interesting file is
+ * aaa.xml but building with it takes too long. You can simplify aaa.xml using 
+ * for_test5.sh script.
  * *)
 
 (* You can setup GCC include files specific for your system *)
@@ -63,43 +65,30 @@ let cpp_includes () = match includes with
 
 let () = match !target with 
   | `Build -> begin
-        touch "xml/.depend";
-        print_endline "Now you can build xml generator using:";
-        print_endline "\tcd xml; make depend; make\n";
-
         if not (file_exists "test_gen/out") then
-                mkdir ~perm:0o777 "test_gen/out";
+                mkdir ~perm:0o755 "test_gen/out";
 
         if not (file_exists "test_gen/out/cpp") then
-                mkdir ~perm:0o777 "test_gen/out/cpp";
-
-        if not (file_exists "xml/out") then
-                symlink ~src:"../test_gen/out" ~dst:"xml/out";
+                mkdir ~perm:0o755 "test_gen/out/cpp";
 
         (* compiling xml *)
-        chdir "xml";
-        make "" "error while compiling xml";
-        chdir "..";
+        make "" ~dir:"xml" "compiling xml";
         print_endline "Generator is compiled\n";
 
         print_endline "executing xmltool";
-        chdir "xml";
-        wrap_cmd "./4test5" "Error while generating tests for test N5";
-        chdir "..";
+        wrap_cmd "./for_test5.sh" "Error while generating tests for test N5";
 
         print_endline "executing generator\n";
-        chdir "xml";
-        wrap_cmd (sprintf "./main.native -xml %s -file %s" (cpp_includes ()) api_xml) 
+        wrap_cmd (sprintf "./xml/main.native -xml %s %s test_gen/out" api_xml (cpp_includes ()))
           "error while generating code";
-        chdir "..";
 
         print_endline "\ncompiling generated C++ files\n";
         make ~dir:"test_gen/out/cpp" ~j:cores_count "" 
-          "error while compiling generated C++ files";
+          "compiling generated C++ files";
 
         print_endline "\ncompiling mocml\n";
 
-        make ~dir:"moc" ""       "error while building mocml";
+        make ~dir:"moc" ""       "building mocml";
 
         let add_mocml where =
           let file = where ^ "/mocml" in 
@@ -109,11 +98,11 @@ let () = match !target with
         List.iter add_mocml ["test_gen/test4";"test_gen/test5"; "test_gen/test6"];
 
         print_endline "\ncompiling the lablqt library";
-        make ~dir:"test_gen" "all" "error while building library";
+        make ~dir:"test_gen" "all" "building library";
 
         print_endline "making tests";
         let tests = ["test";"test2";"test3";"test4"] in
-        List.iter (fun s -> make ~dir:("test_gen/"^s)  "" ("can't make test " ^ s)) tests;
+        List.iter (fun s -> make ~dir:("test_gen/"^s)  "" ("compiling test " ^ s)) tests;
 
         List.iter (fun test ->
           print_endline "\npreconfigure for ";
@@ -121,8 +110,8 @@ let () = match !target with
           chdir (sprintf "test_gen/%s" test);
           touch ".depend";
 
-          make "depend" (sprintf "can't make %s (depend failed)" test);
-          make ""       (sprintf "can't make %s (make failed)"   test);
+          make "depend" (sprintf "computing dependencies for %s" test);
+          make ""       (sprintf "building %s"   test);
           chdir "../.."
         ) ["test5";"test6"]
   end
@@ -132,19 +121,18 @@ let () = match !target with
       " test_gen/out/*.cmi test_gen/liblablqt.a test_gen/*.cmi test_gen/lablqt.a" ^
       " test_gen/lablqt.cmxa"  in
     wrap_cmd instcmd "can't do install"
-                  
-                  
+
   | `Uninstall -> 
     print_endline "uninstalling...";
     wrap_cmd "ocamlfind remove lablqt" "can't remove package"
 
   | `Clean -> 
-    wrap_cmd "make -C xml clean" "error while cleaning in xml";
+    wrap_cmd "make -C xml clean" "cleaning in xml";
 
-    wrap_cmd "make -C test_gen clean" "error while cleaning in test_gen";
-    wrap_cmd "rm -rf test_gen/out/*"  "error while removing generated files";
+    wrap_cmd "make -C test_gen clean" "cleaning in test_gen";
+    wrap_cmd "rm -rf test_gen/out/*"  "removing generated files";
 
-    wrap_cmd "make -C moc clean" "error while cleaning in moc";
+    wrap_cmd "make -C moc clean" "cleaning in moc";
 
     (* I dont remove XML API file **)
     ()
