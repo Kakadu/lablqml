@@ -1,4 +1,4 @@
-#include <Qt/QtOpenGL>
+#include <Qt/QtGui>
 #include "headers.h"
 extern "C" {
 
