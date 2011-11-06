@@ -61,6 +61,3 @@ value qWidget_twin_show(value self) {
 }
 
 }
-
-
-
