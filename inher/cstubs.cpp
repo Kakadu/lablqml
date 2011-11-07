@@ -14,7 +14,8 @@ value ml_qapp_create (value argv) {
   }
   QApplication *app = new QApplication (argc, copy);
   printf("QApplication created: %x\n", app);
-  setAbstrClass(_ans,QApplication,app);
+  _ans = caml_alloc(5000, Abstract_tag);	\
+  (*((QApplication **) &Field(_ans, 0))) = app;
   CAMLreturn(_ans);
 }
 

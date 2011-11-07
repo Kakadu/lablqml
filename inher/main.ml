@@ -1,6 +1,6 @@
 open Classes
 
-let app = create_app [| (* "1";"2";"3";"4";"5";"6";"7" *) |];; 
+let app = create_app [|  "1";"2";"3";"4";"5";"6";"7" |];; 
 (*
 let b = new b
 let () = print_endline "trying to call b#foo"
