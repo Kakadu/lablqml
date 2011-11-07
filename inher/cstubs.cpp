@@ -1,4 +1,5 @@
 #include <Qt/QtGui>
+#include <QDebug>
 #include "headers.h"
 
 extern "C" {
@@ -23,6 +24,13 @@ CAMLprim
 value ml_qapp_exec (value self) {
   CAMLparam1(self);
   QApplication *app = QApplication_val(self);
+  printf("preparing before app.exec(). arguments are:\n");
+  QStringList argslist = app->arguments();
+  foreach (const QString s, argslist) {
+    //    qDebug() << s ;
+    printf("%s\n", s.toLocal8Bit().data() );
+  }
+  printf("end of arguments list\n");
   CAMLreturn( Val_int (app->exec()) );
 }
   //============================ settting and getting caml object from QObject
