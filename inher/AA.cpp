@@ -40,6 +40,7 @@ value create_QWidget_twin(value arg0) {
   QWidget* _arg0 = (arg0==Val_none) ? NULL : QWidget_val(arg0);
   QWidget_twin *_ans = new QWidget_twin(_arg0);
   setAbstrClass(ans,QWidget,_ans);
+  printf("QWidget_twin created: %x, abstr = %x \n", _ans, ans);
   CAMLreturn(ans);
 }
 

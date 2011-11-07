@@ -13,7 +13,7 @@ value ml_qapp_create (value argv) {
     copy[i] = strcpy (new char[l+1], String_val(Field(argv,i)));
   }
   QApplication *app = new QApplication (argc, copy);
-  printf("QApplication created\n");
+  printf("QApplication created: %x\n", app);
   setAbstrClass(_ans,QApplication,app);
   CAMLreturn(_ans);
 }
@@ -49,8 +49,9 @@ value ml_qapp_exec (value self) {
   CAMLprim
   value setCamlObj(value cppobj, value camlobj) {
     CAMLparam2(cppobj, camlobj);
-    printf("setting caml objs = %x\n", camlobj);
+    printf("setting camlobj = %x, of cppobj_abstr = %x\n", camlobj, cppobj);
     QObject *o = QObject_val(cppobj);
+    printf("real cpp object = %x\n", o);
     printf("qobject's classname = %s\n", o->metaObject()->className() );
     o->setProperty(CAMLOBJ_PROPERTY, (qlonglong)camlobj);
     caml_register_global_root(&camlobj);
