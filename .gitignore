@@ -12,3 +12,6 @@ moc_*.cpp
 *.so
 .depend
 main.opt
+*.backup
+*.log
+outgraph.dot
