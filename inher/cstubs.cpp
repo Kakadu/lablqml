@@ -45,22 +45,22 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
 }
   //============================ settting and getting caml object from QObject
   #define CAMLOBJ_PROPERTY "_camlobj"
-  QObject* takeCamlObj(const QObject* o) {
+  value takeCamlObj(const QObject* o) {
     QVariant ans = o -> property(CAMLOBJ_PROPERTY);
     if (ans.isValid())
-      return (QObject*)(ans.toLongLong() );
+      return ans.toLongLong();
     else
-	    return NULL;
+	    return 0;
   }
   CAMLprim // [`qobject] obj -> 'a option
   value hasCamlObj(value cppobj) {
     CAMLparam1(cppobj);
     CAMLlocal1(ans);
     QObject *o = QObject_val(cppobj);
-    QObject* answer = takeCamlObj(o);
-    if (ans != 0) {
+    long answer = takeCamlObj(o);
+    if (answer != 0) {
       ans = caml_alloc_small(1, Abstract_tag);
-      Val_QObject(ans) = answer;
+      Val_QObject(ans) = (QObject*)answer;
       CAMLreturn( Some_val(ans) );
     }
     else
