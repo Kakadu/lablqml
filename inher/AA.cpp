@@ -33,7 +33,7 @@ void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
 }
 
 extern "C" {
-
+CAMLprim
 value create_QWidget_twin(value arg0) {
   CAMLparam1(arg0);
   CAMLlocal1(ans);
@@ -43,7 +43,7 @@ value create_QWidget_twin(value arg0) {
   printf("QWidget_twin created: %x, abstr = %x \n", _ans, ans);
   CAMLreturn(ans);
 }
-
+CAMLprim
 value qWidget_twin_super_keyPressEvent(value self,value arg0) {
   CAMLparam2(self,arg0);
   printf("inside qWidget_twin_super_keyPressEvent\n");
@@ -53,7 +53,7 @@ value qWidget_twin_super_keyPressEvent(value self,value arg0) {
   _self -> call_super_keyPressEvent(_arg0);
   CAMLreturn(Val_unit);
 }
-
+CAMLprim
 value qWidget_twin_show(value self) {
   CAMLparam1(self);
   QWidget_twin *_self = QWidget_twin_val(self);

@@ -2,7 +2,7 @@
 #include "headers.h"
 
 extern "C" {
-
+CAMLprim
 value ml_qapp_create (value argv) {
   CAMLparam1(argv);
   CAMLlocal1(_ans);
@@ -18,7 +18,7 @@ value ml_qapp_create (value argv) {
   (*((QApplication **) &Field(_ans, 0))) = app;
   CAMLreturn(_ans);
 }
-
+CAMLprim
 value ml_qapp_exec (value self) {
   CAMLparam1(self);
   QApplication *app = QApplication_val(self);
