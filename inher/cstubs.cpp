@@ -84,4 +84,13 @@ value ml_qapp_exec (value self) {
     setAbstrClass(ans,QObject,NULL);
     CAMLreturn(ans);
   }
+
+  CAMLprim
+  value myQKeyEvent(value x) {
+    CAMLparam1(x);
+    CAMLlocal1(ans);
+    QKeyEvent* event = new QKeyEvent(QKeyEvent::KeyPress, Qt::Key_Escape,Qt::NoModifier);
+    setAbstrClass(ans,QKeyEvent, event);
+    CAMLreturn(ans);    
+  }
 }  // extern "C"
