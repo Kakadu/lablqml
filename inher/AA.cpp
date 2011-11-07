@@ -26,8 +26,7 @@ void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
       printf ("total fail\n");
     printf ("tag of meth is %d\n", Tag_val(meth) );
     printf("calling callback of meth = %x\n",meth);
-    _ev = caml_alloc_small(1, Abstract_tag);
-    Val_QKeyEvent(_ev) = ev;
+    setAbstrClass(_ev,QKeyEvent,ev);
     caml_callback2(meth, camlobj, _ev);
     printf ("exit from QWidget_twin::keyPressedEvent\n");
     CAMLreturn0;
@@ -40,8 +39,7 @@ value create_QWidget_twin(value arg0) {
   CAMLlocal1(ans);
   QWidget* _arg0 = (arg0==Val_none) ? NULL : QWidget_val(arg0);
   QWidget_twin *_ans = new QWidget_twin(_arg0);
-  ans = caml_alloc_small(1, Abstract_tag);
-  QWidget_val(ans) = _ans;
+  setAbstrClass(ans,QWidget,_ans);
   CAMLreturn(ans);
 }
 

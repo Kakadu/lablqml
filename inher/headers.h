@@ -24,3 +24,6 @@ value camlObj(QObject*);
 #define QWidget_twin_val(v)       (*((QWidget_twin **)   Data_custom_val(v)))
 #define QKeyEvent_val(v)          (*((QKeyEvent **)      Data_custom_val(v)))
 
+#define setAbstrClass(res,clas,val)\
+do {   res = caml_alloc_small(1, Abstract_tag);\
+  (*((clas **) &Field(res, 0))) = val; } while (false)
