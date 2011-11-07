@@ -12,14 +12,16 @@ value ml_qapp_create (value argv) {
     int l = string_length(Field(argv,i));
     copy[i] = strcpy (new char[l+1], String_val(Field(argv,i)));
   }
-  _ans = (value)(new QApplication (argc, copy));
+  _ans = caml_alloc_small(1, Abstract_tag);
+  Val_QApplication(_ans) = new QApplication (argc, copy);
   printf("QApplication created\n");
   CAMLreturn(_ans);
 }
 
 value ml_qapp_exec (value self) {
   CAMLparam1(self);
-  CAMLreturn( Val_int (((QApplication*)self)->exec()) );
+  QApplication *app = QApplication_val(self);
+  CAMLreturn( Val_int (app->exec()) );
 }
 CAMLprim 
 value ml_QObject_connect (value sender, value signal, value receiver, value member) {
