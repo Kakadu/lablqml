@@ -1,5 +1,6 @@
 #include <Qt/QtGui>
 #include "headers.h"
+
 extern "C" {
 
 value ml_qapp_create (value argv) {
@@ -28,18 +29,12 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
   int len1 = strlen(sg), len2 = strlen(sl);
   char cc1[len1+2];
   char cc2[len2+2];
-//  printf("signal = %s, slot = %s\n", sg, sl);
   cc1[len1+1] = cc2[len2+1] = '\0';
   cc1[0] = '2'; cc2[0] = '1';
   int i=1;
   for (   ;i<=len1; ++i) cc1[i] = sg[i-1];
   for (i=1;i<=len2; ++i) cc2[i] = sl[i-1];
 
-//  QString s1 = QString("2%1").arg(QString(sg)),
-//	  s2 = QString("1%1").arg(QString(sl));
-//  printf("signal = %s, slot = %s\n", s1.toLocal8Bit().data(), s2.toLocal8Bit().data() );
-//  const char *loc1 = s1.toLocal8Bit().data();
-//  const char *loc2 = s2.toLocal8Bit().data();
   printf ("trying to connect %s -> %s\n", cc1, cc2);
   CAMLreturn( 
     Val_bool
@@ -50,20 +45,24 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
 }
   //============================ settting and getting caml object from QObject
   #define CAMLOBJ_PROPERTY "_camlobj"
-  value takeCamlObj(const QObject* o) {
+  QObject* takeCamlObj(const QObject* o) {
     QVariant ans = o -> property(CAMLOBJ_PROPERTY);
     if (ans.isValid())
-	    return ans.toLongLong();
+      return (QObject*)(ans.toLongLong() );
     else
-	    return 0;
+	    return NULL;
   }
   CAMLprim // [`qobject] obj -> 'a option
   value hasCamlObj(value cppobj) {
     CAMLparam1(cppobj);
-    QObject *o = (QObject*)cppobj;
-    value ans = takeCamlObj(o);
-    if (ans != 0)
-      CAMLreturn( Some_val((value)ans) );
+    CAMLlocal1(ans);
+    QObject *o = QObject_val(cppobj);
+    QObject* answer = takeCamlObj(o);
+    if (ans != 0) {
+      ans = caml_alloc_small(1, Abstract_tag);
+      Val_QObject(ans) = answer;
+      CAMLreturn( Some_val(ans) );
+    }
     else
       CAMLreturn(Val_none);
   }
@@ -72,7 +71,7 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
   value setCamlObj(value cppobj, value camlobj) {
     CAMLparam2(cppobj, camlobj);
     printf("setting caml objs = %x\n", camlobj);
-    QObject *o = (QObject*)cppobj;
+    QObject *o = QObject_val(cppobj);
     o->setProperty(CAMLOBJ_PROPERTY, (qlonglong)camlobj);
     caml_register_global_root(&camlobj);
     CAMLreturn(Val_unit);
@@ -81,7 +80,7 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
   CAMLprim // [`qobject ] obj -> string option 
   value getClassName(value cppobj) {
     CAMLparam1(cppobj);
-    QObject *qobj = (QObject*)cppobj;
+    QObject * qobj = QObject_val(cppobj);
     if (qobj == NULL)
       CAMLreturn(Val_none);
     else 
@@ -90,7 +89,9 @@ value ml_QObject_connect (value sender, value signal, value receiver, value memb
   CAMLprim
   value getNullObject(value x) {
     CAMLparam1(x);
-    CAMLreturn((value)NULL);
+    CAMLlocal1(ans);
+    ans = caml_alloc_small(1, Abstract_tag);
+    Val_QObject(ans) = NULL;
+    CAMLreturn(ans);
   }
 }  // extern "C"
-
