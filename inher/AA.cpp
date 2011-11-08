@@ -1,6 +1,5 @@
 #include "headers.h"
 #include "enums.h"
-#include <caml/mlvalues.h>
 #include <stdio.h>
 #include <QtGui/QWidget>
 #include "AA.h"
@@ -18,7 +17,7 @@ void QWidget_twin::foo(int x) {
 void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     CAMLparam0();
     CAMLlocal3(meth,camlobj,_ev);
-    GET_CAML_OBJECT(this,the_caml_object);
+    GET_CAML_OBJECT(this,the_caml_object); // get ocaml object from QObject's property
     camlobj = (value)the_caml_object;
     printf ("inside QWidget_twin::keyPressedEvent, camlobj = %lld, this=%p\n", camlobj, this);
     meth = caml_get_public_method( camlobj, caml_hash_variant("keyPressEvent"));
