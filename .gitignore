@@ -15,3 +15,10 @@ main.opt
 *.backup
 *.log
 outgraph.dot
+for_test5.xml
+test_gen/test6/UserSlots.cpp
+test_gen/test6/UserSlots.h
+test_gen/test6/UserSlots_stubs.ml
+test_gen/test6/moc_UserSlots.cpp
+test_gen/test6/test
+
