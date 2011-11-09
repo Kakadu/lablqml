@@ -13,12 +13,16 @@ external simpleQKeyEvent : unit -> [`qobject] obj = "myQKeyEvent"
 *)
 
 class qKeyEvent me = object 
-  method handler : [`qobject] obj = me
+  method handler : [`qobject] obj =
+    print_endline "QKEYEVENT";
+    me
 end
 class qwidget me = object (self)
   initializer set_caml_object me self
   method handler : [`qobject] obj = me
-  method keyPressEvent = print_endline "PRESS"
+  method keyPressEvent (x0:qKeyEvent) = print_endline "PRESS";
+    let _ = self#handler in
+    ()
 (*   qWidget_keyPressEvent' self#handler (x0#handler) *)
   method show = qWidget_show me
 end
