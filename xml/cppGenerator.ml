@@ -228,20 +228,23 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
       let isAbstract = self#is_abstr_class c in
-      printf "class %s is abstract? %b\n" c.c_name isAbstract;
+      printf "class %s: is abstract? %b, is QObject: %b\n" c.c_name isAbstract isQObject;
       if isAbstract then
 	fprintf h "//class has pure virtual members - no constructors\n"
       else begin
 	let f args =
 	  let m = meth_of_constr ~classname args in
-          if is_good_meth ~index ~classname m then 
+          if (is_good_meth ~index ~classname m) && (m.m_access = `Public) then 
 	    self#gen_stub ~prefix ~isQObject classname m.m_access args ?res_n_name:None h
 	in
 	List.iter ~f c.c_constrs 
       end;
+      
       let f m = 
-	fprintf h "// %s, declared in %s\n" (string_of_meth m) m.m_declared;
-	fprintf h "// declared\n";
+	(* when class is QObject we should generate stubs for protected meths,
+	   no QObject --- no stubs
+	*)
+	fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
 	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
 	  self#gen_stub ~prefix ~isQObject classname m.m_access m.m_args 
 	    ?res_n_name:(Some (m.m_res, m.m_name)) h
@@ -365,8 +368,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	let cast = self#fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
 	  |> (function Success s -> s | _ -> assert false) in
 	fprintf h "  %s;\n" cast;
-	fprintf h "  Q_UNUSED(caml__frame); //caml_local_roots = caml__frame;\n";
-	fprintf h "  return ans;\n"
+	fprintf h "  CAMLreturnT(%s,ans);\n" (string_of_type res.arg_type);
       end;
       fprintf h "}\n\n"      
     );
