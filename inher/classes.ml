@@ -18,7 +18,8 @@ end
 class qwidget me = object (self)
   initializer set_caml_object me self
   method handler : [`qobject] obj = me
-  method keyPressEvent: qKeyEvent  -> unit = fun x0 -> qWidget_keyPressEvent' self#handler (x0#handler)
+  method keyPressEvent = print_endline "PRESS"
+(*   qWidget_keyPressEvent' self#handler (x0#handler) *)
   method show = qWidget_show me
 end
 (*

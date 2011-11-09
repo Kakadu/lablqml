@@ -1,4 +1,4 @@
-INC= -I `ocamlc -where` -I . -I /usr/include/qt4 `pkg-config --cflags QtGui`
+INC= -I `ocamlc -where` -I . `pkg-config --cflags QtGui`
 GCC=g++ -c -g -Wall -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 .SUFFIXES: .ml .cpp .cmx .h

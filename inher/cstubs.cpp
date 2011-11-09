@@ -61,9 +61,9 @@ value ml_qapp_exec (value unit) {
   CAMLprim
   value setCamlObj(value cppobj, value camlobj) {
     CAMLparam2(cppobj, camlobj);
-    printf("setting camlobj = %lld, of cppobj_abstr = %lld\n", camlobj, cppobj);
+    printf("setting camlobj = %p, of cppobj_abstr = %p\n", camlobj, cppobj);
     QObject *o = QObject_val(cppobj);
-    printf("real cpp object = %p\n", (void*)o);
+    printf("real cpp object = %p\n", o);
     printf("qobject's classname = %s\n", o->metaObject()->className() );
     o->setProperty(CAMLOBJ_PROPERTY, (qlonglong)camlobj);
     caml_register_global_root(&camlobj);
