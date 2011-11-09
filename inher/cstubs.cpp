@@ -8,22 +8,23 @@ value ml_qapp_create (value argv) {
   CAMLparam1(argv);
   CAMLlocal1(_ans);
   int argc = Wosize_val(argv);
-  char **copy = new char*[argc];
+  char **copy = new char*[argc+1];
   for (int i = 0; i < argc; i++) {
     int l = string_length(Field(argv,i));
     copy[i] = strcpy (new char[l+1], String_val(Field(argv,i)));
   }
+  copy[argc] = NULL;
   QApplication *app = new QApplication (argc, copy);
-  _ans = caml_alloc(5000, Abstract_tag);
+  _ans = caml_alloc(1, Abstract_tag);
   (*((QApplication **) &Field(_ans, 0))) = app;
   printf ("QApplication created : %p\n", (void*)app);
-  
   CAMLreturn(_ans);
 }
 CAMLprim
 value ml_qapp_exec (value self) {
   CAMLparam1(self);
   QApplication *app = QApplication_val(self);
+  printf ("app=%p gApp=%p\n", app, QApplication::instance());
   printf("preparing before app.exec(). arguments are:\n");
   QStringList argslist = app->arguments();
   foreach (const QString s, argslist) {
@@ -42,6 +43,7 @@ value ml_qapp_exec (value self) {
     else
       return 0;
   }
+  /*
   CAMLprim // [`qobject] obj -> 'a option
   value hasCamlObj(value cppobj) {
     CAMLparam1(cppobj);
@@ -55,6 +57,7 @@ value ml_qapp_exec (value self) {
     else
       CAMLreturn(Val_none);
   }
+  */
 
   CAMLprim
   value setCamlObj(value cppobj, value camlobj) {
@@ -67,7 +70,7 @@ value ml_qapp_exec (value self) {
     caml_register_global_root(&camlobj);
     CAMLreturn(Val_unit);
   }
-  
+  /*
   CAMLprim // [`qobject ] obj -> string option 
   value getClassName(value cppobj) {
     CAMLparam1(cppobj);
@@ -93,4 +96,5 @@ value ml_qapp_exec (value self) {
     setAbstrClass(ans,QKeyEvent, event);
     CAMLreturn(ans);    
   }
+  */
 }  // extern "C"
