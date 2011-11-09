@@ -28,7 +28,7 @@ value ml_qapp_create (value argv) {
 CAMLprim
 value ml_qapp_exec (value unit) {
   CAMLparam1(unit);
-  printf ("qApp = %p\n", qApp);
+  printf ("qApp = %p\n", qApp); // qApp is a macros for accessing QCoreApplication::instance()
   printf("preparing before qApp->exec(). arguments are:\n");
   QStringList argslist = qApp->arguments();
   foreach (const QString s, argslist) {
