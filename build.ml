@@ -25,7 +25,6 @@ let wrap_cmd cmd err =
 
 let cores_count = 3;; (* make -j parameter *)
 
-<<<<<<< HEAD
 let make ?(dir=".") ?j target err_msg = 
   let make_cmd = try Sys.getenv "MAKE" with Not_found -> "make" in
   let cmd = String.concat " " [
