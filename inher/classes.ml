@@ -2,7 +2,7 @@ type +'a obj
 
 external create_app : string array -> [`qobject] obj = "ml_qapp_create"
 external set_caml_object: [`qobject] obj -> < .. > -> unit = "setCamlObj"
-external exec : [> `qobject] obj -> int = "ml_qapp_exec"
+external exec : unit -> int = "ml_qapp_exec"
 external create_qwidget' : [`qobject] obj option -> [`qobject ] obj = "create_QWidget_twin"
 external qWidget_keyPressEvent': 'a->[> `qobject] obj->unit
                 = "qWidget_twin_super_keyPressEvent"

@@ -10,17 +10,16 @@ let () = b#boo ()
 
 *)
 
-let () = print_endline ""
-(*
 let aa = new qwidget (create_qwidget' None)
+(*
 let () = print_endline "trying to call keyPressEvent"
 let () = aa#keyPressEvent (new qKeyEvent (simpleQKeyEvent ()))
 
 let () = Printf.printf "(Obj.magic aa#keyPressEvent) =  %i\n%!" ((Obj.magic aa#keyPressEvent) )
 let () = Printf.printf 
   "(Obj.tag (Obj.repr aa#keyPressEvent)) =  %i\n%!" (Obj.tag (Obj.repr aa#keyPressEvent))
-
-let () = aa#show;;
 *)
 
-let _ =  exec app
+let () = aa#show;;
+
+let _ =  exec ()
