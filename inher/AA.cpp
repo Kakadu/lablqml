@@ -25,7 +25,7 @@ void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     printf ("tag of meth is %d\n", Tag_val(meth) );
     printf("calling callback of meth = %p\n",(void*)meth);
     setAbstrClass(_ev,QKeyEvent,ev);
-    caml_callback(meth, camlobj);
+    caml_callback2(meth, camlobj,_ev);
     printf ("exit from QWidget_twin::keyPressedEvent\n");
     CAMLreturn0;
 }

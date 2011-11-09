@@ -22,8 +22,7 @@ class qwidget me = object (self)
   method handler : [`qobject] obj = me
   method keyPressEvent (x0:qKeyEvent) = print_endline "PRESS";
     let _ = self#handler in
-    ()
-(*   qWidget_keyPressEvent' self#handler (x0#handler) *)
+   qWidget_keyPressEvent' self#handler (x0#handler) 
   method show = qWidget_show me
 end
 (*
