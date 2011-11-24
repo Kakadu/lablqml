@@ -65,6 +65,12 @@ let cpp_includes () = match includes with
 
 let () = match !target with 
   | `Build -> begin
+        (* this checks the version of the ocaml running this script
+           should probably check the version of ocamlc instead
+           but who cares *)
+        if Sys.ocaml_version < "3.12" then
+          failwith (sprintf "OCaml version 3.12 or higher is required (%s was provided)." Sys.ocaml_version);
+
         if not (file_exists "test_gen/out") then
                 mkdir ~perm:0o755 "test_gen/out";
 
