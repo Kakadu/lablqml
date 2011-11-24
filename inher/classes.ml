@@ -32,3 +32,9 @@ class b = object (self)
 
 end
   *)
+let make_qKeyEvent = new qKeyEvent
+let make_qwidget = new qwidget
+
+let () =
+  Callback.register "make_qKeyEvent" make_qKeyEvent;
+  Callback.register "make_qwidget"  make_qwidget
