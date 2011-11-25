@@ -351,7 +351,15 @@ class cppGenerator ~graph ~includes dir index = object (self)
           fprintf h "  value *args = new value[%d];\n" (argslen+1);
 	  fprintf h "  args[0] = camlobj;\n";
 	  let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
-	    self#toCamlCast arg name (sprintf "args[%d]" (i+1) )
+	    let arg_name = sprintf "args[%d]" (i+1) in
+	    let s = self#toCamlCast arg name arg_name in
+	    match s,pattern self#index arg with
+	      | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
+	      | (Success s,ObjectPattern) -> 
+		Success (sprintf 
+"  { %s\n      value *call_helper=caml_named_value(\"make_%s\");\n    %s=caml_callback(*call_helper,%s);}\n"
+		  s (String.concat ~sep:"." (classname::prefix)) arg_name arg_name )
+	      | (Success _,_) -> s
 	  ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
 	  List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
           fprintf h "    // delete args or not?\n";
