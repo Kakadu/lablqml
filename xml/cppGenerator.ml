@@ -344,10 +344,11 @@ class cppGenerator ~graph ~includes dir index = object (self)
         fprintf h "  CAMLlocal3(camlobj,_ans,meth);\n"
       else
 	fprintf h "  CAMLlocal2(camlobj,meth);\n";
+      fprintf h "  printf(\"Calling %s::%s of object = %%p\\n\",this);\n" classname m.m_name;
       fprintf h "  GET_CAML_OBJECT(this,the_caml_object)\n";
       fprintf h "  camlobj = (value) the_caml_object;\n";
       fprintf h "  meth = caml_get_public_method( camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
-      fprintf h "  if (meth == 0)\n    printf(\"total fail\\n\");\n";
+      fprintf h "  assert(meth!=0);\n";
 
       let call_closure_str = match argslen with 
 	| 0 -> "caml_callback(meth, camlobj);"
@@ -361,9 +362,14 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	      | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
 	      | (Success s,ObjectPattern) -> 
 		let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
-		Success (sprintf 
-"  { %s\n      value *call_helper=caml_named_value(\"make_%s\");\n    %s=caml_callback(*call_helper,%s);}\n"
-		  s (String.concat ~sep:"." cp) arg_name arg_name )
+		let buf = Bigbuffer.create 50 in
+		let open Bigbuffer.Printf in
+		bprintf buf "  { setAbstrClass(%s,%s,%s);\n" arg_name arg.arg_type.t_name name;
+		bprintf buf "    value *call_helper=caml_named_value(\"make_%s\");\n"
+		  (String.concat ~sep:"." cp);
+		bprintf buf "    assert(call_helper != 0);\n";
+		bprintf buf "    %s=caml_callback(*call_helper,%s); }\n" arg_name arg_name;
+		Success (Bigbuffer.contents buf)
 	      | (Success _,_) -> s
 	  ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
 	  List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);

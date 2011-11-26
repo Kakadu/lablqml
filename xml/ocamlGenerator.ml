@@ -291,9 +291,11 @@ class ocamlGenerator graph dir index = object (self)
       match SuperIndex.find_exn index key with
 	| Enum  e -> ()
 	| Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c;
-	  if not (is_abstract_class ~prefix:[] index c.c_name) then
+	  if not (is_abstract_class (fst key) index c.c_name) then 
+(*	  if not (is_abstract_class ~prefix:[] index c.c_name) then *)
 	    Ref.replace not_abstract_classes (fun c -> key::c)
     );
+    print_endline "end of classes generation";
     fprintf h1 " aa = object end\n\n\n\n\n";
 
     List.iter !not_abstract_classes ~f:(fun (lst,_) ->
@@ -356,7 +358,7 @@ class ocamlGenerator graph dir index = object (self)
       );
       
       if is_abstract then begin
-	fprintf h_classes " virtual %s me = object(self)\n" ocaml_classname;
+	fprintf h_classes "  %s me = object(self)\n" ocaml_classname;
 	fprintf h_classes " method handler : [`qobject] obj = me \n\n"
       end else begin
 	let _constr = List.hd_exn c.c_constrs in
