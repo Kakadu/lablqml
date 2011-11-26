@@ -23,7 +23,7 @@ type meth = {
 
 val sexp_of_func_arg : func_arg -> Sexp.t 
 
-  
+val string_split: on:string -> string -> string list  
 val simple_arg : cpptype -> func_arg
 val void_type : cpptype
 val skip_meth : classname:string -> string -> bool

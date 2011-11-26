@@ -162,6 +162,7 @@ class virtual abstractGenerator graph _index = object (self)
     else pathChecker qObjectKey key
 
   (* TODO: decide what index to use: from object or from parameter *)
+  (* TODO: rewrite function to return type Core.Common.passfail *)
   method private fromCamlCast 
       = fun (index:index_t) ({arg_default; arg_type=t; _} as arg) ?(cpp_argname=None) arg_name -> 
 	let cpp_argname = match cpp_argname with

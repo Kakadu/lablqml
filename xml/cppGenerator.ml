@@ -292,10 +292,12 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let classname = c.c_name ^ "_twin" in
       let native_func_name = self#get_name ~classname `Public args ?res_n_name:None false in
       fprintf h "value %s" native_func_name;
-      let caml_argnames = self#gen_stub_arguments args h in (* they has type `value` *)
+      let caml_argnames = self#gen_stub_arguments ~locals:["ans"] args h in (* they has type `value` *)
       let cpp_argnames = List.map caml_argnames ~f:(fun s -> "_"^s) in
       fprintf h "  %s *_ans = new %s(%s);\n" classname classname (String.concat ~sep:"," cpp_argnames);
-      fprintf h "  CAMLreturn((value)_ans);\n}\n\n"			     
+      fprintf h "  setAbstrClass(ans,%s,_ans);\n" classname;
+      fprintf h "  printf(\"created %s = %%x, asbtr = %%ld\\n\",_ans,ans);\n" classname;
+      fprintf h "  CAMLreturn(ans);\n}\n\n"			     
     );
     let (_,prot_meths) = 
       MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
@@ -358,9 +360,10 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	    match s,pattern self#index arg with
 	      | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
 	      | (Success s,ObjectPattern) -> 
+		let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
 		Success (sprintf 
 "  { %s\n      value *call_helper=caml_named_value(\"make_%s\");\n    %s=caml_callback(*call_helper,%s);}\n"
-		  s (String.concat ~sep:"." (classname::prefix)) arg_name arg_name )
+		  s (String.concat ~sep:"." cp) arg_name arg_name )
 	      | (Success _,_) -> s
 	  ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
 	  List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
@@ -397,7 +400,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
     ()
 
-  method gen_stub_arguments args h =
+  method gen_stub_arguments ?locals:(locals=[]) args h =
     let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
     let argslen = List.length args in
     fprintf h "(%s) {\n" (String.concat ~sep:"," (List.map argnames ~f:(fun s -> "value "^s)));
@@ -412,6 +415,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
       self#fromCamlCast self#index {arg with arg_type=unreference t} name
     ) in
     let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
+    if locals <> [] then
+      fprintf h "  CAMLlocal%d(%s);\n" (List.length locals) (String.concat ~sep:"," locals);
     List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
     argnames
   

@@ -9,6 +9,7 @@ module Map = Core_map
 open Simplexmlparser
 
 let (%<) f g = fun x -> f (g x)
+let (|>) a b = b a
 
 (** receives pairs (enum_member,value) and returns list where map ~f:snd lst is disjunct 
  *  Needed to make compilable C++ switch statement when casting to Caml
@@ -73,7 +74,28 @@ let endswith ~postfix:p s =
   if String.length p > (String.length s) then false
   else (Str.last_chars s (String.length p) = p)
 
-let (|>) a b = b a
+let string_split ~on:d str = 
+  let dlen = String.length d in
+  let matches i = 
+    try
+      for j=0 to dlen-1 do
+	if d.[j] <> str.[j+i] then raise Not_found
+      done;
+      true
+    with Not_found -> false (* Reused existing exception *)
+  in
+  let rec loop curlen i ans = 
+    assert (i>=curlen);
+    if i >= String.length str then (
+      if curlen>0 then (String.sub str ~pos:(i-curlen) ~len:curlen) :: ans else ans
+    ) else if matches i then (
+      let s = String.sub str ~pos:(i - curlen) ~len:curlen in
+      loop 0 (i+dlen) (s::ans)
+    ) else (
+      loop (curlen+1) (i+1) ans
+    )
+  in
+  loop 0 0 [] |> List.rev
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
 and func_arg = { arg_type:cpptype; arg_name:string option; arg_default: string option }
