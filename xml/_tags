@@ -1,4 +1,5 @@
-true: thread
+true: thread,debug
 true: package(str), package(core), package(tyxml.parser), package(ocamlgraph), package(sexplib.syntax)
 "generators.ml" or "parser.ml": syntax(camlp4o)
 <xmltool.*>: package(tyxml)
+"ocamlGenerator.ml": -warn_A

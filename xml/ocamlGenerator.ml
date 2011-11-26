@@ -286,19 +286,18 @@ class ocamlGenerator graph dir index = object (self)
     fprintf h3 "open Stub_helpers\nopen Classes\nopen Stubs\n";
 
     printf "Queue length is %d\n" (Q.length queue);
-    let not_abstract_classes = ref [] in
+    printf "Key in index are: %s\n" (SuperIndex.keys index |> List.to_string snd);
+    let classes = ref [] in
     Q.iter queue ~f:(fun key ->
       match SuperIndex.find_exn index key with
 	| Enum  e -> ()
-	| Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c;
-	  if not (is_abstract_class (fst key) index c.c_name) then 
-(*	  if not (is_abstract_class ~prefix:[] index c.c_name) then *)
-	    Ref.replace not_abstract_classes (fun c -> key::c)
+	| Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c;	  
+	  Ref.replace classes (fun c -> key::c)
     );
     print_endline "end of classes generation";
     fprintf h1 " aa = object end\n\n\n\n\n";
 
-    List.iter !not_abstract_classes ~f:(fun (lst,_) ->
+    List.iter !classes ~f:(fun (lst,_) ->
       fprintf h1 "let () = Callback.register \"make_%s\" (new %s)\n"
 	(String.concat ~sep:"." lst) (ocaml_class_name (List.hd_exn lst))
     );

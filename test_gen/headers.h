@@ -13,4 +13,7 @@ value camlObj(QObject*);
 
 #define QObject_val(v)            ((QObject *)        Field(v,0) )
 
+#define setAbstrClass(res,clas,val)\
+do{res=caml_alloc_small(1,Abstract_tag);\
+(*((clas **) &Field(res, 0)))=val;}while(false)
 
