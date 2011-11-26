@@ -1,0 +1,588 @@
+<code > 
+    <namespace name="Qt">
+        <enum name="Qt::WindowType">
+            <accessPolicy value="public"/>
+            <enumerator value="0x00000000">Widget</enumerator>
+            <enumerator value="0x00000001">Window</enumerator>
+            <enumerator value="0x00000002|Window">Dialog</enumerator>
+            <enumerator value="0x00000004|Window">Sheet</enumerator>
+            <enumerator value="0x00000006|Window">Drawer</enumerator>
+            <enumerator value="0x00000008|Window">Popup</enumerator>
+            <enumerator value="0x0000000a|Window">Tool</enumerator>
+            <enumerator value="0x0000000c|Window">ToolTip</enumerator>
+            <enumerator value="0x0000000e|Window">SplashScreen</enumerator>
+            <enumerator value="0x00000010|Window">Desktop</enumerator>
+            <enumerator value="0x00000012">SubWindow</enumerator>
+            <enumerator value="0x000000ff">WindowType_Mask</enumerator>
+            <enumerator value="0x00000100">MSWindowsFixedSizeDialogHint</enumerator>
+            <enumerator value="0x00000200">MSWindowsOwnDC</enumerator>
+            <enumerator value="0x00000400">X11BypassWindowManagerHint</enumerator>
+            <enumerator value="0x00000800">FramelessWindowHint</enumerator>
+            <enumerator value="0x00001000">WindowTitleHint</enumerator>
+            <enumerator value="0x00002000">WindowSystemMenuHint</enumerator>
+            <enumerator value="0x00004000">WindowMinimizeButtonHint</enumerator>
+            <enumerator value="0x00008000">WindowMaximizeButtonHint</enumerator>
+            <enumerator value="WindowMinimizeButtonHint|WindowMaximizeButtonHint">WindowMinMaxButtonsHint</enumerator>
+            <enumerator value="0x00010000">WindowContextHelpButtonHint</enumerator>
+            <enumerator value="0x00020000">WindowShadeButtonHint</enumerator>
+            <enumerator value="0x00040000">WindowStaysOnTopHint</enumerator>
+            <enumerator value="0x02000000">CustomizeWindowHint</enumerator>
+            <enumerator value="0x04000000">WindowStaysOnBottomHint</enumerator>
+            <enumerator value="0x08000000">WindowCloseButtonHint</enumerator>
+            <enumerator value="0x10000000">MacWindowToolBarButtonHint</enumerator>
+            <enumerator value="0x20000000">BypassGraphicsProxyWidget</enumerator>
+            <enumerator value="0x00080000">WindowOkButtonHint</enumerator>
+            <enumerator value="0x00100000">WindowCancelButtonHint</enumerator>
+            <enumerator value="0x40000000">WindowSoftkeysVisibleHint</enumerator>
+            <enumerator value="0x80000000">WindowSoftkeysRespondHint</enumerator>
+        </enum>
+        <enum name="Qt::EventPriority">
+            <accessPolicy value="public"/>
+            <enumerator value="1">HighEventPriority</enumerator>
+            <enumerator value="0">NormalEventPriority</enumerator>
+            <enumerator value="-1">LowEventPriority</enumerator>
+        </enum>
+        <enum name="Qt::KeyboardModifier">
+            <accessPolicy value="public"/>
+            <enumerator value="0x00000000">NoModifier</enumerator>
+            <enumerator value="0x02000000">ShiftModifier</enumerator>
+            <enumerator value="0x04000000">ControlModifier</enumerator>
+            <enumerator value="0x08000000">AltModifier</enumerator>
+            <enumerator value="0x10000000">MetaModifier</enumerator>
+            <enumerator value="0x20000000">KeypadModifier</enumerator>
+            <enumerator value="0x40000000">GroupSwitchModifier</enumerator>
+            <enumerator value="0xfe000000">KeyboardModifierMask</enumerator>
+        </enum>
+        <enum name="Qt::WindowState">
+            <accessPolicy value="public"/>
+            <enumerator value="0x00000000">WindowNoState</enumerator>
+            <enumerator value="0x00000001">WindowMinimized</enumerator>
+            <enumerator value="0x00000002">WindowMaximized</enumerator>
+            <enumerator value="0x00000004">WindowFullScreen</enumerator>
+            <enumerator value="0x00000008">WindowActive</enumerator>
+        </enum>
+        <enum name="Qt::Key">
+            <accessPolicy value="public"/>
+            <enumerator value="0x01000000">Key_Escape</enumerator>
+            <enumerator value="0x01000001">Key_Tab</enumerator>
+            <enumerator value="0x01000002">Key_Backtab</enumerator>
+            <enumerator value="0x01000003">Key_Backspace</enumerator>
+            <enumerator value="0x01000004">Key_Return</enumerator>
+            <enumerator value="0x01000005">Key_Enter</enumerator>
+            <enumerator value="0x01000006">Key_Insert</enumerator>
+            <enumerator value="0x01000007">Key_Delete</enumerator>
+            <enumerator value="0x01000008">Key_Pause</enumerator>
+            <enumerator value="0x01000009">Key_Print</enumerator>
+            <enumerator value="0x0100000a">Key_SysReq</enumerator>
+            <enumerator value="0x0100000b">Key_Clear</enumerator>
+            <enumerator value="0x01000010">Key_Home</enumerator>
+            <enumerator value="0x01000011">Key_End</enumerator>
+            <enumerator value="0x01000012">Key_Left</enumerator>
+            <enumerator value="0x01000013">Key_Up</enumerator>
+            <enumerator value="0x01000014">Key_Right</enumerator>
+            <enumerator value="0x01000015">Key_Down</enumerator>
+            <enumerator value="0x01000016">Key_PageUp</enumerator>
+            <enumerator value="0x01000017">Key_PageDown</enumerator>
+            <enumerator value="0x01000020">Key_Shift</enumerator>
+            <enumerator value="0x01000021">Key_Control</enumerator>
+            <enumerator value="0x01000022">Key_Meta</enumerator>
+            <enumerator value="0x01000023">Key_Alt</enumerator>
+            <enumerator value="0x01000024">Key_CapsLock</enumerator>
+            <enumerator value="0x01000025">Key_NumLock</enumerator>
+            <enumerator value="0x01000026">Key_ScrollLock</enumerator>
+            <enumerator value="0x01000030">Key_F1</enumerator>
+            <enumerator value="0x01000031">Key_F2</enumerator>
+            <enumerator value="0x01000032">Key_F3</enumerator>
+            <enumerator value="0x01000033">Key_F4</enumerator>
+            <enumerator value="0x01000034">Key_F5</enumerator>
+            <enumerator value="0x01000035">Key_F6</enumerator>
+            <enumerator value="0x01000036">Key_F7</enumerator>
+            <enumerator value="0x01000037">Key_F8</enumerator>
+            <enumerator value="0x01000038">Key_F9</enumerator>
+            <enumerator value="0x01000039">Key_F10</enumerator>
+            <enumerator value="0x0100003a">Key_F11</enumerator>
+            <enumerator value="0x0100003b">Key_F12</enumerator>
+            <enumerator value="0x0100003c">Key_F13</enumerator>
+            <enumerator value="0x0100003d">Key_F14</enumerator>
+            <enumerator value="0x0100003e">Key_F15</enumerator>
+            <enumerator value="0x0100003f">Key_F16</enumerator>
+            <enumerator value="0x01000040">Key_F17</enumerator>
+            <enumerator value="0x01000041">Key_F18</enumerator>
+            <enumerator value="0x01000042">Key_F19</enumerator>
+            <enumerator value="0x01000043">Key_F20</enumerator>
+            <enumerator value="0x01000044">Key_F21</enumerator>
+            <enumerator value="0x01000045">Key_F22</enumerator>
+            <enumerator value="0x01000046">Key_F23</enumerator>
+            <enumerator value="0x01000047">Key_F24</enumerator>
+            <enumerator value="0x01000048">Key_F25</enumerator>
+            <enumerator value="0x01000049">Key_F26</enumerator>
+            <enumerator value="0x0100004a">Key_F27</enumerator>
+            <enumerator value="0x0100004b">Key_F28</enumerator>
+            <enumerator value="0x0100004c">Key_F29</enumerator>
+            <enumerator value="0x0100004d">Key_F30</enumerator>
+            <enumerator value="0x0100004e">Key_F31</enumerator>
+            <enumerator value="0x0100004f">Key_F32</enumerator>
+            <enumerator value="0x01000050">Key_F33</enumerator>
+            <enumerator value="0x01000051">Key_F34</enumerator>
+            <enumerator value="0x01000052">Key_F35</enumerator>
+            <enumerator value="0x01000053">Key_Super_L</enumerator>
+            <enumerator value="0x01000054">Key_Super_R</enumerator>
+            <enumerator value="0x01000055">Key_Menu</enumerator>
+            <enumerator value="0x01000056">Key_Hyper_L</enumerator>
+            <enumerator value="0x01000057">Key_Hyper_R</enumerator>
+            <enumerator value="0x01000058">Key_Help</enumerator>
+            <enumerator value="0x01000059">Key_Direction_L</enumerator>
+            <enumerator value="0x01000060">Key_Direction_R</enumerator>
+            <enumerator value="0x20">Key_Space</enumerator>
+            <enumerator value="Key_Space">Key_Any</enumerator>
+            <enumerator value="0x21">Key_Exclam</enumerator>
+            <enumerator value="0x22">Key_QuoteDbl</enumerator>
+            <enumerator value="0x23">Key_NumberSign</enumerator>
+            <enumerator value="0x24">Key_Dollar</enumerator>
+            <enumerator value="0x25">Key_Percent</enumerator>
+            <enumerator value="0x26">Key_Ampersand</enumerator>
+            <enumerator value="0x27">Key_Apostrophe</enumerator>
+            <enumerator value="0x28">Key_ParenLeft</enumerator>
+            <enumerator value="0x29">Key_ParenRight</enumerator>
+            <enumerator value="0x2a">Key_Asterisk</enumerator>
+            <enumerator value="0x2b">Key_Plus</enumerator>
+            <enumerator value="0x2c">Key_Comma</enumerator>
+            <enumerator value="0x2d">Key_Minus</enumerator>
+            <enumerator value="0x2e">Key_Period</enumerator>
+            <enumerator value="0x2f">Key_Slash</enumerator>
+            <enumerator value="0x30">Key_0</enumerator>
+            <enumerator value="0x31">Key_1</enumerator>
+            <enumerator value="0x32">Key_2</enumerator>
+            <enumerator value="0x33">Key_3</enumerator>
+            <enumerator value="0x34">Key_4</enumerator>
+            <enumerator value="0x35">Key_5</enumerator>
+            <enumerator value="0x36">Key_6</enumerator>
+            <enumerator value="0x37">Key_7</enumerator>
+            <enumerator value="0x38">Key_8</enumerator>
+            <enumerator value="0x39">Key_9</enumerator>
+            <enumerator value="0x3a">Key_Colon</enumerator>
+            <enumerator value="0x3b">Key_Semicolon</enumerator>
+            <enumerator value="0x3c">Key_Less</enumerator>
+            <enumerator value="0x3d">Key_Equal</enumerator>
+            <enumerator value="0x3e">Key_Greater</enumerator>
+            <enumerator value="0x3f">Key_Question</enumerator>
+            <enumerator value="0x40">Key_At</enumerator>
+            <enumerator value="0x41">Key_A</enumerator>
+            <enumerator value="0x42">Key_B</enumerator>
+            <enumerator value="0x43">Key_C</enumerator>
+            <enumerator value="0x44">Key_D</enumerator>
+            <enumerator value="0x45">Key_E</enumerator>
+            <enumerator value="0x46">Key_F</enumerator>
+            <enumerator value="0x47">Key_G</enumerator>
+            <enumerator value="0x48">Key_H</enumerator>
+            <enumerator value="0x49">Key_I</enumerator>
+            <enumerator value="0x4a">Key_J</enumerator>
+            <enumerator value="0x4b">Key_K</enumerator>
+            <enumerator value="0x4c">Key_L</enumerator>
+            <enumerator value="0x4d">Key_M</enumerator>
+            <enumerator value="0x4e">Key_N</enumerator>
+            <enumerator value="0x4f">Key_O</enumerator>
+            <enumerator value="0x50">Key_P</enumerator>
+            <enumerator value="0x51">Key_Q</enumerator>
+            <enumerator value="0x52">Key_R</enumerator>
+            <enumerator value="0x53">Key_S</enumerator>
+            <enumerator value="0x54">Key_T</enumerator>
+            <enumerator value="0x55">Key_U</enumerator>
+            <enumerator value="0x56">Key_V</enumerator>
+            <enumerator value="0x57">Key_W</enumerator>
+            <enumerator value="0x58">Key_X</enumerator>
+            <enumerator value="0x59">Key_Y</enumerator>
+            <enumerator value="0x5a">Key_Z</enumerator>
+            <enumerator value="0x5b">Key_BracketLeft</enumerator>
+            <enumerator value="0x5c">Key_Backslash</enumerator>
+            <enumerator value="0x5d">Key_BracketRight</enumerator>
+            <enumerator value="0x5e">Key_AsciiCircum</enumerator>
+            <enumerator value="0x5f">Key_Underscore</enumerator>
+            <enumerator value="0x60">Key_QuoteLeft</enumerator>
+            <enumerator value="0x7b">Key_BraceLeft</enumerator>
+            <enumerator value="0x7c">Key_Bar</enumerator>
+            <enumerator value="0x7d">Key_BraceRight</enumerator>
+            <enumerator value="0x7e">Key_AsciiTilde</enumerator>
+            <enumerator value="0x0a0">Key_nobreakspace</enumerator>
+            <enumerator value="0x0a1">Key_exclamdown</enumerator>
+            <enumerator value="0x0a2">Key_cent</enumerator>
+            <enumerator value="0x0a3">Key_sterling</enumerator>
+            <enumerator value="0x0a4">Key_currency</enumerator>
+            <enumerator value="0x0a5">Key_yen</enumerator>
+            <enumerator value="0x0a6">Key_brokenbar</enumerator>
+            <enumerator value="0x0a7">Key_section</enumerator>
+            <enumerator value="0x0a8">Key_diaeresis</enumerator>
+            <enumerator value="0x0a9">Key_copyright</enumerator>
+            <enumerator value="0x0aa">Key_ordfeminine</enumerator>
+            <enumerator value="0x0ab">Key_guillemotleft</enumerator>
+            <enumerator value="0x0ac">Key_notsign</enumerator>
+            <enumerator value="0x0ad">Key_hyphen</enumerator>
+            <enumerator value="0x0ae">Key_registered</enumerator>
+            <enumerator value="0x0af">Key_macron</enumerator>
+            <enumerator value="0x0b0">Key_degree</enumerator>
+            <enumerator value="0x0b1">Key_plusminus</enumerator>
+            <enumerator value="0x0b2">Key_twosuperior</enumerator>
+            <enumerator value="0x0b3">Key_threesuperior</enumerator>
+            <enumerator value="0x0b4">Key_acute</enumerator>
+            <enumerator value="0x0b5">Key_mu</enumerator>
+            <enumerator value="0x0b6">Key_paragraph</enumerator>
+            <enumerator value="0x0b7">Key_periodcentered</enumerator>
+            <enumerator value="0x0b8">Key_cedilla</enumerator>
+            <enumerator value="0x0b9">Key_onesuperior</enumerator>
+            <enumerator value="0x0ba">Key_masculine</enumerator>
+            <enumerator value="0x0bb">Key_guillemotright</enumerator>
+            <enumerator value="0x0bc">Key_onequarter</enumerator>
+            <enumerator value="0x0bd">Key_onehalf</enumerator>
+            <enumerator value="0x0be">Key_threequarters</enumerator>
+            <enumerator value="0x0bf">Key_questiondown</enumerator>
+            <enumerator value="0x0c0">Key_Agrave</enumerator>
+            <enumerator value="0x0c1">Key_Aacute</enumerator>
+            <enumerator value="0x0c2">Key_Acircumflex</enumerator>
+            <enumerator value="0x0c3">Key_Atilde</enumerator>
+            <enumerator value="0x0c4">Key_Adiaeresis</enumerator>
+            <enumerator value="0x0c5">Key_Aring</enumerator>
+            <enumerator value="0x0c6">Key_AE</enumerator>
+            <enumerator value="0x0c7">Key_Ccedilla</enumerator>
+            <enumerator value="0x0c8">Key_Egrave</enumerator>
+            <enumerator value="0x0c9">Key_Eacute</enumerator>
+            <enumerator value="0x0ca">Key_Ecircumflex</enumerator>
+            <enumerator value="0x0cb">Key_Ediaeresis</enumerator>
+            <enumerator value="0x0cc">Key_Igrave</enumerator>
+            <enumerator value="0x0cd">Key_Iacute</enumerator>
+            <enumerator value="0x0ce">Key_Icircumflex</enumerator>
+            <enumerator value="0x0cf">Key_Idiaeresis</enumerator>
+            <enumerator value="0x0d0">Key_ETH</enumerator>
+            <enumerator value="0x0d1">Key_Ntilde</enumerator>
+            <enumerator value="0x0d2">Key_Ograve</enumerator>
+            <enumerator value="0x0d3">Key_Oacute</enumerator>
+            <enumerator value="0x0d4">Key_Ocircumflex</enumerator>
+            <enumerator value="0x0d5">Key_Otilde</enumerator>
+            <enumerator value="0x0d6">Key_Odiaeresis</enumerator>
+            <enumerator value="0x0d7">Key_multiply</enumerator>
+            <enumerator value="0x0d8">Key_Ooblique</enumerator>
+            <enumerator value="0x0d9">Key_Ugrave</enumerator>
+            <enumerator value="0x0da">Key_Uacute</enumerator>
+            <enumerator value="0x0db">Key_Ucircumflex</enumerator>
+            <enumerator value="0x0dc">Key_Udiaeresis</enumerator>
+            <enumerator value="0x0dd">Key_Yacute</enumerator>
+            <enumerator value="0x0de">Key_THORN</enumerator>
+            <enumerator value="0x0df">Key_ssharp</enumerator>
+            <enumerator value="0x0f7">Key_division</enumerator>
+            <enumerator value="0x0ff">Key_ydiaeresis</enumerator>
+            <enumerator value="0x01001103">Key_AltGr</enumerator>
+            <enumerator value="0x01001120">Key_Multi_key</enumerator>
+            <enumerator value="0x01001137">Key_Codeinput</enumerator>
+            <enumerator value="0x0100113c">Key_SingleCandidate</enumerator>
+            <enumerator value="0x0100113d">Key_MultipleCandidate</enumerator>
+            <enumerator value="0x0100113e">Key_PreviousCandidate</enumerator>
+            <enumerator value="0x0100117e">Key_Mode_switch</enumerator>
+            <enumerator value="0x01001121">Key_Kanji</enumerator>
+            <enumerator value="0x01001122">Key_Muhenkan</enumerator>
+            <enumerator value="0x01001123">Key_Henkan</enumerator>
+            <enumerator value="0x01001124">Key_Romaji</enumerator>
+            <enumerator value="0x01001125">Key_Hiragana</enumerator>
+            <enumerator value="0x01001126">Key_Katakana</enumerator>
+            <enumerator value="0x01001127">Key_Hiragana_Katakana</enumerator>
+            <enumerator value="0x01001128">Key_Zenkaku</enumerator>
+            <enumerator value="0x01001129">Key_Hankaku</enumerator>
+            <enumerator value="0x0100112a">Key_Zenkaku_Hankaku</enumerator>
+            <enumerator value="0x0100112b">Key_Touroku</enumerator>
+            <enumerator value="0x0100112c">Key_Massyo</enumerator>
+            <enumerator value="0x0100112d">Key_Kana_Lock</enumerator>
+            <enumerator value="0x0100112e">Key_Kana_Shift</enumerator>
+            <enumerator value="0x0100112f">Key_Eisu_Shift</enumerator>
+            <enumerator value="0x01001130">Key_Eisu_toggle</enumerator>
+            <enumerator value="0x01001131">Key_Hangul</enumerator>
+            <enumerator value="0x01001132">Key_Hangul_Start</enumerator>
+            <enumerator value="0x01001133">Key_Hangul_End</enumerator>
+            <enumerator value="0x01001134">Key_Hangul_Hanja</enumerator>
+            <enumerator value="0x01001135">Key_Hangul_Jamo</enumerator>
+            <enumerator value="0x01001136">Key_Hangul_Romaja</enumerator>
+            <enumerator value="0x01001138">Key_Hangul_Jeonja</enumerator>
+            <enumerator value="0x01001139">Key_Hangul_Banja</enumerator>
+            <enumerator value="0x0100113a">Key_Hangul_PreHanja</enumerator>
+            <enumerator value="0x0100113b">Key_Hangul_PostHanja</enumerator>
+            <enumerator value="0x0100113f">Key_Hangul_Special</enumerator>
+            <enumerator value="0x01001250">Key_Dead_Grave</enumerator>
+            <enumerator value="0x01001251">Key_Dead_Acute</enumerator>
+            <enumerator value="0x01001252">Key_Dead_Circumflex</enumerator>
+            <enumerator value="0x01001253">Key_Dead_Tilde</enumerator>
+            <enumerator value="0x01001254">Key_Dead_Macron</enumerator>
+            <enumerator value="0x01001255">Key_Dead_Breve</enumerator>
+            <enumerator value="0x01001256">Key_Dead_Abovedot</enumerator>
+            <enumerator value="0x01001257">Key_Dead_Diaeresis</enumerator>
+            <enumerator value="0x01001258">Key_Dead_Abovering</enumerator>
+            <enumerator value="0x01001259">Key_Dead_Doubleacute</enumerator>
+            <enumerator value="0x0100125a">Key_Dead_Caron</enumerator>
+            <enumerator value="0x0100125b">Key_Dead_Cedilla</enumerator>
+            <enumerator value="0x0100125c">Key_Dead_Ogonek</enumerator>
+            <enumerator value="0x0100125d">Key_Dead_Iota</enumerator>
+            <enumerator value="0x0100125e">Key_Dead_Voiced_Sound</enumerator>
+            <enumerator value="0x0100125f">Key_Dead_Semivoiced_Sound</enumerator>
+            <enumerator value="0x01001260">Key_Dead_Belowdot</enumerator>
+            <enumerator value="0x01001261">Key_Dead_Hook</enumerator>
+            <enumerator value="0x01001262">Key_Dead_Horn</enumerator>
+            <enumerator value="0x01000061">Key_Back</enumerator>
+            <enumerator value="0x01000062">Key_Forward</enumerator>
+            <enumerator value="0x01000063">Key_Stop</enumerator>
+            <enumerator value="0x01000064">Key_Refresh</enumerator>
+            <enumerator value="0x01000070">Key_VolumeDown</enumerator>
+            <enumerator value="0x01000071">Key_VolumeMute</enumerator>
+            <enumerator value="0x01000072">Key_VolumeUp</enumerator>
+            <enumerator value="0x01000073">Key_BassBoost</enumerator>
+            <enumerator value="0x01000074">Key_BassUp</enumerator>
+            <enumerator value="0x01000075">Key_BassDown</enumerator>
+            <enumerator value="0x01000076">Key_TrebleUp</enumerator>
+            <enumerator value="0x01000077">Key_TrebleDown</enumerator>
+            <enumerator value="0x01000080">Key_MediaPlay</enumerator>
+            <enumerator value="0x01000081">Key_MediaStop</enumerator>
+            <enumerator value="0x01000082">Key_MediaPrevious</enumerator>
+            <enumerator value="0x01000083">Key_MediaNext</enumerator>
+            <enumerator value="0x01000084">Key_MediaRecord</enumerator>
+            <enumerator value="0x1000085">Key_MediaPause</enumerator>
+            <enumerator value="0x1000086">Key_MediaTogglePlayPause</enumerator>
+            <enumerator value="0x01000090">Key_HomePage</enumerator>
+            <enumerator value="0x01000091">Key_Favorites</enumerator>
+            <enumerator value="0x01000092">Key_Search</enumerator>
+            <enumerator value="0x01000093">Key_Standby</enumerator>
+            <enumerator value="0x01000094">Key_OpenUrl</enumerator>
+            <enumerator value="0x010000a0">Key_LaunchMail</enumerator>
+            <enumerator value="0x010000a1">Key_LaunchMedia</enumerator>
+            <enumerator value="0x010000a2">Key_Launch0</enumerator>
+            <enumerator value="0x010000a3">Key_Launch1</enumerator>
+            <enumerator value="0x010000a4">Key_Launch2</enumerator>
+            <enumerator value="0x010000a5">Key_Launch3</enumerator>
+            <enumerator value="0x010000a6">Key_Launch4</enumerator>
+            <enumerator value="0x010000a7">Key_Launch5</enumerator>
+            <enumerator value="0x010000a8">Key_Launch6</enumerator>
+            <enumerator value="0x010000a9">Key_Launch7</enumerator>
+            <enumerator value="0x010000aa">Key_Launch8</enumerator>
+            <enumerator value="0x010000ab">Key_Launch9</enumerator>
+            <enumerator value="0x010000ac">Key_LaunchA</enumerator>
+            <enumerator value="0x010000ad">Key_LaunchB</enumerator>
+            <enumerator value="0x010000ae">Key_LaunchC</enumerator>
+            <enumerator value="0x010000af">Key_LaunchD</enumerator>
+            <enumerator value="0x010000b0">Key_LaunchE</enumerator>
+            <enumerator value="0x010000b1">Key_LaunchF</enumerator>
+            <enumerator value="0x010000b2">Key_MonBrightnessUp</enumerator>
+            <enumerator value="0x010000b3">Key_MonBrightnessDown</enumerator>
+            <enumerator value="0x010000b4">Key_KeyboardLightOnOff</enumerator>
+            <enumerator value="0x010000b5">Key_KeyboardBrightnessUp</enumerator>
+            <enumerator value="0x010000b6">Key_KeyboardBrightnessDown</enumerator>
+            <enumerator value="0x010000b7">Key_PowerOff</enumerator>
+            <enumerator value="0x010000b8">Key_WakeUp</enumerator>
+            <enumerator value="0x010000b9">Key_Eject</enumerator>
+            <enumerator value="0x010000ba">Key_ScreenSaver</enumerator>
+            <enumerator value="0x010000bb">Key_WWW</enumerator>
+            <enumerator value="0x010000bc">Key_Memo</enumerator>
+            <enumerator value="0x010000bd">Key_LightBulb</enumerator>
+            <enumerator value="0x010000be">Key_Shop</enumerator>
+            <enumerator value="0x010000bf">Key_History</enumerator>
+            <enumerator value="0x010000c0">Key_AddFavorite</enumerator>
+            <enumerator value="0x010000c1">Key_HotLinks</enumerator>
+            <enumerator value="0x010000c2">Key_BrightnessAdjust</enumerator>
+            <enumerator value="0x010000c3">Key_Finance</enumerator>
+            <enumerator value="0x010000c4">Key_Community</enumerator>
+            <enumerator value="0x010000c5">Key_AudioRewind</enumerator>
+            <enumerator value="0x010000c6">Key_BackForward</enumerator>
+            <enumerator value="0x010000c7">Key_ApplicationLeft</enumerator>
+            <enumerator value="0x010000c8">Key_ApplicationRight</enumerator>
+            <enumerator value="0x010000c9">Key_Book</enumerator>
+            <enumerator value="0x010000ca">Key_CD</enumerator>
+            <enumerator value="0x010000cb">Key_Calculator</enumerator>
+            <enumerator value="0x010000cc">Key_ToDoList</enumerator>
+            <enumerator value="0x010000cd">Key_ClearGrab</enumerator>
+            <enumerator value="0x010000ce">Key_Close</enumerator>
+            <enumerator value="0x010000cf">Key_Copy</enumerator>
+            <enumerator value="0x010000d0">Key_Cut</enumerator>
+            <enumerator value="0x010000d1">Key_Display</enumerator>
+            <enumerator value="0x010000d2">Key_DOS</enumerator>
+            <enumerator value="0x010000d3">Key_Documents</enumerator>
+            <enumerator value="0x010000d4">Key_Excel</enumerator>
+            <enumerator value="0x010000d5">Key_Explorer</enumerator>
+            <enumerator value="0x010000d6">Key_Game</enumerator>
+            <enumerator value="0x010000d7">Key_Go</enumerator>
+            <enumerator value="0x010000d8">Key_iTouch</enumerator>
+            <enumerator value="0x010000d9">Key_LogOff</enumerator>
+            <enumerator value="0x010000da">Key_Market</enumerator>
+            <enumerator value="0x010000db">Key_Meeting</enumerator>
+            <enumerator value="0x010000dc">Key_MenuKB</enumerator>
+            <enumerator value="0x010000dd">Key_MenuPB</enumerator>
+            <enumerator value="0x010000de">Key_MySites</enumerator>
+            <enumerator value="0x010000df">Key_News</enumerator>
+            <enumerator value="0x010000e0">Key_OfficeHome</enumerator>
+            <enumerator value="0x010000e1">Key_Option</enumerator>
+            <enumerator value="0x010000e2">Key_Paste</enumerator>
+            <enumerator value="0x010000e3">Key_Phone</enumerator>
+            <enumerator value="0x010000e4">Key_Calendar</enumerator>
+            <enumerator value="0x010000e5">Key_Reply</enumerator>
+            <enumerator value="0x010000e6">Key_Reload</enumerator>
+            <enumerator value="0x010000e7">Key_RotateWindows</enumerator>
+            <enumerator value="0x010000e8">Key_RotationPB</enumerator>
+            <enumerator value="0x010000e9">Key_RotationKB</enumerator>
+            <enumerator value="0x010000ea">Key_Save</enumerator>
+            <enumerator value="0x010000eb">Key_Send</enumerator>
+            <enumerator value="0x010000ec">Key_Spell</enumerator>
+            <enumerator value="0x010000ed">Key_SplitScreen</enumerator>
+            <enumerator value="0x010000ee">Key_Support</enumerator>
+            <enumerator value="0x010000ef">Key_TaskPane</enumerator>
+            <enumerator value="0x010000f0">Key_Terminal</enumerator>
+            <enumerator value="0x010000f1">Key_Tools</enumerator>
+            <enumerator value="0x010000f2">Key_Travel</enumerator>
+            <enumerator value="0x010000f3">Key_Video</enumerator>
+            <enumerator value="0x010000f4">Key_Word</enumerator>
+            <enumerator value="0x010000f5">Key_Xfer</enumerator>
+            <enumerator value="0x010000f6">Key_ZoomIn</enumerator>
+            <enumerator value="0x010000f7">Key_ZoomOut</enumerator>
+            <enumerator value="0x010000f8">Key_Away</enumerator>
+            <enumerator value="0x010000f9">Key_Messenger</enumerator>
+            <enumerator value="0x010000fa">Key_WebCam</enumerator>
+            <enumerator value="0x010000fb">Key_MailForward</enumerator>
+            <enumerator value="0x010000fc">Key_Pictures</enumerator>
+            <enumerator value="0x010000fd">Key_Music</enumerator>
+            <enumerator value="0x010000fe">Key_Battery</enumerator>
+            <enumerator value="0x010000ff">Key_Bluetooth</enumerator>
+            <enumerator value="0x01000100">Key_WLAN</enumerator>
+            <enumerator value="0x01000101">Key_UWB</enumerator>
+            <enumerator value="0x01000102">Key_AudioForward</enumerator>
+            <enumerator value="0x01000103">Key_AudioRepeat</enumerator>
+            <enumerator value="0x01000104">Key_AudioRandomPlay</enumerator>
+            <enumerator value="0x01000105">Key_Subtitle</enumerator>
+            <enumerator value="0x01000106">Key_AudioCycleTrack</enumerator>
+            <enumerator value="0x01000107">Key_Time</enumerator>
+            <enumerator value="0x01000108">Key_Hibernate</enumerator>
+            <enumerator value="0x01000109">Key_View</enumerator>
+            <enumerator value="0x0100010a">Key_TopMenu</enumerator>
+            <enumerator value="0x0100010b">Key_PowerDown</enumerator>
+            <enumerator value="0x0100010c">Key_Suspend</enumerator>
+            <enumerator value="0x0100010d">Key_ContrastAdjust</enumerator>
+            <enumerator value="0x0100010e">Key_LaunchG</enumerator>
+            <enumerator value="0x0100010f">Key_LaunchH</enumerator>
+            <enumerator value="0x0100ffff">Key_MediaLast</enumerator>
+            <enumerator value="0x01010000">Key_Select</enumerator>
+            <enumerator value="0x01010001">Key_Yes</enumerator>
+            <enumerator value="0x01010002">Key_No</enumerator>
+            <enumerator value="0x01020001">Key_Cancel</enumerator>
+            <enumerator value="0x01020002">Key_Printer</enumerator>
+            <enumerator value="0x01020003">Key_Execute</enumerator>
+            <enumerator value="0x01020004">Key_Sleep</enumerator>
+            <enumerator value="0x01020005">Key_Play</enumerator>
+            <enumerator value="0x01020006">Key_Zoom</enumerator>
+            <enumerator value="0x01100000">Key_Context1</enumerator>
+            <enumerator value="0x01100001">Key_Context2</enumerator>
+            <enumerator value="0x01100002">Key_Context3</enumerator>
+            <enumerator value="0x01100003">Key_Context4</enumerator>
+            <enumerator value="0x01100004">Key_Call</enumerator>
+            <enumerator value="0x01100005">Key_Hangup</enumerator>
+            <enumerator value="0x01100006">Key_Flip</enumerator>
+            <enumerator value="0x01100007">Key_ToggleCallHangup</enumerator>
+            <enumerator value="0x01100008">Key_VoiceDial</enumerator>
+            <enumerator value="0x01100009">Key_LastNumberRedial</enumerator>
+            <enumerator value="0x01100020">Key_Camera</enumerator>
+            <enumerator value="0x01100021">Key_CameraFocus</enumerator>
+            <enumerator value="0x01ffffff">Key_unknown</enumerator>
+        </enum>
+    </namespace>
+    <class name="QKeyEvent">
+        <function name="key">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments />
+            <return type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+
+        <constructor name="QKeyEvent">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments >
+                <argument argname="type" type="QEvent::Type" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument argname="key" type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument argname="modifiers" type="Qt::KeyboardModifiers" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="QString()" argname="text" type="QString" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="false" argname="autorep" type="bool" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="1" argname="count" type="ushort" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <function name="modifiers">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments />
+            <return type="Qt::KeyboardModifiers" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="text">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments />
+            <return type="QString" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+    </class>
+    <class name="QObject">
+        <inherits />
+    </class>
+    <class name="QWidget">
+        <inherits >
+            <class name="QObject"/>
+        </inherits>
+        <function name="paintEngine">
+            <accessPolicy value="public"/>
+            <modifiers/>
+            <arguments/>
+            <return type="QPaintEngine" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments/>
+            </return>
+        </function>	
+
+        <function name="keyPressEvent">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QKeyEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <constructor name="QWidget">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments >
+                <argument default="0" argname="parent" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" argname="f" type="Qt::WindowFlags" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <slot name="show">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+    </class>
+</code>

@@ -68,10 +68,9 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	if not is_constr then begin
 	  let is_protected = function `Public | `Private -> false | `Protected -> true in
 	  let classname = sprintf "%s%s" classname (if is_protected modif then "_twin" else "") in
-	  let self_cast = if isQObject 
-	    then sprintf "%s *_self = dynamic_cast<%s *>((QObject*)self);" classname  classname 
-	    else sprintf "%s *_self = (%s*)self;" classname  classname  in
-
+	  let self_cast = 
+	    sprintf "assert(Tag_val(self)==Abstract_tag);\n  %s *_self = ((%s*) Field(self,0));" 
+	      classname classname in
 	  ( self_cast :: arg_casts, "self" :: argnames)
 	end else
 	  (arg_casts, argnames)
@@ -120,18 +119,20 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	  List.tl_exn argnames
 	) else argnames in
 	List.map lst ~f:((^)"_") |> String.concat ~sep:", " in
-
+      let full_classname = match prefix with
+	| [] -> classname  
+	| lst -> String.concat ~sep:"::" lst ^ "::"^classname in
       if is_constr then (
-	let ns_prefix = match prefix with
-	  | [] -> ""
-	  | lst -> String.concat ~sep:"::" lst ^ "::" in
-	let full_classname = ns_prefix ^ classname in
 	fprintf h "  %s* ans = new %s(%s);\n" full_classname full_classname argsCall;
+	fprintf h "  printf (\"created new %s: %%x\\n\",ans);\n" full_classname;
 	fprintf h "  _ans = caml_alloc_small(1, Abstract_tag);\n";
 	fprintf h "  (*((%s **) &Field(_ans, 0))) = ans;\n" full_classname;
+	fprintf h "  printf (\"asbtract %s: %%x\\n\", _ans);\n" full_classname;
 	fprintf h "  CAMLreturn(_ans);\n"
       ) else begin
 	let methname = match res_n_name with Some (_,x) -> x | None -> assert false in
+	fprintf h "  printf(\"Calling method %s::%s of object %%x\\n\", _self);\n"
+	  full_classname methname;
 	if is_proc then (
 	  fprintf h "  _self -> %s(%s);\n" methname argsCall;
 	  fprintf h "  CAMLreturn(Val_unit);\n"
@@ -227,6 +228,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "#include <Qt/QtOpenGL>\n";
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
+      fprintf h "#define %s_val(v) ((%s *) Field(v,0))\n\n" classname classname;
       let isAbstract = self#is_abstr_class c in
       printf "class %s: is abstract? %b, is QObject: %b\n" c.c_name isAbstract isQObject;
       if isAbstract then
@@ -316,7 +318,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
-    
+    fprintf h "#define  %s_twin_val(v) ((%s_twin*) Field(v,0))\n\n" classname classname;
     fprintf h "class %s_twin : public %s {\nQ_OBJECT\npublic:\n" classname classname;
     fprintf h "  virtual ~%s_twin() {}\n" classname;
     let (pub_meths,prot_meths) = 

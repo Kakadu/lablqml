@@ -1,11 +1,5 @@
 /* $Id: qwrappers.h,v 1.5 1999/02/01 08:04:30 garrigue Exp $ */
 
-#define Val_QObject(obj) ((value)(obj))
-#define QObject_val(obj) ((QObject*)(obj))
-#define Val_new(obj) (Val_QObject(new obj))
-
-#define Val_QWidget(obj) ((value)(obj))
-#define QWidget_val(obj) ((QWidget*)(obj))
 
 #define Default_val(val,unwrap,default) \
 (val>0 ? unwrap(Field(val,0)) : default)
