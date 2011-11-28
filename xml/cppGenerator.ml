@@ -124,14 +124,14 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	| lst -> String.concat ~sep:"::" lst ^ "::"^classname in
       if is_constr then (
 	fprintf h "  %s* ans = new %s(%s);\n" full_classname full_classname argsCall;
-	fprintf h "  printf (\"created new %s: %%x\\n\",ans);\n" full_classname;
+	fprintf h "  printf (\"created new %s: %%p\\n\",ans);\n" full_classname;
 	fprintf h "  _ans = caml_alloc_small(1, Abstract_tag);\n";
 	fprintf h "  (*((%s **) &Field(_ans, 0))) = ans;\n" full_classname;
-	fprintf h "  printf (\"asbtract %s: %%x\\n\", _ans);\n" full_classname;
+	fprintf h "  printf (\"asbtract %s: %%ld\\n\", _ans);\n" full_classname;
 	fprintf h "  CAMLreturn(_ans);\n"
       ) else begin
 	let methname = match res_n_name with Some (_,x) -> x | None -> assert false in
-	fprintf h "  printf(\"Calling method %s::%s of object %%x\\n\", _self);\n"
+	fprintf h "  printf(\"Calling method %s::%s of object %%p\\n\", _self);\n"
 	  full_classname methname;
 	if is_proc then (
 	  fprintf h "  _self -> %s(%s);\n" methname argsCall;
@@ -295,8 +295,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let caml_argnames = self#gen_stub_arguments ~locals:["ans"] args h in (* they has type `value` *)
       let cpp_argnames = List.map caml_argnames ~f:(fun s -> "_"^s) in
       fprintf h "  %s *_ans = new %s(%s);\n" classname classname (String.concat ~sep:"," cpp_argnames);
-      fprintf h "  setAbstrClass(ans,%s,_ans);\n" classname;
-      fprintf h "  printf(\"created %s = %%x, asbtr = %%ld\\n\",_ans,ans);\n" classname;
+      fprintf h "  setAbstrClass<%s>(ans,_ans);\n" classname;
+      fprintf h "  printf(\"created %s = %%p, asbtr = %%ld\\n\",_ans,ans);\n" classname;
       fprintf h "  CAMLreturn(ans);\n}\n\n"			     
     );
     let (_,prot_meths) = 
@@ -364,7 +364,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
 		let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
 		let buf = Bigbuffer.create 50 in
 		let open Bigbuffer.Printf in
-		bprintf buf "  { setAbstrClass(%s,%s,%s);\n" arg_name arg.arg_type.t_name name;
+		bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n" 
+		  (if arg.arg_type.t_is_const then "const" else "") arg.arg_type.t_name arg_name name;
 		bprintf buf "    value *call_helper=caml_named_value(\"make_%s\");\n"
 		  (String.concat ~sep:"." cp);
 		bprintf buf "    assert(call_helper != 0);\n";
