@@ -6,13 +6,25 @@
 
 void QWidget_twin::call_super_keyPressEvent(QKeyEvent *ev) {
   foo(1);
-  QWidget::keyPressEvent(ev);
+  QSpinBox::keyPressEvent(ev);
 }
 void QWidget_twin::foo(int x) {
   if (x>0)
     foo(x-1);
   else 
     return;
+}
+void QWidget_twin::acceptDrops() {
+	CAMLparam0();
+	CAMLlocal3(camlobj,_ans,meth);
+	printf("Calling QSpinBox::acceptDrops of object = %p\n",this);
+	GET_CAML_OBJECT(this,the_caml_object)
+	camlobj = (value) the_caml_object;
+	meth = caml_get_public_method( camlobj, caml_hash_variant("acceptDrops"));
+	assert(meth!=0);
+	_ans = caml_callback(meth, camlobj);;
+	bool ans = Bool_val(_ans);;
+	CAMLreturnT(bool,ans);
 }
 void QWidget_twin::keyPressEvent(QKeyEvent *ev) {
     CAMLparam0();
@@ -39,7 +51,7 @@ value create_QWidget_twin(value arg0) {
   CAMLlocal1(ans);
   QWidget* _arg0 = (arg0==Val_none) ? NULL : QWidget_val(Some_val(arg0));
   QWidget_twin *_ans = new QWidget_twin(_arg0);
-  setAbstrClass(ans,QWidget,_ans);
+  setAbstrClass(ans,QSpinBox,_ans);
   printf("QWidget_twin created: %p, abstr = %p\n", _ans, (void*)ans);
   CAMLreturn(ans);
 }
