@@ -31,10 +31,10 @@ class cppGenerator ~graph ~includes dir index = object (self)
     let len = List.length argnames in
     if len > 5 then begin
       let l1,l2 = headl 5 argnames in
-      fprintf h "  CAMLlocal5(%s);\n" (String.concat ~sep:"," l1);
+      fprintf h "  ::CAMLlocal5(%s);\n" (String.concat ~sep:"," l1);
       self#declare_locals l2 h
     end else begin
-      fprintf h "  CAMLlocal%d(%s);\n" len (String.concat ~sep:"," argnames)
+      fprintf h "  ::CAMLlocal%d(%s);\n" len (String.concat ~sep:"," argnames)
     end
 
   method gen_stub ~prefix ~isQObject classname modif args ?res_n_name h =
@@ -341,19 +341,19 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "%s) {\n" argsstr;
       fprintf h "  CAMLparam0();\n";
       if not (is_void_type m.m_res) then 
-        fprintf h "  CAMLlocal3(camlobj,_ans,meth);\n"
+        fprintf h "  ::CAMLlocal3(camlobj,_ans,meth);\n"
       else
-	fprintf h "  CAMLlocal2(camlobj,meth);\n";
+	fprintf h "  ::CAMLlocal2(camlobj,meth);\n";
       fprintf h "  printf(\"Calling %s::%s of object = %%p\\n\",this);\n" classname m.m_name;
       fprintf h "  GET_CAML_OBJECT(this,the_caml_object)\n";
-      fprintf h "  camlobj = (value) the_caml_object;\n";
+      fprintf h "  camlobj = (::value) the_caml_object;\n";
       fprintf h "  meth = caml_get_public_method( camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
       fprintf h "  assert(meth!=0);\n";
 
       let call_closure_str = match argslen with 
 	| 0 -> "caml_callback(meth, camlobj);"
 	| _ -> begin
-          fprintf h "  value *args = new value[%d];\n" (argslen+1);
+          fprintf h "  ::value *args = new ::value[%d];\n" (argslen+1);
 	  fprintf h "  args[0] = camlobj;\n";
 	  let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
 	    let arg_name = sprintf "args[%d]" (i+1) in
@@ -366,7 +366,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 		let open Bigbuffer.Printf in
 		bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n" 
 		  (if arg.arg_type.t_is_const then "const" else "") arg.arg_type.t_name arg_name name;
-		bprintf buf "    value *call_helper=caml_named_value(\"make_%s\");\n"
+		bprintf buf "    ::value *call_helper=caml_named_value(\"make_%s\");\n"
 		  (String.concat ~sep:"." cp);
 		bprintf buf "    assert(call_helper != 0);\n";
 		bprintf buf "    %s=caml_callback(*call_helper,%s); }\n" arg_name arg_name;

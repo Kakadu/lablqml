@@ -221,8 +221,8 @@ class virtual abstractGenerator graph _index = object (self)
 		Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
 	      | _ -> raise (Common.Bug (sprintf "unexpected primitive: %s" t.t_name))
 	    )
-	  | ObjectPattern ->        Success (sprintf "%s = (value)(%s);" ansVarName arg)
-	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((value)(%s));" ansVarName arg)
+	  | ObjectPattern ->        Success (sprintf "%s = (::value)(%s);" ansVarName arg)
+	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((::value)(%s));" ansVarName arg)
 	  | EnumPattern (e,k) -> 
 	    let func_name = enum_conv_func_names k |> snd in
 	    Success (sprintf "%s = %s(%s);" ansVarName func_name arg)
