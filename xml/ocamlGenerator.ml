@@ -215,7 +215,7 @@ class ocamlGenerator graph dir index = object (self)
 	fprintf h "  method %s %s = " meth_name (String.concat ~sep:" " args1);
 	let need_magic = isQObject && (meth.m_access = `Protected) in
 	if need_magic then begin
-	  fprintf h " match Qtstubs.get_class_name me with\n    | Some \"%s\" -> " classname
+	  fprintf h " match Qtstubs.get_class_name me with\n    | Some \"%s_twin\" -> " classname
 	end;
 	fprintf h " %s_%s' self#handler %s\n" 
 	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
@@ -361,13 +361,12 @@ class ocamlGenerator graph dir index = object (self)
 	fprintf h_classes " method handler : [`qobject] obj = me \n\n"
       end else begin
 	let _constr = List.hd_exn c.c_constrs in
-(*	let lst1,lst2 = self#gen_constr_data  ~classname ~index constr in *)
 	fprintf h_classes " %s me = object(self)\n" ocaml_classname;
 	fprintf h_classes " method handler : [`qobject] obj = me\n";
-	fprintf h_classes " initializer Qtstubs.set_caml_object me self\n"
-(*	fprintf h_classes " method get_handler = handler\n\n"; 
-	fprintf h_classes " initializer handler <- %s self %s\n\n" 
-	  (sprintf "create_%s_0'" classname) lst2	*)
+	if isQObject then
+	  fprintf h_classes 
+	    " initializer print_endline \"initializing %s\"; Qtstubs.set_caml_object me self\n"
+	    ocaml_classname
       end;
 
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
@@ -380,6 +379,7 @@ class ocamlGenerator graph dir index = object (self)
       MethSet.iter c.c_meths ~f:(fun m -> 
 	match m.m_modif with
 	  | `Abstract -> ()
+	  | _ when (not isQObject) && (m.m_access=`Protected) -> ()
 	  | _ when is_good_meth ~classname ~index m ->	    
 	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
 	    self#gen_meth       ~isQObject ~is_abstract:false ~classname h_classes m 

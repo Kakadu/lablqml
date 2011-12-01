@@ -157,7 +157,7 @@ class virtual abstractGenerator graph _index = object (self)
 
   method isQObject key =
     let qObjectKey = NameKey.key_of_fullname "QObject" in
-    if qObjectKey = key then false else
+    if qObjectKey = key then true else
     if not (G.mem_vertex graph qObjectKey) then false
     else pathChecker qObjectKey key
 

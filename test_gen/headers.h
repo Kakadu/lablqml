@@ -1,4 +1,5 @@
-#pragma once
+#ifndef HEADERS_H
+#define HEADERS_H
 #include <QtCore/QObject>
 #include <assert.h>
 #include "ml_headers.h"
@@ -18,5 +19,9 @@ do{res=caml_alloc_small(1,Abstract_tag);\
 (*((clas **) &Field(res, 0)))=val;}while(false)
 */
 template <typename T>
-extern void setAbstrClass(value &res, T *newval);
+void setAbstrClass(value &res, T *newval) {
+  res = caml_alloc_small(1,Abstract_tag);
+  (*((T**) &Field(res,0))) = newval;
+}
+#endif
 
