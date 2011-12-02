@@ -29,7 +29,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method declare_locals argnames h = 
     let len = List.length argnames in
-    if len > 5 then begin
+    if len = 0 then ()
+    else if len > 5 then begin
       let l1,l2 = headl 5 argnames in
       fprintf h "  ::CAMLlocal5(%s);\n" (String.concat ~sep:"," l1);
       self#declare_locals l2 h
@@ -348,9 +349,9 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "%s) {\n" argsstr;
       fprintf h "  CAMLparam0();\n";
       if not (is_void_type m.m_res) then 
-        fprintf h "  ::CAMLlocal3(camlobj,_ans,meth);\n"
+	self#declare_locals ["camlobj";"_ans";"meth"] h
       else
-	fprintf h "  ::CAMLlocal2(camlobj,meth);\n";
+	self#declare_locals ["camlobj";"meth"] h;
       fprintf h "  printf(\"Calling %s::%s of object = %%p\\n\",this);\n" classname m.m_name;
       fprintf h "  GET_CAML_OBJECT(this,the_caml_object)\n";
       fprintf h "  camlobj = (::value) the_caml_object;\n";
@@ -426,8 +427,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       self#fromCamlCast self#index {arg with arg_type=unreference t} name
     ) in
     let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
-    if locals <> [] then
-      fprintf h "  CAMLlocal%d(%s);\n" (List.length locals) (String.concat ~sep:"," locals);
+    self#declare_locals locals h;
     List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
     argnames
   
