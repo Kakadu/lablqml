@@ -355,7 +355,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let call_closure_str = match argslen with 
 	| 0 -> "caml_callback(meth, camlobj);"
 	| _ -> begin
-          fprintf h "  ::value *args = new ::value[%d];\n" (argslen+1);
+	  (* TODO: use CAMLlocalN macros *)
+          fprintf h "  ::value *args = new ::value[%d]; // TODO: use CAMLlocalN macros\n" (argslen+1);
 	  fprintf h "  args[0] = camlobj;\n";
 	  let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
 	    let arg_name = sprintf "args[%d]" (i+1) in
