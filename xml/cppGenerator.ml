@@ -39,6 +39,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method gen_stub ~prefix ~isQObject classname modif args ?res_n_name h =
     try
+      let classname = if isQObject then classname^"_twin" else classname in
       let is_constr = Option.is_none res_n_name in
       let get_name is_byte = self#get_name ~classname modif args ?res_n_name is_byte in 
       let native_func_name = get_name false in
@@ -66,7 +67,6 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	) in
 	 
 	if not is_constr then begin
-	  let classname = sprintf "%s%s" classname (if isQObject then "_twin" else "") in
 	  let self_cast = 
 	    sprintf "assert(Tag_val(self)==Abstract_tag);\n  %s *_self = ((%s*) Field(self,0));" 
 	      classname classname in
@@ -74,7 +74,6 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	end else
 	  (arg_casts, argnames)
       in
-      fprintf h "//argnames = %s\n" (List.to_string (fun x->x) argnames);
       assert (List.length argnames = (List.length arg_casts));
       let res_type = match res_n_name with
 	  | None -> ptrtype_of_classname classname
@@ -101,16 +100,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
       );
       let is_proc = res_type=void_type in
       if not is_proc then
-	fprintf h "  CAMLlocal1(_ans);\n";
-(*      if not is_constr then
-	fprintf h "  CAMLlocal1(_self);\n"; *)
+	self#declare_locals ["_ans"] h;
 	
-(*      let () = 
-	let locals = List.map argnames ~f:(fun x -> "_"^x) in
-	let locals = if is_proc then locals else "_ans"::locals in
-	self#declare_locals locals h
-      in *)
-
       List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
       let argsCall = 
 	let lst = if not is_constr then (
@@ -120,13 +111,13 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	List.map lst ~f:((^)"_") |> String.concat ~sep:", " in
       let full_classname = match prefix with
 	| [] -> classname  
-	| lst -> String.concat ~sep:"::" lst ^ "::"^classname in
+	| lst -> sprintf "%s::%s" (String.concat ~sep:"::" lst) classname in
       if is_constr then (
 	fprintf h "  %s* ans = new %s(%s);\n" full_classname full_classname argsCall;
 	fprintf h "  printf (\"created new %s: %%p\\n\",ans);\n" full_classname;
 	fprintf h "  _ans = caml_alloc_small(1, Abstract_tag);\n";
 	fprintf h "  (*((%s **) &Field(_ans, 0))) = ans;\n" full_classname;
-	fprintf h "  printf (\"asbtract %s: %%ld\\n\", _ans);\n" full_classname;
+	fprintf h "  printf (\"abstract %s: %%ld\\n\", _ans);\n" full_classname;
 	fprintf h "  CAMLreturn(_ans);\n"
       ) else begin
 	let methname = match res_n_name with Some (_,x) -> x | None -> assert false in
@@ -166,7 +157,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       end
       else fprintf h "\n"
     with
-      | BreakSilent -> (printf "break silent\n")
+      | BreakSilent -> ()
       | BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
 
   method makefile dir ~twins lst = 
@@ -194,13 +185,12 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method private prefix = dir ^/ "cpp"
   
-  method is_abstr_class c = begin
+  method is_abstr_class c =
     let ans = ref false in
     let f m = match m.m_modif with `Abstract -> ans:=true | _ -> () in
     MethSet.iter c.c_meths ~f;
     MethSet.iter c.c_slots ~f;
     !ans
-  end
  
   method gen_class ~prefix ~dir c =
     let key = NameKey.make_key ~name:c.c_name ~prefix in
@@ -212,8 +202,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
       None
     end else begin
       let classname = c.c_name in
-      let subdir = (String.concat ~sep:"/" (List.rev prefix)) in
-      let dir =  dir ^/ subdir in
+      let subdir = String.concat ~sep:"/" (List.rev prefix) in
+      let dir = dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
       let isQObject = self#isQObject key in
       let (stubs_filename, twin_cppname, twin_hname) = 
@@ -222,10 +212,18 @@ class cppGenerator ~graph ~includes dir index = object (self)
         (* I'll find some problems with adding include files for every class. 
 	   Maybe fix makefile to cut directory from cpp and add it to includes of gcc
 	*)
+      (*  What each files will contain?
+	  stubs_filename = stubs for calling public method of a class 
+	                   (this class can be subclass or QObject or not)
+	  twin_hname     = header file for twin-class (class should be a descedant of QObject)
+	  twin_cppname   = source file for implementation twin-class's methods and for stubs for
+	                   calling this methods
+      *)
       in
       let h = open_out stubs_filename in
       fprintf h "#include <Qt/QtOpenGL>\n";
-      fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
+      fprintf h "#include \"headers.h\"\n";
+      fprintf h "extern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
       fprintf h "#define %s_val(v) ((%s *) Field(v,0))\n\n" classname classname;
       let isAbstract = self#is_abstr_class c in
@@ -235,15 +233,18 @@ class cppGenerator ~graph ~includes dir index = object (self)
       else begin
 	let f args =
 	  let m = meth_of_constr ~classname args in
-          if (is_good_meth ~index ~classname m) && (m.m_access = `Public) then 
-	    self#gen_stub ~prefix ~isQObject classname m.m_access args ?res_n_name:None h
+	  (* in stubs file we generate stubs for calling native (not twin) implementation of methods.
+	     So we can suppose that all classes aren't descedants of QObject *)
+          if (m.m_access = `Public) && (is_good_meth ~index ~classname m) then 
+	    self#gen_stub ~prefix ~isQObject:false classname m.m_access args ?res_n_name:None h
 	in
+	(* we don't publish protected constructors --- in OCaml we will not override them *)
 	List.iter ~f c.c_constrs 
       end;
       
       let f m = 
-	(* when class is QObject we should generate stubs for protected meths,
-	   no QObject --- no stubs
+	(* when class is descedant QObject we should generate stubs for protected meths,
+	   no QObject --- no stubs for proteced methods
 	*)
 	fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
 	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
