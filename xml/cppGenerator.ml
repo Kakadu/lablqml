@@ -64,7 +64,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       in
       let argslen = List.length args + (if is_constr then 0 else 1) in
       if argslen > 10 then raise BreakSilent;
-(*      fprintf h "// argslen = %d\n" argslen; *)
+
       let (arg_casts,argnames) =
 	let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
 	let arg_casts = List.map2_exn argnames args ~f:(fun name arg -> 
@@ -87,11 +87,12 @@ class cppGenerator ~graph ~includes dir index = object (self)
       in
       assert (List.length argnames = (List.length arg_casts));
       let res_type = match res_n_name with
-	  | None -> ptrtype_of_classname classname
-	  | Some (res,_) -> res
+	| None -> ptrtype_of_classname classname
+	| Some (res,_) -> res
       in
+      let is_proc = res_type=void_type in
       let () = 
-	if res_type <> void_type then
+	if not is_proc then
 	  let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
 	  match self#fromCamlCast self#index res_arg "resname" with
 	    | Success _ -> ()
@@ -103,7 +104,6 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h ") {\n";
 
       self#declare_params h argnames;
-      let is_proc = res_type=void_type in
       if not is_proc then
 	self#declare_locals ["_ans"] h;
 	
@@ -152,6 +152,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       end;
       fprintf h "}\n";
       if argslen > 5 then begin
+	(* additional stub for  bytecode function when args count > 5 *)
 	let stub_name = get_name true in
 	fprintf h "value %s(value *argv, int) {\n" stub_name;
         fprintf h "  return %s(\n    %s);\n" (get_name false)
@@ -285,6 +286,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     | `Protected -> sprintf "prot_%s" cpp_methname
 
   method gen_twin_source ~prefix ~isQObject c h = 
+    assert (isQObject);
     let classname  = c.c_name in
     fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
@@ -293,7 +295,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h "#include \"%s_twin.h\"\n" classname;
     fprintf h "extern \"C\" {\n";
 
-    List.iter c.c_constrs ~f:(fun args ->
+    List.iter c.c_constrs ~f:(fun args -> (* TODO: maybe use gen_stubs value? *)
       let classname = c.c_name ^ "_twin" in
       let native_func_name = self#get_name ~classname `Public args ?res_n_name:None false in
       fprintf h "value %s" native_func_name;
@@ -313,7 +315,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     MethSet.iter new_meths ~f:(fun m ->
       printf "generating a meth %s\n" (string_of_meth m);
       let f name =
-	self#gen_stub ~prefix ~isQObject classname m.m_access
+	self#gen_stub ~prefix ~isQObject:true classname m.m_access
 	  m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
       f m.m_name;
       f ("call_super_"^m.m_name)
@@ -499,6 +501,6 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf enums_h "extern \"C\" %s %s(value);\n" fullname fname1;
       fprintf enums_h "extern \"C\" value %s(%s);\n\n" fname2 fullname
     );
-    close_out enums_h;
+    close_out enums_h
 
 end
