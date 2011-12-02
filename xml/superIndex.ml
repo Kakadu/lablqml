@@ -130,21 +130,19 @@ module G = struct
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
 
-let overrides : MethSet.elt -> MethSet.elt -> bool = fun a b ->
+let overrides subclass_of a b =
   let len = List.length in
   let open With_return in
   With_return.with_return (fun r ->
     if (a.m_name <> b.m_name) then r.return false;
     if len a.m_args <> len b.m_args then r.return false;
-    List.iter2_exn  a.m_args b.m_args ~f:(fun a b ->
-      if compare_cpptype a.arg_type b.arg_type <> 0
-      then r.return false
+    List.iter2_exn  a.m_args b.m_args ~f:(fun {arg_type=a;_} {arg_type=b;_} ->
+      if (compare_cpptype a b = 0) then r.return true
+      else if (subclass_of a.t_name ~base:b.t_name) && (a.t_indirections=b.t_indirections) then r.return true
+      else r.return false
     );
     true
   )
-(*  let wrap x = if (x<>0) then raise Ans 
-      (MethSet.compare_items a b = 0) *)
-let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides a b 
 
 let names_print_helper s ~set = 
   printf "%s: %s\n\n" s
@@ -155,9 +153,8 @@ let names_print_helper s ~set =
    Выдрать какие норм. методы реализуют абстрактные, норм методы, которые ничего не оверрайдят
    и не реализованные абстрактные методы.
  *)
-let super_filter_meths ~base ~cur = 
-(*  names_print_helper "base         " ~set:base;
-  names_print_helper "cur    " ~set:cur;  *)
+let super_filter_meths subclass_of ~base ~cur =
+  let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides subclass_of a b in
 
   let base_not_impl = ref MethSet.empty in
   let cur_impl = ref MethSet.empty in
@@ -267,7 +264,18 @@ let build_superindex root_ns =
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
   close_out h;
-
+  let checker =
+    let module M = Graph.Path.Check(G) in
+    let checker = M.create g in
+    M.check_path checker
+  in
+  let subclass_of a ~base:b =
+    let ak = NameKey.key_of_fullname a
+    and bk = NameKey.key_of_fullname b in
+    let ans = checker bk ak in
+    Printf.printf "path : %s where base=%s = %b\n" a b ans;
+    ans
+  in
   let module Top = Graph.Topological.Make(G) in
   (* so we have classes topologically sorted. Base classes are before *)
 
@@ -350,20 +358,21 @@ let build_superindex root_ns =
 
 	(* base abstracts meths can be overrided in any way *)
 (*	print_endline "Fixing base abstr meths"; *)
+	let filter_meths = super_filter_meths subclass_of in
 	let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) = 
-	  super_filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
+	  filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
 (*	printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
 	  (MS.length meths_abstr_not_impl) (MS.length meths_abstr_implemented) (MS.length meths_last);
 	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
 *)
 	let (meths_normal_inherited, meths_overriden, meths_last) = 
-	  super_filter_meths ~base:base_normal_meths ~cur:meths_last in
+	  filter_meths ~base:base_normal_meths ~cur:meths_last in
 
 	let (slots_abstr_inherited, slots_implemented, meths_last) =
-	  super_filter_meths ~base:base_abstr_slots ~cur:meths_last in
+	  filter_meths ~base:base_abstr_slots ~cur:meths_last in
 
 	let (slots_inherited, slots_overriden, meths_last) = 
-	  super_filter_meths ~base:base_normal_slots ~cur:meths_last in
+	  filter_meths ~base:base_normal_slots ~cur:meths_last in
 
 	let meths_last = fix_names meths_last in	
 	let my_slots = fix_names c.c_slots in
