@@ -37,6 +37,16 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  ::CAMLlocal%d(%s);\n" len (String.concat ~sep:"," argnames)
     end
 
+  method declare_params h names =
+    let len = List.length names in
+    assert (len <= 10);
+    if len>5 then (
+      let l1,l2 = headl 5 names in
+      fprintf h "  CAMLparam5(%s);\n"           (String.concat ~sep:"," l1);
+      fprintf h "  CAMLxparam%d(%s);\n" (len-5) (String.concat ~sep:"," l2)
+    ) else
+      fprintf h "  CAMLparam%d(%s);\n" len (String.concat ~sep:"," names)
+
   method gen_stub ~prefix ~isQObject classname modif args ?res_n_name h =
     try
       let classname = if isQObject then classname^"_twin" else classname in
@@ -91,13 +101,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       List.map argnames ~f:(fun x -> "value "^x) |> String.concat ~sep:"," |> fprintf h "%s";
       fprintf h ") {\n";
 
-      if argslen>5 then (
-	let l1,l2 = headl 5 argnames in
-	fprintf h "  CAMLparam5(%s);\n"               (l1 |> String.concat ~sep:",");
-	fprintf h "  CAMLxparam%d(%s);\n" (argslen-5) (l2 |> String.concat ~sep:",")
-      ) else (
-	fprintf h "  CAMLparam%d(%s);\n" argslen (argnames |> String.concat ~sep:",")
-      );
+      self#declare_params h argnames;
       let is_proc = res_type=void_type in
       if not is_proc then
 	self#declare_locals ["_ans"] h;
@@ -412,20 +416,12 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	(String.concat ~sep:"," argnames)
     );
     fprintf h "};\n\n";
-
     ()
 
   method gen_stub_arguments ?locals:(locals=[]) args h =
     let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
-    let argslen = List.length args in
     fprintf h "(%s) {\n" (String.concat ~sep:"," (List.map argnames ~f:(fun s -> "value "^s)));
-    if argslen>5 then (
-      let l1,l2 = headl 5 argnames in
-      fprintf h "  CAMLparam5(%s);\n" (l1 |> String.concat ~sep:",");
-      fprintf h "  CAMLxparam%d(%s);\n" (argslen-5) (l2 |> String.concat ~sep:",")
-    ) else (
-      fprintf h "  CAMLparam%d(%s);\n" argslen (argnames |> String.concat ~sep:",")
-    );
+    self#declare_params h argnames;
     let arg_casts = List.map2_exn argnames args ~f:(fun name ({arg_type=t;arg_default=default;_} as arg) ->
       self#fromCamlCast self#index {arg with arg_type=unreference t} name
     ) in
