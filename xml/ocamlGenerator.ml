@@ -212,24 +212,30 @@ class ocamlGenerator graph dir index = object (self)
 	    | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
 	) in
 	let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
-	fprintf h "  method %s %s = " meth_name (String.concat ~sep:" " args1);
-	let need_magic = isQObject && (meth.m_access = `Protected) in
-	if need_magic then begin
-	  fprintf h " match Qtstubs.get_class_name me with\n    | Some \"%s_twin\" -> " classname
-	end;
-	fprintf h " %s_%s' self#handler %s\n" 
-	  (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
+	fprintf h "  method %s %s =\n" meth_name (String.concat ~sep:" " args1);
 	(match pattern index (simple_arg res) with
 	  | ObjectPattern -> 
 	    let res_classname = ocaml_class_name res.t_name in
-	    fprintf h "|> (function Some o -> Some ( match Qtstubs.get_caml_object o with\n";
-	    fprintf h "                            | Some x -> (x:>%s)\n" res_classname;
-	    fprintf h "                            | None -> new %s o)\n" res_classname;
-	    fprintf h "   | None -> None)\n"
-
-	  | _ -> ());	
-	if need_magic then
-	  fprintf h "    | Some _ | None -> failwith \"Calling protected method of non-twin type\"\n"
+	    fprintf h "    let postconvert x = x |> (function\n";
+	    fprintf h "    | Some o -> Some(match Qtstubs.get_caml_object o with\n";
+	    fprintf h "                     | Some x -> (x:>%s)\n" res_classname;
+	    fprintf h "                     | None -> new %s o)\n" res_classname;
+	    fprintf h "    | None -> None) in\n"
+	  | _ ->
+	    fprintf h "    let postconvert x = x in\n"
+	);
+	if isQObject then begin
+	  fprintf h "    (match Qtstubs.get_class_name me with\n";
+	  fprintf h "     | Some \"%s_twin\" -> %s_call_super_%s' self#handler %s\n" classname
+	    (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
+	  fprintf h "     | Some \"%s\" -> %s_%s' self#handler %s\n" classname
+	    (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
+	  fprintf h "     | _ -> print_endline \"Some bug in logic\"; assert false )\n";
+	  fprintf h "    |> postconvert\n"
+	end else begin
+	  fprintf h "    %s_%s' self#handler %s |> postconvert\n"
+	    (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
+	end
       end;
       fprintf h "\n";
 
@@ -381,7 +387,10 @@ class ocamlGenerator graph dir index = object (self)
 	  | `Abstract -> ()
 	  | _ when (not isQObject) && (m.m_access=`Protected) -> ()
 	  | _ when is_good_meth ~classname ~index m ->	    
-	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
+	    let stub m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
+	    stub m;
+	    if isQObject then
+	      stub {m with m_out_name="call_super_"^m.m_out_name};
 	    self#gen_meth       ~isQObject ~is_abstract:false ~classname h_classes m 
 	  | _ -> ()
       ); 

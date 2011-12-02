@@ -66,8 +66,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	) in
 	 
 	if not is_constr then begin
-	  let is_protected = function `Public | `Private -> false | `Protected -> true in
-	  let classname = sprintf "%s%s" classname (if is_protected modif then "_twin" else "") in
+	  let classname = sprintf "%s%s" classname (if isQObject then "_twin" else "") in
 	  let self_cast = 
 	    sprintf "assert(Tag_val(self)==Abstract_tag);\n  %s *_self = ((%s*) Field(self,0));" 
 	      classname classname in
@@ -299,17 +298,19 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  printf(\"created %s = %%p, asbtr = %%ld\\n\",_ans,ans);\n" classname;
       fprintf h "  CAMLreturn(ans);\n}\n\n"			     
     );
-    let (_,prot_meths) = 
-      MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
-	| `Public -> (MethSet.add a m,b)
-	| `Private -> (a,b)
-	| `Protected -> (a,MethSet.add b m) ) in
-    (* Also we have to generate caller stubs for protected meths of twin object *)
-    MethSet.iter prot_meths ~f:(fun m -> 
-      printf "generating a protected meth %s\n" (string_of_meth m);
-(*      if m.m_declared = classname then *)
-	self#gen_stub ~prefix ~isQObject (sprintf "%s" classname) m.m_access
-	  m.m_args ?res_n_name:(Some (m.m_res, (m.m_name) )) h
+    let new_meths =
+      MethSet.fold c.c_meths ~init:MethSet.empty ~f:(fun m a -> match m.m_access with
+	| `Public -> MethSet.add a m
+	| `Private -> a
+	| `Protected -> MethSet.add a {m with m_access=`Public} ) in
+    (* Also we have to generate caller stubs for meths of twin object *)
+    MethSet.iter new_meths ~f:(fun m ->
+      printf "generating a meth %s\n" (string_of_meth m);
+      let f name =
+	self#gen_stub ~prefix ~isQObject classname m.m_access
+	  m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
+      f m.m_name;
+      f ("call_super_"^m.m_name)
     );
     fprintf h "\n}\n";
     ()
@@ -332,7 +333,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
     let new_meths = MethSet.union pub_meths(MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
       fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
-      fprintf h "%s %s(" (string_of_type m.m_res) (self#twin_methname m.m_name m.m_access);
+      let twin_methname = self#twin_methname m.m_name m.m_access in
+      fprintf h "%s %s(" (string_of_type m.m_res) twin_methname;
 
       let argslen = List.length m.m_args in
       let argnames = List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i) in
@@ -378,7 +380,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
           sprintf "caml_callbackN(meth, %d, args);" (argslen+1)
 	end
       in
-      if is_void_type m.m_res then begin
+      let isProcedure = is_void_type m.m_res in
+      if isProcedure then begin
 	fprintf h "  %s;\n" call_closure_str;
 	fprintf h "  CAMLreturn0;\n"
 
@@ -390,7 +393,10 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	fprintf h "  %s;\n" cast;
 	fprintf h "  CAMLreturnT(%s,ans);\n" (string_of_type res.arg_type);
       end;
-      fprintf h "}\n\n"      
+      fprintf h "}\n";
+      fprintf h "%s call_super_%s(%s) {\n" (string_of_type m.m_res) twin_methname argsstr;
+      fprintf h "  %s %s::%s(%s);\n}\n" (if isProcedure then "" else "return")
+	classname twin_methname (String.concat ~sep:"," argnames);
     );
     (* Now generate constructors*)
     List.iter c.c_constrs ~f:(fun lst ->
