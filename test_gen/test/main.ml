@@ -7,6 +7,8 @@ open Creators
 let app = QApplication.create [| "1";"2";"3";"4";"5";"6" |];; 
  (* HACK to avoid bug with optimization levels *)
 (*
+let _ = create_QObject_0' None;;
+
 print_endline "creating normal QWidget";;
 let w = create_QWidget_0' None `Window;;
 print_endline "normal QWidget created";;
@@ -23,8 +25,10 @@ end;;
 let w = create_QWidget_twin_0' None `Window 
 let () = 
   print_endline "QWidget_twin created";
-  (new mywidget w)#slot_show#call;
+  let o = new mywidget w in
+  o#setWindowTitle "Press some key and look to console";
+  o#slot_show#call;
   print_endline "Bingo!"
-;;
+;; 
 let _ = QApplication.exec app
 
