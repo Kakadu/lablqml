@@ -68,24 +68,24 @@ let to_channel t ch =
       List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n"  (print_enum ~key e));
       fprintf ch "  Constructors\n";
       List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n" 
-	(meth_of_constr ~classname:c.c_name lst |> string_of_meth )
+        (meth_of_constr ~classname:c.c_name lst |> string_of_meth )
       );
       fprintf ch "  Normal meths\n";
       MethSet.iter c.c_meths ~f:(fun m ->
-	fprintf ch "    %s %s %s with out_name = %s, declared in %s\n" 
-	  (of_access m.m_access) (of_modif m.m_modif)
-	  (string_of_meth m) m.m_out_name m.m_declared
+        fprintf ch "    %s %s %s with out_name = %s, declared in %s\n" 
+          (of_access m.m_access) (of_modif m.m_modif)
+          (string_of_meth m) m.m_out_name m.m_declared
       );
       fprintf ch "  slots\n";
       MethSet.iter c.c_slots ~f:(fun slt ->
-	fprintf ch "    %s %s %s declared in %s\n" 
-	  (of_access slt.m_access) (of_modif slt.m_modif)
-	    (string_of_meth slt) c.c_name
+        fprintf ch "    %s %s %s declared in %s\n" 
+          (of_access slt.m_access) (of_modif slt.m_modif)
+            (string_of_meth slt) c.c_name
       );
       fprintf ch "  signals:\n";
       List.iter c.c_sigs ~f:(fun (name,args) ->
-	fprintf ch "    (void) %s(%s)\n" name
-	  (List.map args ~f:(fun x -> string_of_type x.arg_type) |> String.concat ~sep:",")
+        fprintf ch "    (void) %s(%s)\n" name
+          (List.map args ~f:(fun x -> string_of_type x.arg_type) |> String.concat ~sep:",")
       );
       fprintf ch "************************************************** \n"
     end
@@ -114,10 +114,10 @@ module G = struct
     let ans = ref index in
     let rec helper node =       
       if mem_vertex g node then (
-	let lst = succ g node in
-	remove_vertex g root;
-	Ref.replace ans (fun map -> SuperIndex.remove map node);
-	List.iter lst ~f:helper
+        let lst = succ g node in
+        remove_vertex g root;
+        Ref.replace ans (fun map -> SuperIndex.remove map node);
+        List.iter lst ~f:helper
       )
     in
     helper root;
@@ -147,7 +147,7 @@ let overrides subclass_of a b =
 let names_print_helper s ~set = 
   printf "%s: %s\n\n" s
     (MethSet.elements set
-	|> List.to_string (fun m -> m.m_out_name) ) 
+        |> List.to_string (fun m -> m.m_out_name) ) 
 
 (* Даны абстрактные методы в классе и нормальные методы.
    Выдрать какие норм. методы реализуют абстрактные, норм методы, которые ничего не оверрайдят
@@ -169,22 +169,22 @@ let super_filter_meths subclass_of ~base ~cur =
       let (a,b) = MethSet.partition ~f:(fun m -> cur_el <=< m) base in
       assert (MethSet.length a <= 1);
       if MethSet.is_empty a then begin
-	(* метод cur_el не реализует ни одного абстрактного *)
-	Ref.replace cur_new (fun set -> MethSet.add set cur_el)
+        (* метод cur_el не реализует ни одного абстрактного *)
+        Ref.replace cur_new (fun set -> MethSet.add set cur_el)
       end else begin
-	(* нашли абстрактный метод, реализованный в cur_el *)
-	let el = MethSet.min_elt_exn a  in
-	Ref.replace cur_impl (fun set -> MethSet.add set { cur_el with m_out_name = el.m_out_name })
+        (* нашли абстрактный метод, реализованный в cur_el *)
+        let el = MethSet.min_elt_exn a  in
+        Ref.replace cur_impl (fun set -> MethSet.add set { cur_el with m_out_name = el.m_out_name })
       end;
       loop b (MethSet.remove cur cur_el)
     end
   in
   loop base cur;
   assert (let len = MethSet.length !cur_impl in
-	  let x = MethSet.length !base_not_impl and y = MethSet.length !cur_new in
-(*	  printf "(x,y,len) = (%d,%d,%d)\n" x y len;
-	  printf "(base_len, cur_len) = (%d, %d)\n" (MethSet.length base) (MethSet.length cur); *)
-	  (x+len = MethSet.length base) && (y+len = MethSet.length cur)); 
+          let x = MethSet.length !base_not_impl and y = MethSet.length !cur_new in
+(*        printf "(x,y,len) = (%d,%d,%d)\n" x y len;
+          printf "(base_len, cur_len) = (%d, %d)\n" (MethSet.length base) (MethSet.length cur); *)
+          (x+len = MethSet.length base) && (y+len = MethSet.length cur)); 
   (* ФИШКА: нельзя будет менять генерируемые имена у cur_impl, иначе не будет согласоваться 
      наследование с базовым (абстрактным) классом *)
   (!base_not_impl,!cur_impl,!cur_new)
@@ -253,9 +253,9 @@ let build_graph root_ns =
   Ref.replace index 
     (fun index -> G.remove_subtrees g ~index ~cond:(
       function 
-	| (name::_,_) -> 
-	  List.fold_left ~init:false ~f:(fun acc prefix -> acc or (startswith ~prefix name)) prefixes
-	| _ -> assert false)
+        | (name::_,_) -> 
+          List.fold_left ~init:false ~f:(fun acc prefix -> acc or (startswith ~prefix name)) prefixes
+        | _ -> assert false)
     );
   (index,g)
 
@@ -289,128 +289,128 @@ let build_superindex root_ns =
     let key = G.V.label v in
     match SuperIndex.find !index key with
       | None -> 
-	evaluated := Evaluated.add !evaluated key;
-	printf "base class of %s is not in index. skipped\n" (snd key) 
+        evaluated := Evaluated.add !evaluated key;
+        printf "base class of %s is not in index. skipped\n" (snd key) 
       | Some (Enum _) -> print_endline "In graph exists enum. nonsense"
       | Some (Class (c,_)) -> begin
-	let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
-	assert (List.for_all base_keys ~f:(Evaluated.mem !evaluated));
-	evaluated := Evaluated.add !evaluated key;
-	printf "\nEvaluating class %s\n" c.c_name;
-(*	names_print_helper "Normal meths" c.c_meths_normal;
-	printf "Base classes are: %s\n" (List.to_string snd base_keys);
-	names_print_helper "Abstract meths" c.c_meths_abstr; *)
+        let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
+        assert (List.for_all base_keys ~f:(Evaluated.mem !evaluated));
+        evaluated := Evaluated.add !evaluated key;
+        printf "\nEvaluating class %s\n" c.c_name;
+(*      names_print_helper "Normal meths" c.c_meths_normal;
+        printf "Base classes are: %s\n" (List.to_string snd base_keys);
+        names_print_helper "Abstract meths" c.c_meths_abstr; *)
 
-	let bases_data = List.filter_map base_keys ~f:(fun key -> match SuperIndex.find !index key with
-	  | Some (Class (y,set) ) -> 	    Some y
-	  | None -> 
-	    printf "WARNING! Base class %s of %s is not in index. Suppose that it is not abstract\n" 
-	      (snd key) c.c_name;
-	    None
-	  | Some (Enum _) -> print_endline "nonsense"; assert false
-	) in
+        let bases_data = List.filter_map base_keys ~f:(fun key -> match SuperIndex.find !index key with
+          | Some (Class (y,set) ) ->        Some y
+          | None -> 
+            printf "WARNING! Base class %s of %s is not in index. Suppose that it is not abstract\n" 
+              (snd key) c.c_name;
+            None
+          | Some (Enum _) -> print_endline "nonsense"; assert false
+        ) in
 
-	let module S = String.Set in
-	let cache = ref S.empty in
-	let put_cache s = cache := S.add !cache s in
-	let rec make_name s = if S.mem !cache s then make_name (s^"_") else s in
+        let module S = String.Set in
+        let cache = ref S.empty in
+        let put_cache s = cache := S.add !cache s in
+        let rec make_name s = if S.mem !cache s then make_name (s^"_") else s in
 
-	let fix_names set = MethSet.map set ~f:(fun m ->
-	  if S.mem !cache m.m_out_name then begin
-	    let new_name = make_name m.m_out_name in
-	    put_cache new_name;
-	    {m with m_out_name=new_name}
-	  end else begin 
-	    put_cache m.m_out_name;
-	    m
-	  end
-	) in
+        let fix_names set = MethSet.map set ~f:(fun m ->
+          if S.mem !cache m.m_out_name then begin
+            let new_name = make_name m.m_out_name in
+            put_cache new_name;
+            {m with m_out_name=new_name}
+          end else begin 
+            put_cache m.m_out_name;
+            m
+          end
+        ) in
 
-	let add2name_set set = 
-	  let f m =
-	    if S.mem !cache m.m_out_name then begin
-	      printf "Current method:\n%s\n" (string_of_meth m);
-	      printf "declared in %s\n" m.m_declared;
-	      printf "Cache is: %s\n" (S.elements !cache |> String.concat ~sep:","); 
-	      print_endline m.m_out_name;
-	      Core.Exn.backtrace () |> print_endline;
-	      assert false
-	    end;
-	    put_cache m.m_out_name
-	  in
-	  MethSet.iter set ~f
-	in
+        let add2name_set set = 
+          let f m =
+            if S.mem !cache m.m_out_name then begin
+              printf "Current method:\n%s\n" (string_of_meth m);
+              printf "declared in %s\n" m.m_declared;
+              printf "Cache is: %s\n" (S.elements !cache |> String.concat ~sep:","); 
+              print_endline m.m_out_name;
+              Core.Exn.backtrace () |> print_endline;
+              assert false
+            end;
+            put_cache m.m_out_name
+          in
+          MethSet.iter set ~f
+        in
 
-	let module MS = MethSet in
-	let base_meths = List.map bases_data ~f:(fun c -> c.c_meths) |> MethSet.union_list in
-	let base_slots = List.map bases_data ~f:(fun c -> c.c_slots) |> MethSet.union_list in
-	add2name_set base_meths;
-	add2name_set base_slots;
+        let module MS = MethSet in
+        let base_meths = List.map bases_data ~f:(fun c -> c.c_meths) |> MethSet.union_list in
+        let base_slots = List.map bases_data ~f:(fun c -> c.c_slots) |> MethSet.union_list in
+        add2name_set base_meths;
+        add2name_set base_slots;
 
-	let f = fun el (a,b) ->
-	  match el.m_modif with
-	    | `Abstract -> (MS.add a el,b)
-	    | `Static -> (a,b)
-	    | `Normal -> (a,MS.add b el) in
+        let f = fun el (a,b) ->
+          match el.m_modif with
+            | `Abstract -> (MS.add a el,b)
+            | `Static -> (a,b)
+            | `Normal -> (a,MS.add b el) in
 
-	let base_abstr_meths,base_normal_meths = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_meths in
-	let base_abstr_slots,base_normal_slots = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_slots in
+        let base_abstr_meths,base_normal_meths = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_meths in
+        let base_abstr_slots,base_normal_slots = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_slots in
 
-	(* base abstracts meths can be overrided in any way *)
-(*	print_endline "Fixing base abstr meths"; *)
-	let filter_meths = super_filter_meths subclass_of in
-	let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) = 
-	  filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
-(*	printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
-	  (MS.length meths_abstr_not_impl) (MS.length meths_abstr_implemented) (MS.length meths_last);
-	printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
+        (* base abstracts meths can be overrided in any way *)
+(*      print_endline "Fixing base abstr meths"; *)
+        let filter_meths = super_filter_meths subclass_of in
+        let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) = 
+          filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
+(*      printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
+          (MS.length meths_abstr_not_impl) (MS.length meths_abstr_implemented) (MS.length meths_last);
+        printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
 *)
-	let (meths_normal_inherited, meths_overriden, meths_last) = 
-	  filter_meths ~base:base_normal_meths ~cur:meths_last in
+        let (meths_normal_inherited, meths_overriden, meths_last) = 
+          filter_meths ~base:base_normal_meths ~cur:meths_last in
 
-	let (slots_abstr_inherited, slots_implemented, meths_last) =
-	  filter_meths ~base:base_abstr_slots ~cur:meths_last in
+        let (slots_abstr_inherited, slots_implemented, meths_last) =
+          filter_meths ~base:base_abstr_slots ~cur:meths_last in
 
-	let (slots_inherited, slots_overriden, meths_last) = 
-	  filter_meths ~base:base_normal_slots ~cur:meths_last in
+        let (slots_inherited, slots_overriden, meths_last) = 
+          filter_meths ~base:base_normal_slots ~cur:meths_last in
 
-	let meths_last = fix_names meths_last in	
-	let my_slots = fix_names c.c_slots in
+        let meths_last = fix_names meths_last in        
+        let my_slots = fix_names c.c_slots in
 
-	let ans_slots = MS.union_list 
-	  [slots_abstr_inherited; slots_implemented; 
-	   slots_inherited; slots_overriden;
-	   my_slots] in
+        let ans_slots = MS.union_list 
+          [slots_abstr_inherited; slots_implemented; 
+           slots_inherited; slots_overriden;
+           my_slots] in
 
-	let ans_meths = MS.union_list 
-	  [meths_abstr_not_impl; meths_abstr_implemented; 
-	   meths_normal_inherited; meths_overriden;
-	   meths_last] in
+        let ans_meths = MS.union_list 
+          [meths_abstr_not_impl; meths_abstr_implemented; 
+           meths_normal_inherited; meths_overriden;
+           meths_last] in
 
-	let ans_signals = List.map bases_data ~f:(fun c -> c.c_sigs)
-	  |> List.concat |>  ((@) c.c_sigs) |> List.dedup in
+        let ans_signals = List.map bases_data ~f:(fun c -> c.c_sigs)
+          |> List.concat |>  ((@) c.c_sigs) |> List.dedup in
 
-	List.iter c.c_enums ~f:(fun ({e_name;_} as e) ->
-	  let new_key = NameKey.key_of_fullname (snd key ^"::" ^ e_name) in
-	  if SuperIndex.mem !index new_key then assert false;
-	  if not (skip_enum new_key e) then
-	    Ref.replace index (SuperIndex.add ~key:new_key ~data:(Enum e))
-	);
-	let ans_class = {
-	  c_inherits = c.c_inherits;
-	  c_props = c.c_props;
-	  c_sigs = ans_signals;
-	  c_slots = ans_slots;
-	  c_meths = ans_meths;
-	  c_enums = [];
-	  c_constrs = c.c_constrs;
-	  c_name = c.c_name
-	}
-	in
+        List.iter c.c_enums ~f:(fun ({e_name;_} as e) ->
+          let new_key = NameKey.key_of_fullname (snd key ^"::" ^ e_name) in
+          if SuperIndex.mem !index new_key then assert false;
+          if not (skip_enum new_key e) then
+            Ref.replace index (SuperIndex.add ~key:new_key ~data:(Enum e))
+        );
+        let ans_class = {
+          c_inherits = c.c_inherits;
+          c_props = c.c_props;
+          c_sigs = ans_signals;
+          c_slots = ans_slots;
+          c_meths = ans_meths;
+          c_enums = [];
+          c_constrs = c.c_constrs;
+          c_name = c.c_name
+        }
+        in
 
-	let data = Class (ans_class, MS.empty) in
-	index := SuperIndex.add !index ~key ~data;
-	Q.enqueue !ans_queue key
+        let data = Class (ans_class, MS.empty) in
+        index := SuperIndex.add !index ~key ~data;
+        Q.enqueue !ans_queue key
       end
   );
   SuperIndex.iter !index ~f:(fun ~key ~data -> match data with

@@ -34,20 +34,20 @@ class ocamlGenerator graph dir index = object (self)
     | InvalidPattern -> CastError (sprintf "Cant cast: %s" (string_of_type t) )
     | PrimitivePattern ->
       (match t.t_name with
-	| "int" -> Success "int"
-	| "double" -> CastError "double value!"
-	| "bool" -> Success "bool"
-	| "QString" -> Success "string"
-	| "void" -> Success "unit"
-	| "char" when t.t_indirections=1 -> Success "string"
-	| _ -> assert false)
+        | "int" -> Success "int"
+        | "double" -> CastError "double value!"
+        | "bool" -> Success "bool"
+        | "QString" -> Success "string"
+        | "void" -> Success "unit"
+        | "char" when t.t_indirections=1 -> Success "string"
+        | _ -> assert false)
     | ObjectPattern ->
       Success (
-	sprintf "%s" (if low_level then "[> `qobject] obj" else ocaml_class_name t.t_name)
+        sprintf "%s" (if low_level then "[> `qobject] obj" else ocaml_class_name t.t_name)
       )
     | ObjectDefaultPattern -> 
       Success (
-	sprintf "%s option" (if low_level then "[> `qobject] obj" else ocaml_class_name t.t_name)
+        sprintf "%s option" (if low_level then "[> `qobject] obj" else ocaml_class_name t.t_name)
       )
     | EnumPattern ({e_items;_},key) ->
       let s = String.concat ~sep:" | " (List.map e_items (fun x -> "`"^x)) in
@@ -61,21 +61,18 @@ class ocamlGenerator graph dir index = object (self)
       let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in 
 
       let cpp_func_name classname = 
-	let native_name = cpp_stub_name ~classname ?res_n_name:None ~is_byte:false `Public argslist in
-	if List.length argslist > 5 then
-	  sprintf "%s\" \"%s" (cpp_stub_name ~classname ?res_n_name:None ~is_byte:true `Public argslist)
-	    native_name
-	else
-	  native_name
+        let native_name = cpp_stub_name ~classname ?res_n_name:None ~is_byte:false `Public argslist in
+        if List.length argslist > 5 then
+          sprintf "%s\" \"%s" (cpp_stub_name ~classname ?res_n_name:None ~is_byte:true `Public argslist)
+            native_name
+        else
+          native_name
       in
       let cpp_twin_func_name = cpp_func_name (classname^"_twin") in
       let cpp_func_name  = cpp_func_name classname in
 
       let types = List.map argslist ~f:(fun arg -> 
-(*	let patt = pattern index arg in
-	printf "ocaml====pattern of %s is %s\n" (arg |> sexp_of_func_arg |> Sexplib.Sexp.to_string_hum) 
-	  (patt |> sexp_of_pattern |> Sexplib.Sexp.to_string); 	*)
-	self#toOcamlType ~low_level:true arg
+        self#toOcamlType ~low_level:true arg
       ) in
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
       let no_args = (List.length types = 0) in
@@ -84,9 +81,9 @@ class ocamlGenerator graph dir index = object (self)
       let ocaml_twin_func_name =  sprintf "create_%s_twin_%d" classname i in
       
       let print_stub caml_name stub_name =
-	fprintf h "external %s' : %s -> [>`qobject] obj = \"%s\"\n" caml_name
-	  (if no_args then "unit" else ( String.concat ~sep:"->" types) )
-	  stub_name
+        fprintf h "external %s' : %s -> [>`qobject] obj = \"%s\"\n" caml_name
+          (if no_args then "unit" else ( String.concat ~sep:"->" types) )
+          stub_name
       in
       print_stub ocaml_func_name cpp_func_name;
       print_stub ocaml_twin_func_name cpp_twin_func_name;
@@ -95,29 +92,29 @@ class ocamlGenerator graph dir index = object (self)
       let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
 
       let args2 = List.map3_exn types argslist argnames ~f:(fun _ arg name ->
-	match pattern index arg with
-	  | InvalidPattern -> assert false
-	  | EnumPattern _
-	  | PrimitivePattern -> name
-	  | ObjectPattern    -> sprintf " (%s#handler) " name
-	  | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" cpp_func_name name name
+        match pattern index arg with
+          | InvalidPattern -> assert false
+          | EnumPattern _
+          | PrimitivePattern -> name
+          | ObjectPattern    -> sprintf " (%s#handler) " name
+          | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" cpp_func_name name name
       ) in
       let args1 = List.map3_exn types argslist argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
-	match pattern index arg with
-	  | InvalidPattern -> assert false
-	  | EnumPattern _
-	  | PrimitivePattern -> sprintf "(%s: %s)" name ttt
-	  | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
-	  | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
+        match pattern index arg with
+          | InvalidPattern -> assert false
+          | EnumPattern _
+          | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+          | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
+          | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
       ) in
       let print_main_creator ocaml_func_name =
-	let s1 = sprintf "let %s %s = " ocaml_func_name 
-	  (if no_args then "()" else String.concat ~sep:" " args1) in
-	fprintf h "%s" s1;
-	if String.length s1 > 60 then fprintf h "\n    ";
-	
-	fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
-	  (sprintf "\n    |> new %s" (ocaml_class_name classname))
+        let s1 = sprintf "let %s %s = " ocaml_func_name
+          (if no_args then "()" else String.concat ~sep:" " args1) in
+        fprintf h "%s" s1;
+        if String.length s1 > 60 then fprintf h "\n    ";
+
+        fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
+          (sprintf "\n    |> new %s" (ocaml_class_name classname))
       in
       print_main_creator ocaml_func_name;
       print_main_creator ocaml_twin_func_name;      
@@ -131,17 +128,17 @@ class ocamlGenerator graph dir index = object (self)
       let ocaml_classname = ocaml_class_name classname in
 
       let cpp_func_name = 
-	(* Some hack. If this meth has < 5 parameters that string format is similiar to [a-z]+ 
-	   But if it needs to functions  for stubs format is [a-z]+" "[a-z]+
-	*)
-	let classname = meth.m_declared in
-	let res_n_name = (meth.m_res,meth.m_name) in
-	let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte meth.m_access meth.m_args in
-	let native_name = helper false in
-	if List.length meth.m_args > 4 then
-	  sprintf "%s\" \"%s" (helper true) native_name
-	else
-	  native_name
+        (* Some hack. If this meth has < 5 parameters that string format is similiar to [a-z]+ 
+           But if it needs to functions  for stubs format is [a-z]+" "[a-z]+
+        *)
+        let classname = meth.m_declared in
+        let res_n_name = (meth.m_res,meth.m_name) in
+        let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte meth.m_access meth.m_args in
+        let native_name = helper false in
+        if List.length meth.m_args > 4 then
+          sprintf "%s\" \"%s" (helper true) native_name
+        else
+          native_name
       in
 
       let types = List.map meth.m_args ~f:(fun arg -> self#toOcamlType ~low_level:true arg ) in
@@ -149,13 +146,13 @@ class ocamlGenerator graph dir index = object (self)
 
       let res_arg = simple_arg meth.m_res in
       let res_t = (match pattern index res_arg with
-	| ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:true res_arg
-	| ObjectDefaultPattern -> assert false
-	| _ -> self#toOcamlType ~low_level:true res_arg)
+        | ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:true res_arg
+        | ObjectDefaultPattern -> assert false
+        | _ -> self#toOcamlType ~low_level:true res_arg)
       |> (function Success s -> s | _ -> raise BreakSilent) in
 
       fprintf h "external %s_%s': 'a->%s\n\t\t= \"%s\"\n" ocaml_classname meth.m_out_name 
-	(String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
+        (String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
   (* generates member code*)
   method gen_meth ?new_name ~isQObject ~is_abstract ~classname h meth = 
@@ -164,83 +161,83 @@ class ocamlGenerator graph dir index = object (self)
       let () = match meth.m_access with `Private -> raise BreakSilent | _ -> () in
 
       if List.length args + 1 > 10 then 
-	break2file (sprintf "skipped meth %s: too many arguments\n" (string_of_meth meth) ); 
+        break2file (sprintf "skipped meth %s: too many arguments\n" (string_of_meth meth) ); 
 
       fprintf h "  (* method %s *)\n" (string_of_meth meth);
       let res_type = 
-	let res_arg = simple_arg res in
-	(match pattern index res_arg with
-	  | ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:false res_arg 
-	  | ObjectDefaultPattern -> assert false
-	  | _ -> self#toOcamlType ~low_level:false res_arg)
+        let res_arg = simple_arg res in
+        (match pattern index res_arg with
+          | ObjectPattern -> self#toOcamlType ~forcePattern:ObjectDefaultPattern ~low_level:false res_arg 
+          | ObjectDefaultPattern -> assert false
+          | _ -> self#toOcamlType ~low_level:false res_arg)
         |> (function
-	    | Success s -> s
-	    | _ -> break2file "cant cast result type" )
+            | Success s -> s
+            | _ -> break2file "cant cast result type" )
       in
       let types = List.map args ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
       let argnames = List.mapi args ~f:(fun i _ -> "x"^(string_of_int i)) in
 
       let types = List.map types ~f:(function
-	| Success s -> s
-	| CastValueType s -> breaks ("Casting value-type: " ^ s) 
-	| CastError s -> breaks s
-	| CastTemplate str -> breaks ("Casting template: "^ str)
+        | Success s -> s
+        | CastValueType s -> breaks ("Casting value-type: " ^ s) 
+        | CastError s -> breaks s
+        | CastTemplate str -> breaks ("Casting template: "^ str)
       ) 
       in
-	
+        
       if is_abstract then begin
-	fprintf h "  method virtual %s : %s" meth.m_out_name (String.concat ~sep:"->" types );
-	if List.length types <> 0 then fprintf h " -> ";
-	match pattern index (simple_arg res) with
-	  | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
-	  | _ -> fprintf h "%s" res_type
+        fprintf h "  method virtual %s : %s" meth.m_out_name (String.concat ~sep:"->" types );
+        if List.length types <> 0 then fprintf h " -> ";
+        match pattern index (simple_arg res) with
+          | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
+          | _ -> fprintf h "%s" res_type
       end else begin
-	let args2 = List.map3_exn types args argnames ~f:(fun _ arg name ->
-	  match pattern index arg with
-	    | InvalidPattern -> assert false
-	    | EnumPattern _
-	    | PrimitivePattern  -> name
-	    | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
-	    | ObjectPattern -> sprintf "(%s#handler)" name
-	) in
-	let args1 = List.map3_exn types args argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
-	  match pattern index arg with
-	    | InvalidPattern -> assert false
-	    | EnumPattern _
-	    | PrimitivePattern -> sprintf "(%s: %s)" name ttt
-	    | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
-	    | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
-	) in
-	let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
-	fprintf h "  method %s %s =\n" meth_name (String.concat ~sep:" " args1);
-	(match pattern index (simple_arg res) with
-	  | ObjectPattern -> 
-	    let res_classname = ocaml_class_name res.t_name in
-	    fprintf h "    let postconvert x = x |> (function\n";
-	    fprintf h "    | Some o -> Some(match Qtstubs.get_caml_object o with\n";
-	    fprintf h "                     | Some x -> (x:>%s)\n" res_classname;
-	    fprintf h "                     | None -> new %s o)\n" res_classname;
-	    fprintf h "    | None -> None) in\n"
-	  | _ ->
-	    fprintf h "    let postconvert x = x in\n"
-	);
-	if isQObject then begin
-	  fprintf h "    (match Qtstubs.get_class_name me with\n";
-	  fprintf h "     | Some \"%s_twin\" -> %s_call_super_%s' self#handler %s\n" classname
-	    (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
-	  fprintf h "     | Some \"%s\" -> %s_%s' self#handler %s\n" classname
-	    (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
-	  fprintf h "     | _ -> print_endline \"Some bug in logic\"; assert false )\n";
-	  fprintf h "    |> postconvert\n"
-	end else begin
-	  fprintf h "    %s_%s' self#handler %s |> postconvert\n"
-	    (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
-	end
+        let args2 = List.map3_exn types args argnames ~f:(fun _ arg name ->
+          match pattern index arg with
+            | InvalidPattern -> assert false
+            | EnumPattern _
+            | PrimitivePattern  -> name
+            | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
+            | ObjectPattern -> sprintf "(%s#handler)" name
+        ) in
+        let args1 = List.map3_exn types args argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
+          match pattern index arg with
+            | InvalidPattern -> assert false
+            | EnumPattern _
+            | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+            | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
+            | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
+        ) in
+        let meth_name = match new_name with None -> meth.m_out_name | Some x -> x in
+        fprintf h "  method %s %s =\n" meth_name (String.concat ~sep:" " args1);
+        (match pattern index (simple_arg res) with
+          | ObjectPattern -> 
+            let res_classname = ocaml_class_name res.t_name in
+            fprintf h "    let postconvert x = x |> (function\n";
+            fprintf h "    | Some o -> Some(match Qtstubs.get_caml_object o with\n";
+            fprintf h "                     | Some x -> (x:>%s)\n" res_classname;
+            fprintf h "                     | None -> new %s o)\n" res_classname;
+            fprintf h "    | None -> None) in\n"
+          | _ ->
+            fprintf h "    let postconvert x = x in\n"
+        );
+        if isQObject then begin
+          fprintf h "    (match Qtstubs.get_class_name me with\n";
+          fprintf h "     | Some \"%s_twin\" -> %s_call_super_%s' self#handler %s\n" classname
+            (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
+          fprintf h "     | Some \"%s\" -> %s_%s' self#handler %s\n" classname
+            (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
+          fprintf h "     | _ -> print_endline \"Some bug in logic\"; assert false )\n";
+          fprintf h "    |> postconvert\n"
+        end else begin
+          fprintf h "    %s_%s' self#handler %s |> postconvert\n"
+            (ocaml_class_name meth.m_declared) meth.m_out_name (String.concat ~sep:" " args2);
+        end
       end;
       fprintf h "\n";
 
     with BreakS str -> ( fprintf h "(* %s *)\n" str;
-			 print_endline str )
+                         print_endline str )
       | BreakSilent -> ()
       | Break2File s -> ( fprintf h "(* %s *)\n" s; print_endline s)
 
@@ -253,16 +250,16 @@ class ocamlGenerator graph dir index = object (self)
       let types = List.map args ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
       let res_t = match self#toOcamlType ~low_level:false res with
-	| Success s -> s | _ -> raise BreakSilent in
+        | Success s -> s | _ -> raise BreakSilent in
       let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
       fprintf h "  method slot_%s = object (_ : (< %s .. >, %s ) #ssslot)\n"
-	slot.m_out_name 
-	(List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ")
-	(String.concat ~sep:" -> " (types @ [res_t]));
+        slot.m_out_name 
+        (List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ")
+        (String.concat ~sep:" -> " (types @ [res_t]));
       let wrap_type t = { { t with t_is_const=false } with t_is_ref=false } in
       fprintf h "    method name = \"%s(%s)\"\n" name 
-	(slot.m_args |> List.map ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) 
-	    |> String.concat ~sep:",");
+        (slot.m_args |> List.map ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) 
+            |> String.concat ~sep:",");
       self#gen_meth ~isQObject:false ~new_name:"call" ~is_abstract:false ~classname h slot;
       fprintf h "  end\n"
     with BreakSilent -> ()
@@ -274,10 +271,10 @@ class ocamlGenerator graph dir index = object (self)
       let types = List.map types ~f:(function Success s -> s | _ -> raise BreakSilent) in
       let argnames = List.mapi args ~f:(fun i _ -> "arg" ^ (string_of_int i)) in
       fprintf h "  method signal_%s = object (self : <%s ..> #sssignal)\n"
-	name (List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ");
+        name (List.map2_exn argnames types ~f:(fun name t -> name^":"^t^";") |> String.concat ~sep:" ");
       let wrap_type t = {{ t with t_is_ref=false } with t_is_const = false } in
       fprintf h "    method name = \"%s(%s)\"\n" name
-	(List.map args ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) |> String.concat ~sep:",");
+        (List.map args ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) |> String.concat ~sep:",");
       fprintf h "  end\n";
     with BreakSilent -> ()
       | BreakS s -> ()
@@ -296,16 +293,16 @@ class ocamlGenerator graph dir index = object (self)
     let classes = ref [] in
     Q.iter queue ~f:(fun key ->
       match SuperIndex.find_exn index key with
-	| Enum  e -> ()
-	| Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c;	  
-	  Ref.replace classes (fun c -> key::c)
+        | Enum  e -> ()
+        | Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c;
+          Ref.replace classes (fun c -> key::c)
     );
     print_endline "end of classes generation";
     fprintf h1 " aa = object end\n\n\n\n\n";
 
     List.iter !classes ~f:(fun (lst,_) ->
       fprintf h1 "let () = Callback.register \"make_%s\" (new %s)\n"
-	(String.concat ~sep:"." lst) (ocaml_class_name (List.hd_exn lst))
+        (String.concat ~sep:"." lst) (ocaml_class_name (List.hd_exn lst))
     );
 
     close_out h3;
@@ -334,7 +331,7 @@ class ocamlGenerator graph dir index = object (self)
         match pattern index arg with
           | InvalidPattern -> assert false
           | EnumPattern _
-	      (* We do low_level casts here because  we call low_level creator when class's initializer *)
+              (* We do low_level casts here because  we call low_level creator when class's initializer *)
           | PrimitivePattern -> name
           | ObjectPattern    -> sprintf " (%s#handler) " name
           | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" "don't know" name name
@@ -355,44 +352,44 @@ class ocamlGenerator graph dir index = object (self)
       let isQObject = self#isQObject key in
       fprintf h_stubs "\n(* ********** class %s *********** *)\n" classname;
       if is_abstract then
-	fprintf h_constrs "(* class %s has pure virtual members - no constructors *)\n" classname
+        fprintf h_constrs "(* class %s has pure virtual members - no constructors *)\n" classname
       else (
-	List.iteri c.c_constrs ~f:(fun i c ->
-	  self#gen_constr ~classname ~i h_constrs c	  
-	)
+        List.iteri c.c_constrs ~f:(fun i c ->
+          self#gen_constr ~classname ~i h_constrs c
+        )
       );
       
       if is_abstract then begin
-	fprintf h_classes "  %s me = object(self)\n" ocaml_classname;
-	fprintf h_classes " method handler : [`qobject] obj = me \n\n"
+        fprintf h_classes "  %s me = object(self)\n" ocaml_classname;
+        fprintf h_classes " method handler : [`qobject] obj = me \n\n"
       end else begin
-	let _constr = List.hd_exn c.c_constrs in
-	fprintf h_classes " %s me = object(self)\n" ocaml_classname;
-	fprintf h_classes " method handler : [`qobject] obj = me\n";
-	if isQObject then
-	  fprintf h_classes 
-	    " initializer print_endline \"initializing %s\"; Qtstubs.set_caml_object me self\n"
-	    ocaml_classname
+        let _constr = List.hd_exn c.c_constrs in
+        fprintf h_classes " %s me = object(self)\n" ocaml_classname;
+        fprintf h_classes " method handler : [`qobject] obj = me\n";
+        if isQObject then
+          fprintf h_classes 
+            " initializer print_endline \"initializing %s\"; Qtstubs.set_caml_object me self\n"
+            ocaml_classname
       end;
 
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
       MethSet.iter c.c_slots ~f:(fun slot ->
-	if (is_good_meth ~classname ~index slot) && (slot.m_access = `Public) then begin
-	  self#gen_slot ~classname h_classes slot;
-	  self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs slot
-	end
+        if (is_good_meth ~classname ~index slot) && (slot.m_access = `Public) then begin
+          self#gen_slot ~classname h_classes slot;
+          self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs slot
+        end
       );
-      MethSet.iter c.c_meths ~f:(fun m -> 
-	match m.m_modif with
-	  | `Abstract -> ()
-	  | _ when (not isQObject) && (m.m_access=`Protected) -> ()
-	  | _ when is_good_meth ~classname ~index m ->	    
-	    let stub m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
-	    stub m;
-	    if isQObject then
-	      stub {m with m_out_name="call_super_"^m.m_out_name};
-	    self#gen_meth       ~isQObject ~is_abstract:false ~classname h_classes m 
-	  | _ -> ()
+      MethSet.iter c.c_meths ~f:(fun m ->
+        match m.m_modif with
+          | `Abstract -> ()
+          | _ when (not isQObject) && (m.m_access=`Protected) -> ()
+          | _ when is_good_meth ~classname ~index m ->
+            let stub m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
+            stub m;
+            if isQObject then
+              stub {m with m_out_name="call_super_"^m.m_out_name};
+            self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
+          | _ -> ()
       ); 
 
       fprintf h_classes "end\nand ";

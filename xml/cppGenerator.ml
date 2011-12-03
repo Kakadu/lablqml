@@ -55,48 +55,48 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let get_name is_byte = self#get_name ~classname modif args ?res_n_name is_byte in 
       let native_func_name = get_name false in
       let () = 
-	let args_str = args |> List.map ~f:string_of_arg |> String.concat ~sep:"," in
-	match res_n_name with
-	| Some (res_type,name) -> 
-	  fprintf h "// method %s %s(%s)\n" (string_of_type res_type) name args_str
-	| None ->
-	  fprintf h "// constructor %s(%s)\n" classname args_str
+        let args_str = args |> List.map ~f:string_of_arg |> String.concat ~sep:"," in
+        match res_n_name with
+        | Some (res_type,name) -> 
+          fprintf h "// method %s %s(%s)\n" (string_of_type res_type) name args_str
+        | None ->
+          fprintf h "// constructor %s(%s)\n" classname args_str
       in
       let argslen = List.length args + (if is_constr then 0 else 1) in
       if argslen > 10 then raise BreakSilent;
 
       let (arg_casts,argnames) =
-	let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
-	let arg_casts = List.map2_exn argnames args ~f:(fun name arg -> 
-	  self#fromCamlCast (self#index) {arg with arg_type=unreference arg.arg_type} name
-	) in
-	let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
-	  | Success s  -> s
-	  | CastError _ | CastValueType _
-	  | CastTemplate _  -> printf "arg_cast failed: %s" (string_of_arg arg);
-	    raise BreakSilent
-	) in
-	 
-	if not is_constr then begin
-	  let self_cast = 
-	    sprintf "assert(Tag_val(self)==Abstract_tag);\n  %s *_self = ((%s*) Field(self,0));" 
-	      classname classname in
-	  ( self_cast :: arg_casts, "self" :: argnames)
-	end else
-	  (arg_casts, argnames)
+        let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
+        let arg_casts = List.map2_exn argnames args ~f:(fun name arg ->
+          self#fromCamlCast (self#index) {arg with arg_type=unreference arg.arg_type} name
+        ) in
+        let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
+          | Success s  -> s
+          | CastError _ | CastValueType _
+          | CastTemplate _  -> printf "arg_cast failed: %s" (string_of_arg arg);
+            raise BreakSilent
+        ) in
+
+        if not is_constr then begin
+          let self_cast =
+            sprintf "assert(Tag_val(self)==Abstract_tag);\n  %s *_self = ((%s*) Field(self,0));"
+              classname classname in
+          ( self_cast :: arg_casts, "self" :: argnames)
+        end else
+          (arg_casts, argnames)
       in
       assert (List.length argnames = (List.length arg_casts));
       let res_type = match res_n_name with
-	| None -> ptrtype_of_classname classname
-	| Some (res,_) -> res
+        | None -> ptrtype_of_classname classname
+        | Some (res,_) -> res
       in
       let is_proc = res_type=void_type in
       let () = 
-	if not is_proc then
-	  let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
-	  match self#fromCamlCast self#index res_arg "resname" with
-	    | Success _ -> ()
-	    | _ -> print_endline "failed resCast"; raise BreakSilent
+        if not is_proc then
+          let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
+          match self#fromCamlCast self#index res_arg "resname" with
+            | Success _ -> ()
+            | _ -> print_endline "failed resCast"; raise BreakSilent
       in
 
       fprintf h "value %s(" native_func_name;
@@ -105,61 +105,61 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
       self#declare_params h argnames;
       if not is_proc then
-	self#declare_locals ["_ans"] h;
-	
+        self#declare_locals ["_ans"] h;
+
       List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
       let argsCall = 
-	let lst = if not is_constr then (
-	  assert (List.length argnames >0);
-	  List.tl_exn argnames
-	) else argnames in
-	List.map lst ~f:((^)"_") |> String.concat ~sep:", " in
+        let lst = if not is_constr then (
+          assert (List.length argnames >0);
+          List.tl_exn argnames
+        ) else argnames in
+        List.map lst ~f:((^)"_") |> String.concat ~sep:", " in
       let full_classname = match prefix with
-	| [] -> classname  
-	| lst -> sprintf "%s::%s" (String.concat ~sep:"::" lst) classname in
+        | [] -> classname
+        | lst -> sprintf "%s::%s" (String.concat ~sep:"::" lst) classname in
       if is_constr then (
-	fprintf h "  %s* ans = new %s(%s);\n" full_classname full_classname argsCall;
-	fprintf h "  printf (\"created new %s: %%p\\n\",ans);\n" full_classname;
-	fprintf h "  _ans = caml_alloc_small(1, Abstract_tag);\n";
-	fprintf h "  (*((%s **) &Field(_ans, 0))) = ans;\n" full_classname;
-	fprintf h "  printf (\"abstract %s: %%ld\\n\", _ans);\n" full_classname;
-	fprintf h "  CAMLreturn(_ans);\n"
+        fprintf h "  %s* ans = new %s(%s);\n" full_classname full_classname argsCall;
+        fprintf h "  printf (\"created new %s: %%p\\n\",ans);\n" full_classname;
+        fprintf h "  _ans = caml_alloc_small(1, Abstract_tag);\n";
+        fprintf h "  (*((%s **) &Field(_ans, 0))) = ans;\n" full_classname;
+        fprintf h "  printf (\"abstract %s: %%ld\\n\", _ans);\n" full_classname;
+        fprintf h "  CAMLreturn(_ans);\n"
       ) else begin
-	let methname = match res_n_name with Some (_,x) -> x | None -> assert false in
-	fprintf h "  printf(\"Calling method %s::%s of object %%p\\n\", _self);\n"
-	  full_classname methname;
-	if is_proc then (
-	  fprintf h "  _self -> %s(%s);\n" methname argsCall;
-	  fprintf h "  CAMLreturn(Val_unit);\n"
-	) else begin
-	  let res_arg = simple_arg (unreference res_type) in
-	  let ans_type_str = match pattern index res_arg with
-	    | EnumPattern (e,key) -> snd key
-	    | _ -> string_of_type res_arg.arg_type
-	  in
-	  let resCast = match self#toCamlCast res_arg "ans" "_ans" with 
-	    | Success s -> s
-	    | CastError _ | CastValueType _ | CastTemplate _ -> 
-	      print_endline "resCast failed";raise (BreakSilent)
-	  in
-	  fprintf h "  %s ans = _self -> %s(%s);\n" ans_type_str methname argsCall;
-	  fprintf h "  %s\n" resCast;
-	  fprintf h "  CAMLreturn(%s);\n"
-	      (match pattern index res_arg with
-		| ObjectPattern -> sprintf " (ans) ? Val_some(%s) : Val_none" "_ans"
-		| _ -> "_ans")
-	end
+        let methname = match res_n_name with Some (_,x) -> x | None -> assert false in
+        fprintf h "  printf(\"Calling method %s::%s of object %%p\\n\", _self);\n"
+          full_classname methname;
+        if is_proc then (
+          fprintf h "  _self -> %s(%s);\n" methname argsCall;
+          fprintf h "  CAMLreturn(Val_unit);\n"
+        ) else begin
+          let res_arg = simple_arg (unreference res_type) in
+          let ans_type_str = match pattern index res_arg with
+            | EnumPattern (e,key) -> snd key
+            | _ -> string_of_type res_arg.arg_type
+          in
+          let resCast = match self#toCamlCast res_arg "ans" "_ans" with
+            | Success s -> s
+            | CastError _ | CastValueType _ | CastTemplate _ ->
+              print_endline "resCast failed";raise (BreakSilent)
+          in
+          fprintf h "  %s ans = _self -> %s(%s);\n" ans_type_str methname argsCall;
+          fprintf h "  %s\n" resCast;
+          fprintf h "  CAMLreturn(%s);\n"
+              (match pattern index res_arg with
+                | ObjectPattern -> sprintf " (ans) ? Val_some(%s) : Val_none" "_ans"
+                | _ -> "_ans")
+        end
       end;
       fprintf h "}\n";
       if argslen > 5 then begin
-	(* additional stub for  bytecode function when args count > 5 *)
-	let stub_name = get_name true in
-	fprintf h "value %s(value *argv, int) {\n" stub_name;
+        (* additional stub for  bytecode function when args count > 5 *)
+        let stub_name = get_name true in
+        fprintf h "value %s(value *argv, int) {\n" stub_name;
         fprintf h "  return %s(\n    %s);\n" (get_name false)
-	  (List.init argslen ~f:(fun x -> x) 
-	      |> List.map ~f:(fun i-> sprintf "argv[%d]" i) 
-	      |> String.concat ~sep:",");
-	fprintf h "}\n\n"
+          (List.init argslen ~f:(fun x -> x)
+              |> List.map ~f:(fun i-> sprintf "argv[%d]" i)
+              |> String.concat ~sep:",");
+        fprintf h "}\n\n"
       end
       else fprintf h "\n"
     with
@@ -213,18 +213,18 @@ class cppGenerator ~graph ~includes dir index = object (self)
       ignore (Sys.command ("mkdir -p " ^ dir ));
       let isQObject = self#isQObject key in
       let (stubs_filename, twin_cppname, twin_hname) = 
-	let d = dir ^/ classname in
-	(d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
+        let d = dir ^/ classname in
+        (d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
         (* I'll find some problems with adding include files for every class. 
-	   Maybe fix makefile to cut directory from cpp and add it to includes of gcc
-	*)
-      (*  What each files will contain?
-	  stubs_filename = stubs for calling public method of a class 
-	                   (this class can be subclass or QObject or not)
-	  twin_hname     = header file for twin-class (class should be a descedant of QObject)
-	  twin_cppname   = source file for implementation twin-class's methods and for stubs for
-	                   calling this methods
-      *)
+           Maybe fix makefile to cut directory from cpp and add it to includes of gcc
+        *)
+        (* What each files will contain?
+           stubs_filename = stubs for calling public method of a class 
+                            (this class can be subclass or QObject or not)
+           twin_hname     = header file for twin-class (class should be a descedant of QObject)
+           twin_cppname   = source file for implementation twin-class's methods and for stubs for
+                            calling this methods
+         *)
       in
       let h = open_out stubs_filename in
       fprintf h "#include <Qt/QtOpenGL>\n";
@@ -235,27 +235,27 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let isAbstract = self#is_abstr_class c in
       printf "class %s: is abstract? %b, is QObject: %b\n" c.c_name isAbstract isQObject;
       if isAbstract then
-	fprintf h "//class has pure virtual members - no constructors\n"
+        fprintf h "//class has pure virtual members - no constructors\n"
       else begin
-	let f args =
-	  let m = meth_of_constr ~classname args in
-	  (* in stubs file we generate stubs for calling native (not twin) implementation of methods.
-	     So we can suppose that all classes aren't descedants of QObject *)
+        let f args =
+          let m = meth_of_constr ~classname args in
+          (* in stubs file we generate stubs for calling native (not twin) implementation of methods.
+             So we can suppose that all classes aren't descedants of QObject *)
           if (m.m_access = `Public) && (is_good_meth ~index ~classname m) then 
-	    self#gen_stub ~prefix ~isQObject:false classname m.m_access args ?res_n_name:None h
-	in
-	(* we don't publish protected constructors --- in OCaml we will not override them *)
-	List.iter ~f c.c_constrs 
+            self#gen_stub ~prefix ~isQObject:false classname m.m_access args ?res_n_name:None h
+        in
+        (* we don't publish protected constructors --- in OCaml we will not override them *)
+        List.iter ~f c.c_constrs 
       end;
       
       let f m = 
-	(* when class is descedant QObject we should generate stubs for protected meths,
-	   no QObject --- no stubs for proteced methods
-	*)
-	fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
-	if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
-	  self#gen_stub ~prefix ~isQObject classname m.m_access m.m_args 
-	    ?res_n_name:(Some (m.m_res, m.m_name)) h
+        (* when class is descedant QObject we should generate stubs for protected meths,
+           no QObject --- no stubs for proteced methods
+        *)
+        fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
+        if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
+          self#gen_stub ~prefix ~isQObject classname m.m_access m.m_args 
+            ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
       MethSet.iter ~f c.c_meths;
       MethSet.iter ~f c.c_slots; 
@@ -264,18 +264,18 @@ class cppGenerator ~graph ~includes dir index = object (self)
       close_out h;
       let need_twin = isQObject && (not isAbstract) in
       let ans =
-	let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
-	let comp_twin = if need_twin then Some (comp_class ^ "_twin") else None in
-	{ comp_class; comp_twin }
+        let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
+        let comp_twin = if need_twin then Some (comp_class ^ "_twin") else None in
+        { comp_class; comp_twin }
       in
       (* Now let's write twin class *)
       let () = if need_twin then (
-	let h = open_out twin_cppname in
-	self#gen_twin_source ~prefix ~isQObject c h;
-	close_out h;
-	let h = open_out  twin_hname in
-	self#gen_twin_header ~prefix c h;
-	close_out h
+        let h = open_out twin_cppname in
+        self#gen_twin_source ~prefix ~isQObject c h;
+        close_out h;
+        let h = open_out  twin_hname in
+        self#gen_twin_header ~prefix c h;
+        close_out h
       ) in
       Some ans
     end
@@ -304,19 +304,19 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  %s *_ans = new %s(%s);\n" classname classname (String.concat ~sep:"," cpp_argnames);
       fprintf h "  setAbstrClass<%s>(ans,_ans);\n" classname;
       fprintf h "  printf(\"created %s = %%p, asbtr = %%ld\\n\",_ans,ans);\n" classname;
-      fprintf h "  CAMLreturn(ans);\n}\n\n"			     
+      fprintf h "  CAMLreturn(ans);\n}\n\n"
     );
     let new_meths =
       MethSet.fold c.c_meths ~init:MethSet.empty ~f:(fun m a -> match m.m_access with
-	| `Public -> MethSet.add a m
-	| `Private -> a
-	| `Protected -> MethSet.add a {m with m_access=`Public} ) in
+        | `Public -> MethSet.add a m
+        | `Private -> a
+        | `Protected -> MethSet.add a {m with m_access=`Public} ) in
     (* Also we have to generate caller stubs for meths of twin object *)
     MethSet.iter new_meths ~f:(fun m ->
       printf "generating a meth %s\n" (string_of_meth m);
       let f name =
-	self#gen_stub ~prefix ~isQObject:true classname m.m_access
-	  m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
+        self#gen_stub ~prefix ~isQObject:true classname m.m_access
+          m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
       f m.m_name;
       f ("call_super_"^m.m_name)
     );
@@ -334,9 +334,9 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h "  virtual ~%s_twin() {}\n" classname;
     let (pub_meths,prot_meths) = 
       MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
-	| `Public -> (MethSet.add a m,b)
-	| `Private -> (a,b)
-	| `Protected -> (a,MethSet.add b m) ) in
+        | `Public -> (MethSet.add a m,b)
+        | `Private -> (a,b)
+        | `Protected -> (a,MethSet.add b m) ) in
 
     let new_meths = MethSet.union pub_meths(MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
@@ -347,13 +347,13 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let argslen = List.length m.m_args in
       let argnames = List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i) in
       let argsstr = List.map2_exn argnames m.m_args ~f:(fun name arg ->
-	string_of_arg {arg with arg_name=Some name}) |> String.concat ~sep:", " in
+        string_of_arg {arg with arg_name=Some name}) |> String.concat ~sep:", " in
       fprintf h "%s) {\n" argsstr;
       fprintf h "  CAMLparam0();\n";
       if not (is_void_type m.m_res) then 
-	self#declare_locals ["camlobj";"_ans";"meth"] h
+        self#declare_locals ["camlobj";"_ans";"meth"] h
       else
-	self#declare_locals ["camlobj";"meth"] h;
+        self#declare_locals ["camlobj";"meth"] h;
       fprintf h "  printf(\"Calling %s::%s of object = %%p\\n\",this);\n" classname m.m_name;
       fprintf h "  GET_CAML_OBJECT(this,the_caml_object)\n";
       fprintf h "  camlobj = (::value) the_caml_object;\n";
@@ -361,62 +361,62 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  assert(meth!=0);\n";
 
       let call_closure_str = match argslen with 
-	| 0 -> "caml_callback(meth, camlobj);"
-	| _ -> begin
-	  (* TODO: use CAMLlocalN macros *)
+        | 0 -> "caml_callback(meth, camlobj);"
+        | _ -> begin
+          (* TODO: use CAMLlocalN macros *)
           fprintf h "  ::value *args = new ::value[%d]; // TODO: use CAMLlocalN macros\n" (argslen+1);
-	  fprintf h "  args[0] = camlobj;\n";
-	  let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
-	    let arg_name = sprintf "args[%d]" (i+1) in
-	    let s = self#toCamlCast arg name arg_name in
-	    match s,pattern self#index arg with
-	      | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
-	      | (Success s,ObjectPattern) -> 
-		let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
-		let buf = Bigbuffer.create 50 in
-		let open Bigbuffer.Printf in
-		bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n" 
-		  (if arg.arg_type.t_is_const then "const" else "") arg.arg_type.t_name arg_name name;
-		bprintf buf "    ::value *call_helper=caml_named_value(\"make_%s\");\n"
-		  (String.concat ~sep:"." cp);
-		bprintf buf "    assert(call_helper != 0);\n";
-		bprintf buf "    %s=caml_callback(*call_helper,%s); }\n" arg_name arg_name;
-		Success (Bigbuffer.contents buf)
-	      | (Success _,_) -> s
-	  ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
-	  List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
+          fprintf h "  args[0] = camlobj;\n";
+          let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
+            let arg_name = sprintf "args[%d]" (i+1) in
+            let s = self#toCamlCast arg name arg_name in
+            match s,pattern self#index arg with
+              | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
+              | (Success s,ObjectPattern) ->
+                let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
+                let buf = Bigbuffer.create 50 in
+                let open Bigbuffer.Printf in
+                bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n" 
+                  (if arg.arg_type.t_is_const then "const" else "") arg.arg_type.t_name arg_name name;
+                bprintf buf "    ::value *call_helper=caml_named_value(\"make_%s\");\n"
+                  (String.concat ~sep:"." cp);
+                bprintf buf "    assert(call_helper != 0);\n";
+                bprintf buf "    %s=caml_callback(*call_helper,%s); }\n" arg_name arg_name;
+                Success (Bigbuffer.contents buf)
+              | (Success _,_) -> s
+          ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
+          List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
           fprintf h "    // delete args or not?\n";
           sprintf "caml_callbackN(meth, %d, args);" (argslen+1)
-	end
+        end
       in
       let isProcedure = is_void_type m.m_res in
       if isProcedure then begin
-	fprintf h "  %s;\n" call_closure_str;
-	fprintf h "  CAMLreturn0;\n"
+        fprintf h "  %s;\n" call_closure_str;
+        fprintf h "  CAMLreturn0;\n"
 
       end else begin
-	let res = { arg_type=m.m_res; arg_name=None; arg_default=None} in
-	fprintf h "  _ans = %s;\n" call_closure_str;
-	let cast = self#fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
-	  |> (function Success s -> s | _ -> assert false) in
-	fprintf h "  %s;\n" cast;
-	fprintf h "  CAMLreturnT(%s,ans);\n" (string_of_type res.arg_type);
+        let res = { arg_type=m.m_res; arg_name=None; arg_default=None} in
+        fprintf h "  _ans = %s;\n" call_closure_str;
+        let cast = self#fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
+          |> (function Success s -> s | _ -> assert false) in
+        fprintf h "  %s;\n" cast;
+        fprintf h "  CAMLreturnT(%s,ans);\n" (string_of_type res.arg_type);
       end;
       fprintf h "}\n";
       fprintf h "%s call_super_%s(%s) {\n" (string_of_type m.m_res) twin_methname argsstr;
       fprintf h "  %s %s::%s(%s);\n}\n" (if isProcedure then "" else "return")
-	classname twin_methname (String.concat ~sep:"," argnames);
+        classname twin_methname (String.concat ~sep:"," argnames);
     );
     (* Now generate constructors*)
     List.iter c.c_constrs ~f:(fun lst ->
       let argnames = List.mapi lst ~f:(fun i _ -> sprintf "x%d" i) in
       fprintf h "  %s_twin(%s) : %s(%s) {}\n" 
-	classname
-	(List.map2_exn argnames lst  ~f:(fun name arg ->
-	  string_of_arg {arg with arg_name = Some name})
-	    |> String.concat ~sep:",")
-	classname
-	(String.concat ~sep:"," argnames)
+        classname
+        (List.map2_exn argnames lst  ~f:(fun name arg ->
+          string_of_arg {arg with arg_name = Some name})
+            |> String.concat ~sep:",")
+        classname
+        (String.concat ~sep:"," argnames)
     );
     fprintf h "};\n\n";
     ()
@@ -453,7 +453,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "%s %s(value v) {\n" (snd key) fname1;
 
       List.iter e_items ~f:(fun e ->
-	fprintf h "  if (v==caml_hash_variant(\"%s\")) return %s::%s;\n" e s e
+        fprintf h "  if (v==caml_hash_variant(\"%s\")) return %s::%s;\n" e s e
       );
       fprintf h "  printf(\"%s\");\n" "if u see this line, the thereis a bug in enum generation";
       fprintf h "  return %s::%s;\n" s (List.hd_exn e_items);
@@ -463,7 +463,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  switch (e) {\n";
 
       List.iter e_items ~f:(fun e ->
-	fprintf h "    case %s::%s: return hash_variant(\"%s\");\n" s e e
+        fprintf h "    case %s::%s: return hash_variant(\"%s\");\n" s e e
       );
       fprintf h "  }\n";
       fprintf h "  printf(\"%s\");\n" "if u see this line, the thereis a bug in enum generation";
@@ -480,16 +480,16 @@ class cppGenerator ~graph ~includes dir index = object (self)
     let enums = ref [] in
     Q.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
       | Enum e -> begin
-	match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
-	  | Some s -> Ref.replace enums (fun lst -> (key,s)::lst)
-	  | None -> ()
+        match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
+          | Some s -> Ref.replace enums (fun lst -> (key,s)::lst)
+          | None -> ()
       end
       | Class (c,_) ->  begin 
-	match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
-	  | Some {comp_class;comp_twin} ->
-	    classes := comp_class :: !classes;
-	    (match comp_twin with None -> () | Some x -> twin_classes := x :: !twin_classes)
-	  | None -> ()
+        match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
+          | Some {comp_class;comp_twin} ->
+            classes := comp_class :: !classes;
+            (match comp_twin with None -> () | Some x -> twin_classes := x :: !twin_classes)
+          | None -> ()
       end    
     );
     print_endline "Generating makefile";
