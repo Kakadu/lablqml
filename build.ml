@@ -107,7 +107,7 @@ let () = match !target with
         make ~dir:"test_gen" "all" "building library";
 
         print_endline "making tests";
-        let tests = ["test";"test2";"test3";"test4"] in
+        let tests = ["test"] in
         List.iter (fun s -> make ~dir:("test_gen/"^s)  "" ("compiling test " ^ s)) tests;
 
         List.iter (fun test ->
@@ -119,7 +119,7 @@ let () = match !target with
           make "depend" (sprintf "computing dependencies for %s" test);
           make ""       (sprintf "building %s"   test);
           chdir "../.."
-        ) ["test5";"test6"]
+        ) [] (* ["test5";"test6"] *)
   end
   | `Install -> 
     print_endline "installing...";

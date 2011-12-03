@@ -18,11 +18,9 @@ opt: $(CMXS) kamlo $(C_STUBS) mklib_opt
 
 test:
 	$(MAKE) -C test
-	$(MAKE) -C test2
-	$(MAKE) -C test3
-	$(MAKE) -C test4
-	$(MAKE) -C test5 depend all
-	$(MAKE) -C test6 depend all
+	#$(MAKE) -C test4
+	#$(MAKE) -C test5 depend all
+	#$(MAKE) -C test6 depend all
 
 kamlo:
 	$(MAKE) -C out 
@@ -49,8 +47,6 @@ clean: clean_tests
 
 clean_tests:
 	$(MAKE) -C test  clean
-	$(MAKE) -C test2 clean
-	$(MAKE) -C test3 clean
 	$(MAKE) -C test4 clean
 	echo "" > test5/.depend
 	$(MAKE) -C test5 clean
