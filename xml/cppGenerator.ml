@@ -254,7 +254,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
-          self#gen_stub ~prefix ~isQObject classname m.m_access m.m_args 
+          self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args 
             ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
       MethSet.iter ~f c.c_meths;

@@ -123,17 +123,18 @@ class ocamlGenerator graph dir index = object (self)
       | Break2File s -> fprintf h "(* %s *)\n" s
 
   method private gen_meth_stubs ~isQObject ~is_abstract ~classname h meth =
-      fprintf h "  (* method %s *)\n" (string_of_meth meth);
-
+    fprintf h "  (* method %s *)\n" (string_of_meth meth);
+    assert(meth.m_access <> `Private);
       let ocaml_classname = ocaml_class_name classname in
 
       let cpp_func_name = 
         (* Some hack. If this meth has < 5 parameters that string format is similiar to [a-z]+ 
            But if it needs to functions  for stubs format is [a-z]+" "[a-z]+
         *)
-        let classname = meth.m_declared in
-        let res_n_name = (meth.m_res,meth.m_name) in
-        let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte meth.m_access meth.m_args in
+        let classname = if isQObject then classname^"_twin" else meth.m_declared in
+	let access = if isQObject then `Public else meth.m_access in
+        let res_n_name = (meth.m_res, meth.m_name) in
+        let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte access meth.m_args in
         let native_name = helper false in
         if List.length meth.m_args > 4 then
           sprintf "%s\" \"%s" (helper true) native_name
@@ -223,9 +224,13 @@ class ocamlGenerator graph dir index = object (self)
         );
         if isQObject then begin
           fprintf h "    (match Qtstubs.get_class_name me with\n";
-          fprintf h "     | Some \"%s_twin\" -> %s_call_super_%s' self#handler %s\n" classname
-            (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
-          fprintf h "     | Some \"%s\" -> %s_%s' self#handler %s\n" classname
+          fprintf h "     | Some \"%s_twin\" -> %s%s_%s' self#handler %s\n" classname
+            (ocaml_class_name classname) (if meth.m_access=`Protected then "_call_super" else "") 
+	    meth.m_out_name (String.concat ~sep:" " args2);
+          fprintf h "     | Some \"%s\" -> " classname;
+	  if meth.m_access = `Protected 
+	  then fprintf h "print_endline \"Can't call protected method of non-twin object\"; assert false\n"
+	  else fprintf h "%s_%s' self#handler %s\n"
             (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
           fprintf h "     | _ -> print_endline \"Some bug in logic\"; assert false )\n";
           fprintf h "    |> postconvert\n"
@@ -382,12 +387,17 @@ class ocamlGenerator graph dir index = object (self)
       MethSet.iter c.c_meths ~f:(fun m ->
         match m.m_modif with
           | `Abstract -> ()
+	  | _ when not (is_good_meth ~classname ~index m) -> ()
           | _ when (not isQObject) && (m.m_access=`Protected) -> ()
-          | _ when is_good_meth ~classname ~index m ->
+	  | _ when not isQObject ->
+	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
+            self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
+
+          | _ when isQObject ->
             let stub m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
             stub m;
-            if isQObject then
-              stub {m with m_out_name="call_super_"^m.m_out_name};
+            if m.m_access=`Protected then
+              stub {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
           | _ -> ()
       ); 
