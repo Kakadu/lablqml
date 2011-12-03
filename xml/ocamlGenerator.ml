@@ -225,8 +225,8 @@ class ocamlGenerator graph dir index = object (self)
         );
         if isQObject then begin
           fprintf h "    (match Qtstubs.get_class_name me with\n";
-          fprintf h "     | Some \"%s_twin\" -> %s%s_%s' self#handler %s\n" classname
-            (ocaml_class_name classname) (if meth.m_access=`Protected then "_call_super" else "") 
+          fprintf h "     | Some \"%s_twin\" -> %s_twin_call_super_%s' self#handler %s\n" classname
+            (ocaml_class_name classname)
 	    meth.m_out_name (String.concat ~sep:" " args2);
           fprintf h "     | Some \"%s\" -> " classname;
 	  if meth.m_access = `Protected 
@@ -247,8 +247,7 @@ class ocamlGenerator graph dir index = object (self)
       | BreakSilent -> ()
       | Break2File s -> ( fprintf h "(* %s *)\n" s; print_endline s)
 
-  method gen_slot = 
-    fun ~classname h slot ->
+  method gen_slot ~classname h slot =
     try
       (match slot.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       let (name,args) = (slot.m_name,slot.m_args) in
@@ -266,7 +265,8 @@ class ocamlGenerator graph dir index = object (self)
       fprintf h "    method name = \"%s(%s)\"\n" name 
         (slot.m_args |> List.map ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) 
             |> String.concat ~sep:",");
-(*      self#gen_meth ~isQObject:false ~new_name:"call" ~is_abstract:false ~classname h slot; *)
+      fprintf h "    method call = self#%s\n" slot.m_out_name;
+(*      self#gen_meth ~isQObject:true ~new_name:"call" ~is_abstract:false ~classname h slot; *)
       fprintf h "  end\n"
     with BreakSilent -> ()
       | BreakS s -> ()
