@@ -312,14 +312,17 @@ class cppGenerator ~graph ~includes dir index = object (self)
         | `Private -> a
         | `Protected -> MethSet.add a {m with m_access=`Public} ) in
     (* Also we have to generate caller stubs for meths of twin object *)
-    MethSet.iter new_meths ~f:(fun m ->
+    let iter_meth m =
       printf "generating a meth %s\n" (string_of_meth m);
       let f name =
         self#gen_stub ~prefix ~isQObject:true classname m.m_access
           m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
       f m.m_name;
       f ("call_super_"^m.m_name)
-    );
+    in
+    let public_slots = MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public) in
+    MethSet.iter new_meths ~f:iter_meth;
+    MethSet.iter public_slots ~f:iter_meth; 
     fprintf h "\n}\n";
     ()
 
@@ -337,8 +340,9 @@ class cppGenerator ~graph ~includes dir index = object (self)
         | `Public -> (MethSet.add a m,b)
         | `Private -> (a,b)
         | `Protected -> (a,MethSet.add b m) ) in
-
-    let new_meths = MethSet.union pub_meths(MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))in
+    let (++) = MethSet.union in
+    let new_meths = pub_meths ++ (MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public})) 
+      ++ (MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public)) in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
       fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
       let twin_methname = self#twin_methname m.m_name m.m_access in

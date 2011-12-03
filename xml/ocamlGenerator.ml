@@ -152,7 +152,8 @@ class ocamlGenerator graph dir index = object (self)
         | _ -> self#toOcamlType ~low_level:true res_arg)
       |> (function Success s -> s | _ -> raise BreakSilent) in
 
-      fprintf h "external %s_%s': 'a->%s\n\t\t= \"%s\"\n" ocaml_classname meth.m_out_name 
+      fprintf h "external %s%s_%s': 'a->%s\n\t\t= \"%s\"\n" ocaml_classname 
+	(if isQObject then "_twin" else "") meth.m_out_name 
         (String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
   (* generates member code*)
@@ -265,7 +266,7 @@ class ocamlGenerator graph dir index = object (self)
       fprintf h "    method name = \"%s(%s)\"\n" name 
         (slot.m_args |> List.map ~f:(fun x -> string_of_type (wrap_type x.arg_type) ) 
             |> String.concat ~sep:",");
-      self#gen_meth ~isQObject:false ~new_name:"call" ~is_abstract:false ~classname h slot;
+(*      self#gen_meth ~isQObject:false ~new_name:"call" ~is_abstract:false ~classname h slot; *)
       fprintf h "  end\n"
     with BreakSilent -> ()
       | BreakS s -> ()
@@ -378,13 +379,7 @@ class ocamlGenerator graph dir index = object (self)
       end;
 
       List.iter c.c_sigs  ~f:(self#gen_signal h_classes);
-      MethSet.iter c.c_slots ~f:(fun slot ->
-        if (is_good_meth ~classname ~index slot) && (slot.m_access = `Public) then begin
-          self#gen_slot ~classname h_classes slot;
-          self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs slot
-        end
-      );
-      MethSet.iter c.c_meths ~f:(fun m ->
+      let itermeth m =
         match m.m_modif with
           | `Abstract -> ()
 	  | _ when not (is_good_meth ~classname ~index m) -> ()
@@ -394,13 +389,21 @@ class ocamlGenerator graph dir index = object (self)
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
 
           | _ when isQObject ->
-            let stub m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
-            stub m;
-            if m.m_access=`Protected then
-              stub {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
+            let stub isQObject m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
+	    if m.m_access=`Public then stub false m;
+            stub true m;
+            stub true {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
           | _ -> ()
-      ); 
+      in
+      MethSet.iter c.c_meths ~f:itermeth;
+      let public_slots = MethSet.filter c.c_slots ~f:(fun m -> m.m_access=`Public) in
+      (* TODO: understand what to do with non-public slots *)
+      MethSet.iter public_slots ~f:itermeth;
+      MethSet.iter public_slots ~f:(fun slot ->
+        if is_good_meth ~classname ~index slot then
+          self#gen_slot ~classname h_classes slot
+      );
 
       fprintf h_classes "end\nand ";
     end
