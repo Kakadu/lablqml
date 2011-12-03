@@ -44,6 +44,7 @@ let skip_meth ~classname name =
   if startswith ~prefix:"operator" name then true
   else if startswith ~prefix:"d_func" name then true
   else match name with
+    | "event"  -> true (* Qt doesn't recommend to override this method *)
     | "flush" 	
     | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
     | "findChild" when classname = "QWidget" -> (*TODO: add into xml generator info about generic methods *)
