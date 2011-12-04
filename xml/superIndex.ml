@@ -264,16 +264,18 @@ let build_superindex root_ns =
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
   close_out h;
-  let checker =
-    let module M = Graph.Path.Check(G) in
-    let checker = M.create g in
-    M.check_path checker
+  (* returns true if b is subclass of b in graph g *)
+  let checker a b =
+    (G.mem_vertex g a) && (G.mem_vertex g b) && (
+      let module M = Graph.Path.Check(G) in
+      let checker = M.create g in
+      M.check_path checker a b (* checks if path exists from a to b *)
+     )
   in
   let subclass_of a ~base:b =
     let ak = NameKey.key_of_fullname a
     and bk = NameKey.key_of_fullname b in
     let ans = checker bk ak in
-    Printf.printf "path : %s where base=%s = %b\n" a b ans;
     ans
   in
   let module Top = Graph.Topological.Make(G) in
@@ -309,7 +311,6 @@ let build_superindex root_ns =
             None
           | Some (Enum _) -> print_endline "nonsense"; assert false
         ) in
-
         let module S = String.Set in
         let cache = ref S.empty in
         let put_cache s = cache := S.add !cache s in
@@ -361,10 +362,7 @@ let build_superindex root_ns =
         let filter_meths = super_filter_meths subclass_of in
         let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) = 
           filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
-(*      printf "meths_abstr_not_impl: %d, meths_abstr_implemented: %d, meths_last: %d\n"
-          (MS.length meths_abstr_not_impl) (MS.length meths_abstr_implemented) (MS.length meths_last);
-        printf "meths_last names are: %s\n" (List.to_string  (fun m -> m.m_name) (MS.to_list meths_last) );
-*)
+
         let (meths_normal_inherited, meths_overriden, meths_last) = 
           filter_meths ~base:base_normal_meths ~cur:meths_last in
 

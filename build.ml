@@ -1,4 +1,5 @@
 print_endline "Configure script for lablqt";;
+let flush () = flush stdout ;;
 #load "unix.cma";;
 open UnixLabels;;
 open Sys;;
@@ -20,8 +21,11 @@ let () = Arg.parse [
 
 (* Configure part *)
 let wrap_cmd cmd err = 
+  Printf.printf "executing '%s'\n" cmd; 
+  flush ();
   let x = command cmd in
-  if x<>0 then failwith err;;
+  if x<>0 then (printf "cmd have returned %d\n" x; failwith err)
+;;
 
 let cores_count = 3;; (* make -j parameter *)
 
