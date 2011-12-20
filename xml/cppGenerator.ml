@@ -253,7 +253,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
            no QObject --- no stubs for proteced methods
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
-        if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public) then
+        if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public)
+	&& (m.m_modif <> `Abstract) then
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args 
             ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
@@ -262,7 +263,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
       fprintf h "}  // extern \"C\"\n";
       close_out h;
-      let need_twin = isQObject && (not isAbstract) in
+      let need_twin = isQObject in
       let ans =
         let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
         let comp_twin = if need_twin then Some (comp_class ^ "_twin") else None in
@@ -271,7 +272,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       (* Now let's write twin class *)
       let () = if need_twin then (
         let h = open_out twin_cppname in
-        self#gen_twin_source ~prefix ~isQObject c h;
+        self#gen_twin_source ~prefix c h;
         close_out h;
         let h = open_out  twin_hname in
         self#gen_twin_header ~prefix c h;
@@ -285,8 +286,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     | `Public -> cpp_methname
     | `Protected -> sprintf "prot_%s" cpp_methname
 
-  method gen_twin_source ~prefix ~isQObject c h = 
-    assert (isQObject);
+  method gen_twin_source ~prefix c h = 
     let classname  = c.c_name in
     fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
@@ -318,7 +318,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
         self#gen_stub ~prefix ~isQObject:true classname m.m_access
           m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
       f m.m_name;
-      f ("call_super_"^m.m_name)
+      if m.m_modif <> `Abstract then
+	f ("call_super_"^m.m_name)
     in
     let public_slots = MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public) in
     MethSet.iter new_meths ~f:iter_meth;
@@ -335,6 +336,10 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h "#define  %s_twin_val(v) ((%s_twin*) Field(v,0))\n\n" classname classname;
     fprintf h "class %s_twin : public %s {\nQ_OBJECT\npublic:\n" classname classname;
     fprintf h "  virtual ~%s_twin() {}\n" classname;
+    let () = 
+      MethSet.to_list c.c_meths |> List.map ~f:(fun x -> x.m_out_name) |> String.concat ~sep:","
+    |> (fun s -> printf "meths of class %s: %s\n" classname s)
+    in
     let (pub_meths,prot_meths) = 
       MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
         | `Public -> (MethSet.add a m,b)
@@ -343,6 +348,12 @@ class cppGenerator ~graph ~includes dir index = object (self)
     let (++) = MethSet.union in
     let new_meths = pub_meths ++ (MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public})) 
       ++ (MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public)) in
+    MethSet.elements new_meths |> List.find ~f:(fun m -> m.m_out_name ="paintEvent") 
+    |> (function Some m ->
+      (m |> sexp_of_meth |> Sexplib.Sexp.to_string_hum |> print_endline );
+      printf "`is_good_meth = %b\n" (is_good_meth ~index ~classname m)
+	   | None -> ());
+    let new_meths = MethSet.map new_meths ~f:(fun m -> {m with m_modif = `Normal}) in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
       fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
       let twin_methname = self#twin_methname m.m_name m.m_access in

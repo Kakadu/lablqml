@@ -101,7 +101,7 @@ type clas = {
 and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_ns: namespace list }
 
 and slt = meth
-
+val sexp_of_meth : meth -> Sexplib.Sexp.t
 val sexp_of_clas : clas -> Sexplib.Sexp.t
 val enum_of_sexp: Sexplib.Sexp.t -> enum
 val sexp_of_enum: enum -> Sexplib.Sexp.t 
