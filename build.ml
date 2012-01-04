@@ -1,41 +1,44 @@
-print_endline "Configure script for lablqt";;
-let flush () = flush stdout ;;
 #load "unix.cma";;
-open UnixLabels;;
-open Sys;;
-open Printf;;
 
-let target = ref `Build;;
+open UnixLabels
+
+let () =
+  print_endline "Configure script for lablqt"
+
+let flush () =
+  flush Pervasives.stdout
+
+let target = ref `Build
 
 let touch s =
-(*  if not (Sys.file_exists s) then *)
-        close_out (open_out s)
-;;
-open Arg;;
+  close_out (open_out s)
+
 let () = Arg.parse [
-        ("-build", Unit( fun () -> target := `Build ), "");
-        ("-clean", Unit( fun () -> target := `Clean ), "");
-        ("-install", Unit (fun () -> target := `Install), "");
-        ("-uninstall", Unit (fun () -> target := `Uninstall), "")
-] (fun _ -> ()) "";;
+        ("-build",     Arg.Unit (fun () -> target := `Build),     "");
+        ("-clean",     Arg.Unit (fun () -> target := `Clean),     "");
+        ("-install",   Arg.Unit (fun () -> target := `Install),   "");
+        ("-uninstall", Arg.Unit (fun () -> target := `Uninstall), "");
+] (fun _ -> ()) ""
 
 (* Configure part *)
+
 let wrap_cmd cmd err = 
-  Printf.printf "executing '%s'\n" cmd; 
+  print_endline ("executing " ^ cmd);
   flush ();
-  let x = command cmd in
-  if x<>0 then (printf "cmd have returned %d\n" x; failwith err)
-;;
+  let x = Sys.command cmd in
+  if x <> 0 then (print_endline ("command has returned " ^ string_of_int x) ; failwith err)
 
-let cores_count = 3;; (* make -j parameter *)
 
-let make ?(dir=".") ?j target err_msg = 
+let cores_count = 3 (* make -j parameter *)
+
+let make ?(dir = ".") ?j target err_msg = 
   let make_cmd = try Sys.getenv "MAKE" with Not_found -> "make" in
   let cmd = String.concat " " [
-          make_cmd; "-C " ^ dir; 
-          (match j with Some x -> sprintf "-j%d" x | None -> "");
+          make_cmd ; "-C" ; dir ;
+          (match j with Some x -> Printf.sprintf "-j%d" x | None -> "");
           target] in
   wrap_cmd cmd ("error while " ^ err_msg)
+
 (*
   match command cmd with
   | 0 -> ()
@@ -46,14 +49,17 @@ let make ?(dir=".") ?j target err_msg =
     wrap_cmd cmd err_msg
   end
 *)
-;;
 
-wrap_cmd "pkg-config --cflags QtOpenGL" "can't find Qt OpenGL header files";;
+
+let () =
+  wrap_cmd "pkg-config --cflags QtOpenGL" "can't find Qt OpenGL header files"
+
 (* Configure end ***************************)
 
+(* let api_xml = "aaa.xml" *)
 
-(* let api_xml = "aaa.xml";; *)
-let api_xml = "for_test5.xml";; 
+let api_xml = "for_test5.xml"
+
 (* 
  * This is a XML api file. Then biggest and more interesting file is
  * aaa.xml but building with it takes too long. You can simplify aaa.xml using 
@@ -61,67 +67,70 @@ let api_xml = "for_test5.xml";;
  * *)
 
 (* You can setup GCC include files specific for your system *)
-let includes = [];;
 
-let cpp_includes () = match includes with 
-  | [] -> ""
-  | _  -> " -I " ^ (String.concat " -I " includes );;
+let includes = []
+
+let cpp_includes () =
+  match includes with
+    | [] -> ""
+    | _  -> " -I " ^ (String.concat " -I " includes);;
 
 let () = match !target with 
   | `Build -> begin
         (* this checks the version of the ocaml running this script
-           should probably check the version of ocamlc instead
+           it should probably check the version of ocamlc instead
            but who cares *)
+
         if Sys.ocaml_version < "3.12" then
-          failwith (sprintf "OCaml version 3.12 or higher is required (%s was provided)." Sys.ocaml_version);
+          failwith (Printf.sprintf "OCaml version 3.12 or higher is required (%s was provided)." Sys.ocaml_version);
 
-        if not (file_exists "test_gen/out") then
-                mkdir ~perm:0o755 "test_gen/out";
+        if not (Sys.file_exists "test_gen/out") then
+                mkdir ~perm: 0o755 "test_gen/out";
 
-        if not (file_exists "test_gen/out/cpp") then
-                mkdir ~perm:0o755 "test_gen/out/cpp";
+        if not (Sys.file_exists "test_gen/out/cpp") then
+                mkdir ~perm: 0o755 "test_gen/out/cpp";
 
         (* compiling xml *)
-        make "" ~dir:"xml" "compiling xml";
-        print_endline "Generator is compiled\n";
 
-        print_endline "executing xmltool";
+        make "" ~dir: "xml" "\ncompiling xml...\n";
+        print_endline "\nGenerator is compiled!\n";
+
+        print_endline "\nexecuting xmltool...\n";
         wrap_cmd "./for_test5.sh" "Error while generating tests for test N5";
 
-        print_endline "executing generator\n";
-        wrap_cmd (sprintf "./xml/main.native -xml %s %s test_gen/out" api_xml (cpp_includes ()))
+        print_endline "\nexecuting generator...\n";
+        wrap_cmd ("./xml/main.native -xml " ^ api_xml ^ " " ^ (cpp_includes ()) ^ " test_gen/out")
           "error while generating code";
 
-        print_endline "\ncompiling generated C++ files\n";
+        print_endline "\ncompiling generated C++ files...\n";
         make ~dir:"test_gen/out/cpp" ~j:cores_count "" 
           "compiling generated C++ files";
 
         print_endline "\ncompiling mocml\n";
-
-        make ~dir:"moc" ""       "building mocml";
+        make ~dir:"moc" "" "building mocml...";
 
         let add_mocml where =
           let file = where ^ "/mocml" in 
-          if not (file_exists file) then
-            symlink ~src:"../../moc/_build/main.native" ~dst:file
+          if not (Sys.file_exists file) then
+            symlink ~src: "../../moc/_build/main.native" ~dst: file
         in
-        List.iter add_mocml ["test_gen/test4";"test_gen/test5"; "test_gen/test6"];
+        List.iter add_mocml ["test_gen/test4" ; "test_gen/test5" ; "test_gen/test6"];
 
-        print_endline "\ncompiling the lablqt library";
+        print_endline "\ncompiling the lablqt library...\n";
         make ~dir:"test_gen" "all" "building library";
 
-        print_endline "making tests";
+        print_endline "\nmaking tests...\n";
         let tests = ["test"] in
-        List.iter (fun s -> make ~dir:("test_gen/"^s)  "" ("compiling test " ^ s)) tests;
+        List.iter (fun s -> make ~dir: ("test_gen/"^s) "" ("compiling test " ^ s)) tests;
 
         List.iter (fun test ->
           print_endline "\npreconfigure for ";
           print_endline (test ^ "\n");
-          chdir (sprintf "test_gen/%s" test);
+          chdir ("test_gen/" ^ test);
           touch ".depend";
 
-          make "depend" (sprintf "computing dependencies for %s" test);
-          make ""       (sprintf "building %s"   test);
+          make "depend" ("computing dependencies for " ^ test);
+          make ""       ("building " ^ test);
           chdir "../.."
         ) [] (* ["test5";"test6"] *)
   end
@@ -144,6 +153,5 @@ let () = match !target with
 
     wrap_cmd "make -C moc clean" "cleaning in moc";
 
-    (* I dont remove XML API file **)
+    (* I dont remove XML API file *)
     ()
-;;
