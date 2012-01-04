@@ -169,7 +169,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
   method makefile dir ~twins lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
-    fprintf h "INCLUDES=-I./../../ -I. `pkg-config --cflags QtOpenGL` ";
+    fprintf h "INCLUDES=-I./../../ -I. `pkg-config --cflags QtGui` ";
     List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
     fprintf h "\n";
     fprintf h "GCC=g++ -c -pipe -g -Wall -W $(INCLUDES) \n\n";
@@ -227,7 +227,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
          *)
       in
       let h = open_out stubs_filename in
-      fprintf h "#include <Qt/QtOpenGL>\n";
+      fprintf h "#include <Qt/QtGui>\n";
       fprintf h "#include \"headers.h\"\n";
       fprintf h "extern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
@@ -355,6 +355,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 	   | None -> ());
     let new_meths = MethSet.map new_meths ~f:(fun m -> {m with m_modif = `Normal}) in
     MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
+(*      printf "generating twin for %s\n" (string_of_meth m); flush stdout; *)
       fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
       let twin_methname = self#twin_methname m.m_name m.m_access in
       fprintf h "%s %s(" (string_of_type m.m_res) twin_methname;
