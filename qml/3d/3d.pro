@@ -8,8 +8,8 @@ SOURCES += main.cpp \
     gamemap.cpp
 
 
-QT += Qt3DQuick declarative
-LIBS+= -lQt3DQuick
+QT +=  declarative
+LIBS+= #-lQt3DQuick
 
 HEADERS += \
     gamemap.h

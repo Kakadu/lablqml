@@ -1,13 +1,13 @@
 #include <QtGui/QApplication>
 #include <QDeclarativeContext>
 #include "gamemap.h"
-#include <Qt3DQuick/qdeclarativeview3d.h>
+#include <QtDeclarative/QDeclarativeView>
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    QDeclarativeView3D viewer;
+    QDeclarativeView viewer;
     GameMap map;
     viewer.rootContext() -> setContextProperty("gameMap",&map);
     //viewer.setResizeMode(QDeclarativeView::SizeRootObjectToView);
