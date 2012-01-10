@@ -3,7 +3,7 @@ asdf=-c -m64 -pipe -g -Wall -W -D_REENTRANT -DQT_WEBKIT -DQT_DECLARATIVE_LIB -DQ
 mocs=moc_gamemap.cpp
 cppobjs=gamemap.o moc_gamemap.o
 mlobjs=stubs.o
-ocamlobjs=ocaml/code.o
+ocamlobjs=ocaml/camlcode.o
 out=main
 -include $(shell ocamlc -where)/Makefile.config
 
