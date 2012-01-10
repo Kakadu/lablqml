@@ -3,9 +3,7 @@
 
 #include <QObject>
 #include <QDebug>
-extern "C" {
 #include "kamlo.h"
-}
 
 class GameMap : public QObject
 {
@@ -18,7 +16,8 @@ public:
     Q_INVOKABLE int sizex();
 
     Q_INVOKABLE int sizey() { return 600; }
-    Q_PROPERTY(QString title WRITE setTitle READ title);
+    Q_PROPERTY(QString title WRITE setTitle READ title NOTIFY titleChanged)
+
     QString title() {
         return _title;
     }
@@ -27,6 +26,7 @@ public:
     }
 
 signals:
+    void titleChanged ();
 
 public slots:
 
