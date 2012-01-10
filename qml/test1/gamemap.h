@@ -2,7 +2,9 @@
 #define GAMEMAP_H
 
 #include <QObject>
+extern "C" {
 #include "kamlo.h"
+}
 
 class GameMap : public QObject
 {
@@ -11,17 +13,18 @@ class GameMap : public QObject
 
 public:
     explicit GameMap(QObject *parent = 0);
+
     Q_INVOKABLE int sizex() {
         CAMLparam0();
         CAMLlocal1(ans);
         static value* closure_f = NULL;
         if (closure_f == NULL)
             closure_f = caml_named_value("test function");
-
         ans = caml_callback(*closure_f, Val_unit);
         int _ans = Int_val(ans);
         return _ans;
     }
+
     Q_INVOKABLE int sizey() { return 600; }
     Q_PROPERTY(QString title WRITE setTitle READ title);
     QString title() {
