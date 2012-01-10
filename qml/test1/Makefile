@@ -29,4 +29,4 @@ moc_%.cpp: %.h
 
 clean:
 	rm moc_* *.o $(out) -f
-	$(MAKE) -C ocaml clean
+	$(MAKE) -s --no-print-directory -C ocaml clean

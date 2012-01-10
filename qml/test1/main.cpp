@@ -6,7 +6,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-
+    caml_main(argv);
     QDeclarativeView viewer;
     GameMap map;
     viewer.rootContext() -> setContextProperty("gameMap",&map);
