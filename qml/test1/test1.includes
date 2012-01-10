@@ -4,4 +4,5 @@ qml
 /usr/include/
 /usr/include/qt4/QtCore
 /usr/include/qt4/Qt
+/usr/include/qt4/QtDeclarative
 /usr/lib/ocaml/caml
