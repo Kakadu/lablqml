@@ -21,6 +21,12 @@ let () = Core_arg.parse [
     printf "Setting filename %s\n" s
 ) "usage_msg"
 
+let () =
+  let data = Parse.parse2 options.filename in
+  print_endline "data file parsed";
+  let ans = data |> sexp_of_api_content |> Sexplib.Sexp.to_string_hum in
+  print_endline ans;
+  exit 0
 
 let funcs = Parse.parse options.filename
 let () = printf "slots parsed: %d\n" (List.length funcs)
