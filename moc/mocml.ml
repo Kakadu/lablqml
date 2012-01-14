@@ -4,13 +4,12 @@ open Printf
 
 module List = struct 
   include Core_list
+  let iter2i l1 l2 ~f =
+    let i = ref 0 in
+    Core_list.iter2_exn l1 l2 ~f: (fun x y -> f !i x y; incr i)
 end
 module String = Core_string
 module S = Std_internal
-
-let iter2i l1 l2 ~f = 
-  let i = ref 0 in
-  Core_list.iter2_exn l1 l2 ~f: (fun x y -> f !i x y; incr i)
 
 type options = {
   mutable filename:string
@@ -93,7 +92,7 @@ let gen_header lst =
       | 0 -> "caml_callback(*closure, Val_unit)"
       | _ -> begin
         fprintf h "    value *args = new value[%d];\n" n;
-        iter2i args argnames ~f:(fun i arg name ->
+        List.iter2i args argnames ~f:(fun i arg name ->
           match arg with
             | "int"    -> fprintf h   "    args[%d] = Val_int (%s);\n" i name
             | "bool"   -> fprintf h   "    args[%d] = Val_bool(%s);\n" i name

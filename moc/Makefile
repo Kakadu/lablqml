@@ -3,7 +3,7 @@
 .PHONY: build clean
 
 build:
-	ocamlbuild -j 0 -use-ocamlfind main.native
+	ocamlbuild -j 0 -use-ocamlfind mocml.native
 
 clean:
 	ocamlbuild -clean
