@@ -5,3 +5,4 @@ cppmoc.ml
 _build
 *.native
 *.byte
+*.h
