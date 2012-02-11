@@ -4,7 +4,7 @@ open Printf
 open Helpers
 
 type options = {
-  mutable filename:string;
+  mutable filename : string;
   mutable target : [ `Qml | `QtGui ]
 }
 
@@ -26,7 +26,7 @@ let () = match options.target with
     ()
   end
   | `Qml -> begin
-    let data = Parse.parse2 options.filename in
+    let data = Parse.parse_yaml options.filename in
     let () = print_endline "data file parsed" in
     let ans = data |> sexp_of_api_content |> Sexplib.Sexp.to_string_hum in
     let () = print_endline ans in

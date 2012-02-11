@@ -1,9 +1,7 @@
 (* Parsing config file *)
-open Core
-open Std_internal
-module List = Core_list
-module String = Core_string
-open Printf
+open Core.Std_internal
+module List = Core.Core_list
+module String = Core.Core_string
 type meth = string * string list with sexp
 
 let (|>) a f = f a 
@@ -58,3 +56,27 @@ let parse2 filename =
   ) in
   let () = add_class last in
   List.rev !ans
+
+let parse_yaml filename =
+  let p = YamlParser.make () in
+  let v = YamlParser.parse_string p Core.In_channel.(input_all (create filename)) in
+    let rec to_string y =
+      match y with
+        | YamlNode.SCALAR (_, str) -> str
+        | _ -> assert false
+    and to_list y =
+      match y with
+        | YamlNode.SEQUENCE (_, seq) -> List.map ~f: to_string seq
+        | _ -> assert false
+    and to_meth_list y =
+      match y with
+        | YamlNode.MAPPING (_, map) ->
+          List.rev (List.fold_left ~f: (fun acc (k, v) -> (to_string k, to_list v) :: acc) ~init: ([] : meth list) map)
+        | _ -> assert false
+    and parse y =
+      match y with
+        | YamlNode.MAPPING (_, map) ->
+          List.rev (List.fold_left ~f: (fun acc (k, v) -> (to_string k, to_meth_list v) :: acc) ~init: ([] : api_content) map)
+        | _ -> assert false
+    in
+    parse v
