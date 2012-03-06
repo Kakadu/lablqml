@@ -8,7 +8,7 @@ type options = {
   mutable target : [ `Qml | `QtGui ]
 }
 
-let options = {filename = "input"; target = `Qml }
+let options = {filename = "input_yaml"; target = `Qml }
 
 let () = Core_arg.parse 
   [ ("qml",   Core_arg.Unit (fun () -> options.target <- `Qml),  "use qml")
@@ -26,12 +26,30 @@ let () = match options.target with
     ()
   end
   | `Qml -> begin
-    let data = Parse.parse_yaml options.filename in
+    let data = Parse.Yaml2.parse_file options.filename in
     let () = print_endline "data file parsed" in
-    let ans = data |> sexp_of_api_content |> Sexplib.Sexp.to_string_hum in
-    let () = print_endline ans in
-    List.iter data ~f:(fun (classname,meths) ->  Qml.gen_header ~classname meths);
+    let open Parse.Yaml2 in
+    let () = data |> Types.sexp_of_data |> Sexplib.Sexp.to_string_hum |> print_endline in
+    let () = List.iter data ~f:(fun c ->
+      Qml.gen_header c;
+      Qml.gen_cpp c
+    ) in
     ()
   end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

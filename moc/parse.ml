@@ -80,3 +80,72 @@ let parse_yaml filename =
         | _ -> assert false
     in
     parse v
+
+module Yaml2 = struct
+  open Core
+  open Sexplib.Conv
+  module List = Core.Core_list
+  module String = Core.Core_string
+  let (|>) a f = f a
+
+  module Types = struct
+    type meth = string * string list with sexp
+    type prop = {name:string; getter:string; setter: string; notifier: string} with sexp
+    type clas =
+        {classname:string; slots: meth list; signals: meth list; members: meth list; props: prop list}
+    with sexp
+    type data = clas list with sexp
+  end
+
+  open YamlNode
+  
+  let rec parse_data = function
+    | MAPPING(_,lst) -> List.map lst ~f:parse_clas
+    | _ -> assert false
+  and parse_clas = function
+    | (SCALAR (_, classname), MAPPING(_,lst)) ->
+        let (members,signals,slots,props) =
+          List.fold_left ~init:([],[],[],[]) lst ~f:(fun (a,b,c,d) -> function
+            | (SCALAR (_,"signals"),MAPPING (_,map)) ->
+                let lst = List.map map ~f:parse_meth in
+                (a,lst @ b,c,d)
+            | (SCALAR (_,"slots"),MAPPING (_,map)) ->
+                let lst = List.map map ~f:parse_meth in
+                (a,b,lst@c,d)
+            | (SCALAR (_,"methods"),MAPPING (_,map)) ->
+                let lst = List.map map ~f:parse_meth in
+                (lst@a,b,c,d)
+            | (SCALAR (_,"properties"),MAPPING (_,map)) ->
+                let lst = List.map map ~f:parse_prop in
+                (a,b,c,lst@d)
+            | _ -> assert false
+          ) in
+        Types.({classname;members;signals;slots;props})
+    | _ -> assert false
+  and parse_meth = function
+    | (SCALAR(_,name),SEQUENCE(_,lst)) ->
+        let lst = List.map lst ~f:(function SCALAR (_,x) -> x | _ -> assert false) in
+        (name,lst)
+    | _ -> assert false
+  and parse_prop = function
+    | (SCALAR(_,name),MAPPING(_,lst)) ->
+        let helper name =
+          lst |> List.filter_map ~f:(function
+            | (SCALAR(_,x),SCALAR(_,value)) when x=name -> Some value
+            | _ -> None)
+    |> (function
+        | [] -> assert false
+        | x::_ -> x)
+        in
+        let getter = helper "get"
+        and setter = helper "set"
+        and notifier = helper "notify" in
+        Types.({name;getter;setter;notifier})
+    | _ -> assert false
+
+  let parse_file filename =
+    let p = YamlParser.make () in
+    let data = YamlParser.parse_string p Core.In_channel.(input_all (create filename)) in
+    parse_data data
+    
+end

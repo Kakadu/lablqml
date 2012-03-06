@@ -1,9 +1,15 @@
 ---
 A:
-  foo: [unit, unit]
-  boo: [int, qWidget]
-  goo: [qWidget, int]
-B:
-  moo: [unit, unit]
-  doo: [string, int]
-  too: [string, string]
+  methods:
+    foo: [unit, unit]
+  slots:
+    slot1: [unit, unit]
+  signals:
+    signal1: [unit, unit]
+  properties:
+    prop1:
+      get: g
+      set: s
+      notify: n
+      name:  aaaaa
+    
