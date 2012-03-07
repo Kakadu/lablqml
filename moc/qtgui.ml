@@ -3,21 +3,7 @@ open Parse
 open Printf
 open Helpers
 
-
-let gen_header lst = 
-  let h = open_out (classname ^ ".h") in
-
-  List.iter [
-    "#include <Qt/QtOpenGL>\n";
-    "extern \"C\" {\n";
-    "#include \"headers.h\"\n";
-    "}\n";
-    "#include <QtCore/QObject>\n";
-    "class" ^ classname ^ ": public QObject {\nQ_OBJECT\n";
-    "public slots:\n";
-  ] (output_string h);
-
-  List.iter lst ~f: (fun ((name, lst) as slot) -> 
+let gen_meth ~classname ~ocaml_methname h ((name,lst) as slot) = 
     let lst = List.map lst ~f: to_cpp_type in
     let (res, args) = 
       let l'= List.rev lst in
@@ -28,8 +14,9 @@ let gen_header lst =
     let arg' = List.map2_exn args argnames ~f: (fun typ name -> sprintf "%s %s" typ name) in
     fprintf h "  %s %s(%s) {\n" res name (String.concat ~sep: "," arg');
     (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
-    output_string h ("    value *closure = caml_named_value(\"" ^ (name_for_slot slot) ^ "\");\n");
-    output_string h  "    if (closure==NULL)\n      printf(\"closure not found. crash.\\n\");\n";
+    output_string h ("    value *closure = caml_named_value(\"" ^ (ocaml_methname slot) ^ "\");\n");
+    fprintf h "    Q_ASSERT_X(closure!=NULL,\"%s::%s\",\"ocaml's closure not found\");\n" classname name;
+(*    output_string h  "    if (closure==NULL)\n      printf(\"closure not found. crash.\\n\");\n"; *)
 
     let n = List.length argnames in
     let call_closure_str = match n with 
@@ -63,16 +50,29 @@ let gen_header lst =
         | "double"
         | "float" -> assert false
         | "bool"  -> "Bool_val(_ans)"
-        | _ when
-          is_class  -> sprintf " (%s)_ans" res
         | "string"
         | "QString" -> "QString(String_val(_ans))"
+        | _ when
+          is_class  -> sprintf " (%s)_ans" res
         | _ -> assert false
       in
       fprintf h "    return %s;\n" ret
     end;
     fprintf h "  }\n"
-  );
+
+let gen_header lst = 
+  let h = open_out (classname ^ ".h") in
+
+  List.iter [
+    "#include <Qt/QtOpenGL>\n";
+    "extern \"C\" {\n";
+    "#include \"headers.h\"\n";
+    "}\n";
+    "#include <QtCore/QObject>\n";
+    "class" ^ classname ^ ": public QObject {\nQ_OBJECT\n";
+    "public slots:\n";
+  ] (output_string h);
+  List.iter lst ~f:(gen_meth ~classname ~ocaml_methname:name_for_slot h);
   fprintf h "};\n";
   close_out h;
 

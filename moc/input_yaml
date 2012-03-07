@@ -1,9 +1,9 @@
 ---
 A:
   methods:
-    foo: [unit, unit]
+    foo: [int, string]
   slots:
-    slot1: [unit, unit]
+    slot1: [string, int]
   signals:
     signal1: [unit, unit]
   properties:

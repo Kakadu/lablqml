@@ -42,6 +42,9 @@ let to_cpp_type s = match s with
   | "int"  -> "int"
   | "bool" -> "bool"
   | "unit" -> "void"
+  | "string"
+  | "qstring" 
+  | "qString" -> "QString"
   | s when is_qt_classname s -> to_qt_classname s ^ "*"
   | _ -> assert false
 

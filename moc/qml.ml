@@ -6,7 +6,7 @@ open Helpers
 open Parse.Yaml2
 open Types
 
-let gen_header {classname; members; _ } =
+let gen_header {classname; members; slots; _ } =
   let h = open_out (classname ^ ".h") in
   let big_name = String.capitalize classname ^ "_H" in
   fprintf h "#ifndef %s\n" big_name;
@@ -15,10 +15,11 @@ let gen_header {classname; members; _ } =
   fprintf h "class %s : public QObject {\n" classname;
   fprintf h "  Q_OBJECT\n";
   fprintf h "public:\n";
-  fprintf h "  explicit %s(QObject *parent = 0) : QObject(parent) {};n" classname;
-
+  fprintf h "  explicit %s(QObject *parent = 0) : QObject(parent) {};\n" classname;
+  List.iter members ~f:(Qtgui.gen_meth ~classname ~ocaml_methname:name_for_slot h);
   fprintf h "signals:\n";
   fprintf h "public slots:\n";
+  List.iter slots ~f:(Qtgui.gen_meth ~classname ~ocaml_methname:name_for_slot h);
   fprintf h "};\n";
   fprintf h "#endif\n\n";
   close_out h
