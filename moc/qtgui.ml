@@ -14,10 +14,12 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false) h ((name,lst) as slot
     let arg' = List.map2_exn args argnames ~f: (fun typ name -> sprintf "%s %s" typ name) in
     fprintf h "  %s%s %s(%s) {\n" (if invokable then "Q_INVOKABLE " else "")
       res name (String.concat ~sep: "," arg');
+    let ocaml_closure = ocaml_methname slot in
     (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
-    output_string h ("    value *closure = caml_named_value(\"" ^ (ocaml_methname slot) ^ "\");\n");
-    fprintf h "    Q_ASSERT_X(closure!=NULL,\"%s::%s\",\"ocaml's closure not found\");\n" classname name;
-(*    output_string h  "    if (closure==NULL)\n      printf(\"closure not found. crash.\\n\");\n"; *)
+    
+    output_string h ("    value *closure = caml_named_value(\"" ^ ocaml_closure ^ "\");\n");
+    fprintf h "    Q_ASSERT_X(closure!=NULL,\"%s::%s\",\"ocaml's closure `%s` not found\");\n" 
+      classname name ocaml_closure;
 
     let n = List.length argnames in
     let call_closure_str = match n with 
@@ -29,9 +31,9 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false) h ((name,lst) as slot
             | "int"    -> fprintf h   "    args[%d] = Val_int (%s);\n" i name
             | "bool"   -> fprintf h   "    args[%d] = Val_bool(%s);\n" i name
             | "float"  -> S.failwithf "float values are not yet supported" ()
+            | "QString"
             | "string" -> fprintf h   "    args[%d] = caml_copy_string(%s.toLocal8Bit().data() );\n" i name
             | _ when is_qt_classname arg -> begin
-(*              let classname = to_qt_classname arg in *)
               fprintf h "    args[%d] = (%s!=0)? Some_val(%s) : Val_none;\n" i name name
             end
             | _ -> assert false
