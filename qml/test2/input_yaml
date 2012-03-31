@@ -1,0 +1,16 @@
+---
+Gamemap:
+  properties: 
+    title:
+      type: string
+      name: title
+      set: setTitle
+      get: title
+      notify: titleChanged
+    width:
+      type: int
+      name: width
+      set: setWidth
+      get: width
+      notify: widthChanged
+
