@@ -3,7 +3,7 @@ open Parse
 open Printf
 open Helpers
 
-let gen_meth ~classname ~ocaml_methname h ((name,lst) as slot) = 
+let gen_meth ~classname ~ocaml_methname ?(invokable=false) h ((name,lst) as slot) = 
     let lst = List.map lst ~f: to_cpp_type in
     let (res, args) = 
       let l'= List.rev lst in
@@ -12,7 +12,8 @@ let gen_meth ~classname ~ocaml_methname h ((name,lst) as slot) =
     let args = if args = ["void"] then [] else args in
     let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
     let arg' = List.map2_exn args argnames ~f: (fun typ name -> sprintf "%s %s" typ name) in
-    fprintf h "  %s %s(%s) {\n" res name (String.concat ~sep: "," arg');
+    fprintf h "  %s%s %s(%s) {\n" (if invokable then "Q_INVOKABLE " else "")
+      res name (String.concat ~sep: "," arg');
     (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
     output_string h ("    value *closure = caml_named_value(\"" ^ (ocaml_methname slot) ^ "\");\n");
     fprintf h "    Q_ASSERT_X(closure!=NULL,\"%s::%s\",\"ocaml's closure not found\");\n" classname name;

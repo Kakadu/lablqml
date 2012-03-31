@@ -90,7 +90,7 @@ module Yaml2 = struct
 
   module Types = struct
     type meth = string * string list with sexp
-    type prop = {name:string; getter:string; setter: string; notifier: string} with sexp
+    type prop = {name:string; getter:string; setter: string; notifier: string; typ:string} with sexp
     type clas =
         {classname:string; slots: meth list; signals: meth list; members: meth list; props: prop list}
     with sexp
@@ -139,8 +139,9 @@ module Yaml2 = struct
         in
         let getter = helper "get"
         and setter = helper "set"
+        and typ = helper "type"
         and notifier = helper "notify" in
-        Types.({name;getter;setter;notifier})
+        Types.({name;getter;setter;notifier;typ})
     | _ -> assert false
 
   let parse_file filename =

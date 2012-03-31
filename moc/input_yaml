@@ -1,15 +1,12 @@
 ---
 A:
   methods:
-    foo: [int, string]
-  slots:
-    slot1: [string, int]
-  signals:
-    signal1: [unit, unit]
+    sizey: [unit, int]
   properties:
     prop1:
-      get: g
-      set: s
-      notify: n
-      name:  aaaaa
+      type: string
+      get: title
+      set: setTitle
+      notify: titleChanged
+      name: title
     

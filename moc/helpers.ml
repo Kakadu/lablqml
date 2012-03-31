@@ -37,7 +37,6 @@ let name_for_slot (name,lst) =
   let f = String.map ~f:(function '*' -> '_' | s -> s) in
   String.concat ~sep:"_" (ocaml_classname::name::(List.map lst ~f))
 
-
 let to_cpp_type s = match s with
   | "int"  -> "int"
   | "bool" -> "bool"
