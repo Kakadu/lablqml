@@ -1,11 +1,9 @@
 (* Parsing config file *)
-open Core.Std_internal
-module List = Core.Core_list
-module String = Core.Core_string
-type meth = string * string list with sexp
+open Core
+open Core.Std
 
 let (|>) a f = f a 
-
+(*
 let is_good_arg name = match name with
   | "unit" | "float" | "int" | "string" | "bool" -> true
   | _ when name.[0] = 'q' -> true
@@ -25,14 +23,24 @@ let parse_slot x =
       | _ -> print_endline "Malformed line"; None
 
 let parse_slots = List.filter_map ~f:parse_slot
-let parse filename = read_lines filename |> parse_slots
+let parse filename = 
+  let ch = In_channel.create ~binary:false filename in
+  let ans = In_channel.input_lines ch |> parse_slots in
+  let () = In_channel.close ch in
+  ans
 
 type api_content =
     (string * meth list) list
 with sexp
 
+let with_file filename f = 
+  let ch = In_channel.create ~binary:false filename in
+  let ans = In_channel.input_lines ch |> f in
+  let () = In_channel.close ch in
+  ans
+
 let parse2 filename =
-  let lines = read_lines filename |> List.map ~f:String.strip in
+  let lines = with_file filename (List.map ~f:String.strip) in
   let ans: api_content ref = ref [] in
   let add_class c = match c with
     | Some (name, lst) -> ans := (name, List.rev lst) :: !ans
@@ -56,7 +64,8 @@ let parse2 filename =
   ) in
   let () = add_class last in
   List.rev !ans
-
+  *)
+(*
 let parse_yaml filename =
   let p = YamlParser.make () in
   let v = YamlParser.parse_string p Core.In_channel.(input_all (create filename)) in
@@ -80,17 +89,16 @@ let parse_yaml filename =
         | _ -> assert false
     in
     parse v
+    *)
 
 module Yaml2 = struct
   open Core
   open Sexplib.Conv
-  module List = Core.Core_list
-  module String = Core.Core_string
-  let (|>) a f = f a
 
   module Types = struct
-    type meth = string * string list with sexp
-    type prop = {name:string; getter:string; setter: string; notifier: string; typ:string} with sexp
+    type typ = [ `Simple of string | `List of string ] with sexp
+    type meth = string * typ list * typ with sexp
+    type prop = {name:string; getter:string; setter: string; notifier: string; typ:typ} with sexp
     type clas =
         {classname:string; slots: meth list; signals: meth list; members: meth list; props: prop list}
     with sexp
@@ -125,7 +133,16 @@ module Yaml2 = struct
   and parse_meth = function
     | (SCALAR(_,name),SEQUENCE(_,lst)) ->
         let lst = List.map lst ~f:(function SCALAR (_,x) -> x | _ -> assert false) in
-        (name,lst)
+        (* last item in method return type *)
+        let res,args = 
+          let l = List.rev lst in (List.hd_exn l, l |> List.tl_exn |> List.rev)
+        in
+        let conv ty = match String.split ~on:' ' ty with
+          | [s] -> `Simple s 
+          | [s; "list"] -> `List s
+          | _ -> assert false
+        in
+        (name,List.map args ~f:conv, conv res)
     | _ -> assert false
   and parse_prop = function
     | (SCALAR(_,name),MAPPING(_,lst)) ->
@@ -141,6 +158,10 @@ module Yaml2 = struct
         and setter = helper "set"
         and typ = helper "type"
         and notifier = helper "notify" in
+        let typ = match String.split ~on:' ' typ with
+          | [s;"list"] -> `List s 
+          | s -> `Simple typ
+        in
         Types.({name;getter;setter;notifier;typ})
     | _ -> assert false
 

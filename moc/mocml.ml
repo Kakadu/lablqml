@@ -17,14 +17,14 @@ let () = Core_arg.parse
     print_endline ("Setting filename " ^ s)
 ) "usage_msg"
 
-let () = match options.target with
-  | `QtGui -> begin
+let () = match options.target with 
+  | `QtGui -> begin (*
     let funcs = Parse.parse options.filename in
     let () = print_endline ("slots parsed: " ^ string_of_int (List.length funcs)) in
     let () = Qtgui.gen_header funcs in
     let () = Qtgui.gen_ml funcs in
-    ()
-  end
+    () *)
+  end 
   | `Qml -> begin
     let data = Parse.Yaml2.parse_file options.filename in
     let () = print_endline "data file parsed" in

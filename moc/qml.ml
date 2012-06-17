@@ -6,8 +6,10 @@ open Helpers
 open Parse.Yaml2
 open Types
 
-let ocaml_name_of_prop ~classname isGetter (propname,_)=
-  sprintf "prop_%s_%s_%s" classname propname (if isGetter then "get" else "set")
+let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
+  sprintf "prop_%s_%s_%s_%s" classname name 
+    (match sort with `Getter -> "get" | `Setter -> "set")
+    (match typ  with `Simple s -> s | `List l -> sprintf "%s_list" l)
 
 let gen_header {classname; members; slots; props; _ } =
   let h = open_out (classname ^ ".h") in
@@ -19,14 +21,14 @@ let gen_header {classname; members; slots; props; _ } =
   fprintf h "  Q_OBJECT\n";
   fprintf h "public:\n";
   (* properties *)
-  List.iter props ~f:(fun {name;getter;setter;notifier;typ} ->
+  List.iter props ~f:(fun ({name;getter;setter;notifier;typ} as prop) ->
     fprintf h "public:\n";
     fprintf h "  Q_PROPERTY(%s %s WRITE %s READ %s NOTIFY %s)\n" 
       (to_cpp_type typ) name setter getter notifier;
-    let ocaml_methname = ocaml_name_of_prop ~classname true in
-    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h (getter,["unit";typ]);
-    let ocaml_methname = ocaml_name_of_prop ~classname false in
-    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h (setter,[typ;"unit"]);
+    let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Getter prop in
+    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h (getter,[`Simple "unit"],typ);
+    let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Setter prop in
+    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h (setter,[typ],`Simple "unit");
     fprintf h "signals:\n";
     fprintf h "  void %s();\n" notifier
   );

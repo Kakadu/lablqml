@@ -1,6 +1,8 @@
+.typerex
 UserSlots.cpp
 UserSlots.h
 UserSlots_stubs.ml
+A.cpp
 cppmoc.ml
 _build
 *.native

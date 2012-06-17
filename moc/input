@@ -1,8 +1,0 @@
-class A
-let foo : unit -> unit
-let boo : int -> qWidget
-let goo : qWidget -> int
-class B
-let moo : unit -> unit
-let doo : string -> int
-let too : string -> string
