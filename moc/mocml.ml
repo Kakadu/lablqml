@@ -30,10 +30,7 @@ let () = match options.target with
     let () = print_endline "data file parsed" in
     let open Parse.Yaml2 in
     let () = data |> Types.sexp_of_data |> Sexplib.Sexp.to_string_hum |> print_endline in
-    let () = List.iter data ~f:(fun c ->
-      Qml.gen_header c;
-      Qml.gen_cpp c
-    ) in
+    let () = List.iter data ~f:Qml.gen_cpp in
     ()
   end
 

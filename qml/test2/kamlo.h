@@ -4,9 +4,8 @@
 extern "C" {
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include <caml/memory.h>
 #include <caml/callback.h>
-
+#include <caml/memory.h>
 }
 
 #define Val_none Val_int(0)
@@ -18,5 +17,16 @@ Some_val(value v) {
   Field(ans,0)=v;
   CAMLreturn(ans);
 }
-
+/*
+#define Kamlolist_of_QList(conv,lst,ans_name) \
+{\
+	if (lst.length()==0) \
+		ans_name = Val_emptylist;\
+	else {\
+		auto i = lst.end() --;\
+		for (;;) {\
+			
+	}\
+}
+*/
 #endif

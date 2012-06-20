@@ -8,10 +8,10 @@ let gamemap = object
  
 end
 
-let () = Callback.register "prop_Gamemap_title_get" gamemap#title
-let () = Callback.register "prop_Gamemap_title_set" gamemap#setTitle
+let () = Callback.register "prop_Gamemap_title_get_string" gamemap#title
+let () = Callback.register "prop_Gamemap_title_set_string" gamemap#setTitle
 
-let () = Callback.register "prop_Gamemap_width_get" gamemap#width
-let () = Callback.register "prop_Gamemap_width_set" gamemap#setWidth
+let () = Callback.register "prop_Gamemap_width_get_int" gamemap#width
+let () = Callback.register "prop_Gamemap_width_set_int" gamemap#setWidth
 
 

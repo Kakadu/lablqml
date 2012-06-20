@@ -11,44 +11,53 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
     (match sort with `Getter -> "get" | `Setter -> "set")
     (match typ  with `Simple s -> s | `List l -> sprintf "%s_list" l)
 
-let gen_header {classname; members; slots; props; _ } =
-  let h = open_out (classname ^ ".h") in
+let gen_cpp {classname; members; slots; props; _ } =
   let big_name = String.capitalize classname ^ "_H" in
-  fprintf h "#ifndef %s\n" big_name;
-  fprintf h "#define %s\n\n" big_name;
-  fprintf h "#include <QObject>\n#include <QDebug>\n#include <kamlo.h>\n\n";
-  fprintf h "class %s : public QObject {\n" classname;
-  fprintf h "  Q_OBJECT\n";
-  fprintf h "public:\n";
+  let h_file = open_out (classname ^ ".h") in
+  let print_h fmt = fprintf h_file fmt in
+  print_h "#ifndef %s\n" big_name;
+  print_h "#define %s\n\n" big_name;
+  print_h "#include <QObject>\n#include <QDebug>\n#include <kamlo.h>\n\n";
+  print_h "class %s : public QObject {\n" classname;
+  print_h "  Q_OBJECT\n";
+  print_h "public:\n";
+
+  let cpp_file = open_out (classname ^ ".cpp") in
+  let print_cpp fmt = fprintf cpp_file fmt in
+  print_cpp "#include \"%s.h\"\n" classname;
+
   (* properties *)
   List.iter props ~f:(fun ({name;getter;setter;notifier;typ} as prop) ->
-    fprintf h "public:\n";
-    fprintf h "  Q_PROPERTY(%s %s WRITE %s READ %s NOTIFY %s)\n" 
+    print_h "public:\n";
+    print_h "  Q_PROPERTY(%s %s WRITE %s READ %s NOTIFY %s)\n" 
       (to_cpp_type typ) name setter getter notifier;
     let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Getter prop in
-    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h (getter,[`Simple "unit"],typ);
+    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (getter,[`Simple "unit"],typ);
     let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Setter prop in
-    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h (setter,[typ],`Simple "unit");
-    fprintf h "signals:\n";
-    fprintf h "  void %s();\n" notifier
+    Qtgui.gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (setter,[typ],`Simple "unit");
+    print_h "signals:\n";
+    print_h "  void %s();\n" notifier
   );
-  fprintf h "public:\n";
-  fprintf h "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
-  List.iter members ~f:(Qtgui.gen_meth ~classname ~invokable:true ~ocaml_methname:name_for_slot h);
+  print_h "public:\n";
+  print_h "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
+  List.iter members ~f:(Qtgui.gen_meth ~classname ~invokable:true 
+                          ~ocaml_methname:name_for_slot h_file cpp_file);
   if slots <> [] then (
-    fprintf h "public slots:\n";
-    List.iter slots ~f:(Qtgui.gen_meth ~classname ~invokable:false ~ocaml_methname:name_for_slot h)
+    print_h "public slots:\n";
+    List.iter slots ~f:(Qtgui.gen_meth ~classname ~invokable:false ~ocaml_methname:name_for_slot h_file cpp_file)
   );
-  fprintf h "};\n";
-  fprintf h "#endif\n\n";
-  close_out h
+  print_h "};\n";
+  print_h "#endif\n\n";
+  close_out h_file;
+  close_out cpp_file
 
+(*
 let gen_cpp {classname; members; _ } =
   let h = open_out (classname ^ ".cpp") in
   fprintf h "#include \"%s.h\"\n" classname;
 
   close_out h
-  
+*)
 
 
 
