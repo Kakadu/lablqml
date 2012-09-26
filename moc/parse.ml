@@ -3,7 +3,7 @@ open Core
 open Core.Std
 
 let (|>) a f = f a 
-(*
+
 let is_good_arg name = match name with
   | "unit" | "float" | "int" | "string" | "bool" -> true
   | _ when name.[0] = 'q' -> true
@@ -23,12 +23,12 @@ let parse_slot x =
       | _ -> print_endline "Malformed line"; None
 
 let parse_slots = List.filter_map ~f:parse_slot
-let parse filename = 
+let parse filename : (string * (string list)) list = 
   let ch = In_channel.create ~binary:false filename in
   let ans = In_channel.input_lines ch |> parse_slots in
   let () = In_channel.close ch in
   ans
-
+  (*
 type api_content =
     (string * meth list) list
 with sexp
@@ -165,7 +165,7 @@ module Yaml2 = struct
         Types.({name;getter;setter;notifier;typ})
     | _ -> assert false
 
-  let parse_file filename =
+  let parse_file filename : Types.clas list =
     let p = YamlParser.make () in
     let data = YamlParser.parse_string p Core.In_channel.(input_all (create filename)) in
     parse_data data

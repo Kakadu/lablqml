@@ -6,8 +6,10 @@ open Helpers
 (* Generatess C++ stub for method *)
 let gen_meth ~classname ~ocaml_methname ?(invokable=false) 
     file_h file_cpp ((name,args,res) as slot) = 
+  printf "Generatig meth '%s'\n" name;
   let print_h   fmt = fprintf file_h   fmt in
   let print_cpp fmt = fprintf file_cpp fmt in
+  print_h "  //Generating meth '%s'\n" name;
   let args = if args = [`Simple "unit"] then [] else args in
   let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
   let lst = List.map args ~f:to_cpp_type in
@@ -100,40 +102,43 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
             print_cpp "    };\n";
             print_cpp "    CAMLreturnT(QList<int>,ans);\n"            
     end;
-    print_cpp "}\n"
+    print_cpp "}\n";
+    flush file_cpp
 
-(*
+
 let gen_cpp lst = 
   let h_file = open_out (classname ^ ".h") in
-  let cpp_file = open_out (classname ^ ".cpp") in
   List.iter [
-    "#include <Qt/QtOpenGL>\n";
+    "#include <Qt/QtGui>\n";
     "extern \"C\" {\n";
     "#include \"headers.h\"\n";
     "}\n";
-    "#include <QtCore/QObject>\n";
-    "class" ^ classname ^ ": public QObject {\nQ_OBJECT\n";
+    "#include <QtCore/QObject>\n\n";
+    "class " ^ classname ^ ": public QObject {\nQ_OBJECT\n";
     "public slots:\n";
   ] (output_string h_file);
-  List.iter lst ~f:(gen_meth ~classname ~ocaml_methname:name_for_slot h_file cpp_file);
-  print_cpp_file "};\n";
-  close_out h_file;
-  close_out cpp_file
-(*
   let cpp_file = open_out (classname ^ ".cpp") in
-  print_cpp "#include \"%s.h\"\n" classname;
-  print_cpp "extern \"C\" {\n";
-  print_cpp "  #include \"headers.h\"\n";
-  print_cpp "  value createUserSlots(value x) {\n";
-  print_cpp "    CAMLparam1(x);\n";
-  print_cpp "    CAMLreturn((value)(new %s()));\n" classname;
-  print_cpp "  }\n";
-  print_cpp "}\n\n";
-  close_out h
-  *)
+  fprintf cpp_file "#include \"%s.h\"\n\n" classname;
+  List.iter lst ~f:(gen_meth ~classname ~ocaml_methname:name_for_slot h_file cpp_file);
+  output_string h_file  "\n};\n";
+  close_out h_file;
+  close_out cpp_file;
+
+  let cpp_file = open_out (classname ^ "_helper.cpp") in
+  fprintf cpp_file "#include \"%s.h\"\n" classname;
+  fprintf cpp_file "extern \"C\" {\n";
+  fprintf cpp_file "  #include \"headers.h\"\n";
+  fprintf cpp_file "  value createUserSlots(value x) {\n";
+  fprintf cpp_file "    CAMLparam1(x);\n";
+  fprintf cpp_file "    CAMLreturn((value)(new %s()));\n" classname;
+  fprintf cpp_file "  }\n";
+  fprintf cpp_file "}\n\n";
+  close_out cpp_file
+
 
 let gen_ml lst =
   let h = open_out (classname ^ "_stubs.ml") in
+  let print_cpp  fmt = fprintf h fmt in
   print_cpp "open Stub_helpers\n";
   print_cpp "open Classes\n\n";
 
@@ -176,4 +181,4 @@ let gen_ml lst =
   print_cpp "external create_%s': unit -> [`qobject] obj = \"create%s\"\n" classname classname;
   print_cpp "let create_%s () = create_%s' () |> new %s\n" classname classname ocaml_classname;
   close_out h
-*)
+

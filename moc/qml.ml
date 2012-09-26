@@ -17,8 +17,10 @@ let gen_cpp {classname; members; slots; props; _ } =
   let print_h fmt = fprintf h_file fmt in
   print_h "#ifndef %s\n" big_name;
   print_h "#define %s\n\n" big_name;
-  print_h "#include <QObject>\n#include <QDebug>\n#include <kamlo.h>\n\n";
-  print_h "class %s : public QObject {\n" classname;
+  print_h "#include <QtCore/QObject>\n";
+  print_h "#include <QtCore/QDebug>\n";
+  print_h "#include <kamlo.h>\n\n";
+  print_h "class %s : public QObject\n{\n" classname;
   print_h "  Q_OBJECT\n";
   print_h "public:\n";
 
@@ -51,13 +53,6 @@ let gen_cpp {classname; members; slots; props; _ } =
   close_out h_file;
   close_out cpp_file
 
-(*
-let gen_cpp {classname; members; _ } =
-  let h = open_out (classname ^ ".cpp") in
-  fprintf h "#include \"%s.h\"\n" classname;
-
-  close_out h
-*)
 
 
 
