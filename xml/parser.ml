@@ -171,11 +171,11 @@ end
 module MethSet = struct
   include Core_set.Make(MethKey)
 
-  let compare_items: elt -> elt -> int = MethKey.compare
-  let map ~f t = fold ~init:empty ~f:(fun e acc -> add acc (f e)) t
+  let compare_items = MethKey.compare
+  let map ~f t = fold ~init:empty ~f:(fun acc e -> add acc (f e)) t
 
   let remove_set ~base:init w =
-    fold ~init w ~f:(fun el acc -> remove acc el)
+    fold ~init w ~f:(fun  acc el -> remove acc el)
 end
 
 type enum = {
@@ -400,8 +400,8 @@ and parse_class nsname c  =
 	  | Element ("modifiers",_,lst) -> 
 	    List.map lst ~f:(function Element (n,_,_) -> n | PCData _ -> assert false) 
 	    |> (fun set ->
-		  if List.mem "abstract" ~set then modif := `Abstract 
-		  else if List.mem "static" ~set then modif := `Static
+		  if List.mem set "abstract" then modif := `Abstract 
+		  else if List.mem set "static" then modif := `Static
 		  else modif := `Normal)
 	  | PCData x -> print_endline x; assert false
 	  | Element (name,_,_) -> print_endline name; assert false);

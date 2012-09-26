@@ -157,9 +157,8 @@ class ocamlGenerator graph dir index = object (self)
         (String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
   (* generates member code*)
-  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h meth = 
+  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h (meth: Parser.meth) = 
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
-(*    let print = fprintf h in *)
     try
       let () = match meth.m_access with `Private -> raise BreakSilent | _ -> () in
 
@@ -395,7 +394,7 @@ class ocamlGenerator graph dir index = object (self)
         )
       );
       
-      fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then "virtual " else "") ocaml_classname;
+      fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then " " else "") ocaml_classname;
       fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
       if isQObject then
         fprintf h_classes 
@@ -409,7 +408,8 @@ class ocamlGenerator graph dir index = object (self)
 	  if m.m_access=`Protected & not isQObject then r.return ();
 	  if not isQObject then (
 	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
-            self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
+            self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes 
+                (m:                    meth)
 	  ) else (
             let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
 	    if (m.m_access=`Public) then stub false m;

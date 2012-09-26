@@ -23,7 +23,7 @@ let eliminate_lst (lst: constr list) =
   | h::tl ->
     let init = [h] in
     let f acc ((_,x'') as x) =
-      let (a,b) = Core_list.partition acc ~f:(fun (_,y) -> Core_string.Set.subset y x'') in
+      let (a,b) = Core_list.partition_tf acc ~f:(fun (_,y) -> Core_string.Set.subset y x'') in
       x :: b
     in    
     Core_list.fold tl ~init ~f
@@ -40,8 +40,8 @@ let filter_constrs index = SuperIndex.map ~f:(function
   | Enum e -> Enum e
   | Class (c,lst) -> 
     let classname  = c.c_name in
-    let constrs = c.c_constrs  |> 
-	List.filter (fun c -> is_good_meth ~classname ~index (meth_of_constr ~classname c))  in
+    let constrs = Core_list.filter c.c_constrs 
+      (fun c -> is_good_meth ~classname ~index (meth_of_constr ~classname c))  in
     let constrs = Core_list.stable_sort constrs ~cmp:(fun b a -> compare (List.length a) (List.length b))
   |> Core_list.rev in
     

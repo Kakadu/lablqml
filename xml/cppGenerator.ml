@@ -288,7 +288,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method gen_twin_source ~prefix c h = 
     let classname  = c.c_name in
-    fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include <Qt/QtGui>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
@@ -307,7 +307,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  CAMLreturn(ans);\n}\n\n"
     );
     let new_meths =
-      MethSet.fold c.c_meths ~init:MethSet.empty ~f:(fun m a -> match m.m_access with
+      MethSet.fold c.c_meths ~init:MethSet.empty ~f:(fun a m -> match m.m_access with
         | `Public -> MethSet.add a m
         | `Private -> a
         | `Protected -> MethSet.add a {m with m_access=`Public} ) in
@@ -329,7 +329,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method gen_twin_header ~prefix c h = 
     let classname  = c.c_name in
-    fprintf h "#include <Qt/QtOpenGL>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include <Qt/QtGui>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
@@ -341,7 +341,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     |> (fun s -> printf "meths of class %s: %s\n" classname s)
     in
     let (pub_meths,prot_meths) = 
-      MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun m (a,b) -> match m.m_access with
+      MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun (a,b) m -> match m.m_access with
         | `Public -> (MethSet.add a m,b)
         | `Private -> (a,b)
         | `Protected -> (a,MethSet.add b m) ) in
@@ -461,7 +461,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let h = open_out (dir ^/ filename ^".cpp") in
       fprintf h "//enum %s %s\n\n" e_name (List.to_string (fun x -> x) e_items);
 
-      fprintf h "#include <Qt/QtOpenGL>\n";
+      fprintf h "#include <Qt/QtGui>\n";
       fprintf h "#pragma GCC diagnostic ignored \"-Wswitch\"\n";
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       let (fname1,fname2) = enum_conv_func_names key in

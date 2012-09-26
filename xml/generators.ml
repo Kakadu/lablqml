@@ -131,7 +131,7 @@ let enum_conv_func_names (lst,_) =
 
 let is_abstract_class ~prefix index name = 
   let key = NameKey.make_key ~prefix ~name in
-  let f = fun m acc -> match m.m_modif with 
+  let f = fun acc m -> match m.m_modif with 
     | `Abstract -> 
 (*      printf "Abstract meth found in class %s: %s\n" name (string_of_meth m); *)
       true

@@ -7,7 +7,8 @@ type options = {
   mutable nocpp: bool;
   mutable noml: bool;
   mutable reparse_base: bool;
-  mutable base: Parser.namespace * index_data SuperIndex.t * G.t * SuperIndex.key Core_queue.t;
+  mutable base: Parser.namespace * index_data SuperIndex.t * G.t *
+  SuperIndex.Key.t Core_queue.t;
   mutable includes: string list;
   mutable input_file : string option;
 }
@@ -51,22 +52,24 @@ let main out_dir =
     let ch = open_out "superindex.log" in
     to_channel  index ch;
     close_out ch;
-
+(*
     let ch = open_out "tree.backup" in
     Marshal.to_channel ch options.base [];
-    close_out ch
+    close_out ch *)
   end else begin 
     let ch = open_in "tree.backup" in
     options.base <- Marshal.from_channel ch;
     close_in ch;
     print_endline "Index restored."
   end;
-
+  print_endline "HERE";
   if not options.nocpp then begin
     let (_,index,graph,q) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
     (new cppGenerator ~graph ~includes:options.includes out_dir index)#generate_q q
+  end else begin
+    print_endline "Generation of C++ code skipped"
   end; 
 
   if not options.noml then begin
@@ -74,8 +77,9 @@ let main out_dir =
     let open OcamlGenerator in
     print_endline "generating OCaml code";
     (new ocamlGenerator graph out_dir index )#generate q
+  end else begin
+    print_endline "Generation of OCaml code skipped"
   end
-
 (* TODO: experiment with Gc max heap size to speedup generator *)
 
 open Core_arg
@@ -95,3 +99,6 @@ let () =
     with e -> print_endline (Exn.backtrace ()); exit 1 end
   | _ ->
     prerr_endline "Not enough arguments, try -help"; exit 2
+
+
+

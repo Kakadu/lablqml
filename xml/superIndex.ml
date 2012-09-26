@@ -94,6 +94,7 @@ let to_channel t ch =
 module Evaluated = Core_set.Make(NameKey)
 module V = NameKey
 
+
 module G = struct 
   include Graph.Imperative.Digraph.Concrete(V) (* from base to subclasses *)
   let graph_attributes (_:t) = []
@@ -146,15 +147,14 @@ let overrides subclass_of a b =
 
 let names_print_helper s ~set = 
   printf "%s: %s\n\n" s
-    (MethSet.elements set
-        |> List.to_string (fun m -> m.m_out_name) ) 
+    (Core_list.to_string (MethSet.elements set) ~f:(fun m -> m.m_out_name) ) 
 
 (* Даны абстрактные методы в классе и нормальные методы.
    Выдрать какие норм. методы реализуют абстрактные, норм методы, которые ничего не оверрайдят
    и не реализованные абстрактные методы.
  *)
 let super_filter_meths subclass_of ~base ~cur =
-  let (<=<) : MethSet.elt -> MethSet.elt -> bool = fun a b -> overrides subclass_of a b in
+  let (<=<) : MethSet.Elt.t -> MethSet.Elt.t -> bool = fun a b -> overrides subclass_of a b in
 
   let base_not_impl = ref MethSet.empty in
   let cur_impl = ref MethSet.empty in
@@ -166,7 +166,7 @@ let super_filter_meths subclass_of ~base ~cur =
     else if MethSet.is_empty cur then base_not_impl := MethSet.union !base_not_impl base
     else begin
       let cur_el = MethSet.min_elt_exn cur  in (* the `newest` method in heirarchy *)
-      let (a,b) = MethSet.partition ~f:(fun m -> cur_el <=< m) base in
+      let (a,b) = MethSet.partition_tf ~f:(fun m -> cur_el <=< m) base in
       assert (MethSet.length a <= 1);
       if MethSet.is_empty a then begin
         (* метод cur_el не реализует ни одного абстрактного *)
@@ -348,7 +348,7 @@ let build_superindex root_ns =
         add2name_set base_meths;
         add2name_set base_slots;
 
-        let f = fun el (a,b) ->
+        let f = fun (a,b) el ->
           match el.m_modif with
             | `Abstract -> (MS.add a el,b)
             | `Static -> (a,b)

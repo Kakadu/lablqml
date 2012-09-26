@@ -3,10 +3,10 @@ module NameKey :
   sig
     type t = string list * string
     type sexpable = t
-    val sexp_of_t : 'a * Core.Core_string.sexpable -> Sexplib.Sexp.t
+    val sexp_of_t : 'a * Core.Core_string.t -> Sexplib.Sexp.t
     val key_of_fullname : string -> string Core.Core_list.t * string
     val t_of_sexp :
-      Sexplib.Sexp.t -> string Core.Core_list.t * Core.Core_string.sexpable
+      Sexplib.Sexp.t -> string Core.Core_list.t * Core.Core_string.t
     val compare : 'a * Core.Core_string.t -> 'b * Core.Core_string.t -> int
     val make_key :
       name:String.t -> prefix:String.t list -> String.t list * String.t
@@ -17,49 +17,113 @@ module NameKey :
 
 module SuperIndex :
   sig
-    type key = NameKey.t
-    type 'a t = 'a Core.Core_map.Make(NameKey).t
-(*    module T : sig type 'a key = key type ('a, 'b) t = 'b t end *)
-    type 'a sexpable = 'a t
-    val sexp_of_t : ('a -> Sexplib.Sexp.t) -> 'a sexpable -> Sexplib.Sexp.t
-    val t_of_sexp : (Sexplib.Sexp.t -> 'a) -> Sexplib.Sexp.t -> 'a sexpable
-    val empty : 'a t
-    val singleton : key -> 'a -> 'a t
-    val is_empty : 'a t -> bool
-    val cardinal : 'a t -> int
-    val add : key:key -> data:'a -> 'a t -> 'a t
-    val find_exn : 'a t -> key -> 'a
-    val find : 'a t -> key -> 'a option
-    val remove : 'a t -> key -> 'a t
-    val mem : 'a t -> key -> bool
-    val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
-    val map : f:('a -> 'b) -> 'a t -> 'b t
-    val mapi : f:(key:key -> data:'a -> 'b) -> 'a t -> 'b t
-    val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
-    val filter : f:(key:key -> data:'a -> bool) -> 'a t -> 'a t
-    val filter_map : f:('a -> 'b option) -> 'a t -> 'b t
-    val filter_mapi : f:(key:key -> data:'a -> 'b option) -> 'a t -> 'b t
-    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
-    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    val keys : 'a t -> key list
-    val has_key : 'a t -> key -> bool
-    val data : 'a t -> 'a list
-    val of_alist : (key * 'a) list -> [ `Duplicate_key of key | `Ok of 'a t ]
-    val of_alist_exn : (key * 'a) list -> 'a t
-    val of_alist_multi : (key * 'a) list -> 'a list t
-    val to_alist : 'a t -> (key * 'a) list
-    val combine_alist :
-      (key * 'a) list -> init:'b -> f:('a -> 'b -> 'b) -> 'b t
-    val merge :
-      f:(key:key -> 'a option -> 'b option -> 'c option) ->
-      'a t -> 'b t -> 'c t
-    val min_elt : 'a t -> (key * 'a) option
-    val min_elt_exn : 'a t -> key * 'a
-    val max_elt : 'a t -> (key * 'a) option
-    val max_elt_exn : 'a t -> key * 'a
-    val for_all : f:('a -> bool) -> 'a t -> bool
-    val exists : f:('a -> bool) -> 'a t -> bool
-  end
+           module Key :
+             sig
+               type t = NameKey.t
+               val sexp_of_t : t -> Sexplib.Sexp.t
+               val t_of_sexp : Sexplib.Sexp.t -> t
+               val compare : t -> t -> int
+               type comparator = Core.Core_map.Make(NameKey).Key.comparator
+               val comparator : (t, comparator) Core.Comparator.t_
+             end
+           type 'a t = (Key.t, 'a, Key.comparator) Core.Core_map.t
+           val sexp_of_t : ('a -> Sexplib.Sexp.t) -> 'a t -> Sexplib.Sexp.t
+           val t_of_sexp : (Sexplib.Sexp.t -> 'a) -> Sexplib.Sexp.t -> 'a t
+           type ('a, 'b, 'c) t_ = 'b t
+           type ('a, 'b, 'c) create_options =
+               ('a, 'b, 'c)
+               Core.Core_map_intf.create_options_without_comparator
+           val empty : ('a, 'b, ('a, 'c, 'b) t_) create_options
+           val singleton :
+             ('a, 'b, Key.t -> 'c -> ('a, 'c, 'b) t_) create_options
+           val of_alist :
+             ('a, 'b,
+              (Key.t * 'c) list ->
+              [ `Duplicate_key of Key.t | `Ok of ('a, 'c, 'b) t_ ])
+             create_options
+           val of_alist_exn :
+             ('a, 'b, (Key.t * 'c) list -> ('a, 'c, 'b) t_) create_options
+           val of_alist_multi :
+             ('a, 'b, (Key.t * 'c) list -> ('a, 'c list, 'b) t_)
+             create_options
+           val of_alist_fold :
+             ('a, 'b,
+              (Key.t * 'c) list ->
+              init:'d -> f:('d -> 'c -> 'd) -> ('a, 'd, 'b) t_)
+             create_options
+           val of_tree :
+             ('a, 'b,
+              (Key.t, 'c, 'b) Core.Core_map.tree -> ('a, 'c, 'b) t_)
+             create_options
+           val is_empty : ('a, 'b, 'c) t_ -> bool
+           val length : ('a, 'b, 'c) t_ -> int
+           val add :
+             ('a, 'b, 'c) t_ -> key:Key.t -> data:'b -> ('a, 'b, 'c) t_
+           val add_multi :
+             ('a, 'b list, 'c) t_ ->
+             key:Key.t -> data:'b -> ('a, 'b list, 'c) t_
+           val change :
+             ('a, 'b, 'c) t_ ->
+             Key.t -> ('b option -> 'b option) -> ('a, 'b, 'c) t_
+           val find : ('a, 'b, 'c) t_ -> Key.t -> 'b option
+           val find_exn : ('a, 'b, 'c) t_ -> Key.t -> 'b
+           val remove : ('a, 'b, 'c) t_ -> Key.t -> ('a, 'b, 'c) t_
+           val mem : ('a, 'b, 'c) t_ -> Key.t -> bool
+           val iter :
+             ('a, 'b, 'c) t_ -> f:(key:Key.t -> data:'b -> unit) -> unit
+           val map : ('a, 'b, 'c) t_ -> f:('b -> 'd) -> ('a, 'd, 'c) t_
+           val mapi :
+             ('a, 'b, 'c) t_ ->
+             f:(key:Key.t -> data:'b -> 'd) -> ('a, 'd, 'c) t_
+           val fold :
+             ('a, 'b, 'c) t_ ->
+             init:'d -> f:(key:Key.t -> data:'b -> 'd -> 'd) -> 'd
+           val fold_right :
+             ('a, 'b, 'c) t_ ->
+             init:'d -> f:(key:Key.t -> data:'b -> 'd -> 'd) -> 'd
+           val filter :
+             ('a, 'b, 'c) t_ ->
+             f:(key:Key.t -> data:'b -> bool) -> ('a, 'b, 'c) t_
+           val filter_map :
+             ('a, 'b, 'c) t_ -> f:('b -> 'd option) -> ('a, 'd, 'c) t_
+           val filter_mapi :
+             ('a, 'b, 'c) t_ ->
+             f:(key:Key.t -> data:'b -> 'd option) -> ('a, 'd, 'c) t_
+           val compare :
+             ('a -> 'a -> int) -> ('b, 'a, 'c) t_ -> ('b, 'a, 'c) t_ -> int
+           val equal :
+             ('a -> 'a -> bool) -> ('b, 'a, 'c) t_ -> ('b, 'a, 'c) t_ -> bool
+           val keys : ('a, 'b, 'c) t_ -> Key.t list
+           val data : ('a, 'b, 'c) t_ -> 'b list
+           val to_alist : ('a, 'b, 'c) t_ -> (Key.t * 'b) list
+           val merge :
+             ('a, 'b, 'c) t_ ->
+             ('a, 'd, 'c) t_ ->
+             f:(key:Key.t ->
+                [ `Both of 'b * 'd | `Left of 'b | `Right of 'd ] ->
+                'e option) ->
+             ('a, 'e, 'c) t_
+           val min_elt : ('a, 'b, 'c) t_ -> (Key.t * 'b) option
+           val min_elt_exn : ('a, 'b, 'c) t_ -> Key.t * 'b
+           val max_elt : ('a, 'b, 'c) t_ -> (Key.t * 'b) option
+           val max_elt_exn : ('a, 'b, 'c) t_ -> Key.t * 'b
+           val for_all : ('a, 'b, 'c) t_ -> f:('b -> bool) -> bool
+           val exists : ('a, 'b, 'c) t_ -> f:('b -> bool) -> bool
+           val fold_range_inclusive :
+             ('a, 'b, 'c) t_ ->
+             min:Key.t ->
+             max:Key.t ->
+             init:'d -> f:(key:Key.t -> data:'b -> 'd -> 'd) -> 'd
+           val range_to_alist :
+             ('a, 'b, 'c) t_ ->
+             min:Key.t -> max:Key.t -> (Key.t * 'b) list
+           val prev_key : ('a, 'b, 'c) t_ -> Key.t -> (Key.t * 'b) option
+           val next_key : ('a, 'b, 'c) t_ -> Key.t -> (Key.t * 'b) option
+           val rank : ('a, 'b, 'c) t_ -> Key.t -> int option
+           val to_tree :
+             ('a, 'b, 'c) t_ -> (Key.t, 'b, 'c) Core.Core_map.tree
+         end
+
 type index_data =
     Class of Parser.clas * Parser.MethSet.t 
   | Enum of Parser.enum
@@ -67,24 +131,37 @@ type index_data =
 type index_t  = index_data SuperIndex.t
 val to_channel : index_t -> out_channel -> unit
 
-val is_enum_exn : key:SuperIndex.key -> index_t -> bool
-val is_class_exn : key:SuperIndex.key -> index_t -> bool
+val is_enum_exn : key:SuperIndex.Key.t -> index_t -> bool
+val is_class_exn : key:SuperIndex.Key.t -> index_t -> bool
 
 module V :
   sig
     type t = string list * string
     type sexpable = t
-    val sexp_of_t : 'a * Core.Core_string.sexpable -> Sexplib.Sexp.t
+    val sexp_of_t : 'a * Core.Core_string.t -> Sexplib.Sexp.t
     val key_of_fullname : string -> string Core.Core_list.t * string
     val t_of_sexp :
-      Sexplib.Sexp.t -> string Core.Core_list.t * Core.Core_string.sexpable
+      Sexplib.Sexp.t -> string Core.Core_list.t * Core.Core_string.t
     val compare : 'a * Core.Core_string.t -> 'b * Core.Core_string.t -> int
     val make_key :
       name:String.t -> prefix:String.t list -> String.t list * String.t
     val hash : 'a * String.t -> int
     val equal : 'a * String.t -> 'b * String.t -> bool
   end
-
+(*
+module VertexComparatorPre : sig
+  type t = V.t
+  val sexp_of_t : t -> Sexplib.Sexp.t
+  val t_of_sexp : Sexplib.Sexp.t -> t
+  val compare   : t  -> t -> int  
+end
+module VertexComparator : sig
+  type t = VertexComparatorPre.t
+  val sexp_of_t : t -> Sexplib.Sexp.t
+  val t_of_sexp : Sexplib.Sexp.t -> t
+  val compare   : t  -> t -> int  
+end
+  *)
 module G :
   sig
     type t = Graph.Imperative.Digraph.Concrete(V).t
@@ -160,5 +237,5 @@ module G :
   end
 
 val build_graph      : Parser.namespace -> (index_data SuperIndex.t ref) * G.t
-val build_superindex : Parser.namespace  -> index_data SuperIndex.t * G.t * SuperIndex.key Core.Core_queue.t
+val build_superindex : Parser.namespace  -> index_data SuperIndex.t * G.t * SuperIndex.Key.t Core.Core_queue.t
 
