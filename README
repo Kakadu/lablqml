@@ -1,10 +1,10 @@
 My thoughts about which bindings for Qt should be
 
-./xml --- binding generator
-./moc --- helper utility to define user slots
+./xml            --- binding generator from XML input
+./moc            --- helper utility which reads input API and creates C++ class which calls proper OCaml functions.
 ./simple_signals --- hand-written bindings (only proof-of-concept)
-./test_gen       --- environment for compiling bindings from generated code
-./xmltool        --- a tool for simplifying XML api
+./test_gen       --- environment for compiling bindings for QtGUI from generated code
+./xmltool        --- a tool for simplifying XML api (just filters root tags by their names)
 
 You can use build.ml script for pseudo-autobuidld.
 
