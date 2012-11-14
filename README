@@ -1,4 +1,4 @@
-My thoughts about which bindings for qt should be
+My thoughts about which bindings for Qt should be
 
 ./xml --- binding generator
 ./moc --- helper utility to define user slots
