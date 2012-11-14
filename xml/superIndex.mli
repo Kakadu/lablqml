@@ -30,31 +30,31 @@ module SuperIndex :
            val sexp_of_t : ('a -> Sexplib.Sexp.t) -> 'a t -> Sexplib.Sexp.t
            val t_of_sexp : (Sexplib.Sexp.t -> 'a) -> Sexplib.Sexp.t -> 'a t
            type ('a, 'b, 'c) t_ = 'b t
-           type ('a, 'b, 'c) create_options =
+           type ('a, 'b, 'c) options =
                ('a, 'b, 'c)
-               Core.Core_map_intf.create_options_without_comparator
-           val empty : ('a, 'b, ('a, 'c, 'b) t_) create_options
+               Core.Core_map_intf.without_comparator
+           val empty : ('a, 'b, ('a, 'c, 'b) t_) options
            val singleton :
-             ('a, 'b, Key.t -> 'c -> ('a, 'c, 'b) t_) create_options
+             ('a, 'b, Key.t -> 'c -> ('a, 'c, 'b) t_) options
            val of_alist :
              ('a, 'b,
               (Key.t * 'c) list ->
               [ `Duplicate_key of Key.t | `Ok of ('a, 'c, 'b) t_ ])
-             create_options
+             options
            val of_alist_exn :
-             ('a, 'b, (Key.t * 'c) list -> ('a, 'c, 'b) t_) create_options
+             ('a, 'b, (Key.t * 'c) list -> ('a, 'c, 'b) t_) options
            val of_alist_multi :
              ('a, 'b, (Key.t * 'c) list -> ('a, 'c list, 'b) t_)
-             create_options
+             options
            val of_alist_fold :
              ('a, 'b,
               (Key.t * 'c) list ->
               init:'d -> f:('d -> 'c -> 'd) -> ('a, 'd, 'b) t_)
-             create_options
+             options
            val of_tree :
              ('a, 'b,
               (Key.t, 'c, 'b) Core.Core_map.tree -> ('a, 'c, 'b) t_)
-             create_options
+             options
            val is_empty : ('a, 'b, 'c) t_ -> bool
            val length : ('a, 'b, 'c) t_ -> int
            val add :

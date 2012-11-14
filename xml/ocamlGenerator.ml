@@ -340,9 +340,9 @@ class ocamlGenerator graph dir index = object (self)
         | _ -> assert false
     );
 
-    close_out h3;
-    close_out h2;
-    close_out h1
+    Out_channel.close h3;
+    Out_channel.close h2;
+    Out_channel.close h1
 
   method private gen_constr_data ~classname ~index argslist =
 (*    let arg_count = List.length constr in *)
@@ -405,7 +405,7 @@ class ocamlGenerator graph dir index = object (self)
       let itermeth ~isQObject m =
 	with_return (fun r ->
 	  if not (is_good_meth ~classname ~index m) then r.return ();
-	  if m.m_access=`Protected & not isQObject then r.return ();
+	  if m.m_access=`Protected && not isQObject then r.return ();
 	  if not isQObject then (
 	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes 
@@ -459,6 +459,6 @@ class ocamlGenerator graph dir index = object (self)
     fprintf h ".PHONY: all clean opt byte\n\n";
     fprintf h "include .depend\n\n";
     fprintf h "clean:\n\trm -f *.cm[iox] *.o\n\n";
-    close_out h
+    Out_channel.close h
         
 end
