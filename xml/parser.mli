@@ -76,26 +76,26 @@ module MethSet :
     
     val empty :
       ('a, 'b, ('a, 'b) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val union_list :
       ('a, 'b, ('a, 'b) t_ list -> ('a, 'b) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val of_list :
       ('a, 'b, Elt.t list -> ('a, 'b) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val of_array :
       ('a, 'b, Elt.t array -> ('a, 'b) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val stable_dedup_list :
       ('a, 'b, Elt.t list -> Elt.t list)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val filter_map :
       ('a, 'b,
        ('c, 'd) Core.Core_set.t -> f:('c -> Elt.t option) -> ('a, 'b) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val of_tree :
       ('a, 'b, (Elt.t, 'b) tree -> ('a, 'b) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val length : ('a, 'b) t_ -> int
     val is_empty : ('a, 'b) t_ -> bool
     val iter : ('a, 'b) t_ -> f:(Elt.t -> unit) -> unit
@@ -142,7 +142,7 @@ module MethSet :
       f:(Elt.t -> Elt.t) ->
       ('a, 'c) t_ ->
       ('d, 'e, ('d, 'e) t_)
-      Core.Core_set_intf.create_options_without_comparator
+      Core.Core_set_intf.without_comparator
     val remove_set : base:('a, 'b) t_ -> ('c, 'd) t_ -> ('a, 'b) t_
   end
 type enum = {

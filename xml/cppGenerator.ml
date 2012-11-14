@@ -187,7 +187,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
     fprintf h ".cpp.h:\n\tmoc $@ > moc_$<\n\n";
     fprintf h "clean: \n\trm -f *.o\n\n";
     fprintf h ".PHONY: all clean\n\n"; 
-    close_out h
+    Out_channel.close h
 
   method private prefix = dir ^/ "cpp"
   
@@ -262,7 +262,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       MethSet.iter ~f c.c_slots; 
 
       fprintf h "}  // extern \"C\"\n";
-      close_out h;
+      Out_channel.close h;
       let need_twin = isQObject in
       let ans =
         let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
@@ -273,10 +273,10 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let () = if need_twin then (
         let h = open_out twin_cppname in
         self#gen_twin_source ~prefix c h;
-        close_out h;
+        Out_channel.close h;
         let h = open_out  twin_hname in
         self#gen_twin_header ~prefix c h;
-        close_out h
+        Out_channel.close h
       ) in
       Some ans
     end
@@ -485,7 +485,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf h "  printf(\"%s\");\n" "if u see this line, the thereis a bug in enum generation";
       fprintf h "  return %s::%s;\n" s (List.hd_exn e_items);
       fprintf h "\n}\n\n}\n";
-      close_out h;
+      Out_channel.close h;
       Some (if subdir = "" then filename else subdir ^/ filename)
     end
 
@@ -517,6 +517,6 @@ class cppGenerator ~graph ~includes dir index = object (self)
       fprintf enums_h "extern \"C\" %s %s(value);\n" fullname fname1;
       fprintf enums_h "extern \"C\" value %s(%s);\n\n" fname2 fullname
     );
-    close_out enums_h
+    Out_channel.close enums_h
 
 end
