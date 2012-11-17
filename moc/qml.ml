@@ -50,16 +50,5 @@ let gen_cpp {classname; members; slots; props; _ } =
   );
   print_h "};\n";
   print_h "#endif\n\n";
-  close_out h_file;
-  close_out cpp_file
-
-
-
-
-
-
-
-
-
-
-
+  Out_channel.close h_file;
+  Out_channel.close cpp_file

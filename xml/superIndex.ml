@@ -263,7 +263,7 @@ let build_superindex root_ns =
   let (index,g) = build_graph root_ns in
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
-  close_out h;
+  Out_channel.close h;
   (* returns true if b is subclass of b in graph g *)
   let checker a b =
     (G.mem_vertex g a) && (G.mem_vertex g b) && (
