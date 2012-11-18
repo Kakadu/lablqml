@@ -75,7 +75,7 @@ let () =
   printf "Writing out xml....\n";
   let out s = Printf.fprintf out_ch "%s" s in
   Simplexmlwriter.print ~out xml;
-  close_out out_ch
+  Out_channel.close out_ch
   
   
 

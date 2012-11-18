@@ -121,8 +121,8 @@ let gen_cpp lst =
   fprintf cpp_file "#include \"%s.h\"\n\n" classname;
   List.iter lst ~f:(gen_meth ~classname ~ocaml_methname:name_for_slot h_file cpp_file);
   output_string h_file  "\n};\n";
-  close_out h_file;
-  close_out cpp_file;
+  Out_channel.close h_file;
+  Out_channel.close cpp_file;
 
   let cpp_file = open_out (classname ^ "_helper.cpp") in
   fprintf cpp_file "#include \"%s.h\"\n" classname;
@@ -133,7 +133,7 @@ let gen_cpp lst =
   fprintf cpp_file "    CAMLreturn((value)(new %s()));\n" classname;
   fprintf cpp_file "  }\n";
   fprintf cpp_file "}\n\n";
-  close_out cpp_file
+  Out_channel.close cpp_file
 
 
 let gen_ml lst =
@@ -180,5 +180,5 @@ let gen_ml lst =
 
   print_cpp "external create_%s': unit -> [`qobject] obj = \"create%s\"\n" classname classname;
   print_cpp "let create_%s () = create_%s' () |> new %s\n" classname classname ocaml_classname;
-  close_out h
+  Out_channel.close h
 

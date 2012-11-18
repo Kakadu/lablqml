@@ -31,7 +31,7 @@ let main out_dir =
         let root = Simplexmlparser.xmlparser_file input_file in
         let xml_out = open_out "xml.backup" in
         Marshal.to_channel xml_out root [];
-        close_out xml_out;
+        Out_channel.close xml_out;
         print_endline "XML tree backuped"; root
     | None ->
         let ch = open_in "xml.backup" in
@@ -51,11 +51,11 @@ let main out_dir =
 
     let ch = open_out "superindex.log" in
     to_channel  index ch;
-    close_out ch;
+    Out_channel.close ch;
 (*
     let ch = open_out "tree.backup" in
     Marshal.to_channel ch options.base [];
-    close_out ch *)
+    Out_channel.close ch *)
   end else begin 
     let ch = open_in "tree.backup" in
     options.base <- Marshal.from_channel ch;
