@@ -1,3 +1,4 @@
 true: thread
 true: package(core), package(str), package(ocaml-syck)
 "parse.ml": syntax(camlp4o), package(sexplib.syntax), package(ocaml-syck)
+"TypAst.ml": syntax(camlp4o), package(sexplib.syntax), package(ocaml-syck)

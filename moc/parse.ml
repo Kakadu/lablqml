@@ -96,7 +96,7 @@ module Yaml2 = struct
   open Sexplib.Conv
 
   module Types = struct
-    type typ = [ `Simple of string | `List of string ] with sexp
+    type typ = TypAst.t with sexp
     type meth = string * typ list * typ with sexp
     type prop = {name:string; getter:string; setter: string; notifier: string; typ:typ} with sexp
     type clas =
@@ -137,10 +137,11 @@ module Yaml2 = struct
         let res,args = 
           let l = List.rev lst in (List.hd_exn l, l |> List.tl_exn |> List.rev)
         in
-        let conv ty = match String.split ~on:' ' ty with
+        let conv ty = TypLexer.parse_string ty
+          (*match String.split ~on:' ' ty with
           | [s] -> `Simple s 
           | [s; "list"] -> `List s
-          | _ -> assert false
+          | _ -> assert false *)
         in
         (name,List.map args ~f:conv, conv res)
     | _ -> assert false
@@ -158,10 +159,11 @@ module Yaml2 = struct
         and setter = helper "set"
         and typ = helper "type"
         and notifier = helper "notify" in
-        let typ = match String.split ~on:' ' typ with
+        let typ = TypLexer.parse_string typ in (*
+          match String.split ~on:' ' typ with
           | [s;"list"] -> `List s 
           | s -> `Simple typ
-        in
+        in*)
         Types.({name;getter;setter;notifier;typ})
     | _ -> assert false
 
@@ -171,3 +173,10 @@ module Yaml2 = struct
     parse_data data
     
 end
+
+
+
+
+
+
+

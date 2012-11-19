@@ -28,9 +28,10 @@ let () = match options.target with
       let body = Core_list.rev args |> Core_list.tl_exn in
       (name,body,res)
     ) in
+    (*
     let clas = 
       let open Parse.Yaml2.Types in
-      ({classname="UserSlots"; slots; signals=[];members=[];props=[]}) in
+      ({classname="UserSlots"; slots; signals=[];members=[];props=[]}) in *)
     let () = Qtgui.gen_cpp slots in (* FIXME by passing clas.slots *)
     let () = Qtgui.gen_ml slots in
     ()
