@@ -30,3 +30,42 @@ let rec to_cpp_type typ = match typ with
         (xs |> List.hd_exn |> to_cpp_type) (xs |> List.tl_exn |> List.hd_exn |> to_cpp_type)
   | `List t -> sprintf "QList<%s >" (to_cpp_type t)
   
+let is_simple = function
+  | `Int | `Float | `Bool | `String -> true
+  | _ -> false
+
+let to_ocaml_type typ =
+  let rec helper = function
+    | `Float  -> "float"
+    | `Int    -> "int"
+    | `String -> "string"
+    | `Bool   -> "bool"
+    | `Unit   -> "unit"
+    | `Tuple xs ->
+        List.map xs ~f:(fun x -> if is_simple x then helper x else sprintf "(%s)" (helper x) )
+          |> String.concat ~sep:"*"
+    | `List (`Tuple xs) ->
+        sprintf "(%s) list" (helper (`Tuple xs))
+    | `List t -> sprintf "%s list" (helper t)
+  in
+  helper typ
+(*  Buffer.contents b *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
