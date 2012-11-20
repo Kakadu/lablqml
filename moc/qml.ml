@@ -243,6 +243,13 @@ let gen_cpp {classname; members; slots; props; _ } =
   let big_name = String.capitalize classname ^ "_H" in
   let h_file = open_out (classname ^ ".h") in
   let print_h fmt = fprintf h_file fmt in
+  let cpp_file = open_out (classname ^ ".cpp") in
+  let print_cpp fmt = fprintf cpp_file fmt in
+  let print_time ch = 
+    fprintf ch "// Generated at %s\n" Time.(now () |> to_string)
+  in
+  print_time cpp_file;
+  print_time h_file;
   print_h "#ifndef %s\n" big_name;
   print_h "#define %s\n\n" big_name;
   print_h "#include <QtCore/QObject>\n";
@@ -252,9 +259,7 @@ let gen_cpp {classname; members; slots; props; _ } =
   print_h "  Q_OBJECT\n";
   print_h "public:\n";
 
-  let cpp_file = open_out (classname ^ ".cpp") in
-  let print_cpp fmt = fprintf cpp_file fmt in
-  print_cpp "#include \"%s.h\"\n" classname;
+  print_cpp "#include \"%s.h\"\n\n" classname;
 
   (* properties *)
   List.iter props ~f:(fun ({name;getter;setter;notifier;typ} as prop) ->
