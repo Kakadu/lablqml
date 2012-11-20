@@ -19,14 +19,13 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
       | `List _ -> sprintf "xxxx_list")
 
 exception VaribleStackEmpty
-let gen_meth ~classname ~ocaml_methname ?(invokable=false) 
+let gen_meth ~classname ~ocaml_methname ?(options=[])
     file_h file_cpp ((name,args,res) as slot) = 
   let (_ : Yaml2.Types.typ list) = args in
   let (_ : Yaml2.Types.typ) = res in
   printf "Generatig meth '%s'\n" name;
   let print_h   fmt = fprintf file_h   fmt in
   let print_cpp fmt = fprintf file_cpp fmt in
-  (*print_h "  //Generating meth '%s'\n" name;*)
   print_cpp "// %s\n" (List.map (args@[res]) ~f:TypAst.to_ocaml_type |> String.concat ~sep:" -> ");
   let args = if args = [`Unit] then [] else args in
   let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
@@ -34,7 +33,7 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
   let arg' = List.map2_exn lst argnames ~f:(sprintf "%s %s") in
   let () = 
     print_h  "  %s%s %s(%s);\n"
-    (if invokable then "Q_INVOKABLE " else "") (TypAst.to_cpp_type res)
+    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (TypAst.to_cpp_type res)
     name (String.concat ~sep:"," arg') in
   let () = 
     print_cpp "%s %s::%s(%s) {\n" (TypAst.to_cpp_type res) classname
@@ -66,9 +65,6 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
   print_cpp "  value *closure = caml_named_value(\"%s\");\n" ocaml_closure;
   print_cpp "  Q_ASSERT_X(closure!=NULL, \"%s::%s\",\n"      classname name;
   print_cpp "             \"ocaml's closure `%s` not found\");\n"   ocaml_closure;
-
-(*  if List.exists args ~f:(function `List _ -> true |  _ -> false) 
-  then print_cpp "  value list_cons_helper = 0;\n"; *)
   
   (* Now we will generate OCaml values for arguments *)
   (*  We will look at argument type and call recursive function for generating *)
@@ -146,10 +142,21 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
       sprintf "caml_callbackN(*closure, %d, args)" n
     end
   in
-  let () = 
+  let (hasSetter,res) = 
     match res with 
-      | `Unit  ->  print_cpp "  %s;\n" call_closure_str
-      | _      ->  print_cpp "  _ans = %s;\n" call_closure_str
+      | `Unit  ->  begin
+        match List.find options ~f:(function `Setter _ -> true | _ -> false) with
+          | Some (`Setter signal) ->
+              print_cpp "  _ans = %s;\n" call_closure_str;
+              (Some signal, `Bool)
+          | None ->
+              print_cpp "  %s;\n" call_closure_str;
+              (None,res)
+          | _ -> assert false
+      end
+      | _      ->  
+          print_cpp "  _ans = %s;\n" call_closure_str;
+          (None,res)
   in
   (* Now we should convert OCaml result value to C++*)
   let new_cpp_var =
@@ -198,12 +205,20 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
             release_var temp_var;
     in
     match res with
-      | `Unit  -> ()
-      | _ -> 
+      | `Unit  -> 
+          assert (hasSetter = None);
+          ()
+      | _ -> begin
           let cpp_ans_var = "cppans" in
           print_cpp "  %s %s;\n" (TypAst.to_cpp_type res) cpp_ans_var;
           to_cpp_conv ~tab:1 cpp_ans_var "_ans" res;
-          print_cpp "  return %s;\n" cpp_ans_var
+          match hasSetter with
+            | Some signal ->
+                assert (res = `Bool);
+                print_cpp "  if (cppans) emit %s(%s);\n" signal (List.hd_exn argnames)
+            | None  -> 
+                print_cpp "  return %s;\n" cpp_ans_var
+      end
   in
   print_cpp "}\n";
   flush file_cpp
@@ -247,24 +262,25 @@ let gen_cpp {classname; members; slots; props; _ } =
     print_h "  Q_PROPERTY(%s %s %s READ %s NOTIFY %s)\n" 
       (TypAst.to_cpp_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
     let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Getter prop in
-    gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (getter,[`Unit],typ);
+    gen_meth ~classname ~ocaml_methname ~options:[] h_file cpp_file (getter,[`Unit],typ);
     let () = 
       match setter with
         | Some setter ->
             let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Setter prop in
-            gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (setter,[typ],`Unit);
+            gen_meth ~classname ~ocaml_methname 
+              ~options:[`Setter notifier] h_file cpp_file (setter,[typ],`Unit);
         | None -> ()
     in
     print_h "signals:\n";
-    print_h "  void %s();\n" notifier
+    print_h "  void %s(%s);\n" notifier (TypAst.to_cpp_type typ)
   );
   print_h "public:\n";
   print_h "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
-  List.iter members ~f:(gen_meth ~classname ~invokable:true 
+  List.iter members ~f:(gen_meth ~classname ~options:[`Invokable]
                           ~ocaml_methname:name_for_slot h_file cpp_file);
   if slots <> [] then (
     print_h "public slots:\n";
-    List.iter slots ~f:(gen_meth ~classname ~invokable:false ~ocaml_methname:name_for_slot h_file cpp_file)
+    List.iter slots ~f:(gen_meth ~classname ~options:[] ~ocaml_methname:name_for_slot h_file cpp_file)
   );
   print_h "};\n";
   print_h "#endif\n\n";
