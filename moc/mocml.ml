@@ -3,6 +3,8 @@ open Parse
 open Printf
 open Helpers
 
+let () = Printexc.record_backtrace true
+
 type options = {
   mutable filename : string;
   mutable target : [ `Qml | `QtGui ]

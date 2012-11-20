@@ -197,13 +197,13 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
             print_cpp "%s}\n" prefix;
             release_var temp_var;
     in
-    let cpp_ans_var = "cppans" in
-    print_cpp "  %s %s;\n" (TypAst.to_cpp_type res) cpp_ans_var;
-    to_cpp_conv ~tab:1 cpp_ans_var "_ans" res;
     match res with
       | `Unit  -> ()
-      | _ -> print_cpp "  return %s;\n" cpp_ans_var
-
+      | _ -> 
+          let cpp_ans_var = "cppans" in
+          print_cpp "  %s %s;\n" (TypAst.to_cpp_type res) cpp_ans_var;
+          to_cpp_conv ~tab:1 cpp_ans_var "_ans" res;
+          print_cpp "  return %s;\n" cpp_ans_var
   in
   print_cpp "}\n";
   flush file_cpp
@@ -232,7 +232,7 @@ let gen_cpp {classname; members; slots; props; _ } =
   print_h "#define %s\n\n" big_name;
   print_h "#include <QtCore/QObject>\n";
   print_h "#include <QtCore/QDebug>\n";
-  print_h "#include <kamlo.h>\n\n";
+  print_h "#include \"kamlo.h\"\n\n";
   print_h "class %s : public QObject\n{\n" classname;
   print_h "  Q_OBJECT\n";
   print_h "public:\n";
@@ -244,12 +244,17 @@ let gen_cpp {classname; members; slots; props; _ } =
   (* properties *)
   List.iter props ~f:(fun ({name;getter;setter;notifier;typ} as prop) ->
     print_h "public:\n";
-    print_h "  Q_PROPERTY(%s %s WRITE %s READ %s NOTIFY %s)\n" 
-      (TypAst.to_cpp_type typ) name setter getter notifier;
+    print_h "  Q_PROPERTY(%s %s %s READ %s NOTIFY %s)\n" 
+      (TypAst.to_cpp_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
     let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Getter prop in
     gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (getter,[`Unit],typ);
-    let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Setter prop in
-    gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (setter,[typ],`Unit);
+    let () = 
+      match setter with
+        | Some setter ->
+            let ocaml_methname (x,y,_) = ocaml_name_of_prop ~classname `Setter prop in
+            gen_meth ~classname ~ocaml_methname ~invokable:false h_file cpp_file (setter,[typ],`Unit);
+        | None -> ()
+    in
     print_h "signals:\n";
     print_h "  void %s();\n" notifier
   );

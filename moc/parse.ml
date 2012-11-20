@@ -98,7 +98,7 @@ module Yaml2 = struct
   module Types = struct
     type typ = TypAst.t with sexp
     type meth = string * typ list * typ with sexp
-    type prop = {name:string; getter:string; setter: string; notifier: string; typ:typ} with sexp
+    type prop = {name:string; getter:string; setter: string option; notifier: string; typ:typ} with sexp
     type clas =
         {classname:string; slots: meth list; signals: meth list; members: meth list; props: prop list}
     with sexp
@@ -147,23 +147,20 @@ module Yaml2 = struct
     | _ -> assert false
   and parse_prop = function
     | (SCALAR(_,name),MAPPING(_,lst)) ->
-        let helper name =
+        let helper_exn name =
           lst |> List.filter_map ~f:(function
             | (SCALAR(_,x),SCALAR(_,value)) when x=name -> Some value
             | _ -> None)
-    |> (function
-        | [] -> assert false
-        | x::_ -> x)
+          |> (function
+             | [] -> raise Not_found
+             | x::_ -> x)
         in
-        let getter = helper "get"
-        and setter = helper "set"
-        and typ = helper "type"
-        and notifier = helper "notify" in
-        let typ = TypLexer.parse_string typ in (*
-          match String.split ~on:' ' typ with
-          | [s;"list"] -> `List s 
-          | s -> `Simple typ
-        in*)
+        let helper name = try Some (helper_exn name) with Not_found -> None in
+        let getter   = helper_exn "get"
+        and setter   = helper     "set"
+        and typ      = helper_exn "type"
+        and notifier = helper_exn "notify" in
+        let typ = TypLexer.parse_string typ in
         Types.({name;getter;setter;notifier;typ})
     | _ -> assert false
 
