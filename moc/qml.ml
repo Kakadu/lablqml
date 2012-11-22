@@ -18,69 +18,47 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
       | `Tuple lst -> sprintf "tuple%d" (List.length lst)
       | `List _ -> sprintf "xxxx_list")
 
-exception VaribleStackEmpty
-let gen_meth ~classname ~ocaml_methname ?(options=[])
-    file_h file_cpp ((name,args,res) as slot) = 
-  let (_ : Yaml2.Types.typ list) = args in
-  let (_ : Yaml2.Types.typ) = res in
-  printf "Generatig meth '%s'\n" name;
-  let print_h   fmt = fprintf file_h   fmt in
-  let print_cpp fmt = fprintf file_cpp fmt in
-  print_cpp "// %s\n" (List.map (args@[res]) ~f:TypAst.to_ocaml_type |> String.concat ~sep:" -> ");
-  let args = if args = [`Unit] then [] else args in
-  let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
-  let lst = List.map args ~f:(TypAst.to_cpp_type) in
-  let arg' = List.map2_exn lst argnames ~f:(sprintf "%s %s") in
-  let () = 
-    print_h  "  %s%s %s(%s);\n"
-    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (TypAst.to_cpp_type res)
-    name (String.concat ~sep:"," arg') in
-  let () = 
-    print_cpp "%s %s::%s(%s) {\n" (TypAst.to_cpp_type res) classname
-    name (String.concat ~sep:"," arg') in
-  print_cpp "  CAMLparam0();\n";
-  let locals_count = 1 + (* for _ans *)
-    List.fold_left ~f:(fun acc x -> max acc (TypAst.aux_variables_count x)) ~init:0 (res::args) in
-  let locals = 
-    if locals_count = 1
-    then ["_ans"]
-    else "_ans" :: (List.init ~f:(fun n -> sprintf "_qq%d" n) (locals_count -1) )
+let cpp_value_of_ocaml ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ =
+  let print_cpp fmt = fprintf ch fmt in
+  let rec to_cpp_conv ~tab dest var typ =
+      let prefix = String.concat ~sep:"" (List.init ~f:(fun _ -> "  ") tab) in
+      match typ with
+        | `Unit    -> ()
+        | `Int     -> print_cpp "%s%s = Int_val(%s);\n" prefix dest var
+        | `String  -> print_cpp "%s%s = QString(String_val(%s));\n" prefix dest var
+        | `Bool    -> print_cpp "%s%s = Bool_val(%s);\n" prefix dest var
+        | `Float   -> raise (Unimplemented "Floats are not implemented yet")
+        | `Tuple xs when List.length xs <> 2 ->
+            raise (Unimplemented "Again: tuples <> pairs")
+        | `Tuple xs ->
+            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type typ);
+            let (a,b) = match xs with a::b::_ -> (a,b) | _ -> assert false in
+            let leftV = new_cpp_var () in
+            print_cpp "%s%s %s;\n" prefix (TypAst.to_cpp_type a) leftV;
+            to_cpp_conv ~tab:(tab+1) leftV  (sprintf "Field(%s,0)" var) a;
+            let rightV = new_cpp_var () in
+            print_cpp "%s%s %s;\n" prefix (TypAst.to_cpp_type b) rightV;
+            to_cpp_conv ~tab:(tab+1) rightV (sprintf "Field(%s,1)" var) b;
+            print_cpp "%s%s = qMakePair(%s,%s);\n" prefix dest leftV rightV;
+        | `List t ->
+            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type typ);
+            let cpp_arg_type = TypAst.to_cpp_type t in
+            let temp_var = get_var () in
+            let head_var = get_var () in
+            let temp_cpp_var = new_cpp_var () in
+            print_cpp "%s%s = %s;\n" prefix temp_var var;
+            print_cpp "%swhile (%s != Val_emptylist) {\n" prefix temp_var;
+            print_cpp "%s  %s = Field(%s,0); /* head */\n" prefix head_var temp_var;
+            print_cpp "%s  %s %s;\n" prefix cpp_arg_type temp_cpp_var;
+            to_cpp_conv ~tab:(tab+1) temp_cpp_var head_var t;
+            print_cpp "%s  %s << %s;\n" prefix dest temp_cpp_var;
+            print_cpp "%s}\n" prefix;
+            release_var temp_var;
   in
-  assert (List.length locals = locals_count);
-  let rec print_local_declarations ?(first=true) xs =
-    match xs with
-      | [] -> ()
-      | a::b::c::d::e::tail ->
-          print_cpp "  CAML%slocal5(%s);\n" (if first then "" else "x")
-            (String.concat ~sep:"," [a;b;c;d;e]);
-          print_local_declarations ~first:false tail
-      | tail ->
-          print_cpp "  CAML%slocal%d(%s);\n" (if first then "" else "x")
-            (List.length tail) (String.concat ~sep:"," tail);
-  in
-  print_local_declarations locals;
+  to_cpp_conv ~tab:1 cpp_var ocaml_var typ
 
-  let ocaml_closure = ocaml_methname slot in
-  (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
-  print_cpp "  value *closure = caml_named_value(\"%s\");\n" ocaml_closure;
-  print_cpp "  Q_ASSERT_X(closure!=NULL, \"%s::%s\",\n"      classname name;
-  print_cpp "             \"ocaml's closure `%s` not found\");\n"   ocaml_closure;
-  
-  (* Now we will generate OCaml values for arguments *)
-  (*  We will look at argument type and call recursive function for generating *)
-  (* It will use free aux variables. We need a stack to save them*)
-  let (get_var, release_var) = 
-    let stack = ref (List.tl_exn locals)  in (* tail because we need not _ans *)
-    let get_var () = match !stack with 
-      | x::xs -> 
-          stack:= xs;
-          x
-      | [] -> raise VaribleStackEmpty
-    in
-    let release_var name = Ref.replace stack (fun xs -> name::xs) in
-    (get_var,release_var)
-  in
-  
+let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
+  let print_cpp fmt = fprintf ch fmt in
   let rec generate_wrapper ~tab var dest typ : unit =
     (* tab is for left tabularies. typ is a type
      * dest is where to store generated value 
@@ -128,6 +106,114 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     in
     print_cpp "%s" "\n"
   in
+  generate_wrapper ~tab cppvar ocamlvar typ
+
+let rec print_local_declarations ch xs =
+  let print_cpp fmt  = fprintf ch fmt in
+  let rec helper ?(first=true) xs =
+    match xs with
+      | [] -> ()
+      | a::b::c::d::e::tail ->
+          print_cpp "  CAML%slocal5(%s);\n" (if first then "" else "x")
+            (String.concat ~sep:"," [a;b;c;d;e]);
+          helper ~first:false tail
+      | tail ->
+          print_cpp "  CAML%slocal%d(%s);\n" (if first then "" else "x")
+            (List.length tail) (String.concat ~sep:"," tail);
+  in
+  helper xs
+
+exception VaribleStackEmpty
+let gen_signal_stub ~classname ~signal ~typ ch fn_name =
+  (* classname --- name of class where signal is *)
+  (* signal is name of signal in classname *)
+  (* ~typ --- argumentof signal. It is alone because properties' notifiers has 1 argument *)
+  (* fn_name is C++ stub function name. It will be used while generating OCaml code *)
+  (* ch --- is channel where we'll put code *)
+
+  let locals_count = TypAst.aux_variables_count typ in
+  let locals = List.init ~f:(fun n -> sprintf "_z%d" n) locals_count in
+  print_local_declarations ch locals;
+  let (get_var, release_var) = 
+    let stack = ref locals  in (* tail because we need not _ans *)
+    let get_var () = match !stack with 
+      | x::xs -> 
+          stack:= xs;
+          x
+      | [] -> raise VaribleStackEmpty
+    in
+    let release_var name = Ref.replace stack (fun xs -> name::xs) in
+    (get_var,release_var)
+  in  
+  let new_cpp_var =
+    let count = ref 0 in
+    fun () -> incr count; sprintf "x%d" !count
+  in
+  (* NB. All signals return void *)
+  fprintf ch "extern \"C\" value %s(value _obj, value _arg) {\n" fn_name;
+  fprintf ch "  CAMLparam2(_obj,_arg);\n";
+  fprintf ch "  %s *cppobj = (%s*)_obj;\n" classname classname;
+  fprintf ch "  %s arg;\n" (TypAst.to_cpp_type typ);
+  cpp_value_of_ocaml  ch (get_var,release_var,new_cpp_var) ~cpp_var:"arg" ~ocaml_var:"_arg" typ;
+  fprintf ch "  cppobj->emit_%s(arg);\n" signal;
+  fprintf ch "  CAMLreturn(Val_unit);\n";
+  fprintf ch "}\n\n"
+
+
+
+(* Generates code of C++ method which calls specific OCaml registred value *)
+let gen_meth ~classname ~ocaml_methname ?(options=[])
+    file_h file_cpp ((name,args,res) as slot) = 
+  let (_ : Yaml2.Types.typ list) = args in
+  let (_ : Yaml2.Types.typ) = res in
+  printf "Generatig meth '%s'\n" name;
+  let print_h   fmt = fprintf file_h   fmt in
+  let print_cpp fmt = fprintf file_cpp fmt in
+  print_cpp "// %s\n" (List.map (args@[res]) ~f:TypAst.to_ocaml_type |> String.concat ~sep:" -> ");
+  let args = if args = [`Unit] then [] else args in
+  let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
+  let lst = List.map args ~f:(TypAst.to_cpp_type) in
+  let arg' = List.map2_exn lst argnames ~f:(sprintf "%s %s") in
+  let () = 
+    print_h  "  %s%s %s(%s);\n"
+    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (TypAst.to_cpp_type res)
+    name (String.concat ~sep:"," arg') in
+  let () = 
+    print_cpp "%s %s::%s(%s) {\n" (TypAst.to_cpp_type res) classname
+    name (String.concat ~sep:"," arg') in
+  print_cpp "  CAMLparam0();\n";
+  let locals_count = 1 + (* for _ans *)
+    List.fold_left ~f:(fun acc x -> max acc (TypAst.aux_variables_count x)) ~init:0 (res::args) in
+  let locals = 
+    if locals_count = 1
+    then ["_ans"]
+    else "_ans" :: (List.init ~f:(fun n -> sprintf "_qq%d" n) (locals_count -1) )
+  in
+  assert (List.length locals = locals_count);
+  print_local_declarations file_cpp locals;
+
+  let ocaml_closure = ocaml_methname slot in
+  (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)
+  print_cpp "  value *closure = caml_named_value(\"%s\");\n" ocaml_closure;
+  print_cpp "  Q_ASSERT_X(closure!=NULL, \"%s::%s\",\n"      classname name;
+  print_cpp "             \"ocaml's closure `%s` not found\");\n"   ocaml_closure;
+  
+  (* Now we will generate OCaml values for arguments *)
+  (*  We will look at argument type and call recursive function for generating *)
+  (* It will use free aux variables. We need a stack to save them*)
+  let (get_var, release_var) = 
+    let stack = ref (List.tl_exn locals)  in (* tail because we need not _ans *)
+    let get_var () = match !stack with 
+      | x::xs -> 
+          stack:= xs;
+          x
+      | [] -> raise VaribleStackEmpty
+    in
+    let release_var name = Ref.replace stack (fun xs -> name::xs) in
+    (get_var,release_var)
+  in
+  
+  
   let n = List.length argnames in
 
   let call_closure_str = match n with 
@@ -135,8 +221,9 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     | _ -> begin
       (* Generating arguments for calling *)
       print_cpp "  value *args = new value[%d];\n" n;
-      List.iter2i args argnames ~f:(fun i arg name ->
-        generate_wrapper ~tab:1 name (sprintf "args[%d]" i) arg
+      List.iter2i args argnames ~f:(fun i arg cppvar ->
+        ocaml_value_of_cpp file_cpp (get_var,release_var)
+          ~tab:1 ~ocamlvar:(sprintf "args[%d]" i) ~cppvar arg
       );
       print_cpp "  // delete args or not?\n";
       sprintf "caml_callbackN(*closure, %d, args)" n
@@ -168,42 +255,6 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     f
   in
   let () = 
-    let rec to_cpp_conv ~tab dest var typ =
-      let prefix = String.concat ~sep:"" (List.init ~f:(fun _ -> "  ") tab) in
-      match typ with
-        | `Unit    -> ()
-        | `Int     -> print_cpp "%s%s = Int_val(%s);\n" prefix dest var
-        | `String  -> print_cpp "%s%s = QString(String_val(%s));\n" prefix dest var
-        | `Bool    -> print_cpp "%s%s = Bool_val(%s);\n" prefix dest var
-        | `Float   -> raise (Unimplemented "Floats are not implemented yet")
-        | `Tuple xs when List.length xs <> 2 ->
-            raise (Unimplemented "Again: tuples <> pairs")
-        | `Tuple xs ->
-            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type typ);            
-            let (a,b) = match xs with a::b::_ -> (a,b) | _ -> assert false in
-            let leftV = new_cpp_var () in
-            print_cpp "%s%s %s;\n" prefix (TypAst.to_cpp_type a) leftV;
-            to_cpp_conv ~tab:(tab+1) leftV  (sprintf "Field(%s,0)" var) a;
-            let rightV = new_cpp_var () in
-            print_cpp "%s%s %s;\n" prefix (TypAst.to_cpp_type b) rightV;
-            to_cpp_conv ~tab:(tab+1) rightV (sprintf "Field(%s,1)" var) b;
-            print_cpp "%s%s = qMakePair(%s,%s);\n" prefix (*(TypAst.to_cpp_type typ)*) dest leftV rightV;
-        | `List t ->
-            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type typ);
-            let cpp_arg_type = TypAst.to_cpp_type t in
-(*            print_cpp "%s%s %s;\n" prefix (TypAst.to_cpp_type typ) dest;*)
-            let temp_var = get_var () in
-            let head_var = get_var () in
-            let temp_cpp_var = new_cpp_var () in
-            print_cpp "%s%s = %s;\n" prefix temp_var var;
-            print_cpp "%swhile (%s != Val_emptylist) {\n" prefix temp_var;
-            print_cpp "%s  %s = Field(%s,0); /* head */\n" prefix head_var temp_var;
-            print_cpp "%s  %s %s;\n" prefix cpp_arg_type temp_cpp_var;
-            to_cpp_conv ~tab:(tab+1) temp_cpp_var head_var t;
-            print_cpp "%s  %s << %s;\n" prefix dest temp_cpp_var;
-            print_cpp "%s}\n" prefix;
-            release_var temp_var;
-    in
     match res with
       | `Unit  -> 
           assert (hasSetter = None);
@@ -211,7 +262,7 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
       | _ -> begin
           let cpp_ans_var = "cppans" in
           print_cpp "  %s %s;\n" (TypAst.to_cpp_type res) cpp_ans_var;
-          to_cpp_conv ~tab:1 cpp_ans_var "_ans" res;
+          cpp_value_of_ocaml file_cpp (get_var,release_var, new_cpp_var) cpp_ans_var "_ans" res;
           match hasSetter with
             | Some signal ->
                 assert (res = `Bool);
@@ -277,7 +328,12 @@ let gen_cpp {classname; members; slots; props; _ } =
         | None -> ()
     in
     print_h "signals:\n";
-    print_h "  void %s(%s);\n" notifier (TypAst.to_cpp_type typ)
+    print_h "  void %s(%s);\n" notifier (TypAst.to_cpp_type typ);
+    gen_signal_stub ~classname ~signal:notifier ~typ cpp_file (sprintf "stub_%s_emit_%s" name notifier);
+    print_h "public:\n";
+    print_h "  void emit_%s(%s arg1) {\n" notifier (TypAst.to_cpp_type typ);
+    print_h "    emit %s(arg1);\n" notifier;
+    print_h "  }\n\n"
   );
   print_h "public:\n";
   print_h "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
@@ -291,3 +347,10 @@ let gen_cpp {classname; members; slots; props; _ } =
   print_h "#endif\n\n";
   Out_channel.close h_file;
   Out_channel.close cpp_file
+
+
+
+
+
+
+

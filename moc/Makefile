@@ -3,7 +3,7 @@
 .PHONY: build clean
 
 build:
-	ocamlbuild -j 0 -use-ocamlfind mocml.byte
+	ocamlbuild -cflag -g -lflag -g -j 0 -use-ocamlfind mocml.byte
 
 clean:
 	ocamlbuild -clean
