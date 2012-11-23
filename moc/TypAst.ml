@@ -4,9 +4,9 @@ open Printf
 
 let (|>) = Core.Fn.(|!)
 
-type t = [ `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t ] with sexp
+type t = [ `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t  ] with sexp
 
-let aux_variables_count x =
+let aux_variables_count (x : t) =
   let rec h = function
     | `Unit -> 0
     | `String -> 0
@@ -18,7 +18,7 @@ let aux_variables_count x =
   in
   h x
 
-let rec to_cpp_type typ = match typ with
+let rec to_cpp_type (typ:t) = match typ with
   | `Float  -> "double"
   | `String -> "QString"
   | `Int    -> "int"
