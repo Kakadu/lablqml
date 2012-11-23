@@ -18,6 +18,11 @@ let aux_variables_count (x : t) =
   in
   h x
 
+let is_primitive = function
+  | `Float 
+  | `String | `Int | `Bool | `Unit  -> true
+  | `Tuple _ | `List _ -> false
+    
 let rec to_cpp_type (typ:t) = match typ with
   | `Float  -> "double"
   | `String -> "QString"
@@ -26,14 +31,16 @@ let rec to_cpp_type (typ:t) = match typ with
   | `Unit   -> "void"
   | `Tuple lst when List.length lst <> 2 -> assert false
   | `Tuple xs  -> 
-      sprintf "QPair<%s,%s >" 
-        (xs |> List.hd_exn |> to_cpp_type) (xs |> List.tl_exn |> List.hd_exn |> to_cpp_type)
-  | `List t -> sprintf "QList<%s >" (to_cpp_type t)
-  
+      let a = xs |> List.hd_exn and b = xs |> List.tl_exn |> List.hd_exn in
+      sprintf "QPair<%s,%s%s>" 
+        (to_cpp_type a) (to_cpp_type b)
+        (if is_primitive b then "" else " ")
+  | `List t -> sprintf "QList<%s%s>" (to_cpp_type t) (if is_primitive t then "" else " ")
+  (*
 let is_simple = function
   | `Int | `Float | `Bool | `String -> true
   | _ -> false
-
+      *)
 let to_ocaml_type typ =
   let rec helper = function
     | `Float  -> "float"
@@ -42,7 +49,7 @@ let to_ocaml_type typ =
     | `Bool   -> "bool"
     | `Unit   -> "unit"
     | `Tuple xs ->
-        List.map xs ~f:(fun x -> if is_simple x then helper x else sprintf "(%s)" (helper x) )
+        List.map xs ~f:(fun x -> if is_primitive x then helper x else sprintf "(%s)" (helper x) )
           |> String.concat ~sep:"*"
     | `List (`Tuple xs) ->
         sprintf "(%s) list" (helper (`Tuple xs))

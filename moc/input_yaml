@@ -2,11 +2,19 @@
 A:
   methods:   # arg1, arg2, ...., return value
     #sizey: [unit, int]
-    #meth1: [int list, int]
+    meth1: [int list, int]
     #meth2: [unit, unit]
-    getValues: [int list, string list list * int]
+    #getValues: [int list, (string list*int) list * int]
   properties:
-      tableCount1:
-            type: int list
-            get: tableCount
-            notify: tablesChanged
+#      readOnlyProp:
+#            type: int list
+#            get: tableCount
+#            notify: tablesChanged
+      count:
+            type: int
+            get:  count
+            set:  setCount
+            notify: countChanged
+#  slots:
+#    clicked: [unit, unit]
+      

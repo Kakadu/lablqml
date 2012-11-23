@@ -3,7 +3,8 @@ open Core.Std
 open Parse
 open Printf
 open Helpers
-
+module B=Bigbuffer
+open B.Printf
 open Parse.Yaml2
 open Types
 
@@ -19,7 +20,7 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
       | `List _ -> sprintf "xxxx_list")
 
 let cpp_value_of_ocaml ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ =
-  let print_cpp fmt = fprintf ch fmt in
+  let print_cpp fmt = bprintf ch fmt in
   let rec to_cpp_conv ~tab dest var typ =
       let prefix = String.concat ~sep:"" (List.init ~f:(fun _ -> "  ") tab) in
       match typ with
@@ -58,7 +59,7 @@ let cpp_value_of_ocaml ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var 
   to_cpp_conv ~tab:1 cpp_var ocaml_var typ
 
 let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
-  let print_cpp fmt = fprintf ch fmt in
+  let print_cpp fmt = bprintf ch fmt in
   let rec generate_wrapper ~tab var dest typ : unit =
     (* tab is for left tabularies. typ is a type
      * dest is where to store generated value 
@@ -108,22 +109,46 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
   in
   generate_wrapper ~tab cppvar ocamlvar typ
 
-let rec print_local_declarations ch xs =
-  let print_cpp fmt  = fprintf ch fmt in
+
+
+let print_declarations typ buf xs =
+  let sort = match typ with `Local -> "local" | `Param -> "param" in
+  let print fmt = bprintf buf fmt in
   let rec helper ?(first=true) xs =
     match xs with
       | [] -> ()
       | a::b::c::d::e::tail ->
-          print_cpp "  CAML%slocal5(%s);\n" (if first then "" else "x")
+          print "  CAML%s%s5(%s);\n" (if first then "" else "x") sort
             (String.concat ~sep:"," [a;b;c;d;e]);
           helper ~first:false tail
       | tail ->
-          print_cpp "  CAML%slocal%d(%s);\n" (if first then "" else "x")
+          print "  CAML%s%s%d(%s);\n" (if first then "" else "x") sort
             (List.length tail) (String.concat ~sep:"," tail);
   in
   helper xs
 
+let print_local_declarations = print_declarations `Local
+let print_param_declarations = print_declarations `Param
+
 exception VaribleStackEmpty
+
+let get_vars_queue xs =
+  let stack = ref xs in
+  let get_var () = match !stack with 
+    | x::xs -> stack:= xs; x
+    | [] -> raise VaribleStackEmpty
+  in
+  let release_var name = Ref.replace stack (fun xs -> name::xs) in
+  (get_var,release_var)
+
+let getter_of_cppvars  prefix = 
+  let last_index = ref 0 in
+  let f () = 
+    incr last_index;
+    sprintf "%s%d" prefix !last_index
+    in
+    f
+
 let gen_signal_stub ~classname ~signal ~typ ch fn_name =
   (* classname --- name of class where signal is *)
   (* signal is name of signal in classname *)
@@ -134,39 +159,29 @@ let gen_signal_stub ~classname ~signal ~typ ch fn_name =
   let locals_count = TypAst.aux_variables_count typ in
   let locals = List.init ~f:(fun n -> sprintf "_z%d" n) locals_count in
   print_local_declarations ch locals;
-  let (get_var, release_var) = 
-    let stack = ref locals  in (* tail because we need not _ans *)
-    let get_var () = match !stack with 
-      | x::xs -> 
-          stack:= xs;
-          x
-      | [] -> raise VaribleStackEmpty
-    in
-    let release_var name = Ref.replace stack (fun xs -> name::xs) in
-    (get_var,release_var)
-  in  
+  let (get_var, release_var) = get_vars_queue locals in  
   let new_cpp_var =
     let count = ref 0 in
     fun () -> incr count; sprintf "x%d" !count
   in
   (* NB. All signals return void *)
-  fprintf ch "extern \"C\" value %s(value _obj, value _arg) {\n" fn_name;
-  fprintf ch "  CAMLparam2(_obj,_arg);\n";
-  fprintf ch "  %s *cppobj = (%s*) (Field(_obj,0));\n" classname classname;
-  fprintf ch "  %s arg;\n" (TypAst.to_cpp_type typ);
+  bprintf ch "extern \"C\" value %s(value _obj, value _arg) {\n" fn_name;
+  bprintf ch "  CAMLparam2(_obj,_arg);\n";
+  bprintf ch "  %s *cppobj = (%s*) (Field(_obj,0));\n" classname classname;
+  bprintf ch "  %s arg;\n" (TypAst.to_cpp_type typ);
   cpp_value_of_ocaml  ch (get_var,release_var,new_cpp_var) ~cpp_var:"arg" ~ocaml_var:"_arg" typ;
-  fprintf ch "  cppobj->emit_%s(arg);\n" signal;
-  fprintf ch "  CAMLreturn(Val_unit);\n";
-  fprintf ch "}\n\n"
+  bprintf ch "  cppobj->emit_%s(arg);\n" signal;
+  bprintf ch "  CAMLreturn(Val_unit);\n";
+  bprintf ch "}\n\n"
 
-(* Generates code of C++ method which calls specific OCaml registred value *)
+(* Generates code of C++ method which calls specific OCaml registered value *)
 let gen_meth ~classname ~ocaml_methname ?(options=[])
     file_h file_cpp ((name,args,res) as slot) = 
   let (_ : Yaml2.Types.typ list) = args in
   let (_ : Yaml2.Types.typ) = res in
   printf "Generatig meth '%s'\n" name;
-  let print_h   fmt = fprintf file_h   fmt in
-  let print_cpp fmt = fprintf file_cpp fmt in
+  let print_h   fmt = bprintf file_h   fmt in
+  let print_cpp fmt = bprintf file_cpp fmt in
   print_cpp "// %s\n" (List.map (args@[res]) ~f:TypAst.to_ocaml_type |> String.concat ~sep:" -> ");
   let args = if args = [`Unit] then [] else args in
   let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
@@ -200,29 +215,16 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
   (* Now we will generate OCaml values for arguments *)
   (*  We will look at argument type and call recursive function for generating *)
   (* It will use free aux variables. We need a stack to save them*)
-  let (get_var, release_var) = 
-    let stack = ref (List.tl_exn locals)  in (* tail because we need not _ans *)
-    let get_var () = match !stack with 
-      | x::xs -> 
-          stack:= xs;
-          x
-      | [] -> raise VaribleStackEmpty
-    in
-    let release_var name = Ref.replace stack (fun xs -> name::xs) in
-    (get_var,release_var)
-  in
-  
-  
-  let n = List.length argnames in
+  let (get_var, release_var) = get_vars_queue (List.tl_exn locals) in (* tail because we need not _ans *)
 
-  let call_closure_str = match n with 
+  let call_closure_str = match List.length argnames with 
     | 0 -> 
         let var = get_var () in
         print_cpp "  %s = caml_alloc_small(1, Abstract_tag);\n" var;
         print_cpp "  (*((%s **) &Field(%s, 0))) = this;\n" classname var;
         sprintf "caml_callback2(*closure, %s, Val_unit)" var
     
-    | _ -> begin
+    | n -> begin
       (* Generating arguments for calling *)
       print_cpp "  value *args = new value[%d];\n" (n+1);
       print_cpp "  args[0] = caml_alloc_small(1, Abstract_tag);\n";
@@ -252,14 +254,7 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
           (None,res)
   in
   (* Now we should convert OCaml result value to C++*)
-  let new_cpp_var =
-    let last_index = ref 0 in
-    let f () = 
-      incr last_index;
-      sprintf "xx%d" !last_index
-    in
-    f
-  in
+  let new_cpp_var = getter_of_cppvars "xx" in
   let () = 
     match res with
       | `Unit  -> 
@@ -277,9 +272,7 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
                 print_cpp "  return %s;\n" cpp_ans_var
       end
   in
-  print_cpp "}\n";
-  flush file_cpp
-
+  print_cpp "}\n"
 
 let name_for_slot (name,args,res) = 
   let rec typ_to_ocaml_string = function
@@ -301,17 +294,17 @@ let stubname_for_signal_emit name notifier =
 let print_time ?(lang=`CPP) ch = 
   match lang with
     | `CPP -> 
-        fprintf ch "/*\n *";
-        fprintf ch " Generated at %s\n" Time.(now () |> to_string);
-        fprintf ch " */\n"
-    | `OCaml -> fprintf ch "(* Generated at %s *)\n" Time.(now () |> to_string)
+        bprintf ch "/*\n *";
+        bprintf ch " Generated at %s\n" Time.(now () |> to_string);
+        bprintf ch " */\n"
+    | `OCaml -> bprintf ch "(* Generated at %s *)\n" Time.(now () |> to_string)
 
 let gen_cpp {classname; members; slots; props; _ } =
   let big_name = String.capitalize classname ^ "_H" in
-  let h_file = open_out (classname ^ ".h") in
-  let print_h fmt = fprintf h_file fmt in
-  let cpp_file = open_out (classname ^ ".cpp") in
-  let print_cpp fmt = fprintf cpp_file fmt in
+  let h_file = B.create 100 in
+  let print_h fmt = bprintf h_file fmt in
+  let cpp_file = B.create 100 in
+  let print_cpp fmt = bprintf cpp_file fmt in
 
   print_time cpp_file;
   print_time h_file;
@@ -359,14 +352,19 @@ let gen_cpp {classname; members; slots; props; _ } =
   );
   print_h "};\n";
   print_h "#endif\n\n";
-  Out_channel.close h_file;
-  Out_channel.close cpp_file
+
+  let header_ch = open_out (classname ^ ".h") in
+  B.output_buffer header_ch h_file;
+  Out_channel.close header_ch;
+  let cpp_ch    = open_out (classname ^ ".cpp") in
+  B.output_buffer cpp_ch cpp_file;
+  Out_channel.close cpp_ch
 
 let gen_ml {classname; members; slots; props; _ } =
-  let ch = open_out ("ocaml/"^classname^".ml") in
+  let ch = B.create 100 in
   print_time ~lang:`OCaml ch;
   (* we will put only functions for emitting signals *)
-  let p fmt = fprintf ch fmt in
+  let p fmt = bprintf ch fmt in
   p "type t\n";
   List.iter props ~f:(fun {typ; name; notifier; _} ->
     p "external emit_signal_%s: t -> %s -> unit = \"%s\"\n" name (TypAst.to_ocaml_type typ) 
@@ -378,7 +376,9 @@ let gen_ml {classname; members; slots; props; _ } =
   );
   
   p "end\n";
-  Out_channel.close ch
+  let file = open_out ("ocaml/"^classname^".ml") in
+  B.output_buffer file ch;
+  Out_channel.close file
 
 
 

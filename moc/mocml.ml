@@ -43,8 +43,8 @@ let () = match options.target with
     let () = print_endline "data file parsed" in
     let open Parse.Yaml2 in
     let () = data |> Types.sexp_of_data |> Sexplib.Sexp.to_string_hum |> print_endline in
-    let () = List.iter data ~f:Qml.gen_cpp in
-    let () = List.iter data ~f:Qml.gen_ml in
+    let () = List.iter data ~f:Qml2.gen_cpp in
+    let () = List.iter data ~f:Qml2.gen_ml in
     ()
   end
 
