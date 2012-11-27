@@ -274,7 +274,7 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
   in
   print_cpp "}\n"
 
-let name_for_slot (name,args,res) = 
+let name_for_slot ?(ocaml_classname=ocaml_classname) (name,args,res) = 
   let rec typ_to_ocaml_string = function
     | `Unit  -> "unit"
     | `Int  -> "int"
@@ -344,11 +344,13 @@ let gen_cpp {classname; members; slots; props; _ } =
   );
   print_h "public:\n";
   print_h "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
-  List.iter members ~f:(gen_meth ~classname ~options:[`Invokable]
-                          ~ocaml_methname:name_for_slot h_file cpp_file);
+  let ocaml_methname = name_for_slot ~ocaml_classname:classname in
+  List.iter members ~f:(  
+    gen_meth ~classname ~options:[`Invokable] ~ocaml_methname h_file cpp_file
+  );
   if slots <> [] then (
     print_h "public slots:\n";
-    List.iter slots ~f:(gen_meth ~classname ~options:[] ~ocaml_methname:name_for_slot h_file cpp_file)
+    List.iter slots ~f:(gen_meth ~classname ~options:[] ~ocaml_methname h_file cpp_file)
   );
   print_h "};\n";
   print_h "#endif\n\n";
