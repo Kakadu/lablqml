@@ -450,6 +450,11 @@ class cppGenerator ~graph ~includes dir index = object (self)
     argnames
   
   method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} = 
+    let (_: index_data SuperIndex.key_) = key in
+    let _f () = 
+      let (x:index_data) = SuperIndex.find_exn index key in
+      ignore x
+    in
     if not (SuperIndex.mem index key) then None
     else if not (is_public e_access) then None
     else begin
@@ -489,7 +494,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       Some (if subdir = "" then filename else subdir ^/ filename)
     end
 
-  method generate_q q = 
+  method generate_q (q: NameKey.t Q.t) = 
     ignore (Sys.command ("rm -rf " ^ self#prefix ^"/*") );
     let classes = ref [] in
     let twin_classes = ref [] in

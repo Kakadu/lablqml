@@ -18,7 +18,7 @@ let () = Arg.parse [
 let root = Simplexmlparser.xmlparser_file !xml_name |> List.hd_exn
 module Printer = Xml_print.Make_simple(Xml)(struct let emptytags=[] end) 
 
-let (_,g) = build_graph (root |> Parser.build)
+let g = build_graph (root |> Parser.build) |> snd
 
 open Simplexmlparser
 

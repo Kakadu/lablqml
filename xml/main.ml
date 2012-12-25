@@ -41,7 +41,7 @@ let main out_dir =
         root
   in
   if (None <> options.input_file) || options.reparse_base then begin
-    let root_ns = List.map build root |> List.hd in
+    let root_ns = List.map ~f:build root |> List.hd_exn in
     print_endline "building superindex";
     let (index,g,q) = build_superindex root_ns in
     printf "Queue length is %d\n" (Core_queue.length q);

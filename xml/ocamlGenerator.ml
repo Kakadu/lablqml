@@ -157,7 +157,7 @@ class ocamlGenerator graph dir index = object (self)
         (String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
   (* generates member code*)
-  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h (meth: Parser.meth) = 
+  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h (meth: Parser.meth Parser.MethSet.elt_) = 
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
     try
       let () = match meth.m_access with `Private -> raise BreakSilent | _ -> () in
@@ -269,7 +269,7 @@ class ocamlGenerator graph dir index = object (self)
       | BreakSilent -> ()
       | Break2File s -> ( fprintf h "(* %s *)\n" s; print_endline s)
 
-  method gen_slot ~classname h slot =
+  method gen_slot ~classname h (slot: Parser.MethKey.t) =
     try
       (match slot.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       let (name,args) = (slot.m_name,slot.m_args) in
@@ -307,7 +307,7 @@ class ocamlGenerator graph dir index = object (self)
     with BreakSilent -> ()
       | BreakS s -> ()
 
-  method generate queue =
+  method generate (queue: NameKey.t Q.t) =
     self#makefile dir;
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
