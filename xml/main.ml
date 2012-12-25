@@ -18,7 +18,7 @@ let options = {
     noml=false;
     reparse_base=false;
     base=(empty_namespace, SuperIndex.empty, G.create (), Core.Core_queue.create ());
-    includes = ["/usr/include/qt4"];
+    includes = ["`pkg-config --cflags QtGui`"];
     input_file = None;
   }
 

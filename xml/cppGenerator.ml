@@ -169,8 +169,8 @@ class cppGenerator ~graph ~includes dir index = object (self)
   method makefile dir ~twins lst = 
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
-    fprintf h "INCLUDES=-I./../../ -I. `pkg-config --cflags QtGui` ";
-    List.iter includes ~f:(fun s -> fprintf h " -I%s" s);
+    fprintf h "INCLUDES=-I./../../ -I. ";
+    List.iter includes ~f:(fun s -> fprintf h " %s" s);
     fprintf h "\n";
     fprintf h "GCC=g++ -c -pipe -g -Wall -W $(INCLUDES) \n\n";
     let f tl x = x |> List.map ~f:(fun s -> sprintf "%s%s" s tl) |> String.concat ~sep:" " in
