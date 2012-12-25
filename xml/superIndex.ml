@@ -105,6 +105,7 @@ module G = struct
     |> Str.global_replace (Str.regexp ">") "_"
     |> Str.global_replace (Str.regexp ",") "_"
     |> Str.global_replace (Str.regexp "*") "_"
+    |> Str.global_replace (Str.regexp "&amp;") "_AMP_"
     
   let vertex_attributes v = [`Label (snd (V.label v)) ]
   let get_subgraph _ = None
