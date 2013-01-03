@@ -1,7 +1,9 @@
 open Parser
 open Core
+open Core.Std
 open Printf
 open SuperIndex
+
 type options = { 
   mutable print_virtuals: bool;
   mutable nocpp: bool;
@@ -55,7 +57,8 @@ let main out_dir =
 (*
     let ch = open_out "tree.backup" in
     Marshal.to_channel ch options.base [];
-    Out_channel.close ch *)
+    Out_channel.close ch 
+*)
   end else begin 
     let ch = open_in "tree.backup" in
     options.base <- Marshal.from_channel ch;

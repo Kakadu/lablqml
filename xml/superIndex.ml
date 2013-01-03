@@ -1,8 +1,6 @@
 open Parser
 open Core
-open Printf
-module List = Core_list
-module String = Core_string
+open Core.Std
 
 module NameKey = struct
   type t = string list * string (* list of namespaces and classes (reversed) and concatenated string *)
@@ -33,10 +31,7 @@ type index_data =
   | Class of clas * MethSet.t (* class data with all virtuals *)
   | Enum of enum
 
-module SuperIndex = struct
-  include Core_map.Make(NameKey)
-
-end
+module SuperIndex = Core_map.Make(NameKey)
 
 type index_t = index_data SuperIndex.t
 
@@ -190,7 +185,7 @@ let super_filter_meths subclass_of ~base ~cur =
      наследование с базовым (абстрактным) классом *)
   (!base_not_impl,!cur_impl,!cur_new)
     
-let build_graph root_ns =         
+let build_graph root_ns : index_t ref * G.t =
   let index = ref SuperIndex.empty in
   let g = G.create () in
 

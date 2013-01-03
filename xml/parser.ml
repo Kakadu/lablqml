@@ -1,11 +1,7 @@
 open Core
+open Core.Std
 open Printf
 open Sexplib.Conv
-module List = Core_list
-module String = Core_string
-module Set = Core_set
-module Map = Core_map
-
 open Simplexmlparser
 
 let (%<) f g = fun x -> f (g x)

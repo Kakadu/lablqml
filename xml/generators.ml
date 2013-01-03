@@ -133,7 +133,7 @@ let is_abstract_class ~prefix index name =
   let key = NameKey.make_key ~prefix ~name in
   let f = fun acc m -> match m.m_modif with 
     | `Abstract -> 
-(*      printf "Abstract meth found in class %s: %s\n" name (string_of_meth m); *)
+        printf "Abstract meth found in class %s: %s\n%!" name (string_of_meth m);
       true
     | _ -> acc in
   let ans = match SuperIndex.find index key with

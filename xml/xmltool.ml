@@ -1,6 +1,5 @@
 open Core
-module List = Core_list
-
+open Core.Std
 open SuperIndex
 open Parser
 open Printf
@@ -10,6 +9,8 @@ let procedures =
   ; ("privateNonAbstractMethods", Procedures.noPrivateNonAbstract)
   ; ("noDestructors",             Procedures.noDestructors)
   ; ("noMETA",                    Procedures.noMETAfuncs)
+  ; ("noTemplates",               Procedures.noTemplates)
+  ; ("filterMethods",             Procedures.filter_methods)
   ]
 
 let names  = ref (Core_set.empty ~comparator:Core_string.comparator )
@@ -29,7 +30,9 @@ let () = Arg.parse [
 let root = Simplexmlparser.xmlparser_file !xml_name |> List.hd_exn
 module Printer = Xml_print.Make_simple(Xml)(struct let emptytags=[] end) 
 
-let g = build_graph (root |> Parser.build) |> snd
+let root_ns = Parser.build root
+
+let (superIndex,g) = build_graph root_ns
 
 open Simplexmlparser
 
@@ -92,10 +95,86 @@ let () =
   );
   let xml = Element ("code",[], !ans_lst) in
   let out_ch = open_out !out_name in
-  printf "Writing out xml....\n";
+  printf "Writing out xml to `%s`...\n" !out_name;
   let out s = Printf.fprintf out_ch "%s" s in
   Simplexmlwriter.print ~out xml;
-  Out_channel.close out_ch
+  Out_channel.close out_ch;
   
+  let () = 
+    let module StringSet = String.Set in
+    let declared_classes = ref StringSet.empty in
+    printf "Generating result graph\n%!";
+    let root_ns = Parser.build xml in
+    let module GG = Graph.Imperative.Digraph.Concrete(String) in
+    let g = GG.create () in
+    let module G = struct
+      include GG
+      let graph_attributes (_:t) = []
+      let default_vertex_attributes _ = []
+      let vertex_name v = v 
+        |> Str.global_replace (Str.regexp "::") "_dd_"
+        |> Str.global_replace (Str.regexp "<") "_lt_"
+        |> Str.global_replace (Str.regexp ">") "_md_"
+        |> Str.global_replace (Str.regexp ",") "_zpt_"
+        |> Str.global_replace (Str.regexp "*") "_star_"
+        |> Str.global_replace (Str.regexp "&amp;") "_AMP_"
+          
+      let vertex_attributes v = 
+        (if StringSet.mem !declared_classes v then `Shape `Diamond 
+         else if succ g v = [] then `Shape `Ellipse else `Shape `Box)
+        ::[]
+      let get_subgraph _ = None
+      let default_edge_attributes _ = []
+      let edge_attributes _ = []
+    end in
+
+    let skip_argname s : bool = 
+      (* skip primitive variables*)
+      (s |> List.mem 
+          ["QVariant";"uint";"int";"bool";"void";"qint64";"long";"uchar";"qreal";"char";"WId";"QString"]) 
+      (* skip enums *)
+      || ( String.is_prefix ~prefix:"Qt::" s && (
+        try 
+          is_enum_exn (NameKey.key_of_fullname s) !superIndex
+        with Not_found -> true
+      ) )
+    in
+    let rec iter_ns ns = 
+      List.iter ~f:iter_ns ns.ns_ns;
+      List.iter ~f:iter_class ns.ns_classes;
+    and iter_class c = 
+      G.add_vertex g c.c_name;
+      declared_classes := StringSet.add !declared_classes c.c_name;
+      MethSet.iter ~f:(iter_meth c.c_name) c.c_meths
+    and iter_meth class_v {m_args; m_res;_} =
+      let xs = m_args |> List.map ~f:(fun a -> a.arg_type) in
+      List.iter (m_res::xs) ~f:(fun arg_type ->
+        let new_name = 
+          let s = arg_type.t_name in
+          if Str.string_match (Str.regexp "QList<[a-zA-Z]*\\*>") s 0 
+          then String.drop_suffix  (String.drop_prefix s 6) 2
+          else s
+        in
+        if (not (skip_argname new_name)) && (arg_type.t_params=[]) && 
+          (not (String.is_prefix new_name ~prefix:"QtPrivate") ) 
+        then begin
+          G.add_vertex g new_name;
+          G.add_edge g class_v new_name
+        end
+      )
+    in
+    iter_ns root_ns;
+    let module Printer = Graph.Graphviz.Dot(G) in
+    let h = open_out "./qwe.dot" in
+    Printer.output_graph h g;
+    Out_channel.close h
+  in
+  ()      
   
+
+
+
+
+
+
 
