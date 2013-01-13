@@ -2,16 +2,13 @@
 
 open UnixLabels
 
-let () =
-  print_endline "Configure script for lablqt"
-
-let flush () =
-  flush Pervasives.stdout
+let () = print_endline "Configure script for lablqt"
+let (^/) a b = a^"/"^b
+let flush () = flush Pervasives.stdout
 
 let target = ref `Build
 
-let touch s =
-  close_out (open_out s)
+let touch s = close_out (open_out s)
 
 let () = Arg.parse [
         ("-build",     Arg.Unit (fun () -> target := `Build),     "");
@@ -68,8 +65,9 @@ let api_xml = "qt5-minimal.xml"
 
 (* You can setup GCC include files specific for your system *)
 (* with -I prefix*)
-let includes = ["-I/home/kakadu/mand/prog/qt/qt5/qtbase/include"]
-let cpp_bin_loc = ref "/home/kakadu/mand/prog/qt/qt5/qtbase/bin"
+let qt5 = "/home/kakadu/mand/prog/qt/qt5/qtbase" 
+let includes = ["-I" ^ qt5 ^/ "include"]
+let cpp_bin_loc = ref (qt5 ^/ "bin")
 
 let cpp_includes () =
   match includes with
