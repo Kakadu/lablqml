@@ -97,8 +97,9 @@ let wut_methods_to_remove =
     << "dumpObjectInfo" << "moveToThread" << "removeEventFilter" << "isWidgetType" << "deleteLater" <<
     "receivers" << "dumpObjectTree" << "findChildren" << "connect_functor" << "connectImpl" << "thread"
     <<"signalsBlocked" << "registerUserData" << "setUserData" <<  "disconnectImpl" << "dynamicPropertyNames"
-    << "connectNotify" << "disconnectNotify" << "isSignalConnected" << "childEvent" << "timerEvent")
-    
+    << "connectNotify" << "disconnectNotify" << "isSignalConnected" << "childEvent" << "timerEvent" 
+    << "sender" << "senderSignalIndex" 
+    << "destroy")
   ; ("QPaintDevice", 
     empty << "paintEngine" << "logicalDpiY" << "metric" << "qt_paint_device_metric"
     << "physicalDpiX" << "physicalDpiY" << "devType" << "logicalDpiX")
@@ -120,7 +121,8 @@ let wut_methods_to_remove =
     empty << "fontMetrics" << "insertAction" << "insertActions" << "addActions" 
     << "removeAction" << "actions" << "setFont" << "font" 
     << "backgroundRole" << "foregroundRole" << "setBackgroundRole" << "setForegroundRole" 
-    << "dragLeaveEvent")
+    << "dragLeaveEvent" << "testAttribute_helper" << "focusPreviousChild" << "focusNextChild"  
+    << "metric" << "destroy")
   ; ("QGraphicsScene", 
     empty << "style" << "palette" << "setPalette" << "setStyle" << "items" << "itemIndexMethod"
      << "setFont" << "font" << "dropEvent" << "dragMoveEvent" << "dragLeaveEvent" << "dragEnterEvent"

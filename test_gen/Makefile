@@ -1,5 +1,7 @@
-GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT `pkg-config --cflags QtGui`
-
+QT5=/home/kakadu/mand/prog/qt/qt5/qtbase
+GCC=g++ -c -pipe -g -Wall -W -D_REENTRANT -I${QT5}/include
+C_LIBS=-L${QT5}/lib -lQt5Widgets -lQt5Core
+C_INC= -I${QT5}/include
 CMOS=stub_helpers.cmo qtstubs.cmo
 CMXS=stub_helpers.cmx qtstubs.cmx
 C_STUBS=cstubs.o
@@ -26,15 +28,15 @@ kamlo:
 	$(MAKE) -C out 
 
 mklib:
-	ocamlmklib -o lablqt `pkg-config --libs QtGui` -lstdc++ -lpthread  $(C_STUBS) $(CMOS) \
+	ocamlmklib -o lablqt $(C_LIBS) -lstdc++ -lpthread  $(C_STUBS) $(CMOS) \
 		$(BIND_CPP_OBJS) $(BIND_ML_OBJS) 
 
 mklib_opt:
-	ocamlmklib -o lablqt `pkg-config --libs QtGui` -lstdc++ -lpthread  $(C_STUBS) $(CMXS) \
+	ocamlmklib -o lablqt $(C_LIBS) -lstdc++ -lpthread  $(C_STUBS) $(CMXS) \
 		$(BIND_CPP_OBJS) $(BIND_ML_OBJS_OPT) 
 
 .cpp.o:
-	$(GCC) -c -I`ocamlc -where` $(COPTS) -fpic $<
+	$(GCC) -c -I`ocamlc -where` $(C_INC) -fpic $<
 
 .ml.cmx:
 	ocamlopt -c $<

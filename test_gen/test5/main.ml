@@ -3,7 +3,7 @@ open Classes
 open Creators
 open Stubs
 open Stub_helpers
-open UserSlots_stubs
+(*open UserSlots_stubs *)
 open Printf 
 
 let app = QApplication.create [| "1";"2";"3";"4";"5";"6" |] 

@@ -105,10 +105,10 @@ let () =
     let declared_classes = ref StringSet.empty in
     printf "Generating result graph\n%!";
     let root_ns = Parser.build xml in
-    let module GG = Graph.Imperative.Digraph.Concrete(String) in
-    let g = GG.create () in
+
+    let g = StringLabeledGraph.create () in 
     let module G = struct
-      include GG
+      include StringLabeledGraph
       let graph_attributes (_:t) = []
       let default_vertex_attributes _ = []
       let vertex_name v = v 
@@ -126,7 +126,7 @@ let () =
       let get_subgraph _ = None
       let default_edge_attributes _ = []
       let edge_attributes _ = []
-    end in
+    end in 
 
     let skip_argname s : bool = 
       (* skip primitive variables*)
@@ -143,7 +143,7 @@ let () =
       List.iter ~f:iter_ns ns.ns_ns;
       List.iter ~f:iter_class ns.ns_classes;
     and iter_class c = 
-      G.add_vertex g c.c_name;
+      StringLabeledGraph.add_vertex g c.c_name;
       declared_classes := StringSet.add !declared_classes c.c_name;
       MethSet.iter ~f:(iter_meth c.c_name) c.c_meths
     and iter_meth class_v {m_args; m_res;_} =
@@ -158,19 +158,29 @@ let () =
         if (not (skip_argname new_name)) && (arg_type.t_params=[]) && 
           (not (String.is_prefix new_name ~prefix:"QtPrivate") ) 
         then begin
-          G.add_vertex g new_name;
-          G.add_edge g class_v new_name
+          StringLabeledGraph.add_vertex g new_name;
+          StringLabeledGraph.add_edge g class_v new_name
         end
       )
     in
     iter_ns root_ns;
-    let module Printer = Graph.Graphviz.Dot(G) in
+    
     let h = open_out "./qwe.dot" in
-    Printer.output_graph h g;
+    (*let (_: StringLabeledGraph.t) = g in*)
+    let module GraphPrinter = Graph.Graphviz.Dot(G) in
+    let () = GraphPrinter.output_graph h g  in
     Out_channel.close h
   in
   ()      
   
+
+
+
+
+
+
+
+
 
 
 

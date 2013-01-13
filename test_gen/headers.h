@@ -23,5 +23,6 @@ void setAbstrClass(value &res, T *newval) {
   res = caml_alloc_small(1,Abstract_tag);
   (*((T**) &Field(res,0))) = newval;
 }
+
 #endif
 

@@ -2,14 +2,13 @@ open Core
 open Core.Common
 open Generators
 open SuperIndex
-open Printf
 open Parser
-
 module Q = Core_queue
-module String = Core_string
+
+open Core.Std
 
 module List = struct
-  include Core_list
+  include List
   (** Like map2_exn but with index parameter *)
   let map2i_exn la lb ~f = 
     let i = ref 0 in
@@ -21,7 +20,7 @@ type comp_target = {
   comp_twin : string option
 }
 
-class cppGenerator ~graph ~includes dir index = object (self)
+class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
   inherit abstractGenerator graph index as super
   
   method get_name ~classname modif args ?res_n_name is_byte =
@@ -176,13 +175,15 @@ class cppGenerator ~graph ~includes dir index = object (self)
     let f tl x = x |> List.map ~f:(fun s -> sprintf "%s%s" s tl) |> String.concat ~sep:" " in
     fprintf h "HEADERS=%s\n" (f ".h" twins);
     fprintf h "HEADERS2=$(addprefix moc_,$(HEADERS))\n";
+    fprintf h "MOC_EXE=%smoc\n" (if bin_prefix="" then "" else bin_prefix^"/");    
     fprintf h "MOCS=$(HEADERS2:.h=.o)\n";
     fprintf h "C_QTOBJS=%s %s\n\n" (f ".o" twins) (f ".o" lst);
     fprintf h ".SUFFIXES: .h .cpp .o\n\n";
     fprintf h "all: step1 step2\n\n";
     fprintf h "step2: $(MOCS)\n\n";
     fprintf h "step1: $(C_QTOBJS) $(HEADERS)\n\n";
-    fprintf h "moc_%%.cpp: %%.h\n\t\tmoc $< > $@\n\n";
+    fprintf h "moc_%%.cpp: %%.h\n";
+    fprintf h "\t\t$(MOC_EXE) $< > $@\n\n";
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
     fprintf h ".cpp.h:\n\tmoc $@ > moc_$<\n\n";
     fprintf h "clean: \n\trm -f *.o\n\n";
@@ -227,7 +228,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
          *)
       in
       let h = open_out stubs_filename in
-      fprintf h "#include <Qt/QtGui>\n";
+      fprintf h "#include <QtWidgets/QtWidgets>\n";
       fprintf h "#include \"headers.h\"\n";
       fprintf h "extern \"C\" {\n";
       fprintf h "#include \"enum_headers.h\"\n";
@@ -288,7 +289,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method gen_twin_source ~prefix c h = 
     let classname  = c.c_name in
-    fprintf h "#include <Qt/QtGui>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include <QtWidgets/QtWidgets>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
@@ -329,7 +330,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
 
   method gen_twin_header ~prefix c h = 
     let classname  = c.c_name in
-    fprintf h "#include <Qt/QtGui>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include <QtWidgets/QtWidgets>\n"; (* TODO: include QtGui, OpenGL is not needed *)
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
@@ -466,7 +467,7 @@ class cppGenerator ~graph ~includes dir index = object (self)
       let h = open_out (dir ^/ filename ^".cpp") in
       fprintf h "//enum %s %s\n\n" e_name (List.to_string (fun x -> x) e_items);
 
-      fprintf h "#include <Qt/QtGui>\n";
+      fprintf h "#include <QtWidgets/QtWidgets>\n";
       fprintf h "#pragma GCC diagnostic ignored \"-Wswitch\"\n";
       fprintf h "#include \"headers.h\"\nextern \"C\" {\n";
       let (fname1,fname2) = enum_conv_func_names key in

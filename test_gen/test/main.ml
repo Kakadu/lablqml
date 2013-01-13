@@ -19,7 +19,7 @@ let () = (new qWidget w)#slot_show#call ;;
 class mywidget me = object (self)
   inherit qWidget me as super
   method! keyPressEvent event = 
-          Printf.printf "catching keyPressEvent: %d\n" event#key;
+          Printf.printf "OCaml says: catching keyPressEvent: %d\n" event#key;
           flush stdout
 end;;
 let w = create_QWidget_twin_0' None `Window 

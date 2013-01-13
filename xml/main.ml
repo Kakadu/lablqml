@@ -12,6 +12,7 @@ type options = {
   mutable base: Parser.namespace * index_data SuperIndex.t * G.t *
   SuperIndex.Key.t Core_queue.t;
   mutable includes: string list;
+  mutable bin_prefix : string;
   mutable input_file : string option;
 }
 let options = {
@@ -20,7 +21,9 @@ let options = {
     noml=false;
     reparse_base=false;
     base=(empty_namespace, SuperIndex.empty, G.create (), Core.Core_queue.create ());
-    includes = ["`pkg-config --cflags QtGui`"];
+    includes = [];
+    bin_prefix = "";
+    (*includes = ["`pkg-config --cflags QtGui`"];*)
     input_file = None;
   }
 
@@ -70,7 +73,8 @@ let main out_dir =
     let (_,index,graph,q) = options.base in
     let open CppGenerator in
     print_endline "generating C++ code";
-    (new cppGenerator ~graph ~includes:options.includes out_dir index)#generate_q q
+    (new cppGenerator ~graph ~includes:options.includes ~bin_prefix:options.bin_prefix out_dir index)
+      #generate_q q
   end else begin
     print_endline "Generation of C++ code skipped"
   end; 
@@ -92,6 +96,7 @@ let () =
   ("-xml", String (fun s -> options.input_file <- Some s), "<input.xml> reparse xml file");
   ("-nocpp", Unit (fun () -> options.nocpp <- true), "don't generate cpp");
   ("-noml", Unit (fun () -> options.noml <- true), "don't generate ml");
+  ("-qtloc", String (fun s -> options.bin_prefix <- s), "where to get executables like `moc`");
   ("-I", String (fun s -> options.includes <- s :: options.includes), "<path> add include to generated c++ files");
   ("-virt", Unit (fun () -> options.print_virtuals <- true), "print virtual methods of all classes and return")
   ] (fun s -> l := s :: !l) "Usage: main.native [options] <out_dir>\nAvailable options:";

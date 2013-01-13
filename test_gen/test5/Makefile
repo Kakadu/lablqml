@@ -22,7 +22,7 @@ depend:
 
 userslots.h:
 
-main: userslots.h moc_UserSlots.o UserSlots.o UserSlots.cmo UserSlots_stubs.cmo main.cmo
+main:  main.cmo
 	$(OCAMLC) -custom $(INCLUDES) lablqt.cma UserSlots.o moc_UserSlots.o \
 		UserSlots.cmo UserSlots_stubs.cmo main.cmo -o $(OUTFILE)
 	

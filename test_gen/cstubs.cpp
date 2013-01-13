@@ -1,5 +1,4 @@
-#include <Qt/QtGui>
-#include <QDebug>
+#include <QtWidgets/QtWidgets>
 #include "headers.h"
 
 extern "C" {
@@ -27,7 +26,6 @@ value ml_qapp_exec (value unit) {
   printf("preparing before app.exec(). arguments are:\n");
   QStringList argslist = QApplication::arguments();
   foreach (const QString s, argslist) {
-    //    qDebug() << s ;
     printf("%s\n", s.toLocal8Bit().data() );
   }
   printf("end of arguments list\n");

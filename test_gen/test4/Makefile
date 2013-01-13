@@ -8,14 +8,15 @@ GCC=g++ -g $(CPP_INCLUDES)
 all: main
 
 main:
-	./mocml input
+	./mocml -qtgui input
 	moc UserSlots.h > moc_UserSlots.cpp
 	$(GCC) -c moc_UserSlots.cpp 
 	$(GCC) -c UserSlots.cpp 
+	$(GCC) -c UserSlots_helpers.cpp
 	$(OCAMLC) $(INCLUDES) -c UserSlots.ml
 	$(OCAMLC) $(INCLUDES) -c UserSlots_stubs.ml
 	$(OCAMLC) $(INCLUDES) -c main.ml 
-	$(OCAMLC) -custom $(INCLUDES) lablqt.cma UserSlots.o moc_UserSlots.o \
+	$(OCAMLC) -custom $(INCLUDES) lablqt.cma UserSlots_helpers.o UserSlots.o moc_UserSlots.o \
 		UserSlots.cmo UserSlots_stubs.cmo main.cmo -o $(OUTFILE)
 	
 clean:

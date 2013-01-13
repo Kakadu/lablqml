@@ -31,6 +31,7 @@ type index_data =
   | Class of clas * MethSet.t (* class data with all virtuals *)
   | Enum of enum
 
+module StringLabeledGraph = Graph.Imperative.Digraph.Concrete(String)
 module SuperIndex = Core_map.Make(NameKey)
 
 type index_t = index_data SuperIndex.t

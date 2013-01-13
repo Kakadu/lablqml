@@ -50,15 +50,15 @@ let make ?(dir = ".") ?j target err_msg =
   end
 *)
 
-
+(*
 let () =
   wrap_cmd "pkg-config --cflags QtOpenGL" "can't find Qt OpenGL header files"
-
+*)
 (* Configure end ***************************)
 
 (* let api_xml = "aaa.xml" *)
 
-let api_xml = "for_test5.xml"
+let api_xml = "qt5-minimal.xml"
 
 (* 
  * This is a XML api file. Then biggest and more interesting file is
@@ -67,8 +67,9 @@ let api_xml = "for_test5.xml"
  * *)
 
 (* You can setup GCC include files specific for your system *)
-
-let includes = []
+(* with -I prefix*)
+let includes = ["-I/home/kakadu/mand/prog/qt/qt5/qtbase/include"]
+let cpp_bin_loc = ref "/home/kakadu/mand/prog/qt/qt5/qtbase/bin"
 
 let cpp_includes () =
   match includes with
@@ -95,11 +96,14 @@ let () = match !target with
         make "" ~dir: "xml" "\ncompiling xml...\n";
         print_endline "\nGenerator is compiled!\n";
 
-        print_endline "\nexecuting xmltool...\n";
+        (*print_endline "\nexecuting xmltool...\n";
         wrap_cmd "./for_test5.sh" "Error while generating tests for test N5";
-
+*)
         print_endline "\nexecuting generator...\n";
-        wrap_cmd ("./xml/main.native -xml " ^ api_xml ^ " " ^ (cpp_includes ()) ^ " test_gen/out")
+        wrap_cmd 
+          ("./xml/main.native -xml " ^ api_xml ^ 
+           (if !cpp_bin_loc<>"" then " -qtloc " ^ !cpp_bin_loc else "") ^
+           " " ^ (cpp_includes ()) ^ " test_gen/out")
           "error while generating code";
 
         print_endline "\ncompiling generated C++ files...\n";
@@ -114,7 +118,8 @@ let () = match !target with
           if not (Sys.file_exists file) then
             symlink ~src: "../../moc/_build/main.native" ~dst: file
         in
-        List.iter add_mocml ["test_gen/test4" ; "test_gen/test5" ; "test_gen/test6"];
+        (*List.iter add_mocml ["test_gen/test4" ; "test_gen/test5" ; "test_gen/test6"];
+        *)
 
         print_endline "\ncompiling the lablqt library...\n";
         make ~dir:"test_gen" "all" "building library";

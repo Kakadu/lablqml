@@ -1,12 +1,13 @@
 *.o
-*.cmo
-*.cmx
-*.cmi
+*.cm[oxti]
+_build
+.typerex
 *.annot
 *.a
 *.cmxa
 *.cma
 *~
+*.kate-swp
 moc_*.cpp
 *.swp
 *.so
@@ -21,4 +22,7 @@ test_gen/test6/UserSlots.h
 test_gen/test6/UserSlots_stubs.ml
 test_gen/test6/moc_UserSlots.cpp
 test_gen/test6/test
+*.creator.user
+# tool for generating OCaml code from ui forms
+uictool
 
