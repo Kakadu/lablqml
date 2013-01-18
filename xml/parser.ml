@@ -36,37 +36,6 @@ let make_out_name ~classname cpp_name = match (classname,cpp_name) with
   | (_,"method") -> "method1"
   | _ -> cpp_name
 
-let skip_meth ~classname name = 
-  if startswith ~prefix:"operator" name then true
-  else if startswith ~prefix:"d_func" name then true
-  else match name with
-    | "event"  -> true (* Qt doesn't recommend to override this method *)
-    | "flush" 	
-    | "initialize" (* QAccessible *) -> true (* because preprocesser has its own `flush` *)
-    | "findChild" when classname = "QWidget" -> (*TODO: add into xml generator info about generic methods *)
-      true      
-    | "data" when classname = "QByteArray" ->  true
-    | "bits" when classname = "QImage" ->  true
-    | "scanLine" when classname = "QImage" ->  true
-    | "invertedAppearance" when classname = "QProgressBar" ->  true
-    | "cap" when classname = "QRegExp" ->  true
-    | "pos" when classname = "QRegExp" ->  true
-    | "errorString" when classname = "QRegExp" ->  true
-    | "data" when classname = "QSharedMemory" ->  true
-    | "shortcutId" when classname = "QShortcutEvent" ->  true
-    | "isAmbiguous" when classname = "QShortcutEvent" ->  true
-    | "toUnicode" when classname = "QTextCodec" ->  true
-    | "indexOfTopLevelItem" when classname = "QTreeWidget" ->  true
-    | "data" when classname = "QVariant" ->  true
-    | "canConvert" when classname = "QVariant" ->  true 
-    | "toGraphicsObject" (* when classname = "QGraphicsItem" *) -> true (* very strange overrides *)
-    | _ when classname = "QMapData" -> true (* TODO: undestand this class. maybe dont generate it *)
-    | "QThreadStorageData::QThreadStorageData" -> true
-    | "QThreadStorageData" -> true (* cause it has a function-pointer parameter *)
-    | "eventFilter" -> true (* QObject::eventFilter is usually hided in
-subclasses and we can't coerce type *)
-    | _ -> false
-
 let endswith ~postfix:p s = 
   if String.length p > (String.length s) then false
   else (Str.last_chars s (String.length p) = p)
@@ -428,19 +397,16 @@ and parse_class nsname c  =
 	  | Element ("class",("name",nn)::_,_) -> inher := nn :: !inher
 	  |  _ -> assert false) 
       | (Element ("function",_,ll)) as e -> begin
-	let (name,args,ret,policy,modif) = helper e in 
-	if skip_meth ~classname name then ()
-	else (match ret with
-	   | Some r -> mems := (name,args,r,policy,modif) :: !mems
-	   | _ -> assert false)
+	    let (name,args,ret,policy,modif) = helper e in 
+	    (match ret with
+	      | Some r -> mems := (name,args,r,policy,modif) :: !mems
+	      | _ -> assert false)
       end
       | (Element ("slot",_,ll)) as e -> begin
-	let (name,args,ret,policy,modif) = helper e in 
-(*	printf "slot found: %s\n" name; *)
-	if skip_meth ~classname name then ()
-	else (match ret with
-	   | Some r  -> slots := (name,args,r,policy,modif) :: !slots
-	   | None -> assert false)
+	    let (name,args,ret,policy,modif) = helper e in 
+        (match ret with
+	      | Some r  -> slots := (name,args,r,policy,modif) :: !slots
+	      | None -> assert false)
       end
       | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
 					  sigs := (a,b) :: !sigs

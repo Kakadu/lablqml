@@ -119,10 +119,10 @@ let wut_methods_to_remove =
      << "doImageIO" << "save")
   ; ("QWidget", 
     empty << "fontMetrics" << "insertAction" << "insertActions" << "addActions" 
-    << "removeAction" << "actions" << "setFont" << "font" 
+    << "removeAction" << "actions" << "setFont" << "font" << "event"
     << "backgroundRole" << "foregroundRole" << "setBackgroundRole" << "setForegroundRole" 
     << "dragLeaveEvent" << "testAttribute_helper" << "focusPreviousChild" << "focusNextChild"  
-    << "metric" << "destroy")
+    << "metric" << "destroy" << "findChild" )
   ; ("QGraphicsScene", 
     empty << "style" << "palette" << "setPalette" << "setStyle" << "items" << "itemIndexMethod"
      << "setFont" << "font" << "dropEvent" << "dragMoveEvent" << "dragLeaveEvent" << "dragEnterEvent"
@@ -142,7 +142,21 @@ let wut_methods_to_remove =
      empty << "horizontalScrollBar" << "verticalScrollBarPolicy" << 
     "horizontalScrollBarPolicy" << "setHorizontalScrollBar" << "verticalScrollBar" << "setVerticalScrollBar"
      << "dragLeaveEvent" << "dropEvent")
+  ; ("QByteArray", empty << "data" )
+  ; ("QImage",     empty << "bits" << "scanLine")
+  ; ("QTreeWidget",empty << "indexOfTopLevelItem")
   ]
+(* names of methods to remove from any class *)
+let just_names = 
+  [ "event" (* Qt doesn't recommend to override this method *)
+  ; "flush"
+  ; "initialize" (* because preprocesser has its own `flush` *)
+  ; "d_func"
+  ]
+let names_cond : (string -> bool) list = 
+  [ (String.is_prefix ~prefix:"operator")
+  ]
+
 let filter_methods = function
   | (Element (name,att,ch)) as clas_node -> begin
     try 
@@ -150,8 +164,13 @@ let filter_methods = function
       let set = List.Assoc.find_exn wut_methods_to_remove class_name in
       let new_ch = List.filter ch ~f:(function 
         | (Element ("function",att,sons)) ->
+            let name = (get_attr_exn ~name:"name" att) in
             (is_abstract sons) ||
-            (not (String.Set.mem set (get_attr_exn ~name:"name" att) ) )
+            (not (
+              (String.Set.mem set name) || 
+              (List.mem just_names name) || 
+              (names_cond |> List.map ~f:(fun f -> f name) |> List.fold ~init:false ~f:(||) )
+             ) )
         | (Element ("signal",att,sons))  ->
             (is_abstract sons) ||
             (not (String.Set.mem set (get_attr_exn ~name:"name" att) ) )

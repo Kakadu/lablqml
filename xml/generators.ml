@@ -109,7 +109,6 @@ let is_good_meth ~classname ~index m =
   try
     let () = match m.m_access with `Private -> raise DoSkip | `Public | `Protected -> () in
     if skip_class_by_name ~classname:m.m_declared then false
-    else if skip_meth ~classname methname then false 
     else begin 
       match List.find args ~f:(skipArgument ~index) with
 	| None -> (* all arguments are OK *)
