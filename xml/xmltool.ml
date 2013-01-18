@@ -1,6 +1,5 @@
 open Core
 open Core.Std
-open SuperIndex
 open Parser
 open Printf
 
@@ -32,21 +31,22 @@ module Printer = Xml_print.Make_simple(Xml)(struct let emptytags=[] end)
 
 let root_ns = Parser.build root
 
-let (superIndex,g) = build_graph root_ns
+let (superIndex,g) = SuperIndex.build_graph root_ns
 
 open Simplexmlparser
 
 module VertexComparatorPre : Core.Comparator.Pre = struct 
-  type t = V.t
-  let sexp_of_t = V.sexp_of_t
-  let t_of_sexp = V.t_of_sexp
-  let compare = V.compare
+  
+  type t = SuperIndex.V.t
+  let sexp_of_t = SuperIndex.V.sexp_of_t
+  let t_of_sexp = SuperIndex.V.t_of_sexp
+  let compare = SuperIndex.V.compare
 end 
 module VertexComparator = Comparator.Make (VertexComparatorPre)
 module VertexComparator2= Comparator.Make1(struct
-  type 'a t = V.t
-  let compare = V.compare
-  let sexp_of_t = V.sexp_of_t
+  type 'a t = SuperIndex.V.t
+  let compare = SuperIndex.V.compare
+  let sexp_of_t = SuperIndex.V.sexp_of_t
 end)
 (* Maybe I can write
  * module VertexComparator = Core.Comparator.Make (V) *)
@@ -57,8 +57,8 @@ let () =
     ref (Core_set.empty ~comparator: VertexComparator2.comparator) 
   in
   (* put classes described in command line to answer*)
-  G.iter_vertex (fun v ->
-    let name = G.vertex_name v in
+  SuperIndex.G.iter_vertex (fun v ->
+    let name = SuperIndex.G.vertex_name v in
     if Core_set.mem !names name then start_set:= Core_set.add !start_set v
   ) g;
   (* there we will accumulate classes with their parent classes *)
@@ -66,7 +66,7 @@ let () =
   let rec loop set = 
     if Core_set.is_empty set then () else begin
       let parents = ref (Core_set.empty ~comparator:VertexComparator2.comparator) in
-      Core_set.iter set ~f:(G.iter_pred (fun  v -> parents := Core_set.add !parents v ) g);
+      Core_set.iter set ~f:(SuperIndex.G.iter_pred (fun  v -> parents := Core_set.add !parents v ) g);
       ans_vs:= Core_set.union !ans_vs !parents;
       loop !parents
     end
@@ -75,7 +75,7 @@ let () =
 
   (*  Set.iter (fun x -> print_endline (G.vertex_name x)) !ans_vs; *)
   let names = 
-    Core_set.union (Core_set.map ~f:G.vertex_name !ans_vs ~comparator:Core_string.comparator) !names in
+    Core_set.union (Core_set.map ~f:SuperIndex.G.vertex_name !ans_vs ~comparator:Core_string.comparator) !names in
   
   let lst = match root with
     | Element ("code",_,lst) -> lst
@@ -102,31 +102,12 @@ let () =
   
   let () = 
     let module StringSet = String.Set in
+    let module StringLabeledGraph = SuperIndex.StringLabeledGraph in
     let declared_classes = ref StringSet.empty in
     printf "Generating result graph\n%!";
     let root_ns = Parser.build xml in
 
-    let g = StringLabeledGraph.create () in 
-    let module G = struct
-      include StringLabeledGraph
-      let graph_attributes (_:t) = []
-      let default_vertex_attributes _ = []
-      let vertex_name v = v 
-        |> Str.global_replace (Str.regexp "::") "_dd_"
-        |> Str.global_replace (Str.regexp "<") "_lt_"
-        |> Str.global_replace (Str.regexp ">") "_md_"
-        |> Str.global_replace (Str.regexp ",") "_zpt_"
-        |> Str.global_replace (Str.regexp "*") "_star_"
-        |> Str.global_replace (Str.regexp "&amp;") "_AMP_"
-          
-      let vertex_attributes v = 
-        (if StringSet.mem !declared_classes v then `Shape `Diamond 
-         else if succ g v = [] then `Shape `Ellipse else `Shape `Box)
-        ::[]
-      let get_subgraph _ = None
-      let default_edge_attributes _ = []
-      let edge_attributes _ = []
-    end in 
+    let g = SuperIndex.StringLabeledGraph.create () in 
 
     let skip_argname s : bool = 
       (* skip primitive variables*)
@@ -135,7 +116,7 @@ let () =
       (* skip enums *)
       || ( String.is_prefix ~prefix:"Qt::" s && (
         try 
-          is_enum_exn (NameKey.key_of_fullname s) !superIndex
+          SuperIndex.is_enum_exn (SuperIndex.NameKey.key_of_fullname s) !superIndex
         with Not_found -> true
       ) )
     in
@@ -166,9 +147,8 @@ let () =
     iter_ns root_ns;
     
     let h = open_out "./qwe.dot" in
-    (*let (_: StringLabeledGraph.t) = g in*)
-    let module GraphPrinter = Graph.Graphviz.Dot(G) in
-    let () = GraphPrinter.output_graph h g  in
+    let () = GraphPrinter.output_graph h g 
+      ~is_declared:(StringSet.mem !declared_classes) in
     Out_channel.close h
   in
   ()      
