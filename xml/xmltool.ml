@@ -116,7 +116,7 @@ let () =
       (* skip enums *)
       || ( String.is_prefix ~prefix:"Qt::" s && (
         try 
-          SuperIndex.is_enum_exn (SuperIndex.NameKey.key_of_fullname s) !superIndex
+          SuperIndex.is_enum_exn (SuperIndex.NameKey.key_of_fullname s) superIndex
         with Not_found -> true
       ) )
     in

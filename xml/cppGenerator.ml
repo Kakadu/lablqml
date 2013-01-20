@@ -337,10 +337,11 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     fprintf h "#define  %s_twin_val(v) ((%s_twin*) Field(v,0))\n\n" classname classname;
     fprintf h "class %s_twin : public %s {\nQ_OBJECT\npublic:\n" classname classname;
     fprintf h "  virtual ~%s_twin() {}\n" classname;
+(*
     let () = 
       MethSet.to_list c.c_meths |> List.map ~f:(fun x -> x.m_out_name) |> String.concat ~sep:","
     |> (fun s -> printf "meths of class %s: %s\n" classname s)
-    in
+    in *)
     let (pub_meths,prot_meths) = 
       MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun (a,b) m -> match m.m_access with
         | `Public -> (MethSet.add a m,b)

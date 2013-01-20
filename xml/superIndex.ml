@@ -54,13 +54,12 @@ let to_channel t ch =
   let of_access = function
     | `Public -> "public   " | `Private -> "private  " | `Protected -> "protected" in
   let print_enum ~key {e_name;e_items; e_access; e_flag_name} = 
-    sprintf "%s enum %s %s with flag=%s,name=%s" (of_access e_access)
-    (snd key) (List.to_string (fun x->x) e_items) e_flag_name e_name in
+    sprintf "Enum  %s %s with flag=%s,name=%s"
+      (snd key) (String.concat ~sep:"," e_items) e_flag_name e_name in
   SuperIndex.iter t ~f:(fun ~key ~data -> match data with
     | Enum e -> fprintf ch "%s\n" (print_enum ~key e)
     | Class (c,set) -> begin
       fprintf ch "Class %s\n" (NameKey.to_string key);
-      fprintf ch "  Enums:\n";
       List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n"  (print_enum ~key e));
       fprintf ch "  Constructors\n";
       List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n" 
@@ -188,29 +187,34 @@ let super_filter_meths subclass_of ~base ~cur =
      наследование с базовым (абстрактным) классом *)
   (!base_not_impl,!cur_impl,!cur_new)
     
-let build_graph root_ns : index_t ref * G.t =
+let build_graph root_ns : index_t * G.t =
   let index = ref SuperIndex.empty in
   let g = G.create () in
 
+  let on_enum_found prefix e = 
+    let key = NameKey.make_key ~name:e.e_flag_name ~prefix in
+    if not (skip_enum key e) then
+      let data = Enum e in
+      ( printf "Adding enum %s with key %s\n%!" e.e_name (NameKey.to_string key);
+        index := SuperIndex.add ~key ~data !index
+      )
+  in
   let on_class_found prefix name c =
-    let key = NameKey.make_key ~name ~prefix in
-    let data = Class (c, MethSet.empty) in
+    let key = NameKey.make_key ~name ~prefix in    
+    let data = Class ({c with c_enums=[]}, MethSet.empty) in
     
     let curvertex = G.V.create key in
     G.add_vertex g curvertex;
     let bases = List.map c.c_inherits ~f:(fun basename ->
       let k = NameKey.key_of_fullname basename in
-      G.V.create k ) in
+      G.V.create k
+    ) in
 
     List.iter bases ~f:(fun from -> G.add_edge g from curvertex);
+    
+    List.iter c.c_enums ~f:(on_enum_found (c.c_name::prefix));
     index := SuperIndex.add ~key ~data !index
-  and on_enum_found prefix e = 
-    let key = NameKey.make_key ~name:e.e_flag_name ~prefix in
-    if not (skip_enum key e) then
-      let data = Enum e in
-      index:= SuperIndex.add ~key ~data !index
   in
-
   let rec iter_ns prefix ns = 
     let new_prefix = ns.ns_name :: prefix in
     List.iter ~f:(iter_ns new_prefix) ns.ns_ns;
@@ -256,10 +260,14 @@ let build_graph root_ns : index_t ref * G.t =
           List.fold_left ~init:false ~f:(fun acc prefix -> acc or (startswith ~prefix name)) prefixes
         | _ -> assert false)
     );
-  (index,g)
+  (!index,g)
 
 let build_superindex root_ns = 
-  let (index,g) = build_graph root_ns in
+  let (index,g) = 
+    let (a,b) = build_graph root_ns in
+    let a' = ref a in
+    (a',b)      
+  in
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
   Out_channel.close h;
