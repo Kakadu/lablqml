@@ -5,7 +5,7 @@ open Core.Std
 module NameKey = struct
   type t = string list * string (* list of namespaces and classes (reversed) and concatenated string *)
   type sexpable = t
-  let sexp_of_t t = Core_string.sexp_of_t (snd t)
+  let sexp_of_t t = String.sexp_of_t (snd t)
 
   let key_of_fullname b = 
     let a = Str.split (Str.regexp "::")  b |> List.rev in
@@ -146,12 +146,14 @@ let names_print_helper s ~set =
   printf "%s: %s\n\n" s
     (Core_list.to_string (MethSet.elements set) ~f:(fun m -> m.m_out_name) ) 
 
-(* Даны абстрактные методы в классе и нормальные методы.
-   Выдрать какие норм. методы реализуют абстрактные, норм методы, которые ничего не оверрайдят
-   и не реализованные абстрактные методы.
+(* At the beginning we have abstract and normal methods in current class.
+   Need to split them in three groups:
+   * methods which implements abstract methods
+   * normal methods
+   * abstract meths which are not implemented by abstract methods in this class
  *)
 let super_filter_meths subclass_of ~base ~cur =
-  let (<=<) : MethSet.Elt.t -> MethSet.Elt.t -> bool = fun a b -> overrides subclass_of a b in
+  let (<=<) : MethSet.Elt.t -> MethSet.Elt.t -> bool = overrides subclass_of in
 
   let base_not_impl = ref MethSet.empty in
   let cur_impl = ref MethSet.empty in

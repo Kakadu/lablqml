@@ -234,12 +234,13 @@ let strip_dd ~prefix:p s =
   else if (Str.first_chars s plen = (p^"::") ) then Str.string_after s plen 
   else s 
 
-let qtFlags = [ ("WindowStates", "WindowState");
-		("WindowFlags",  "WindowType");
-		("GestureFlags", "GestureFlag");
-		("Alignment",    "AlignmentFlag");
-	        ("MouseButtons", "MouseButton")
-	      ]
+let qtFlags = 
+  [ ("WindowStates", "WindowState");
+	("WindowFlags",  "WindowType");
+	("GestureFlags", "GestureFlag");
+	("Alignment",    "AlignmentFlag");
+	("MouseButtons", "MouseButton")
+  ]
 
 let fixEnumName s =
   try
