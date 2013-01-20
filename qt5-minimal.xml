@@ -1922,20 +1922,6 @@
                 <arguments />
             </return>
         </function>
-        <function name="event">
-            <accessPolicy value="public"/>
-            <modifiers >
-                <virtual />
-            </modifiers>
-            <arguments >
-                <argument type="QEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
-                    <arguments />
-                </argument>
-            </arguments>
-            <return type="bool" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
-                <arguments />
-            </return>
-        </function>
         <function name="eventFilter">
             <accessPolicy value="public"/>
             <modifiers >
@@ -3657,17 +3643,6 @@
             <modifiers />
             <arguments />
             <return type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
-                <arguments />
-            </return>
-        </function>
-        <function name="event">
-            <modifiers />
-            <arguments >
-                <argument type="QEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
-                    <arguments />
-                </argument>
-            </arguments>
-            <return type="bool" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
                 <arguments />
             </return>
         </function>
