@@ -56,10 +56,16 @@ let () =
   let start_set : (_,_) Core_set.t ref = 
     ref (Core_set.empty ~comparator: VertexComparator2.comparator) 
   in
+  let good_class = 
+    (* hack for adding all classes *)
+    if (Set.length !names = 1) && (Set.min_elt_exn !names = "ALL")
+    then fun _ -> true
+    else Set.mem !names
+  in
   (* put classes described in command line to answer*)
   SuperIndex.G.iter_vertex (fun v ->
     let name = SuperIndex.G.vertex_name v in
-    if Core_set.mem !names name then start_set:= Core_set.add !start_set v
+    if good_class name then start_set:= Core_set.add !start_set v
   ) g;
   (* there we will accumulate classes with their parent classes *)
   let ans_vs : (_,_) Core_set.t ref = ref !start_set in
@@ -88,6 +94,7 @@ let () =
       Core_set.mem names name
     | _ -> false
   ) ) in
+  
   List.iter !do_procedures ~f:(fun name ->
     printf "Applying procedure `%s`\n" name;
     let f = List.Assoc.find_exn procedures name in
@@ -149,7 +156,22 @@ let () =
     let h = open_out "./qwe.dot" in
     let () = GraphPrinter.output_graph h g 
       ~is_declared:(StringSet.mem !declared_classes) in
-    Out_channel.close h
+    Out_channel.close h;
+
+    let module Traverser = Graph.Traverse.Mark(struct 
+      include StringLabeledGraph
+      let index = ref String.Map.empty
+      module Mark = struct
+        let clear _ = index := String.Map.empty
+        let get k = try String.Map.find_exn !index k
+          with Not_found -> 0
+        let set key data = 
+          printf "setting %s %d\n%!" key data;
+          index := String.Map.add ~key ~data !index
+      end
+    end) in
+    print_string "Searching for loops: ";
+    printf "%b\n%!" (Traverser.has_cycle g)
   in
   ()      
   
