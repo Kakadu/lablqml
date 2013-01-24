@@ -156,22 +156,17 @@ let is_abstract_class ~prefix index name =
     if not (G.mem_vertex graph qObjectKey) then false
     else pathChecker graph qObjectKey key
 
-class virtual abstractGenerator graph _index = object (self)
-  method private index = _index    
-  method private virtual prefix : string  
-
-
 
   (* TODO: decide what index to use: from object or from parameter *)
   (* TODO: rewrite function to return type Core.Common.passfail *)
-  method private fromCamlCast 
+  let fromCamlCast 
       = fun (index:index_t) ({arg_default; arg_type=t; _} as arg) ?(cpp_argname=None) arg_name -> 
 	let cpp_argname = match cpp_argname with
 	  | Some x -> x 
 	  | None   -> "_"^arg_name
 	in
 	let is_const = t.t_is_const in
-	match pattern _index arg with
+	match pattern index arg with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
 	  | PrimitivePattern -> begin
  	    match t.t_name with
@@ -204,11 +199,11 @@ class virtual abstractGenerator graph _index = object (self)
 	    let ans = sprintf "%s %s = %s" (snd k) cpp_argname tail in
 	    Success ans	      
 
-  method private toCamlCast
-      = fun ?(forcePattern=None) {arg_type=t;arg_default=default;_} arg ansVarName ->
+  let toCamlCast
+      = fun ~index ?(forcePattern=None) {arg_type=t;arg_default=default;_} arg ansVarName ->
 	let patt = match forcePattern with
 	  | Some x -> x
-	  | None -> pattern _index (simple_arg t) in
+	  | None -> pattern index (simple_arg t) in
 	match patt with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t))
 	  | PrimitivePattern ->
@@ -227,5 +222,3 @@ class virtual abstractGenerator graph _index = object (self)
 	  | EnumPattern (e,k) -> 
 	    let func_name = enum_conv_func_names k |> snd in
 	    Success (sprintf "%s = %s(%s);" ansVarName func_name arg)
-
-end

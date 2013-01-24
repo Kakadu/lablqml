@@ -21,7 +21,6 @@ type comp_target = {
 }
 
 class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
-  inherit abstractGenerator graph index as super
   
   method get_name ~classname modif args ?res_n_name is_byte =
     cpp_stub_name ~classname modif args ?res_n_name ~is_byte
@@ -67,7 +66,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let (arg_casts,argnames) =
         let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
         let arg_casts = List.map2_exn argnames args ~f:(fun name arg ->
-          self#fromCamlCast (self#index) {arg with arg_type=unreference arg.arg_type} name
+          fromCamlCast index {arg with arg_type=unreference arg.arg_type} name
         ) in
         let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
           | Success s  -> s
@@ -93,7 +92,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let () = 
         if not is_proc then
           let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
-          match self#fromCamlCast self#index res_arg "resname" with
+          match fromCamlCast index res_arg "resname" with
             | Success _ -> ()
             | _ -> print_endline "failed resCast"; raise BreakSilent
       in
@@ -136,7 +135,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
             | EnumPattern (e,key) -> snd key
             | _ -> string_of_type res_arg.arg_type
           in
-          let resCast = match self#toCamlCast res_arg "ans" "_ans" with
+          let resCast = match toCamlCast index res_arg "ans" "_ans" with
             | Success s -> s
             | CastError _ | CastValueType _ | CastTemplate _ ->
               print_endline "resCast failed";raise (BreakSilent)
@@ -386,8 +385,8 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
           fprintf h "  args[0] = camlobj;\n";
           let arg_casts = List.map2i_exn m.m_args argnames ~f:(fun i arg name ->
             let arg_name = sprintf "args[%d]" (i+1) in
-            let s = self#toCamlCast arg name arg_name in
-            match s,pattern self#index arg with
+            let s = toCamlCast index arg name arg_name in
+            match (s,pattern index arg) with
               | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
               | (Success s,ObjectPattern) ->
                 let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
@@ -415,7 +414,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       end else begin
         let res = { arg_type=m.m_res; arg_name=None; arg_default=None} in
         fprintf h "  _ans = %s;\n" call_closure_str;
-        let cast = self#fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
+        let cast = fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
           |> (function Success s -> s | _ -> assert false) in
         fprintf h "  %s;\n" cast;
         fprintf h "  CAMLreturnT(%s,ans);\n" (string_of_type res.arg_type);
@@ -444,7 +443,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     fprintf h "(%s) {\n" (String.concat ~sep:"," (List.map argnames ~f:(fun s -> "value "^s)));
     self#declare_params h argnames;
     let arg_casts = List.map2_exn argnames args ~f:(fun name ({arg_type=t;arg_default=default;_} as arg) ->
-      self#fromCamlCast self#index {arg with arg_type=unreference t} name
+      fromCamlCast index {arg with arg_type=unreference t} name
     ) in
     let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
     self#declare_locals locals h;
