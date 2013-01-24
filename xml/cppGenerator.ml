@@ -212,7 +212,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let subdir = String.concat ~sep:"/" (List.rev prefix) in
       let dir = dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
-      let isQObject = self#isQObject key in
+      let isQObject = isQObject graph ~key in
       let (stubs_filename, twin_cppname, twin_hname) = 
         let d = dir ^/ classname in
         (d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 

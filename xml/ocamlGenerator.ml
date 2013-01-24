@@ -21,11 +21,10 @@ exception Break2File of string
 let break2file s = raise (Break2File s)
 
 class ocamlGenerator graph dir index = object (self)
-  inherit abstractGenerator graph index as super
   method private prefix = dir ^/ "ml"
 
   (* low_level means, for example, to generate [`qobject] obj instead of qObject *)
-  method toOcamlType ?forcePattern ~low_level ( arg: Parser.func_arg) =
+  method toOcamlType ?forcePattern ~low_level (arg: Parser.func_arg) =
     let {arg_type=t; arg_default=default; _} = arg in
     let patt = match forcePattern with
       | None   -> pattern index arg 
@@ -132,7 +131,7 @@ class ocamlGenerator graph dir index = object (self)
            But if it needs to functions  for stubs format is [a-z]+" "[a-z]+
         *)
         let classname = if isQObject then classname^"_twin" else meth.m_declared in
-	let access = if isQObject then `Public else meth.m_access in
+	    let access = if isQObject then `Public else meth.m_access in
         let res_n_name = (meth.m_res, meth.m_name) in
         let helper is_byte = cpp_stub_name ~classname ~res_n_name ~is_byte access meth.m_args in
         let native_name = helper false in
@@ -345,7 +344,6 @@ class ocamlGenerator graph dir index = object (self)
     Out_channel.close h1
 
   method private gen_constr_data ~classname ~index argslist =
-(*    let arg_count = List.length constr in *)
     (* TODO: construct argnames using C++ argument names *)
     let argnames = List.mapi argslist ~f:(fun i _ -> "x"^(string_of_int i)) in
     let types = List.map argslist ~f:(fun arg -> self#toOcamlType ~low_level:false arg) in
@@ -384,7 +382,7 @@ class ocamlGenerator graph dir index = object (self)
       let is_abstract = is_abstract_class ~prefix index classname in
 
       let ocaml_classname = ocaml_class_name classname in
-      let isQObject = self#isQObject key in
+      let isQObject = isQObject graph ~key in
       fprintf h_stubs "\n(* ********** class %s *********** *)\n" classname;
       if is_abstract then
         fprintf h_constrs "(* class %s has pure virtual members or no constructors *)\n" classname
@@ -403,22 +401,22 @@ class ocamlGenerator graph dir index = object (self)
 
       List.iter c.c_sigs ~f:(self#gen_signal h_classes);
       let itermeth ~isQObject m =
-	with_return (fun r ->
-	  if not (is_good_meth ~classname ~index m) then r.return ();
-	  if m.m_access=`Protected && not isQObject then r.return ();
-	  if not isQObject then (
-	    self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
+	    with_return (fun r ->
+	      if not (is_good_meth ~classname ~index m) then r.return ();
+	      if m.m_access=`Protected && not isQObject then r.return ();
+	      if not isQObject then (
+	        self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes 
-                (m:                    meth)
-	  ) else (
+              (m:                    meth)
+	      ) else (
             let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
-	    if (m.m_access=`Public) then stub false m;
+	        if (m.m_access=`Public) then stub false m;
             stub ~isQObject m;
             stub ~isQObject 
-	      {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
+	          {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
-	  )
-	)
+	      )
+	    )
       in
       MethSet.iter c.c_meths ~f:(itermeth ~isQObject);
       let public_slots = MethSet.filter c.c_slots ~f:(fun m -> m.m_access=`Public) in

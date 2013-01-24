@@ -145,20 +145,22 @@ let is_abstract_class ~prefix index name =
   printf "is_abstract_class of %s says %b\n" (NameKey.to_string key) ans;
   ans
 
-class virtual abstractGenerator graph _index = object (self)
-  method private index = _index    
-  method private virtual prefix : string  
-
-  val pathChecker =
+  let pathChecker graph =
     let module M = Graph.Path.Check(G) in
     let checker = M.create graph in
     M.check_path checker
 
-  method isQObject key =
+  let isQObject ~key graph =
     let qObjectKey = NameKey.key_of_fullname "QObject" in
     if qObjectKey = key then true else
     if not (G.mem_vertex graph qObjectKey) then false
-    else pathChecker qObjectKey key
+    else pathChecker graph qObjectKey key
+
+class virtual abstractGenerator graph _index = object (self)
+  method private index = _index    
+  method private virtual prefix : string  
+
+
 
   (* TODO: decide what index to use: from object or from parameter *)
   (* TODO: rewrite function to return type Core.Common.passfail *)
