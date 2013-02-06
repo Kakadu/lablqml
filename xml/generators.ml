@@ -33,8 +33,6 @@ let skip_class_by_name ~classname =
     | s when isInnerClass classname -> 
       print_endline ("skipping inner class " ^ classname);
       true
-    | "QWindowsVistaStyle"  | "QWindowsXPStyle" | "QWindowsStyle" | "QWindowsCEStyle"
-    | "QWindowsMobileStyle" | "QS60Style" -> true
     | "QString" -> true (* because we implemented it as primitive *)
     | _ -> false
 
@@ -46,7 +44,9 @@ let skipClass ~prefix c =
     | _ -> false
 
 type pattern = 
-  | InvalidPattern | PrimitivePattern | ObjectPattern 
+  | InvalidPattern 
+  | PrimitivePattern of string
+  | ObjectPattern 
   | EnumPattern  of enum * NameKey.t
   | ObjectDefaultPattern (* when `=0` *) (* default pattern when parameter has default value *)
 with sexp
@@ -58,8 +58,8 @@ let pattern index {arg_type=t; arg_default=default; _} =
     else if isTemplateClass name then InvalidPattern
     else match name with
       | "int"  | "bool" | "QString" | "void" -> 
-	if indir = 0 then PrimitivePattern else InvalidPattern
-      | "char" when indir = 1 -> PrimitivePattern
+	      if indir = 0 then PrimitivePattern name else InvalidPattern
+      | "char" when indir = 1 -> PrimitivePattern "char*"
       | "char"
       | "qreal" | "double" | "float" -> InvalidPattern
       | s when indir = 1 -> begin
@@ -135,12 +135,12 @@ let is_abstract_class ~prefix index name =
   let f = fun acc m -> match m.m_modif with 
     | `Abstract -> 
         printf "Abstract meth found in class %s: %s\n%!" name (string_of_meth m);
-      true
+        true
     | _ -> acc in
   let ans = match SuperIndex.find index key with
     | Some (Class (c,_)) -> 
       (MethSet.fold ~init:false c.c_meths ~f) or ((MethSet.fold ~init:false c.c_slots ~f))
-	or (c.c_constrs = [])
+	    or (c.c_constrs = [])
     | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
     | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )    
   in
@@ -158,7 +158,6 @@ let isQObject ~key graph =
   if not (G.mem_vertex graph qObjectKey) then false
   else pathChecker graph qObjectKey key
 
-
   (* TODO: decide what index to use: from object or from parameter *)
   (* TODO: rewrite function to return type Core.Common.passfail *)
   let fromCamlCast 
@@ -170,31 +169,29 @@ let isQObject ~key graph =
 	let is_const = t.t_is_const in
 	match pattern index arg with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t) )
-	  | PrimitivePattern -> begin
- 	    match t.t_name with
-	      | "int" -> Success (String.concat  
-				    ["int "; cpp_argname; " = Int_val("; arg_name; ");"])
-	      | "double" -> CastError "double_value!"
-	      | "bool" -> Success (String.concat 
-				     ["bool "; cpp_argname; " = Bool_val("; arg_name; ");"])
-	      | "QString" -> Success (String.concat 
-					["  "; if t.t_is_const then "const " else "";
-					 "QString"; if t.t_is_ref then "&" else "";
-					 " "; cpp_argname; " = "; "QString(String_val("; arg_name; "));" ])
-	      | "void" -> Success "Val_unit"
-	      | "char" when t.t_indirections = 1 ->
-		Success (String.concat ["char* "; cpp_argname; " = String_val("; arg_name; ");"])
-	      | _ -> assert false
-	  end
-	  | ObjectPattern -> 
+	  | PrimitivePattern "int" ->
+          Success (sprintf "int %s = Int_val(%s);" cpp_argname arg_name)
+	  | PrimitivePattern "double" -> CastError "double_value!"
+	  | PrimitivePattern "bool" ->
+          Success (sprintf "bool %s = Bool_val(%s);" cpp_argname arg_name)
+	  | PrimitivePattern "QString" ->
+          Success (String.concat 
+					 ["  "; if t.t_is_const then "const " else "";
+					  "QString"; if t.t_is_ref then "&" else "";
+					  " "; cpp_argname; " = "; "QString(String_val("; arg_name; "));" ])
+	  | PrimitivePattern "void" -> Success "Val_unit"
+	  | PrimitivePattern "char*" ->
+          Success (sprintf "char* %s = String_val(%s);" cpp_argname arg_name)
+      | PrimitivePattern _ -> assert false
+	  | ObjectPattern ->
 	    Success (String.concat 
-		       [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
-			sprintf " = (%s* ) (%s);" t.t_name arg_name])
+		         [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
+			      sprintf " = (%s* ) (%s);" t.t_name arg_name])
 	  | ObjectDefaultPattern ->
 	    Success 
 	      (String.concat 
-		 [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
-		  sprintf " = (%s==Val_none) ? NULL : ((%s* )(Some_val(%s)));" arg_name t.t_name arg_name] )
+		     [if is_const then "const " else ""; t.t_name; "* "; cpp_argname; 
+		      sprintf " = (%s==Val_none) ? NULL : ((%s* )(Some_val(%s)));" arg_name t.t_name arg_name] )
 	  | EnumPattern (e,k) ->
 	    let func_name = enum_conv_func_names k |> fst in
 	    let tail = sprintf "%s(%s);" func_name arg_name in
@@ -208,17 +205,13 @@ let isQObject ~key graph =
 	  | None -> pattern index (simple_arg t) in
 	match patt with
 	  | InvalidPattern -> CastError ("Cant cast: " ^ (string_of_type t))
-	  | PrimitivePattern ->
-	    (match t.t_name with
-	      | "int" -> Success (String.concat [ansVarName;" = Val_int("; arg; ");"])
-	      | "double" -> CastError "Store_double_value!"
-	      | "bool" -> Success (String.concat [ansVarName; " = Val_bool("; arg; ");"])
-	      | "QString" -> Success (String.concat [ansVarName; " = caml_copy_string("; arg;
-							".toLocal8Bit().data() );"])
-	      | "char" when t.t_indirections=1 ->
-		Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
-	      | _ -> raise (Common.Bug (sprintf "unexpected primitive: %s" t.t_name))
-	    )
+	  | PrimitivePattern "int" -> Success (String.concat [ansVarName;" = Val_int("; arg; ");"])
+	  | PrimitivePattern "double" -> CastError "Store_double_value!"
+	  | PrimitivePattern "bool" -> Success (String.concat [ansVarName; " = Val_bool("; arg; ");"])
+	  | PrimitivePattern "QString" ->
+          Success (String.concat [ansVarName; " = caml_copy_string("; arg; ".toLocal8Bit().data() );"])
+	  | PrimitivePattern "char*" -> Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
+	  | PrimitivePattern _ -> raise (Common.Bug (sprintf "unexpected primitive: %s" t.t_name))
 	  | ObjectPattern ->        Success (sprintf "%s = (::value)(%s);" ansVarName arg)
 	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((::value)(%s));" ansVarName arg)
 	  | EnumPattern (e,k) -> 

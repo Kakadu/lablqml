@@ -9,7 +9,7 @@ let constr_weight ~index lst =
     | InvalidPattern -> assert false
     | ObjectDefaultPattern -> 1
     | ObjectPattern when Option.is_some arg.arg_default -> 1
-    | PrimitivePattern when Option.is_some arg.arg_default -> 1
+    | PrimitivePattern _ when Option.is_some arg.arg_default -> 1
     | _ -> 0
   in
   Core_list.fold ~f:(fun acc x -> acc + (arg_weight x)) ~init:0 lst

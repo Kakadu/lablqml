@@ -28,15 +28,13 @@ class ocamlGenerator graph dir index = object (self)
       | Some x  -> x in
     match patt with
     | InvalidPattern -> CastError (sprintf "Cant cast: %s" (string_of_type t) )
-    | PrimitivePattern ->
-      (match t.t_name with
-        | "int" -> Success "int"
-        | "double" -> CastError "double value!"
-        | "bool" -> Success "bool"
-        | "QString" -> Success "string"
-        | "void" -> Success "unit"
-        | "char" when t.t_indirections=1 -> Success "string"
-        | _ -> assert false)
+    | PrimitivePattern "int"    -> Success "int"
+    | PrimitivePattern "double" -> CastError "double value!"
+    | PrimitivePattern "bool"   -> Success "bool"
+    | PrimitivePattern "QString"-> Success "string"
+    | PrimitivePattern "void"   -> Success "unit"
+    | PrimitivePattern "char*"  -> Success "string"
+    | PrimitivePattern ________ -> assert false
     | ObjectPattern ->
       Success (
         sprintf "%s" (if low_level then "[> `qobject] obj" else ocaml_class_name t.t_name)
@@ -91,7 +89,7 @@ class ocamlGenerator graph dir index = object (self)
         match pattern index arg with
           | InvalidPattern -> assert false
           | EnumPattern _
-          | PrimitivePattern -> name
+          | PrimitivePattern _ -> name
           | ObjectPattern    -> sprintf " (%s#handler) " name
           | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" cpp_func_name name name
       ) in
@@ -99,7 +97,7 @@ class ocamlGenerator graph dir index = object (self)
         match pattern index arg with
           | InvalidPattern -> assert false
           | EnumPattern _
-          | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+          | PrimitivePattern _ -> sprintf "(%s: %s)" name ttt
           | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
           | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
       ) in
@@ -184,14 +182,14 @@ class ocamlGenerator graph dir index = object (self)
       let getparams = fun () -> 
 	let args2 = List.map3_exn types args argnames ~f:(fun _ arg name -> match pattern index arg with
             | InvalidPattern -> assert false
-            | EnumPattern _ | PrimitivePattern  -> name
+            | EnumPattern _ | PrimitivePattern _ -> name
             | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
             | ObjectPattern -> sprintf "(%s#handler)" name
         ) in
         let args1 = List.map3_exn types args argnames ~f:(fun ttt ({arg_type=start;_} as arg) name ->
           match pattern index arg with
             | InvalidPattern -> assert false
-            | EnumPattern _ | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+            | EnumPattern _ | PrimitivePattern _ -> sprintf "(%s: %s)" name ttt
             | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
             | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
         ) in
@@ -366,7 +364,7 @@ class ocamlGenerator graph dir index = object (self)
         match pattern index arg with
           | InvalidPattern -> assert false
           | EnumPattern _
-          | PrimitivePattern -> sprintf "(%s: %s)" name ttt
+          | PrimitivePattern _ -> sprintf "(%s: %s)" name ttt
           | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
           | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
       ) in
@@ -376,7 +374,7 @@ class ocamlGenerator graph dir index = object (self)
           | InvalidPattern -> assert false
           | EnumPattern _
               (* We do low_level casts here because  we call low_level creator when class's initializer *)
-          | PrimitivePattern -> name
+          | PrimitivePattern _ -> name
           | ObjectPattern    -> sprintf " (%s#handler) " name
           | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" "don't know" name name
       ) in    
