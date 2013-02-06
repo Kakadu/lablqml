@@ -80,7 +80,6 @@ let main out_dir =
   end; 
 
   if not options.noml then begin
-    let (_,index,graph,q) = options.base in
     let module V2 = struct
       type t = [ `Single of NameKey.t | `Group of NameKey.t list ]
       let equal x y = match (x,y) with
@@ -99,8 +98,10 @@ let main out_dir =
     let module Gout = Graph.Imperative.Digraph.Concrete(V2) in
     let module R = Reducer.Make(G)(Gout) in
 
+    let (_,index,main_graph,q) = options.base in
     let components = (* Queue generation *)
       let module T = Tarjan.Make(G) in
+      let graph = G.copy main_graph in
       SuperIndex.iter ~f:(fun ~key ~data ->
         match data with
           | Enum _ -> ()
@@ -124,7 +125,7 @@ let main out_dir =
     in
     let open OcamlGenerator in
     print_endline "generating OCaml code";
-    (new ocamlGenerator graph out_dir index )#generate components
+    (new ocamlGenerator main_graph out_dir index )#generate components
   end else begin
     print_endline "Generation of OCaml code skipped"
   end

@@ -214,6 +214,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let dir = dir ^/ subdir in
       ignore (Sys.command ("mkdir -p " ^ dir ));
       let isQObject = isQObject graph ~key in
+      printf "Generating C++ for class %s: isQObject==%b\n%!" (NameKey.to_string key) isQObject;
       let (stubs_filename, twin_cppname, twin_hname) = 
         let d = dir ^/ classname in
         (d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
@@ -235,7 +236,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       fprintf h "#include \"enum_headers.h\"\n";
       fprintf h "#define %s_val(v) ((%s *) Field(v,0))\n\n" classname classname;
       let isAbstract = self#is_abstr_class c in
-      printf "class %s: is abstract? %b, is QObject: %b\n" c.c_name isAbstract isQObject;
+      printf "class %s: is abstract=%b, is QObject=%b\n" c.c_name isAbstract isQObject;
       if isAbstract then
         fprintf h "//class has pure virtual members - no constructors\n"
       else begin
@@ -256,7 +257,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public)
-	&& (m.m_modif <> `Abstract) then
+	      && (m.m_modif <> `Abstract) then
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args 
             ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
@@ -502,7 +503,8 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     let classes = ref [] in
     let twin_classes = ref [] in
     let enums = ref [] in
-    Queue.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
+    Queue.iter q ~f:(fun key -> 
+      match SuperIndex.find_exn index key with
       | Enum e -> begin
         match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
           | Some s -> Ref.replace enums (fun lst -> (key,s)::lst)

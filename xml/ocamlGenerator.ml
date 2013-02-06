@@ -422,6 +422,7 @@ class ocamlGenerator graph dir index = object (self)
       let ocaml_classname = ocaml_class_name classname in
       let isQObject = isQObject graph ~key in
       fprintf h_stubs "\n(* ********** class %s *********** *)\n" classname;
+      fprintf h_stubs "(* isQObject=%b\tis_abstract=%b  *)\n" isQObject is_abstract;
       if is_abstract then
         fprintf h_constrs "(* class %s has pure virtual members or no constructors *)\n" classname
       else (
