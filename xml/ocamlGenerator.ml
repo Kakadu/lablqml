@@ -1,9 +1,6 @@
 open Core
 open Core.Common
-module List = Core_list
-module String = Core_string
-module Map = Core_map
-module Q = Core_queue
+open Core.Std
 open Parser
 open Generators
 open Printf
@@ -306,7 +303,7 @@ class ocamlGenerator graph dir index = object (self)
     with BreakSilent -> ()
       | BreakS s -> ()
 
-  method generate (queue: [`Single of NameKey.t | `Group of NameKey.t list] Q.t) =
+  method generate (queue: [`Single of NameKey.t | `Group of NameKey.t list] Queue.t) =
     self#makefile dir;
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
@@ -315,11 +312,11 @@ class ocamlGenerator graph dir index = object (self)
     fprintf h2 "open Stub_helpers\n\n";
     fprintf h3 "open Stub_helpers\nopen Classes\nopen Stubs\n";
 
-    printf "Queue length is %d\n" (Q.length queue);
+    printf "Queue length is %d\n" (Queue.length queue);
 (*    printf "Key in index are: %s\n" (SuperIndex.keys index |> List.to_string snd); *)
     let classes = ref [] in
     let add_class key = Ref.replace classes (fun c -> key::c) in
-    Q.iter queue ~f:(function
+    Queue.iter queue ~f:(function
       | `Single key -> begin
         match SuperIndex.find index key with
           | Some (Enum e) -> ()
