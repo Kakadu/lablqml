@@ -3,7 +3,6 @@ open Core.Common
 open Generators
 open SuperIndex
 open Parser
-module Q = Core_queue
 
 open Core.Std
 
@@ -498,12 +497,12 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       Some (if subdir = "" then filename else subdir ^/ filename)
     end
 
-  method generate_q (q: NameKey.t Q.t) = 
+  method generate_q (q: NameKey.t Queue.t) =
     ignore (Sys.command ("rm -rf " ^ self#prefix ^"/*") );
     let classes = ref [] in
     let twin_classes = ref [] in
     let enums = ref [] in
-    Q.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
+    Queue.iter q ~f:(fun key -> match SuperIndex.find_exn index key with
       | Enum e -> begin
         match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
           | Some s -> Ref.replace enums (fun lst -> (key,s)::lst)
