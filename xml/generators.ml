@@ -1,9 +1,8 @@
 open Parser 
 open Core
 open Core.Common
+open Core.Std
 open Printf
-module List = Core_list
-module String = Core_string
 open SuperIndex
 
 exception BreakS of string
