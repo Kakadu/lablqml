@@ -311,7 +311,7 @@ let build_superindex root_ns =
         names_print_helper "Abstract meths" c.c_meths_abstr; *)
 
         let bases_data = List.filter_map base_keys ~f:(fun key -> match SuperIndex.find !index key with
-          | Some (Class (y,set) ) ->        Some y
+          | Some (Class (y,set) ) -> Some y
           | None -> 
             printf "WARNING! Base class %s of %s is not in index. Suppose that it is not abstract\n" 
               (snd key) c.c_name;

@@ -306,26 +306,40 @@ class ocamlGenerator graph dir index = object (self)
     with BreakSilent -> ()
       | BreakS s -> ()
 
-  method generate (queue: NameKey.t Q.t) =
+  method generate (queue: [`Single of NameKey.t | `Group of NameKey.t list] Q.t) =
     self#makefile dir;
     let h1 = open_out (dir ^/ "classes.ml") in
     let h2 = open_out (dir ^/ "stubs.ml") in
     let h3 = open_out (dir ^/ "creators.ml") in
-    fprintf h1 "\nopen Stubs\nopen Stub_helpers\nexception AbstractTwinException\nclass";
+    fprintf h1 "\nopen Stubs\nopen Stub_helpers\nexception AbstractTwinException\n\n";
     fprintf h2 "open Stub_helpers\n\n";
     fprintf h3 "open Stub_helpers\nopen Classes\nopen Stubs\n";
 
     printf "Queue length is %d\n" (Q.length queue);
 (*    printf "Key in index are: %s\n" (SuperIndex.keys index |> List.to_string snd); *)
     let classes = ref [] in
-    Q.iter queue ~f:(fun key ->
-      match SuperIndex.find_exn index key with
-        | Enum  e -> ()
-        | Class (c,_) -> self#gen_class ~prefix:[] h1 h2 h3 c;
-          Ref.replace classes (fun c -> key::c)
+    let add_class key = Ref.replace classes (fun c -> key::c) in
+    Q.iter queue ~f:(function
+      | `Single key -> begin
+        match SuperIndex.find index key with
+          | Some (Enum e) -> ()
+          | Some (Class (c,_)) ->
+              add_class key;
+              self#gen_single_class ~prefix:[] h1 h2 h3 c
+          | None ->
+              raise (Bug (sprintf "Can't find class with key `%s`" (NameKey.to_string key) ) )
+      end
+      | `Group keys ->
+          (* this key are all classs keys*)
+          let ks = List.map keys ~f:(fun key ->
+            match SuperIndex.find_exn index key with
+              | Enum  e -> assert false
+              | Class (c,_) -> add_class key; c
+          ) in
+            self#gen_cycle_classes ~prefix:[] h1 h2 h3 ks
     );
-    print_endline "end of classes generation";
-    fprintf h1 " aa = object end\n\n\n\n\n";
+    print_endline "end of classes generation";(*
+    fprintf h1 " aa = object end\n\n\n\n\n";*)
 
     List.iter !classes ~f:(fun ( (lst,_) as key) ->
       match SuperIndex.find_exn index key with
@@ -370,6 +384,30 @@ class ocamlGenerator graph dir index = object (self)
           | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" "don't know" name name
       ) in    
     (String.concat ~sep:" " args1, String.concat ~sep:" " args2)
+
+  method gen_single_class ~prefix h_classes h_stubs h_constrs c = 
+    let key = NameKey.make_key ~name:c.c_name ~prefix in
+    fprintf h_classes "(* clas %s *)\n" (NameKey.to_string  key);
+    fprintf h_classes "class ";
+    self#gen_class ~prefix h_classes h_stubs h_constrs c;
+    fprintf h_classes " end\n\n"
+
+  method gen_cycle_classes ~prefix h_classes h_stubs h_constrs cs = 
+    assert (List.length cs <> 0);
+    fprintf h_classes "(* clas_cycle %s *)\n" 
+      (List.map cs ~f:(fun c -> NameKey.make_key ~name:c.c_name ~prefix)
+          |> List.map ~f: NameKey.to_string
+          |> String.concat ~sep:","
+      );
+    fprintf h_classes "class ";
+    let gen = self#gen_class ~prefix h_classes h_stubs h_constrs in
+    let (h,tl) = List.( (hd_exn cs, tl_exn cs) ) in
+    gen h;
+    List.iter tl ~f:(fun c ->
+      fprintf h_classes "\nend and ";
+      gen c
+    );
+    fprintf h_classes " end\n\n"
 
   method gen_class ~prefix h_classes h_stubs h_constrs c = 
     let key = NameKey.make_key ~name:c.c_name ~prefix in
@@ -427,14 +465,11 @@ class ocamlGenerator graph dir index = object (self)
           self#gen_slot ~classname h_classes slot
       );
 
-      fprintf h_classes "end\nand ";
-      (* *)
       if is_abstract then (
-        fprintf h_classes " %s_abstrhelper me = object(self)\n" ocaml_classname;
+        fprintf h_classes "end and %s_abstrhelper me = object(self)\n" ocaml_classname;
         fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
         MethSet.iter c.c_meths ~f:(itermeth ~isQObject:false);
         MethSet.iter public_slots ~f:(itermeth ~isQObject:false);
-        fprintf h_classes "end\nand "
       )
       
     end

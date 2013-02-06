@@ -157,21 +157,6 @@ let () =
     let () = GraphPrinter.output_graph h g 
       ~is_declared:(StringSet.mem !declared_classes) in
     Out_channel.close h;
-
-    let module Traverser = Graph.Traverse.Mark(struct 
-      include StringLabeledGraph
-      let index = ref String.Map.empty
-      module Mark = struct
-        let clear _ = index := String.Map.empty
-        let get k = try String.Map.find_exn !index k
-          with Not_found -> 0
-        let set key data = 
-          printf "setting %s %d\n%!" key data;
-          index := String.Map.add ~key ~data !index
-      end
-    end) in
-    print_string "Searching for loops: ";
-    printf "%b\n%!" (Traverser.has_cycle g)
   in
   ()      
   

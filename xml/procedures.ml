@@ -122,7 +122,26 @@ let wut_methods_to_remove =
     << "removeAction" << "actions" << "setFont" << "font" << "event"
     << "backgroundRole" << "foregroundRole" << "setBackgroundRole" << "setForegroundRole" 
     << "dragLeaveEvent" << "testAttribute_helper" << "focusPreviousChild" << "focusNextChild"  
-    << "metric" << "destroy" << "findChild" )
+    << "metric" << "destroy" << "findChild" << "raise" << "mapFromParent" << "style" << "ungrabGesture"
+    << "contextMenuPolicy" << "setMinimumHeight" << "sizeHint" << "contentsRect" <<"setWindowModality"
+     << "windowModality" << "toolTip" << "baseSize" << "isEnabledTo" << "tabletEvent" << "setAcceptDrops" 
+     << "focusProxy" << "mouseGrabber" << "releaseShortcut" << "normalGeometry" << "setMaximumSize"
+    << "fontInfo" << "showFullScreen" << "addAction" << "setShortcutAutoRepeat" << "focusNextPrevChild"
+    << "setWhatsThis" << "visibleRegion" << "focusOutEvent" << "setContextMenuPolicy" << "accessibleDescription" << "overrideWindowFlags" << "dragMoveEvent" << "grabMouse" << "unsetCursor" << "window" << "mapTo" <<
+       "redirected" << "whatsThis" << "updateMicroFocus" << "windowHandle" << "overrideWindowState" 
+     << "restoreGeometry" << "setWindowIcon" << "isWindowModified" << "setFixedHeight" << "maximumSize"
+     << "mask" << "heightForWidth" << "setFocus" << "setHidden" << "setDisabled" << "setEnabled" <<
+    "lower" << "windowIconText" << "windowRole" << "windowState" << "widthMM" << "windowFilePath" <<
+  "updatesEnabled" << "usetLocale" << "unsetLayoutDirection" << "underMouse" << "topLevelWidget" <<
+  "testAttribute" << "statusTip" << "stackUnder" << "setWindowIconText" << "setWindowFlags" << "setUpdatesEnabled" << "setTabOrder" << "setStatusTip" << "setSizeIncrement" << "setShortcutEnabled" << "setMouseTracking"
+     << "setMinimumSize" << "setMinimumWidth" << "setFoxusProxy" << "setFocusPolicy" << "setFixedWidth" 
+     << "setBaseSize" << "setContentsMargins" << "setAutoFillBackground" << "setAttribute"  << "setBaseSize"
+     << "setAccessibleDescription" << "setAccessibleName" << "releaseMouse" << "previousInFocusChain"
+     << "parentWidget" << "paintingActive" << "nextInFocusChain" << "nativeParentWidget" << "minimumWidth"
+     << "minimumHeight" << "maximumWidth" << "maximumHeight" << "leaveEvent" << "killTimer" << "keyboardGrabber" << "isWindowType" << "isWindow" << "isVisibleTo" << "isTopLevel" << "isRightToLeft" << "isModal" <<
+  "isMaximized" << "isMinimized" << "isLeftToRight" << "isHidden" << "isFullScreen" << "isEnabledToTLW"
+  << "isEnabled" << "isAncestorOf" << "isActiveWindow" << "inherits" << "heightMM" << "height" << "hasMouseTracking" << "hasHeightForWidth" << "grabKeyboard" << "grabGesture" << "focusPolicy" << "eventFilter" << "enterEvent" << "ensurePolished" << "devType" << "depth" << "customEvent" << "createWinId" << "colorCount"
+     << "clearMask" << "clearFocus" << "childAt" << "changeEvent" << "blockSignals" << "autoFillBackground")
   ; ("QGraphicsScene", 
     empty << "style" << "palette" << "setPalette" << "setStyle" << "items" << "itemIndexMethod"
      << "setFont" << "font" << "dropEvent" << "dragMoveEvent" << "dragLeaveEvent" << "dragEnterEvent"

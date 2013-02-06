@@ -71,8 +71,9 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
           | Success s  -> s
           | CastError _ | CastValueType _
-          | CastTemplate _  -> printf "arg_cast failed: %s" (string_of_arg arg);
-            raise BreakSilent
+          | CastTemplate _  -> 
+              (*printf "arg_cast failed: %s" (string_of_arg arg);*)
+              raise BreakSilent
         ) in
 
         if not is_constr then begin
@@ -94,7 +95,9 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
           let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
           match fromCamlCast index res_arg "resname" with
             | Success _ -> ()
-            | _ -> print_endline "failed resCast"; raise BreakSilent
+            | _ -> 
+                (*print_endline "failed resCast"; *)
+                raise BreakSilent
       in
 
       fprintf h "value %s(" native_func_name;
@@ -313,13 +316,13 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         | `Protected -> MethSet.add a {m with m_access=`Public} ) in
     (* Also we have to generate caller stubs for meths of twin object *)
     let iter_meth m =
-      printf "generating a meth %s\n" (string_of_meth m);
+      (*printf "generating a meth %s\n" (string_of_meth m);*)
       let f name =
         self#gen_stub ~prefix ~isQObject:true classname m.m_access
           m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
       f m.m_name;
       if m.m_modif <> `Abstract then
-	f ("call_super_"^m.m_name)
+	    f ("call_super_"^m.m_name)
     in
     let public_slots = MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public) in
     MethSet.iter new_meths ~f:iter_meth;

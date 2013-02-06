@@ -78,7 +78,8 @@ let pattern index {arg_type=t; arg_default=default; _} =
 	  | Some (Class _) -> InvalidPattern
 	  | Some (Enum e) -> EnumPattern (e, key)
 	  | None -> 
-	    printf "Warning. Not in index: %s. skipped.\n"  name; 
+(*
+	    printf "Warning. Not in index: %s. skipped.\n"  name; *)
 	    InvalidPattern
       end
    
@@ -113,7 +114,9 @@ let is_good_meth ~classname ~index m =
       match List.find args ~f:(skipArgument ~index) with
 	| None -> (* all arguments are OK *)
 	  (is_void_type res) or (not (skipArgument ~index (simple_arg res) ))
-	| Some {arg_type;_} -> (printf "Method %s skipped: %s\n" methname (string_of_type arg_type); false)
+	| Some {arg_type;_} -> 
+        (*printf "Method %s skipped: %s\n" methname (string_of_type arg_type); *)
+        false
     end
   with DoSkip -> false
     | DontSkip | Not_found -> true
@@ -145,16 +148,16 @@ let is_abstract_class ~prefix index name =
   printf "is_abstract_class of %s says %b\n" (NameKey.to_string key) ans;
   ans
 
-  let pathChecker graph =
-    let module M = Graph.Path.Check(G) in
-    let checker = M.create graph in
-    M.check_path checker
+let pathChecker graph =
+  let module M = Graph.Path.Check(G) in
+  let checker = M.create graph in
+  M.check_path checker
 
-  let isQObject ~key graph =
-    let qObjectKey = NameKey.key_of_fullname "QObject" in
-    if qObjectKey = key then true else
-    if not (G.mem_vertex graph qObjectKey) then false
-    else pathChecker graph qObjectKey key
+let isQObject ~key graph =
+  let qObjectKey = NameKey.key_of_fullname "QObject" in
+  if qObjectKey = key then true else
+  if not (G.mem_vertex graph qObjectKey) then false
+  else pathChecker graph qObjectKey key
 
 
   (* TODO: decide what index to use: from object or from parameter *)
