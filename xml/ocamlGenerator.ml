@@ -179,8 +179,8 @@ class ocamlGenerator graph dir index = object (self)
       ) in
       let argnames = List.mapi args ~f:(fun i _ -> "x"^(string_of_int i)) in
 
-      let getparams = fun () -> 
-	let args2 = List.map3_exn types args argnames ~f:(fun _ arg name -> match pattern index arg with
+      let getparams () =
+	    let args2 = List.map3_exn types args argnames ~f:(fun _ arg name -> match pattern index arg with
             | InvalidPattern -> assert false
             | EnumPattern _ | PrimitivePattern _ -> name
             | ObjectDefaultPattern -> sprintf "(wrap_handler \"%s\" \"%s\" %s)" meth.m_out_name name name
@@ -193,68 +193,71 @@ class ocamlGenerator graph dir index = object (self)
             | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
             | ObjectPattern -> sprintf "(%s: %s )" name (ocaml_class_name start.t_name)
         ) in
-	(args1,args2)
+	    (args1,args2)
       in
       let postconvert () = match pattern index (simple_arg res) with
         | ObjectPattern -> 
           let res_classname = ocaml_class_name res.t_name in
-          fprintf h "    let postconvert x = x |> (function\n";
-          fprintf h "    | Some o -> Some(match Qtstubs.get_caml_object o with\n";
+          fprintf h "\n";
+          fprintf h "    |> (function\n";
+          fprintf h "       | Some o -> Some(match Qtstubs.get_caml_object o with\n";
           fprintf h "                     | Some x -> (x:>%s)\n" res_classname;
           fprintf h "                     | None -> new %s o)\n" res_classname;
-          fprintf h "    | None -> None) in\n"
+          fprintf h "       | None -> None)\n"
         | _ ->
-          fprintf h "    let postconvert x = x in\n"
+            ()
+(*              fprintf h "    let postconvert x = x in\n" *)
       in
       let meth_out_name = match new_name with None -> meth.m_out_name | Some x -> x in
-      let () = match (isQObject,meth.m_modif=`Abstract) with
-	| (false,true) -> begin (* not QObject, abstract meth *)
-	  assert (meth.m_access <> `Protected);
-          fprintf h "  method virtual %s : %s" meth_out_name (String.concat ~sep:"->" types );
-          if List.length types <> 0 then fprintf h " -> ";
-          match pattern index (simple_arg res) with
-            | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
-            | _ -> fprintf h "%s" res_type
-	end
-	| (false,false) -> begin (* not QObject, normal meth *)
-	  assert (meth.m_access <> `Protected);
-	  let (args1,args2) = getparams () in
-          fprintf h "  method %s %s =\n" meth_out_name (String.concat ~sep:" " args1);
-	  postconvert ();
-	  fprintf h "    %s_%s' self#handler %s |> postconvert"
-            (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2)
-	end
-	| (true,false) -> begin (* QObject, normal meth *)
-	  let (args1,args2) = getparams () in
-          fprintf h "  method %s %s =\n" meth_out_name (String.concat ~sep:" " args1);
-	  postconvert ();
-          fprintf h "    (match Qtstubs.get_class_name me with\n";
-          fprintf h "    | Some \"%s_twin\" -> %s_twin_call_super_%s' self#handler %s\n" classname
-	    (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);	    
-          fprintf h "    | Some \"%s\" -> " classname;
-	  if meth.m_access = `Protected 
-	  then fprintf h "print_endline \"Can't call protected method of non-twin object\"; assert false\n"
-	  else fprintf h "%s_%s' self#handler %s\n"
-            (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
-          fprintf h "    | _ -> print_endline \"Some bug in logic\"; assert false\n";
-          fprintf h "    ) |> postconvert"
-	end
-	| (true,true) -> begin (* QObject, abstract meth *)
-          fprintf h "  method virtual %s : %s" meth_out_name (String.concat ~sep:"->" types );
-          if List.length types <> 0 then fprintf h " -> ";
-          match pattern index (simple_arg res) with
-            | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
-            | _ -> fprintf h "%s" res_type
-(*	  let (args1,args2) = getparams () in
-          fprintf h "  method %s %s =\n" meth_out_name (String.concat ~sep:" " args1);
-	  postconvert ();
-          fprintf h "    (match Qtstubs.get_class_name me with\n";
-          fprintf h "    | Some \"%s_twin\" -> %s_twin_call_super_%s' self#handler %s\n" classname
-	    (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);	    
-          fprintf h "    | Some \"%s\" -> print_endline \"Calling abstract meth of non-twin obj\"; flush stdout; raise AbstractTwinException \n" classname;
-          fprintf h "    | _ -> print_endline \"Some bug in logic\"; assert false\n";
-          fprintf h "    ) |> postconvert" *)
-	end
+      let () = 
+        match (isQObject,meth.m_modif=`Abstract) with
+	      | (false,true) -> begin (* not QObject, abstract meth *)
+	        assert (meth.m_access <> `Protected);
+            fprintf h "  method virtual %s : %s" meth_out_name (String.concat ~sep:"->" types );
+            if List.length types <> 0 then fprintf h " -> ";
+            match pattern index (simple_arg res) with
+              | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
+              | _ -> fprintf h "%s" res_type
+	      end
+	      | (false,false) -> begin (* not QObject, normal meth *)
+	        assert (meth.m_access <> `Protected);
+	        let (args1,args2) = getparams () in
+            fprintf h "  method %s %s =\n" meth_out_name (String.concat ~sep:" " args1);
+	        fprintf h "    %s_%s' self#handler %s"
+              (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
+            postconvert ()
+	      end
+	      | (true,false) -> begin (* QObject, normal meth *)
+	        let (args1,args2) = getparams () in
+            fprintf h "  method %s %s =\n" meth_out_name (String.concat ~sep:" " args1);
+            fprintf h "    (match Qtstubs.get_class_name me with\n";
+            fprintf h "    | Some \"%s_twin\" -> %s_twin_call_super_%s' self#handler %s\n" classname
+	          (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);	    
+            fprintf h "    | Some \"%s\" -> " classname;
+	        if meth.m_access = `Protected 
+	        then fprintf h "print_endline \"Can't call protected method of non-twin object\"; assert false\n"
+	        else fprintf h "%s_%s' self#handler %s\n"
+              (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);
+            fprintf h "    | _ -> print_endline \"Some bug in logic\"; assert false\n";
+            fprintf h "    )";
+	        postconvert ()
+	      end
+	      | (true,true) -> begin (* QObject, abstract meth *)
+            fprintf h "  method virtual %s : %s" meth_out_name (String.concat ~sep:"->" types );
+            if List.length types <> 0 then fprintf h " -> ";
+            match pattern index (simple_arg res) with
+              | ObjectPattern -> fprintf h "%s option" (ocaml_class_name res.t_name)
+              | _ -> fprintf h "%s" res_type
+    (*	  let (args1,args2) = getparams () in
+            fprintf h "  method %s %s =\n" meth_out_name (String.concat ~sep:" " args1);
+	        postconvert ();
+            fprintf h "    (match Qtstubs.get_class_name me with\n";
+            fprintf h "    | Some \"%s_twin\" -> %s_twin_call_super_%s' self#handler %s\n" classname
+	        (ocaml_class_name classname) meth.m_out_name (String.concat ~sep:" " args2);	    
+            fprintf h "    | Some \"%s\" -> print_endline \"Calling abstract meth of non-twin obj\"; flush stdout; raise AbstractTwinException \n" classname;
+            fprintf h "    | _ -> print_endline \"Some bug in logic\"; assert false\n";
+            fprintf h "    ) |> postconvert" *)
+	      end
       in
       fprintf h "\n\n";
 
