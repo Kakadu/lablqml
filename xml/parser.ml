@@ -183,22 +183,35 @@ let meth_of_constr ~classname m_args =
   and m_res={ t_name=classname; t_indirections=1; t_is_ref=false; t_params=[]; t_is_const=false } in
   { m_declared; m_name; m_args; m_res; m_out_name; m_access=`Public; m_modif=`Normal }
 
-let string_of_type t = 
-  String.concat  	  
-    [if t.t_is_const then "const " else "";
-     t.t_name; String.make t.t_indirections '*'; if t.t_is_ref then " &" else ""]
+let string_of_type t =
+  let b = Buffer.create 10 in
+  if t.t_is_const then Buffer.add_string b "const ";
+  Buffer.add_string b t.t_name;
+  Buffer.add_string b (String.make t.t_indirections '*');
+  if t.t_is_ref then Buffer.add_string b " &";
+  Buffer.contents b
 
 let string_of_arg {arg_type;arg_name;arg_default} =
-  String.concat ~sep:" " 
-    [string_of_type arg_type; 
-     Option.value arg_name ~default:"";
-     match arg_default with None -> "" | Some x -> " = " ^ x]
+  let b = Buffer.create 10 in
+  Buffer.add_string b (string_of_type arg_type);
+  Option.iter arg_name    ~f:(fun name -> Buffer.add_char b ' '; Buffer.add_string b name);
+  Option.iter arg_default ~f:(fun v -> Buffer.add_string b " = "; Buffer.add_string b v);
+  Buffer.contents b
 
 let string_of_meth m = 
-  let args_str = Core_list.map m.m_args ~f:string_of_arg |> String.concat ~sep:", " in
-  (* additional space for OCaml compiler (comments) *)
-  Printf.sprintf "%s %s(%s )"
-    (string_of_type m.m_res) m.m_name args_str
+  let args_lst = List.map m.m_args ~f:string_of_arg in
+  let args_str = String.concat args_lst ~sep:", " in
+  let typ = string_of_type m.m_res in
+  if args_lst = []
+  then sprintf "%s %s()" typ m.m_name
+  else begin
+    let space =
+      let last = List.last_exn args_lst in
+      (* additional space for OCaml compiler (comments) *)
+      if '*' = last.[String.length last - 1] then " " else ""
+    in
+    Printf.sprintf "%s %s(%s%s)" typ m.m_name args_str space
+  end
 
 let string_of_constr ~classname c = 
   meth_of_constr ~classname c |> string_of_meth
