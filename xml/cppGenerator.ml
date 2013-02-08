@@ -266,7 +266,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
 
       fprintf h "}  // extern \"C\"\n";
       Out_channel.close h;
-      let need_twin = isQObject in
+      let need_twin = does_need_twin ~isQObject classname in
       let ans =
         let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
         let comp_twin = if need_twin then Some (comp_class ^ "_twin") else None in

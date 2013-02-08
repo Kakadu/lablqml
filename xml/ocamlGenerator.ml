@@ -433,7 +433,8 @@ class ocamlGenerator graph dir index = object (self)
       
       fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then "virtual " else "") ocaml_classname;
       fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
-      if isQObject then
+      let need_twin = does_need_twin ~isQObject classname in
+      if need_twin then
         fprintf h_classes 
             "  initializer print_endline \"initializing %s\"; Qtstubs.set_caml_object me self\n"
             ocaml_classname;
@@ -443,7 +444,7 @@ class ocamlGenerator graph dir index = object (self)
 	    with_return (fun r ->
 	      if not (is_good_meth ~classname ~index m) then r.return ();
 	      if m.m_access=`Protected && not isQObject then r.return ();
-	      if not isQObject then (
+	      if not need_twin then (
 	        self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
             self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
 	      ) else (
@@ -456,10 +457,10 @@ class ocamlGenerator graph dir index = object (self)
 	      )
 	    )
       in
-      MethSet.iter c.c_meths ~f:(itermeth ~isQObject);
+      MethSet.iter c.c_meths ~f:(itermeth ~isQObject:need_twin);
       let public_slots = MethSet.filter c.c_slots ~f:(fun m -> m.m_access=`Public) in
       (* TODO: understand what to do with non-public slots *)
-      MethSet.iter public_slots ~f:(itermeth ~isQObject);
+      MethSet.iter public_slots ~f:(itermeth ~isQObject:need_twin);
       MethSet.iter public_slots ~f:(fun slot ->
         if is_good_meth ~classname ~index slot then
           self#gen_slot ~classname h_classes slot
