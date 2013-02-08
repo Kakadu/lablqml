@@ -10,6 +10,7 @@ let procedures =
   ; ("noMETA",                    Procedures.noMETAfuncs)
   ; ("noTemplates",               Procedures.noTemplates)
   ; ("filterMethods",             Procedures.filter_methods)
+  ; ("filterQtEnums",             Procedures.filter_qt_enums)
   ]
 
 let names  = ref (Core_set.empty ~comparator:Core_string.comparator )

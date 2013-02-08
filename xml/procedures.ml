@@ -98,7 +98,7 @@ let wut_methods_to_remove =
     "receivers" << "dumpObjectTree" << "findChildren" << "connect_functor" << "connectImpl" << "thread"
     <<"signalsBlocked" << "registerUserData" << "setUserData" <<  "disconnectImpl" << "dynamicPropertyNames"
     << "connectNotify" << "disconnectNotify" << "isSignalConnected" << "childEvent" << "timerEvent" 
-    << "sender" << "senderSignalIndex" << "blockSignals" << "inherits" << "killTimer"
+    << "sender" << "senderSignalIndex" << "blockSignals" << "inherits" << "killTimer" << "parent"
     << "destroy" << "customEvent")
   ; ("QPaintDevice", 
     empty << "paintEngine" << "logicalDpiY" << "metric" << "qt_paint_device_metric"
@@ -167,7 +167,9 @@ let wut_methods_to_remove =
      << "event")
   ; ("QAbstractItemModel", empty << "endInsertColumns" << "endInsertRows" << "endMoveColumns" 
     << "endMoveRows" << "endRemoveColumns" << "endRemoveRows" << "endResetModel" << "eventFilter" 
-    << "revert" << "submit"
+    << "revert" << "submit" << "parent"
+  )
+  ; ("QAbstractListModel", empty << "parent"
   )
   ; ("QAbstractScrollArea", 
      empty << "horizontalScrollBar" << "verticalScrollBarPolicy" << 
@@ -208,11 +210,25 @@ let filter_methods = function
         | (Element ("slot",att,sons))  ->
             (is_abstract sons) ||
             (not (String.Set.mem set (get_attr_exn ~name:"name" att) ) )
-        | x  -> true) in
+        | x  -> true
+      ) in
       Some (Element (name,att,new_ch))
     with Not_found -> Some clas_node
   end
   | x -> Some x
+
+let filter_qt_enums = function
+  | (Element("namespace",att,ch)) when "Qt" = get_attr_exn ~name:"name" att ->
+      let new_ch = List.filter ch ~f:(function
+        | Element ("enum",atts,_) ->
+            let name = get_attr_exn ~name:"name" atts in
+            List.mem ["Qt::WindowType"; "Qt::ItemDataRole"; "Qt::Key"] name
+        | _ -> true
+      ) in
+      Some (Element ("namespace",att,new_ch))
+  | x -> Some x
+
+
 
 
 
