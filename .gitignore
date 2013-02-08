@@ -15,8 +15,12 @@ moc_*.cpp
 main.opt
 *.backup
 *.log
+# generated graphviz files
 outgraph.dot
+*.dot
+*.png
 for_test5.xml
+#tests
 test_gen/test6/UserSlots.cpp
 test_gen/test6/UserSlots.h
 test_gen/test6/UserSlots_stubs.ml
