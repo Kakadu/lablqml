@@ -104,6 +104,9 @@ let () = match !target with
            " " ^ (cpp_includes ()) ^ " test_gen/out")
           "error while generating code";
 
+        print_endline "\ncompiling generated OCaml file...\n";
+        make ~dir:"test_gen/out" ~j:1 "" "compiling generated OCaml code";
+
         print_endline "\ncompiling generated C++ files...\n";
         make ~dir:"test_gen/out/cpp" ~j:cores_count "" 
           "compiling generated C++ files";
