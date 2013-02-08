@@ -102,17 +102,14 @@ let skipArgument ~index ({arg_type; arg_name; arg_default} as arg) =  (* true wh
 exception DoSkip
 exception DontSkip
 
-let is_good_meth ~classname ~index m = 
-  let methname = m.m_name in
-  let args = m.m_args in
-  let res = m.m_res in
+let is_good_meth ~classname ~index {m_args; m_res; m_access; m_declared; _} =
   try
-    let () = match m.m_access with `Private -> raise DoSkip | `Public | `Protected -> () in
-    if skip_class_by_name ~classname:m.m_declared then false
+    let () = match m_access with `Private -> raise DoSkip | `Public | `Protected -> () in
+    if skip_class_by_name ~classname:m_declared then false
     else begin 
-      match List.find args ~f:(skipArgument ~index) with
+      match List.find m_args ~f:(skipArgument ~index) with
 	| None -> (* all arguments are OK *)
-	  (is_void_type res) or (not (skipArgument ~index (simple_arg res) ))
+	  (is_void_type m_res) or not (skipArgument ~index (simple_arg m_res))
 	| Some {arg_type;_} -> 
         (*printf "Method %s skipped: %s\n" methname (string_of_type arg_type); *)
         false
@@ -127,10 +124,10 @@ exception BreakFail of t2
 exception BreakResult of castResult
 
 let enum_conv_func_names (lst,_) = 
-  let f s lst = String.concat ~sep:"_" (s :: (List.rev lst)) in
-  (f "enum_of_caml" lst, f "enum_to_caml" lst)
+  let s = String.concat ~sep:"_" (List.rev lst) in
+  ("enum_of_caml_"^s, "enum_to_caml_"^s)
 
-let is_abstract_class ~prefix index name = 
+let is_abstract_class ~prefix index name =
   let key = NameKey.make_key ~prefix ~name in
   let f = fun acc m -> match m.m_modif with 
     | `Abstract -> 
@@ -217,3 +214,14 @@ let isQObject ~key graph =
 	  | EnumPattern (e,k) -> 
 	    let func_name = enum_conv_func_names k |> snd in
 	    Success (sprintf "%s = %s(%s);" ansVarName func_name arg)
+
+(* I don't understand how to use QAbstractItemView  because of method
+ * virtual QModelIndex 	indexAt(const QPoint & point) const = 0
+ * Class QModelIndex has only 1 default constructor and I don't know how to use it properly
+*)
+let does_need_twin ~isQObject classname =
+  isQObject &&
+    (match classname with
+      | "QAbstractItemView" -> false
+      | _ -> true
+    )
