@@ -9,6 +9,8 @@ let (|>) a b = b a
 
 (** receives pairs (enum_member,value) and returns list where map ~f:snd lst is disjunct 
  *  Needed to make compilable C++ switch statement when casting to Caml
+ *  Idea is to filter enum members like
+ *         member1 = member0, ...
  *)
 let filter_enum_members lst = 
   let module S = String.Set in
@@ -19,10 +21,6 @@ let filter_enum_members lst =
       | None  -> acc
       | Some y when S.mem !value_set y -> acc 
       | Some y -> value_set := S.add !value_set y; x::acc )
-
-let startswith ~prefix:p s = 
-  if (String.length p > (String.length s)) then false
-  else (Str.first_chars s (String.length p) = p)
 
 let make_out_name ~classname cpp_name = match (classname,cpp_name) with
   | ("QGraphicsItem", "children") -> "children1"
@@ -134,7 +132,7 @@ module MethKey = struct
 end
 
 module MethSet = struct
-  include Core_set.Make(MethKey)
+  include Set.Make(MethKey)
 
   let compare_items = MethKey.compare
   let map ~f t = fold ~init:empty ~f:(fun acc e -> add acc (f e)) t
@@ -319,7 +317,7 @@ let parse_enum superName node : enum option = match node with
     let mems = List.rev !mems in
     let mems = filter_enum_members mems in
     let mems = List.filter mems ~f:(fun item ->
-      String.fold item ~init:0 ~f:(fun acc c-> acc+(if Core_char.is_uppercase c then 1 else 0)) < 4
+      String.fold item ~init:0 ~f:(fun acc c-> acc+(if Char.is_uppercase c then 1 else 0)) < 4
     ) in
     (match !name with
       | _ when List.length mems =0 -> None
@@ -335,23 +333,24 @@ let parse_enum superName node : enum option = match node with
   | _ -> assert false
   
 let rec build root = match root with
-  | PCData x -> (print_endline x; assert false)
+  | PCData x -> raise (Common.Bug "root element of input xml can't be PCData")
   | Element ("code",_,lst) -> 
     let classes = ref [] in
-    let nss = ref [] in
+    let nss = ref [] in  (* namespaces *)
     let enums = ref [] in
 
     List.iter lst ~f:(function
-      | Element (("class",attr,lst) as e)    -> 
-	classes := (parse_class "" e) :: !classes
+      | Element (("class",attr,lst) as e) ->
+	      classes := (parse_class "" e) :: !classes
       | Element (("namespace",_,lst) as e) -> 
-	nss := (parse_ns "" e) :: !nss
+	      nss := (parse_ns "" e) :: !nss
       | Element ( ("enum",_,lst) as e) -> begin
-	match parse_enum "" e with
-	  | None -> () 
-	  | Some e -> Ref.replace enums (fun lst -> e::lst)
+	    match parse_enum "" e with
+	      | None -> ()
+	      | Some e -> Ref.replace enums (fun lst -> e::lst)
       end
-      | _ -> assert false);
+      | _ -> raise (Common.Bug "Only `class`, `namespace` or `enum` tags are allwed")
+    );
     {ns_name=""; ns_ns= !nss; ns_classes= !classes; ns_enums= !enums }
   | _ -> print_endline "XML file is incorrect";
     assert false
@@ -363,36 +362,35 @@ and parse_class nsname c  =
     
     let helper = 
       let aggr lst = 
-	let args = ref [] in
-	let ret = ref None in
-	let modif  = ref `Normal in
-	let policy = ref `Public in
+	    let args = ref [] in
+	    let ret = ref None in
+	    let modif  = ref `Normal in
+	    let policy = ref `Public in
 
-	List.iter lst ~f:(fun x -> match x with
-	  | Element (("return",_,_) as e) ->  ret := Some ((parse_arg e).arg_type)
-	  | Element ("arguments",_,lst) ->
-	    List.iter lst ~f:(function
-	      | Element (("argument",_,_) as e) -> args := (parse_arg e) :: !args
-	      | _ -> assert false)
+	    List.iter lst ~f:(fun x -> match x with
+	      | Element (("return",_,_) as e) ->  ret := Some ((parse_arg e).arg_type)
+	      | Element ("arguments",_,lst) ->
+	          List.iter lst ~f:(function
+	            | Element (("argument",_,_) as e) -> args := (parse_arg e) :: !args
+	            | _ -> raise (Common.Bug "XML file is incorrect") )
 
-	  | Element ("accessPolicy",("value",p)::_,_) -> policy := str2policy p
-	  | Element ("modifiers",_,lst) -> 
-	    List.map lst ~f:(function Element (n,_,_) -> n | PCData _ -> assert false) 
-	    |> (fun set ->
-		  if List.mem set "abstract" then modif := `Abstract 
-		  else if List.mem set "static" then modif := `Static
-		  else modif := `Normal)
-	  | PCData x -> print_endline x; assert false
-	  | Element (name,_,_) -> print_endline name; assert false);
-	(List.rev !args, !ret, !policy, !modif)
+	      | Element ("accessPolicy",("value",p)::_,_) -> policy := str2policy p
+	      | Element ("modifiers",_,lst) ->
+	          let set = List.map lst ~f:(function Element (n,_,_) -> n | PCData _ -> assert false) in
+              modif := if List.mem set "abstract" then `Abstract
+		        else if List.mem set "static" then `Static
+		        else `Normal
+          | PCData _ -> raise (Common.Bug "XML file is incorrect")
+          | Element (name,_,_) ->
+              raise (Common.Bug (sprintf "Unknown XML tag `%s`" name))
+        );
+        (List.rev !args, !ret, !policy, !modif)
       in
       function
-	| Element (_,("name",name)::_,lst) -> 
-(*	  printf "class name = %s\n" name; *)
-	  let (a,b,c,d) = aggr lst in
-(*	  printf "Helper returns %s::%s\n" classname name; *)
-	  (name,a,b,c,d)
-	| _ -> assert false
+	    | Element (_,("name",name)::_,lst) ->
+	        let (a,b,c,d) = aggr lst in
+	        (name,a,b,c,d)
+	    | _ -> assert false
     in
 
     let props = ref [] in
@@ -404,12 +402,13 @@ and parse_class nsname c  =
     let constrs = ref [] in 
 
     List.iter lst ~f:(function
-      | (Element ("constructor",_,ll)) as e -> let (_,args,_,policy,modif) = helper e in
-					       constrs := (args,policy) :: !constrs 	
+      | (Element ("constructor",_,ll)) as e ->
+          let (_,args,_,policy,_) = helper e in
+          constrs := (args,policy) :: !constrs
       | Element ("inherits",_,ll) ->
-	List.iter ll ~f:(function 
-	  | Element ("class",("name",nn)::_,_) -> inher := nn :: !inher
-	  |  _ -> assert false) 
+	      List.iter ll ~f:(function
+	        | Element ("class",("name",nn)::_,_) -> inher := nn :: !inher
+	        |  _ -> assert false)
       | (Element ("function",_,ll)) as e -> begin
 	    let (name,args,ret,policy,modif) = helper e in 
 	    (match ret with
@@ -422,23 +421,26 @@ and parse_class nsname c  =
 	      | Some r  -> slots := (name,args,r,policy,modif) :: !slots
 	      | None -> assert false)
       end
-      | (Element ("signal",_,ll)) as e -> let (a,b,_,_,_) = helper e in 
-					  sigs := (a,b) :: !sigs
-      | Element (("enum",_,_) as e) -> (
-	match (parse_enum classname e) with
-	  | None -> ()
-	  | Some e -> Ref.replace enums (fun lst -> e::lst))
+      | (Element ("signal",_,ll)) as e ->
+          let (a,b,_,_,_) = helper e in
+          sigs := (a,b) :: !sigs
+      | Element (("enum",_,_) as e) -> begin
+          match (parse_enum classname e) with
+	        | None -> ()
+	        | Some e -> Ref.replace enums (fun lst -> e::lst) end
       | Element (("property",_,_) as e) -> props := (parse_prop e) :: !props
       | Element ("class",("name",nn)::_,_) ->
-	printf "skipping inner class %s::%s\n" classname (fixTemplateClassName nn)
+	      printf "skipping inner class %s::%s\n" classname (fixTemplateClassName nn)
       | Element ("destructor",_,_) -> ()
       | _ -> assert false
     );
 
-    let f = fun (m_name,m_args,m_res,m_access,m_modif) ->
-      {m_name;m_args;m_res;m_access;m_modif; m_declared=classname; 
-       m_out_name=make_out_name ~classname m_name
-      } in
+    let f (m_name,m_args,m_res,m_access,m_modif) =
+      let m_declared = classname in
+      let m_out_name = make_out_name ~classname m_name in
+      {m_name; m_args; m_res; m_access; m_modif; m_declared;
+       m_out_name }
+    in
 
     let meths = List.map !mems ~f |> MethSet.of_list in
     let slots = List.map !slots ~f |> MethSet.of_list in
@@ -449,11 +451,13 @@ and parse_class nsname c  =
        Also forget inheritance of template base classes
     *)
     let inherits = List.filter inherits ~f:(fun name ->
-      if startswith ~prefix:"QList<" name then false 
-      else if startswith ~prefix:"QVector<" name then false 
-      else if startswith ~prefix:"QSet<" name then false 
-      else match Core.Core_string.find name ~f:((=) '<') with
-	| Some x -> false | None -> true) in
+      if String.is_prefix ~prefix:"QList<" name then false
+      else if String.is_prefix ~prefix:"QVector<" name then false
+      else if String.is_prefix ~prefix:"QSet<" name then false
+      else
+        match String.find name ~f:((=) '<') with
+	    | Some x -> false | None -> true)
+    in
 	
     let constrs = List.filter ~f:(fun (args,policy) -> match policy with
       | `Public -> true | `Private | `Protected -> false) !constrs in
@@ -471,13 +475,13 @@ and parse_ns superName = function
     let nss = ref [] in 
     let f = function
       | Element (("namespace",_,_) as e) ->
-	nss := (parse_ns name e) :: !nss
+          nss := (parse_ns name e) :: !nss
       | Element (("class",_,_)  as e) ->
-	clas := (parse_class name e) :: !clas
+          clas := (parse_class name e) :: !clas
       | Element ( ("enum",_,_) as e) -> begin
-	match parse_enum name e with
-	  | Some x -> Ref.replace enums (fun lst -> x::lst)
-	  | None -> ()
+	    match parse_enum name e with
+	      | Some x -> Ref.replace enums (fun lst -> x::lst)
+	      | None -> ()
       end
       | _ -> assert false
     in
@@ -485,4 +489,4 @@ and parse_ns superName = function
     {ns_name=name; ns_classes= !clas; ns_enums= !enums; ns_ns= !nss}
   | _ -> assert false
 
-;;
+

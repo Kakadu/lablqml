@@ -257,7 +257,7 @@ let build_graph root_ns : index_t * G.t =
     (fun index -> G.remove_subtrees g ~index ~cond:(
       function 
         | (name::_,_) -> 
-          List.fold_left ~init:false ~f:(fun acc prefix -> acc or (startswith ~prefix name)) prefixes
+          List.fold_left ~init:false ~f:(fun acc prefix -> acc or (String.is_prefix ~prefix name)) prefixes
         | _ -> assert false)
     );
   (!index,g)
