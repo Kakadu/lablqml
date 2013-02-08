@@ -36,26 +36,16 @@ let (superIndex,g) = SuperIndex.build_graph root_ns
 
 open Simplexmlparser
 
-module VertexComparatorPre : Core.Comparator.Pre = struct 
-  
-  type t = SuperIndex.V.t
-  let sexp_of_t = SuperIndex.V.sexp_of_t
-  let t_of_sexp = SuperIndex.V.t_of_sexp
-  let compare = SuperIndex.V.compare
-end 
-module VertexComparator = Comparator.Make (VertexComparatorPre)
-module VertexComparator2= Comparator.Make1(struct
+module VertexComparator = Comparator.Make1(struct
   type 'a t = SuperIndex.V.t
   let compare = SuperIndex.V.compare
   let sexp_of_t = SuperIndex.V.sexp_of_t
 end)
-(* Maybe I can write
- * module VertexComparator = Core.Comparator.Make (V) *)
 
 let () = 
   (* Set for accumulating answer *)
-  let start_set : (_,_) Core_set.t ref = 
-    ref (Core_set.empty ~comparator: VertexComparator2.comparator) 
+  let start_set : (_,_) Set.t ref =
+    ref (Set.empty ~comparator: VertexComparator.comparator)
   in
   let good_class = 
     (* hack for adding all classes *)
@@ -66,15 +56,15 @@ let () =
   (* put classes described in command line to answer*)
   SuperIndex.G.iter_vertex (fun v ->
     let name = SuperIndex.G.vertex_name v in
-    if good_class name then start_set:= Core_set.add !start_set v
+    if good_class name then start_set := Set.add !start_set v
   ) g;
   (* there we will accumulate classes with their parent classes *)
-  let ans_vs : (_,_) Core_set.t ref = ref !start_set in
+  let ans_vs : (_,_) Set.t ref = ref !start_set in
   let rec loop set = 
     if Core_set.is_empty set then () else begin
-      let parents = ref (Core_set.empty ~comparator:VertexComparator2.comparator) in
-      Core_set.iter set ~f:(SuperIndex.G.iter_pred (fun  v -> parents := Core_set.add !parents v ) g);
-      ans_vs:= Core_set.union !ans_vs !parents;
+      let parents = ref (Set.empty ~comparator:VertexComparator.comparator) in
+      Core_set.iter set ~f:(SuperIndex.G.iter_pred (fun  v -> parents := Set.add !parents v ) g);
+      ans_vs := Set.union !ans_vs !parents;
       loop !parents
     end
   in
@@ -82,7 +72,7 @@ let () =
 
   (*  Set.iter (fun x -> print_endline (G.vertex_name x)) !ans_vs; *)
   let names = 
-    Core_set.union (Core_set.map ~f:SuperIndex.G.vertex_name !ans_vs ~comparator:Core_string.comparator) !names in
+    Set.union (Set.map ~f:SuperIndex.G.vertex_name !ans_vs ~comparator:String.comparator) !names in
   
   let lst = match root with
     | Element ("code",_,lst) -> lst
