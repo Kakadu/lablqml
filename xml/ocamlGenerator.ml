@@ -196,17 +196,19 @@ class ocamlGenerator graph dir index = object (self)
 	    (args1,args2)
       in
       let postconvert () = match pattern index (simple_arg res) with
-        | ObjectPattern -> 
+        | ObjectPattern -> begin
           let res_classname = ocaml_class_name res.t_name in
           fprintf h "\n";
           fprintf h "    |> (function\n";
           fprintf h "       | Some o -> Some(match Qtstubs.get_caml_object o with\n";
           fprintf h "                     | Some x -> (x:>%s)\n" res_classname;
-          fprintf h "                     | None -> new %s o)\n" res_classname;
-          fprintf h "       | None -> None)\n"
-        | _ ->
-            ()
-(*              fprintf h "    let postconvert x = x in\n" *)
+          fprintf h "                     | None -> new %s o)\n"
+            (if is_abstract_class ~prefix:[] index res.t_name
+             then res_classname ^ "_abstrhelper"
+             else res_classname);
+          fprintf h "       | None -> None)\n";
+        end
+        | _ -> ()
       in
       let meth_out_name = match new_name with None -> meth.m_out_name | Some x -> x in
       let () = 
@@ -429,7 +431,7 @@ class ocamlGenerator graph dir index = object (self)
         )
       );
       
-      fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then " " else "") ocaml_classname;
+      fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then "virtual " else "") ocaml_classname;
       fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
       if isQObject then
         fprintf h_classes 
@@ -443,8 +445,7 @@ class ocamlGenerator graph dir index = object (self)
 	      if m.m_access=`Protected && not isQObject then r.return ();
 	      if not isQObject then (
 	        self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
-            self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes 
-              (m:                    meth)
+            self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
 	      ) else (
             let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
 	        if (m.m_access=`Public) then stub false m;
@@ -469,6 +470,7 @@ class ocamlGenerator graph dir index = object (self)
         fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
         MethSet.iter c.c_meths ~f:(itermeth ~isQObject:false);
         MethSet.iter public_slots ~f:(itermeth ~isQObject:false);
+        List.iter c.c_sigs ~f:(self#gen_signal h_classes);
       )
       
     end

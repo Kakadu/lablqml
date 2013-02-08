@@ -59,7 +59,7 @@ let to_channel t ch =
   SuperIndex.iter t ~f:(fun ~key ~data -> match data with
     | Enum e -> fprintf ch "%s\n" (print_enum ~key e)
     | Class (c,set) -> begin
-      fprintf ch "Class %s\n" (NameKey.to_string key);
+      fprintf ch "Class %s (virts count = %d)\n" (NameKey.to_string key) (MethSet.length set);
       List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n"  (print_enum ~key e));
       fprintf ch "  Constructors\n";
       List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n" 
