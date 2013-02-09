@@ -14,7 +14,7 @@ let cpp_stub_name ~classname ?res_n_name ?(is_byte=true) modif args =
   let sort = if is_byte then "byte" else "native" in
   let modifstr = match modif with `Public -> "pub" | `Private -> "private" | `Protected -> "prot" in
   match res_n_name with
-    | Some (res_t,name) -> String.concat ~sep:"_" (sort::modifstr::classname::name::argslist)
+    | Some (_____,name) -> String.concat ~sep:"_" (sort::modifstr::classname::name::argslist)
     | None              -> String.concat ~sep:"_" (sort::modifstr::"createeee"::classname::argslist)
 
 let isTemplateClass name = 
@@ -219,9 +219,53 @@ let isQObject ~key graph =
  * virtual QModelIndex 	indexAt(const QPoint & point) const = 0
  * Class QModelIndex has only 1 default constructor and I don't know how to use it properly
 *)
-let does_need_twin ~isQObject classname =
+let does_need_twin ~isQObject ~index classname =
   isQObject &&
     (match classname with
       | "QAbstractItemView" -> false
       | _ -> true
+    ) &&
+    (
+      let key = NameKey.key_of_fullname classname in
+      match SuperIndex.find index key with
+        | None -> raise (Common.Bug "checking twinning for class which is unknown")
+        | Some (Enum _) ->
+            raise (Common.Bug "checking twinning for enum")
+        | Some (Class (c,_)) ->
+            let meths = c.c_meths in
+            let slots = c.c_slots in
+            (* We need to locate abstract members which are non-generatable *)
+            let ans =
+              let f m =
+                (m.m_modif = `Abstract) && not (is_good_meth ~classname ~index m) in
+              MethSet.union (MethSet.filter meths ~f) (MethSet.filter slots ~f)
+            in
+            if MethSet.length ans = 0
+            then true
+            else begin
+              printf "Cannot allow twinning for class `%s`\n" classname;
+              printf "because following methods are abstract and ungeneratable:\n";
+              MethSet.iter ans ~f:(fun {m_name;_} -> printf "%s " m_name);
+              printf "\n%!";
+              false
+            end
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

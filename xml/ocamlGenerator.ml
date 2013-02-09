@@ -147,7 +147,7 @@ class ocamlGenerator graph dir index = object (self)
       |> (function Success s -> s | _ -> raise BreakSilent) in
 
       fprintf h "external %s%s_%s': 'a->%s\n\t\t= \"%s\"\n" ocaml_classname 
-	(if isQObject then "_twin" else "") meth.m_out_name 
+        (if isQObject then "_twin" else "") meth.m_out_name 
         (String.concat (types @ [res_t]) ~sep:"->") cpp_func_name
 
   (* generates member code*)
@@ -433,7 +433,7 @@ class ocamlGenerator graph dir index = object (self)
       
       fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then "virtual " else "") ocaml_classname;
       fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
-      let need_twin = does_need_twin ~isQObject classname in
+      let need_twin = does_need_twin ~isQObject classname ~index in
       if need_twin then
         fprintf h_classes 
             "  initializer print_endline \"initializing %s\"; Qtstubs.set_caml_object me self\n"
