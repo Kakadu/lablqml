@@ -53,19 +53,25 @@ let () =
 *)
 (* Configure end ***************************)
 
-(* let api_xml = "aaa.xml" *)
 
+(* This is a XML api file. generator will use it to take information about Qt
+ * API. This file can be generated from bigger one using xml/xmltool.native 
+ * executable. 
+ * Now it is generated from `qt5-gui.xml` via ./qt5-minimal.sh script.
+ * This file will not be changed while building.
+ * *)
 let api_xml = "qt5-minimal.xml"
 
-(* 
- * This is a XML api file. Then biggest and more interesting file is
- * aaa.xml but building with it takes too long. You can simplify aaa.xml using 
- * for_test5.sh script.
- * *)
-
-(* You can setup GCC include files specific for your system *)
-(* with -I prefix*)
-let qt5 = "/home/kakadu/mand/prog/qt/qt5/qtbase" 
+let qt5 =
+  try
+    Unix.getenv "QT5"
+  with Not_found ->
+    Printf.eprintf "Cannot locate Qt5 libraries\n";
+    Printf.eprintf "Please do `export QT5=....` to provide them\n";
+    Printf.eprintf 
+     "They will be use like $QT5/bin for moc and $QT5/lib for libraries\n";
+    exit 1
+;;
 let includes = ["-I" ^ qt5 ^/ "include"]
 let cpp_bin_loc = ref (qt5 ^/ "bin")
 
@@ -91,7 +97,7 @@ let () = match !target with
 
         (* compiling xml *)
 
-        make "" ~dir: "xml" "\ncompiling xml...\n";
+        make "build" ~dir: "xml" "\ncompiling xml...\n";
         print_endline "\nGenerator is compiled!\n";
 
         (*print_endline "\nexecuting xmltool...\n";
