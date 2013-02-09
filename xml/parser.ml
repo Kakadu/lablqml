@@ -365,7 +365,7 @@ and parse_class nsname c  =
 	    let args = ref [] in
 	    let ret = ref None in
 	    let modif  = ref `Normal in
-	    let policy = ref `Public in
+	    let policy = ref `Protected in
 
 	    List.iter lst ~f:(fun x -> match x with
 	      | Element (("return",_,_) as e) ->  ret := Some ((parse_arg e).arg_type)
