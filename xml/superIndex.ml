@@ -7,17 +7,17 @@ module NameKey = struct
   type sexpable = t
   let sexp_of_t t = String.sexp_of_t (snd t)
 
-  let key_of_fullname b = 
+  let key_of_fullname b =
     let a = Str.split (Str.regexp "::")  b |> List.rev in
-    (a,b) 
+    (a,b)
 
   let key_of_prefix lst = match lst with
     | [] -> raise (Invalid_argument "NameKey.key_of_prefix: []")
     | lst -> (lst, List.rev lst |> String.concat ~sep:"::")
-      
-  let t_of_sexp s = Core_string.t_of_sexp s |> key_of_fullname 
 
-  let compare a b = Core_string.compare (snd a) (snd b) 
+  let t_of_sexp s = String.t_of_sexp s |> key_of_fullname
+
+  let compare a b = String.compare (snd a) (snd b)
 
   let make_key ~name ~prefix = (* classname and reverted prefix *)
     let lst = name::prefix in
@@ -27,12 +27,12 @@ module NameKey = struct
   let to_string (lst,_) = String.concat ~sep:"::" (List.rev lst)
 end
 
-type index_data = 
+type index_data =
   | Class of clas * MethSet.t (* class data with all virtuals *)
   | Enum of enum
 
 module StringLabeledGraph = Graph.Imperative.Digraph.Concrete(String)
-module SuperIndex = Core_map.Make(NameKey)
+module SuperIndex = Map.Make(NameKey)
 
 type index_t = index_data SuperIndex.t
 
@@ -53,7 +53,7 @@ let to_channel t ch =
     | `Abstract -> "abstract" | `Normal -> "" | `Static -> "static  " in
   let of_access = function
     | `Public -> "public   " | `Private -> "private  " | `Protected -> "protected" in
-  let print_enum ~key {e_name;e_items; e_access; e_flag_name} = 
+  let print_enum ~key {e_name;e_items; e_access; e_flag_name} =
     sprintf "Enum  %s %s with flag=%s,name=%s"
       (snd key) (String.concat ~sep:"," e_items) e_flag_name e_name in
   SuperIndex.iter t ~f:(fun ~key ~data -> match data with
@@ -62,18 +62,18 @@ let to_channel t ch =
       fprintf ch "Class %s (virts count = %d)\n" (NameKey.to_string key) (MethSet.length set);
       List.iter c.c_enums ~f:(fun e -> fprintf ch "  %s\n"  (print_enum ~key e));
       fprintf ch "  Constructors\n";
-      List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n" 
+      List.iter c.c_constrs ~f:(fun lst -> fprintf ch "    %s\n"
         (meth_of_constr ~classname:c.c_name lst |> string_of_meth )
       );
       fprintf ch "  Normal meths\n";
       MethSet.iter c.c_meths ~f:(fun m ->
-        fprintf ch "    %s %s %s with out_name = %s, declared in %s\n" 
+        fprintf ch "    %s %s %s with out_name = %s, declared in %s\n"
           (of_access m.m_access) (of_modif m.m_modif)
           (string_of_meth m) m.m_out_name m.m_declared
       );
       fprintf ch "  slots\n";
       MethSet.iter c.c_slots ~f:(fun slt ->
-        fprintf ch "    %s %s %s declared in %s\n" 
+        fprintf ch "    %s %s %s declared in %s\n"
           (of_access slt.m_access) (of_modif slt.m_modif)
             (string_of_meth slt) c.c_name
       );
@@ -86,30 +86,30 @@ let to_channel t ch =
     end
   )
 
-module Evaluated = Core_set.Make(NameKey)
+module Evaluated = Set.Make(NameKey)
 module V = NameKey
 
 
-module G = struct 
+module G = struct
   include Graph.Imperative.Digraph.Concrete(V) (* from base to subclasses *)
   let graph_attributes (_:t) = []
   let default_vertex_attributes _ = []
-  let vertex_name v = snd (V.label v ) 
+  let vertex_name v = snd (V.label v)
     |> Str.global_replace (Str.regexp "::") "_"
     |> Str.global_replace (Str.regexp "<") "_"
     |> Str.global_replace (Str.regexp ">") "_"
     |> Str.global_replace (Str.regexp ",") "_"
     |> Str.global_replace (Str.regexp "*") "_"
     |> Str.global_replace (Str.regexp "&amp;") "_AMP_"
-    
+
   let vertex_attributes v = [`Label (snd (V.label v)) ]
   let get_subgraph _ = None
   let default_edge_attributes _ = []
   let edge_attributes _ = []
 
-  let kill_and_fall g ?(index=SuperIndex.empty) root = 
+  let kill_and_fall g ?(index=SuperIndex.empty) root =
     let ans = ref index in
-    let rec helper node =       
+    let rec helper node =
       if mem_vertex g node then (
         let lst = succ g node in
         remove_vertex g root;
@@ -120,7 +120,7 @@ module G = struct
     helper root;
     !ans
 
-  let rec remove_subtrees ~cond ?(index=SuperIndex.empty) g = 
+  let rec remove_subtrees ~cond ?(index=SuperIndex.empty) g =
     let lst = fold_vertex (fun v acc -> if cond v then v::acc else acc) g [] in
     List.fold_left ~init:index lst ~f:(fun acc x -> kill_and_fall ~index:acc g x)
 
@@ -141,9 +141,9 @@ let overrides subclass_of a b =
     true
   )
 
-let names_print_helper s ~set = 
+let names_print_helper s ~set =
   printf "%s: %s\n\n" s
-    (Core_list.to_string (MethSet.elements set) ~f:(fun m -> m.m_out_name) ) 
+    (List.to_string (MethSet.elements set) ~f:(fun m -> m.m_out_name) )
 
 (* At the beginning we have abstract and normal methods in current class.
    Need to split them in three groups:
@@ -157,10 +157,10 @@ let super_filter_meths subclass_of ~base ~cur =
   let base_not_impl = ref MethSet.empty in
   let cur_impl = ref MethSet.empty in
   let cur_new = ref MethSet.empty in
-  let rec loop base cur = 
-(*    printf "Inside loo: (cur.length, cur_new.length)  = (%d,%d)\n" 
+  let rec loop base cur =
+(*    printf "Inside loo: (cur.length, cur_new.length)  = (%d,%d)\n"
       (MethSet.length cur) (MethSet.length !cur_new); *)
-    if MethSet.is_empty base then cur_new := MethSet.union !cur_new cur 
+    if MethSet.is_empty base then cur_new := MethSet.union !cur_new cur
     else if MethSet.is_empty cur then base_not_impl := MethSet.union !base_not_impl base
     else begin
       let cur_el = MethSet.min_elt_exn cur  in (* the `newest` method in heirarchy *)
@@ -182,16 +182,16 @@ let super_filter_meths subclass_of ~base ~cur =
           let x = MethSet.length !base_not_impl and y = MethSet.length !cur_new in
 (*        printf "(x,y,len) = (%d,%d,%d)\n" x y len;
           printf "(base_len, cur_len) = (%d, %d)\n" (MethSet.length base) (MethSet.length cur); *)
-          (x+len = MethSet.length base) && (y+len = MethSet.length cur)); 
-  (* ФИШКА: нельзя будет менять генерируемые имена у cur_impl, иначе не будет согласоваться 
+          (x+len = MethSet.length base) && (y+len = MethSet.length cur));
+  (* ФИШКА: нельзя будет менять генерируемые имена у cur_impl, иначе не будет согласоваться
      наследование с базовым (абстрактным) классом *)
   (!base_not_impl,!cur_impl,!cur_new)
-    
+
 let build_graph root_ns : index_t * G.t =
   let index = ref SuperIndex.empty in
   let g = G.create () in
 
-  let on_enum_found prefix e = 
+  let on_enum_found prefix e =
     let key = NameKey.make_key ~name:e.e_flag_name ~prefix in
     if not (skip_enum key e) then
       let data = Enum e in
@@ -200,9 +200,9 @@ let build_graph root_ns : index_t * G.t =
       )
   in
   let on_class_found prefix name c =
-    let key = NameKey.make_key ~name ~prefix in    
+    let key = NameKey.make_key ~name ~prefix in
     let data = Class ({c with c_enums=[]}, MethSet.empty) in
-    
+
     let curvertex = G.V.create key in
     G.add_vertex g curvertex;
     let bases = List.map c.c_inherits ~f:(fun basename ->
@@ -211,16 +211,16 @@ let build_graph root_ns : index_t * G.t =
     ) in
 
     List.iter bases ~f:(fun from -> G.add_edge g from curvertex);
-    
+
     List.iter c.c_enums ~f:(on_enum_found (c.c_name::prefix));
     index := SuperIndex.add ~key ~data !index
   in
-  let rec iter_ns prefix ns = 
+  let rec iter_ns prefix ns =
     let new_prefix = ns.ns_name :: prefix in
     List.iter ~f:(iter_ns new_prefix) ns.ns_ns;
     List.iter ~f:(iter_class new_prefix) ns.ns_classes;
     List.iter ~f:(on_enum_found new_prefix) ns.ns_enums
-  and iter_class prefix c = 
+  and iter_class prefix c =
     on_class_found prefix c.c_name c
   in
 
@@ -230,7 +230,7 @@ let build_graph root_ns : index_t * G.t =
   List.iter ~f:(on_enum_found []) root_ns.ns_enums;
 
   (* simplify_graph *)
-  let dead_roots = List.map ~f:NameKey.key_of_fullname 
+  let dead_roots = List.map ~f:NameKey.key_of_fullname
     [
      (* to avoid bugs *)
      "QIntegerForSize>"; "QtSharedPointer::ExternalRefCountWithDestroyFn";
@@ -253,20 +253,20 @@ let build_graph root_ns : index_t * G.t =
   "QUrl"; "QGL"; "QThread"; "QVFb" ] @
   ["QIconEngine"; "QWeb"] (* QWebKit namespace *) in
 
-  Ref.replace index 
+  Ref.replace index
     (fun index -> G.remove_subtrees g ~index ~cond:(
-      function 
-        | (name::_,_) -> 
+      function
+        | (name::_,_) ->
           List.fold_left ~init:false ~f:(fun acc prefix -> acc or (String.is_prefix ~prefix name)) prefixes
         | _ -> assert false)
     );
   (!index,g)
 
-let build_superindex root_ns = 
-  let (index,g) = 
+let build_superindex root_ns =
+  let (index,g) =
     let (a,b) = build_graph root_ns in
     let a' = ref a in
-    (a',b)      
+    (a',b)
   in
   let h = open_out "./outgraph.dot" in
   GraphPrinter.output_graph h g;
@@ -289,7 +289,7 @@ let build_superindex root_ns =
   (* so we have classes topologically sorted. Base classes are before *)
 
   (* Evaluating virtuals *)
-  let evaluated = ref Evaluated.empty in  
+  let evaluated = ref Evaluated.empty in
   let module Q = Core.Core_queue in (* keys queue *)
   let ans_queue = Ref.create (Q.create ()) in
 
@@ -297,9 +297,9 @@ let build_superindex root_ns =
   g |> Top.iter (fun v ->
     let key = G.V.label v in
     match SuperIndex.find !index key with
-      | None -> 
+      | None ->
         evaluated := Evaluated.add !evaluated key;
-        printf "base class of %s is not in index. skipped\n" (snd key) 
+        printf "base class of %s is not in index. skipped\n" (snd key)
       | Some (Enum _) -> print_endline "In graph exists enum. nonsense"
       | Some (Class (c,_)) -> begin
         let base_keys = List.map c.c_inherits ~f:NameKey.key_of_fullname in
@@ -312,8 +312,8 @@ let build_superindex root_ns =
 
         let bases_data = List.filter_map base_keys ~f:(fun key -> match SuperIndex.find !index key with
           | Some (Class (y,set) ) -> Some y
-          | None -> 
-            printf "WARNING! Base class %s of %s is not in index. Suppose that it is not abstract\n" 
+          | None ->
+            printf "WARNING! Base class %s of %s is not in index. Suppose that it is not abstract\n"
               (snd key) c.c_name;
             None
           | Some (Enum _) -> print_endline "nonsense"; assert false
@@ -328,18 +328,18 @@ let build_superindex root_ns =
             let new_name = make_name m.m_out_name in
             put_cache new_name;
             {m with m_out_name=new_name}
-          end else begin 
+          end else begin
             put_cache m.m_out_name;
             m
           end
         ) in
 
-        let add2name_set set = 
+        let add2name_set set =
           let f m =
             if S.mem !cache m.m_out_name then begin
               printf "Current method:\n%s\n" (string_of_meth m);
               printf "declared in %s\n" m.m_declared;
-              printf "Cache is: %s\n" (S.elements !cache |> String.concat ~sep:","); 
+              printf "Cache is: %s\n" (S.elements !cache |> String.concat ~sep:",");
               print_endline m.m_out_name;
               Core.Exn.backtrace () |> print_endline;
               assert false
@@ -367,28 +367,28 @@ let build_superindex root_ns =
         (* base abstracts meths can be overrided in any way *)
 (*      print_endline "Fixing base abstr meths"; *)
         let filter_meths = super_filter_meths subclass_of in
-        let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) = 
+        let (meths_abstr_not_impl,meths_abstr_implemented, meths_last) =
           filter_meths ~base:base_abstr_meths ~cur:c.c_meths in
 
-        let (meths_normal_inherited, meths_overriden, meths_last) = 
+        let (meths_normal_inherited, meths_overriden, meths_last) =
           filter_meths ~base:base_normal_meths ~cur:meths_last in
 
         let (slots_abstr_inherited, slots_implemented, meths_last) =
           filter_meths ~base:base_abstr_slots ~cur:meths_last in
 
-        let (slots_inherited, slots_overriden, meths_last) = 
+        let (slots_inherited, slots_overriden, meths_last) =
           filter_meths ~base:base_normal_slots ~cur:meths_last in
 
-        let meths_last = fix_names meths_last in        
+        let meths_last = fix_names meths_last in
         let my_slots = fix_names c.c_slots in
 
-        let ans_slots = MS.union_list 
-          [slots_abstr_inherited; slots_implemented; 
+        let ans_slots = MS.union_list
+          [slots_abstr_inherited; slots_implemented;
            slots_inherited; slots_overriden;
            my_slots] in
 
-        let ans_meths = MS.union_list 
-          [meths_abstr_not_impl; meths_abstr_implemented; 
+        let ans_meths = MS.union_list
+          [meths_abstr_not_impl; meths_abstr_implemented;
            meths_normal_inherited; meths_overriden;
            meths_last] in
 
