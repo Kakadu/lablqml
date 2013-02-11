@@ -9,7 +9,7 @@ open Core.Std
 module List = struct
   include List
   (** Like map2_exn but with index parameter *)
-  let map2i_exn la lb ~f = 
+  let map2i_exn la lb ~f =
     let i = ref 0 in
     map2_exn la lb ~f:(fun x y -> let ans = f !i x y in incr i; ans)
 end
@@ -20,11 +20,11 @@ type comp_target = {
 }
 
 class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
-  
+
   method get_name ~classname modif args ?res_n_name is_byte =
     cpp_stub_name ~classname modif args ?res_n_name ~is_byte
 
-  method declare_locals argnames h = 
+  method declare_locals argnames h =
     let len = List.length argnames in
     if len = 0 then ()
     else if len > 5 then begin
@@ -49,12 +49,12 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     try
       let classname = if isQObject then classname^"_twin" else classname in
       let is_constr = Option.is_none res_n_name in
-      let get_name is_byte = self#get_name ~classname modif args ?res_n_name is_byte in 
+      let get_name is_byte = self#get_name ~classname modif args ?res_n_name is_byte in
       let native_func_name = get_name false in
-      let () = 
+      let () =
         let args_str = args |> List.map ~f:string_of_arg |> String.concat ~sep:"," in
         match res_n_name with
-        | Some (res_type,name) -> 
+        | Some (res_type,name) ->
           fprintf h "// method %s %s(%s)\n" (string_of_type res_type) name args_str
         | None ->
           fprintf h "// constructor %s(%s)\n" classname args_str
@@ -70,7 +70,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
           | Success s  -> s
           | CastError _ | CastValueType _
-          | CastTemplate _  -> 
+          | CastTemplate _  ->
               (*printf "arg_cast failed: %s" (string_of_arg arg);*)
               raise BreakSilent
         ) in
@@ -79,7 +79,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
           let self_cast =
             sprintf "assert(Tag_val(self)==Abstract_tag);\n  %s *_self = ((%s*) Field(self,0));"
               classname classname in
-          ( self_cast :: arg_casts, "self" :: argnames)
+          (self_cast :: arg_casts, "self" :: argnames)
         end else
           (arg_casts, argnames)
       in
@@ -89,12 +89,12 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         | Some (res,_) -> res
       in
       let is_proc = res_type=void_type in
-      let () = 
+      let () =
         if not is_proc then
           let res_arg = { arg_type = unreference res_type; arg_default=None; arg_name=None } in
           match fromCamlCast index res_arg "resname" with
             | Success _ -> ()
-            | _ -> 
+            | _ ->
                 (*print_endline "failed resCast"; *)
                 raise BreakSilent
       in
@@ -108,7 +108,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         self#declare_locals ["_ans"] h;
 
       List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
-      let argsCall = 
+      let argsCall =
         let lst = if not is_constr then (
           assert (List.length argnames >0);
           List.tl_exn argnames
@@ -166,7 +166,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       | BreakSilent -> ()
       | BreakS str -> ( fprintf h "// %s\n" str; print_endline str )
 
-  method makefile dir ~twins lst = 
+  method makefile dir ~twins lst =
     let lst = List.stable_sort ~cmp:String.compare lst in
     let h = open_out (dir ^/ "Makefile") in
     fprintf h "INCLUDES=-I./../../ -I. ";
@@ -176,7 +176,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     let f tl x = x |> List.map ~f:(fun s -> sprintf "%s%s" s tl) |> String.concat ~sep:" " in
     fprintf h "HEADERS=%s\n" (f ".h" twins);
     fprintf h "HEADERS2=$(addprefix moc_,$(HEADERS))\n";
-    fprintf h "MOC_EXE=%smoc\n" (if bin_prefix="" then "" else bin_prefix^"/");    
+    fprintf h "MOC_EXE=%smoc\n" (if bin_prefix="" then "" else bin_prefix^"/");
     fprintf h "MOCS=$(HEADERS2:.h=.o)\n";
     fprintf h "C_QTOBJS=%s %s\n\n" (f ".o" twins) (f ".o" lst);
     fprintf h ".SUFFIXES: .h .cpp .o\n\n";
@@ -188,24 +188,24 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     fprintf h ".cpp.o:\n\t$(GCC) -c -I`ocamlc -where` -I.. $(COPTS) -fpic $<\n\n";
     fprintf h ".cpp.h:\n\tmoc $@ > moc_$<\n\n";
     fprintf h "clean: \n\trm -f *.o\n\n";
-    fprintf h ".PHONY: all clean\n\n"; 
+    fprintf h ".PHONY: all clean\n\n";
     Out_channel.close h
 
   method private prefix = dir ^/ "cpp"
-  
+
   method is_abstr_class c =
     let ans = ref false in
     let f m = match m.m_modif with `Abstract -> ans:=true | _ -> () in
     MethSet.iter c.c_meths ~f;
     MethSet.iter c.c_slots ~f;
     !ans
- 
+
   method gen_class ~prefix ~dir c =
     let key = NameKey.make_key ~name:c.c_name ~prefix in
     if not (SuperIndex.mem index key) then begin
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key);
       None
-    end else if skipClass ~prefix c then begin 
+    end else if skipClass ~prefix c then begin
       printf "skipping class %s\n" c.c_name;
       None
     end else begin
@@ -215,14 +215,14 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       ignore (Sys.command ("mkdir -p " ^ dir ));
       let isQObject = isQObject graph ~key in
       printf "Generating C++ for class %s: isQObject==%b\n%!" (NameKey.to_string key) isQObject;
-      let (stubs_filename, twin_cppname, twin_hname) = 
+      let (stubs_filename, twin_cppname, twin_hname) =
         let d = dir ^/ classname in
-        (d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h") 
-        (* I'll find some problems with adding include files for every class. 
+        (d ^ ".cpp", d ^ "_twin.cpp", d^ "_twin.h")
+        (* I'll find some problems with adding include files for every class.
            Maybe fix makefile to cut directory from cpp and add it to includes of gcc
         *)
         (* What each files will contain?
-           stubs_filename = stubs for calling public method of a class 
+           stubs_filename = stubs for calling public method of a class
                             (this class can be subclass or QObject or not)
            twin_hname     = header file for twin-class (class should be a descedant of QObject)
            twin_cppname   = source file for implementation twin-class's methods and for stubs for
@@ -244,28 +244,29 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
           let m = meth_of_constr ~classname args in
           (* in stubs file we generate stubs for calling native (not twin) implementation of methods.
              So we can suppose that all classes aren't descedants of QObject *)
-          if (m.m_access = `Public) && (is_good_meth ~index ~classname m) then 
+          if (m.m_access = `Public) && (is_good_meth ~index ~classname m) then
             self#gen_stub ~prefix ~isQObject:false classname m.m_access args ?res_n_name:None h
         in
         (* we don't publish protected constructors --- in OCaml we will not override them *)
-        List.iter ~f c.c_constrs 
+        List.iter ~f c.c_constrs
       end;
-      
-      let f m = 
+
+      let f m =
         (* when class is descedant QObject we should generate stubs for protected meths,
            no QObject --- no stubs for proteced methods
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public)
 	      && (m.m_modif <> `Abstract) then
-          self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args 
+          self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args
             ?res_n_name:(Some (m.m_res, m.m_name)) h
       in
       MethSet.iter ~f c.c_meths;
-      MethSet.iter ~f c.c_slots; 
+      MethSet.iter ~f c.c_slots;
 
       fprintf h "}  // extern \"C\"\n";
       Out_channel.close h;
+
       let need_twin = does_need_twin ~isQObject classname ~index in
       let ans =
         let comp_class = (if subdir = "" then classname else subdir ^/ classname) in
@@ -283,15 +284,15 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       ) in
       Some ans
     end
-  
+
   method twin_methname cpp_methname modif = match modif with
     | `Private -> raise (Bug "we don't generate private methods in twin header")
     | `Public -> cpp_methname
     | `Protected -> sprintf "prot_%s" cpp_methname
 
-  method gen_twin_source ~prefix c h = 
+  method gen_twin_source ~prefix c h =
     let classname  = c.c_name in
-    fprintf h "#include <QtWidgets/QtWidgets>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include <QtWidgets/QtWidgets>\n";
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
@@ -316,7 +317,6 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         | `Protected -> MethSet.add a {m with m_access=`Public} ) in
     (* Also we have to generate caller stubs for meths of twin object *)
     let iter_meth m =
-      (*printf "generating a meth %s\n" (string_of_meth m);*)
       let f name =
         self#gen_stub ~prefix ~isQObject:true classname m.m_access
           m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
@@ -326,39 +326,31 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     in
     let public_slots = MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public) in
     MethSet.iter new_meths ~f:iter_meth;
-    MethSet.iter public_slots ~f:iter_meth; 
+    MethSet.iter public_slots ~f:iter_meth;
     fprintf h "\n}\n";
     ()
 
-  method gen_twin_header ~prefix c h = 
+  method gen_twin_header ~prefix c h =
     let classname  = c.c_name in
-    fprintf h "#include <QtWidgets/QtWidgets>\n"; (* TODO: include QtGui, OpenGL is not needed *)
+    fprintf h "#include <QtWidgets/QtWidgets>\n";
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
     fprintf h "#include <stdio.h>\n\n";
     fprintf h "#define  %s_twin_val(v) ((%s_twin*) Field(v,0))\n\n" classname classname;
     fprintf h "class %s_twin : public %s {\nQ_OBJECT\npublic:\n" classname classname;
     fprintf h "  virtual ~%s_twin() {}\n" classname;
-(*
-    let () = 
-      MethSet.to_list c.c_meths |> List.map ~f:(fun x -> x.m_out_name) |> String.concat ~sep:","
-    |> (fun s -> printf "meths of class %s: %s\n" classname s)
-    in *)
-    let (pub_meths,prot_meths) = 
+
+    let (pub_meths,prot_meths) =
       MethSet.fold c.c_meths ~init:(MethSet.empty, MethSet.empty) ~f:(fun (a,b) m -> match m.m_access with
         | `Public -> (MethSet.add a m,b)
         | `Private -> (a,b)
         | `Protected -> (a,MethSet.add b m) ) in
     let (++) = MethSet.union in
-    let new_meths = pub_meths ++ (MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public})) 
+    let new_meths = pub_meths ++ (MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))
       ++ (MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public)) in
-    MethSet.elements new_meths |> List.find ~f:(fun m -> m.m_out_name ="paintEvent") 
-    |> (function Some m ->
-      (m |> sexp_of_meth |> Sexplib.Sexp.to_string_hum |> print_endline );
-      printf "`is_good_meth = %b\n" (is_good_meth ~index ~classname m)
-	   | None -> ());
     let new_meths = MethSet.map new_meths ~f:(fun m -> {m with m_modif = `Normal}) in
-    MethSet.filter new_meths ~f:(is_good_meth ~index ~classname) |> MethSet.iter ~f:(fun m ->
+    MethSet.filter new_meths ~f:(is_good_meth ~index ~classname)
+    |> MethSet.iter ~f:(fun m ->
 (*      printf "generating twin for %s\n" (string_of_meth m); flush stdout; *)
       fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
       let twin_methname = self#twin_methname m.m_name m.m_access in
@@ -369,19 +361,19 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let argsstr = List.map2_exn argnames m.m_args ~f:(fun name arg ->
         string_of_arg {arg with arg_name=Some name}) |> String.concat ~sep:", " in
       fprintf h "%s) {\n" argsstr;
-      fprintf h "  CAMLparam0();\n";
-      if not (is_void_type m.m_res) then 
+      fprintf h "  CAMLparam0();\n";  (* because it is a pure C++ method *)
+      if not (is_void_type m.m_res) then
         self#declare_locals ["camlobj";"_ans";"meth"] h
       else
         self#declare_locals ["camlobj";"meth"] h;
       fprintf h "  printf(\"Calling %s::%s of object = %%p\\n\",this);\n" classname m.m_name;
       fprintf h "  GET_CAML_OBJECT(this,the_caml_object)\n";
       fprintf h "  camlobj = (::value) the_caml_object;\n";
-      fprintf h "  meth = caml_get_public_method( camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
+      fprintf h "  meth = caml_get_public_method(camlobj, caml_hash_variant(\"%s\"));\n" m.m_out_name;
       fprintf h "  assert(meth!=0);\n";
 
-      let call_closure_str = match argslen with 
-        | 0 -> "caml_callback(meth, camlobj);"
+      let call_closure_str = match argslen with
+        | 0 -> "caml_callback(meth, camlobj)"
         | _ -> begin
           (* TODO: use CAMLlocalN macros *)
           fprintf h "  ::value *args = new ::value[%d]; // TODO: use CAMLlocalN macros\n" (argslen+1);
@@ -395,7 +387,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
                 let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
                 let buf = Bigbuffer.create 50 in
                 let open Bigbuffer.Printf in
-                bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n" 
+                bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n"
                   (if arg.arg_type.t_is_const then "const" else "") arg.arg_type.t_name arg_name name;
                 bprintf buf "    ::value *call_helper=caml_named_value(\"make_%s\");\n"
                   (String.concat ~sep:"." cp);
@@ -417,20 +409,21 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       end else begin
         let res = { arg_type=m.m_res; arg_name=None; arg_default=None} in
         fprintf h "  _ans = %s;\n" call_closure_str;
-        let cast = fromCamlCast index res ~cpp_argname:(Some "ans") "_ans" 
+        let cast = fromCamlCast index res ~cpp_argname:(Some "ans") "_ans"
           |> (function Success s -> s | _ -> assert false) in
         fprintf h "  %s;\n" cast;
         fprintf h "  CAMLreturnT(%s,ans);\n" (string_of_type res.arg_type);
       end;
       fprintf h "}\n";
       fprintf h "%s call_super_%s(%s) {\n" (string_of_type m.m_res) twin_methname argsstr;
-      fprintf h "  %s %s::%s(%s);\n}\n" (if isProcedure then "" else "return")
+      fprintf h "  %s %s::%s(%s);\n" (if isProcedure then "" else "return")
         classname twin_methname (String.concat ~sep:"," argnames);
+      fprintf h "}\n"
     );
     (* Now generate constructors*)
     List.iter c.c_constrs ~f:(fun lst ->
       let argnames = List.mapi lst ~f:(fun i _ -> sprintf "x%d" i) in
-      fprintf h "  %s_twin(%s) : %s(%s) {}\n" 
+      fprintf h "  %s_twin(%s) : %s(%s) {}\n"
         classname
         (List.map2_exn argnames lst  ~f:(fun name arg ->
           string_of_arg {arg with arg_name = Some name})
@@ -443,19 +436,19 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
 
   method gen_stub_arguments ?locals:(locals=[]) args h =
     let argnames = List.mapi args ~f:(fun i _ -> sprintf "arg%d" i) in
-    fprintf h "(%s) {\n" (String.concat ~sep:"," (List.map argnames ~f:(fun s -> "value "^s)));
+    fprintf h "(%s) {\n" (String.concat ~sep:"," (List.map argnames ~f:((^)"value ")) );
     self#declare_params h argnames;
-    let arg_casts = List.map2_exn argnames args ~f:(fun name ({arg_type=t;arg_default=default;_} as arg) ->
+    let arg_casts = List.map2_exn argnames args ~f:(fun name ({arg_type=t;_} as arg) ->
       fromCamlCast index {arg with arg_type=unreference t} name
     ) in
     let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
     self#declare_locals locals h;
     List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
     argnames
-  
-  method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} = 
+
+  method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} =
     let (_: index_data SuperIndex.key_) = key in
-    let _f () = 
+    let _f () =
       let (x:index_data) = SuperIndex.find_exn index key in
       ignore x
     in
@@ -503,20 +496,20 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     let classes = ref [] in
     let twin_classes = ref [] in
     let enums = ref [] in
-    Queue.iter q ~f:(fun key -> 
+    Queue.iter q ~f:(fun key ->
       match SuperIndex.find_exn index key with
       | Enum e -> begin
         match self#gen_enum_in_ns ~key ~dir:(self#prefix) e with
           | Some s -> Ref.replace enums (fun lst -> (key,s)::lst)
           | None -> ()
       end
-      | Class (c,_) ->  begin 
+      | Class (c,_) ->  begin
         match self#gen_class ~prefix:(fst key |> List.tl_exn) ~dir:(self#prefix) c with
           | Some {comp_class;comp_twin} ->
             classes := comp_class :: !classes;
             (match comp_twin with None -> () | Some x -> twin_classes := x :: !twin_classes)
           | None -> ()
-      end    
+      end
     );
     print_endline "Generating makefile";
     let classnames = !classes in
