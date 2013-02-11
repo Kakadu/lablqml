@@ -4,7 +4,7 @@ open Core.Std
 open Printf
 open SuperIndex
 
-type options = { 
+type options = {
   mutable print_virtuals: bool;
   mutable nocpp: bool;
   mutable noml: bool;
@@ -15,6 +15,7 @@ type options = {
   mutable bin_prefix : string;
   mutable input_file : string option;
 }
+
 let options = {
     print_virtuals= false;
     nocpp=false;
@@ -28,7 +29,7 @@ let options = {
   }
 
 (* parse and save file *)
-let main out_dir = 
+let main out_dir =
   let root =
     match options.input_file with
     | Some input_file ->
@@ -60,9 +61,9 @@ let main out_dir =
 (*
     let ch = open_out "tree.backup" in
     Marshal.to_channel ch options.base [];
-    Out_channel.close ch 
+    Out_channel.close ch
 *)
-  end else begin 
+  end else begin
     let ch = open_in "tree.backup" in
     options.base <- Marshal.from_channel ch;
     close_in ch;
@@ -77,7 +78,7 @@ let main out_dir =
       #generate_q q
   end else begin
     print_endline "Generation of C++ code skipped"
-  end; 
+  end;
 
   if not options.noml then begin
     let module V2 = struct
@@ -85,10 +86,10 @@ let main out_dir =
       let equal x y = match (x,y) with
         | (`Group a, `Group b) -> a=b
         | (`Single a, `Single b) -> a=b
-        | _ -> false 
+        | _ -> false
       let hash = function
         | `Single s -> NameKey.hash s * 2 + 1
-        | `Group xs -> NameKey.hash (List.hd_exn xs) * 2 
+        | `Group xs -> NameKey.hash (List.hd_exn xs) * 2
       let compare x y = match (x,y) with
         | (`Single _, `Group _)  -> -1
         | (`Group _, `Single _)  -> 1
@@ -153,6 +154,3 @@ let () =
     end
   | _ ->
     prerr_endline "Not enough arguments, try -help"; exit 2
-
-
-

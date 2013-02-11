@@ -3,7 +3,7 @@ open Core.Std
 open Parser
 open Printf
 
-let procedures = 
+let procedures =
   [ ("protectedConstructors",     Procedures.protectedConstructors)
   ; ("privateNonAbstractMethods", Procedures.noPrivateNonAbstract)
   ; ("noDestructors",             Procedures.noDestructors)
@@ -18,17 +18,17 @@ let xml_name = ref "../aaa.xml"
 let out_name = ref "out.xml"
 let do_procedures = ref (List.map ~f:fst procedures)
 
-let () = Arg.parse [ 
+let () = Arg.parse [
   ("-in",  Arg.String (fun s -> xml_name := s), "input xml file");
   ("-out", Arg.String (fun s -> out_name := s), "output xml file");
-  ("-app", Arg.String 
+  ("-app", Arg.String
     (fun s -> do_procedures := !do_procedures @ (String.split s ~on:',') ), "procedures for simplification")
  ]
-  (fun name -> names := Core_set.add !names name) 
+  (fun name -> names := Core_set.add !names name)
   "Usage: xmltool -in [XML file] -out [XML file]"
 
 let root = Simplexmlparser.xmlparser_file !xml_name |> List.hd_exn
-module Printer = Xml_print.Make_simple(Xml)(struct let emptytags=[] end) 
+module Printer = Xml_print.Make_simple(Xml)(struct let emptytags=[] end)
 
 let root_ns = Parser.build root
 
@@ -42,12 +42,12 @@ module VertexComparator = Comparator.Make1(struct
   let sexp_of_t = SuperIndex.V.sexp_of_t
 end)
 
-let () = 
+let () =
   (* Set for accumulating answer *)
   let start_set : (_,_) Set.t ref =
     ref (Set.empty ~comparator: VertexComparator.comparator)
   in
-  let good_class = 
+  let good_class =
     (* hack for adding all classes *)
     if (Set.length !names = 1) && (Set.min_elt_exn !names = "ALL")
     then fun _ -> true
@@ -60,7 +60,7 @@ let () =
   ) g;
   (* there we will accumulate classes with their parent classes *)
   let ans_vs : (_,_) Set.t ref = ref !start_set in
-  let rec loop set = 
+  let rec loop set =
     if Core_set.is_empty set then () else begin
       let parents = ref (Set.empty ~comparator:VertexComparator.comparator) in
       Core_set.iter set ~f:(SuperIndex.G.iter_pred (fun  v -> parents := Set.add !parents v ) g);
@@ -71,9 +71,9 @@ let () =
   loop !start_set;
 
   (*  Set.iter (fun x -> print_endline (G.vertex_name x)) !ans_vs; *)
-  let names = 
+  let names =
     Set.union (Set.map ~f:SuperIndex.G.vertex_name !ans_vs ~comparator:String.comparator) !names in
-  
+
   let lst = match root with
     | Element ("code",_,lst) -> lst
     | _ -> assert false
@@ -85,7 +85,7 @@ let () =
       Core_set.mem names name
     | _ -> false
   ) ) in
-  
+
   List.iter !do_procedures ~f:(fun name ->
     printf "Applying procedure `%s`\n" name;
     let f = List.Assoc.find_exn procedures name in
@@ -97,45 +97,45 @@ let () =
   let out s = Printf.fprintf out_ch "%s" s in
   Simplexmlwriter.print ~out xml;
   Out_channel.close out_ch;
-  
-  let () = 
+
+  let () =
     let module StringSet = String.Set in
     let module StringLabeledGraph = SuperIndex.StringLabeledGraph in
     let declared_classes = ref StringSet.empty in
     printf "Generating result graph\n%!";
     let root_ns = Parser.build xml in
 
-    let g = SuperIndex.StringLabeledGraph.create () in 
+    let g = SuperIndex.StringLabeledGraph.create () in
 
-    let skip_argname s : bool = 
+    let skip_argname s : bool =
       (* skip primitive variables*)
-      (s |> List.mem 
-          ["QVariant";"uint";"int";"bool";"void";"qint64";"long";"uchar";"qreal";"char";"WId";"QString"]) 
+      (s |> List.mem
+          ["QVariant";"uint";"int";"bool";"void";"qint64";"long";"uchar";"qreal";"char";"WId";"QString"])
       (* skip enums *)
       || ( String.is_prefix ~prefix:"Qt::" s && (
-        try 
+        try
           SuperIndex.is_enum_exn (SuperIndex.NameKey.key_of_fullname s) superIndex
         with Not_found -> true
       ) )
     in
-    let rec iter_ns ns = 
+    let rec iter_ns ns =
       List.iter ~f:iter_ns ns.ns_ns;
       List.iter ~f:iter_class ns.ns_classes;
-    and iter_class c = 
+    and iter_class c =
       StringLabeledGraph.add_vertex g c.c_name;
       declared_classes := StringSet.add !declared_classes c.c_name;
       MethSet.iter ~f:(iter_meth c.c_name) c.c_meths
     and iter_meth class_v {m_args; m_res;_} =
       let xs = m_args |> List.map ~f:(fun a -> a.arg_type) in
       List.iter (m_res::xs) ~f:(fun arg_type ->
-        let new_name = 
+        let new_name =
           let s = arg_type.t_name in
-          if Str.string_match (Str.regexp "QList<[a-zA-Z]*\\*>") s 0 
+          if Str.string_match (Str.regexp "QList<[a-zA-Z]*\\*>") s 0
           then String.drop_suffix  (String.drop_prefix s 6) 2
           else s
         in
-        if (not (skip_argname new_name)) && (arg_type.t_params=[]) && 
-          (not (String.is_prefix new_name ~prefix:"QtPrivate") ) 
+        if (not (skip_argname new_name)) && (arg_type.t_params=[]) &&
+          (not (String.is_prefix new_name ~prefix:"QtPrivate") )
         then begin
           StringLabeledGraph.add_vertex g new_name;
           StringLabeledGraph.add_edge g class_v new_name
@@ -143,26 +143,10 @@ let () =
       )
     in
     iter_ns root_ns;
-    
+
     let h = open_out "./qwe.dot" in
-    let () = GraphPrinter.output_graph h g 
+    let () = GraphPrinter.output_graph h g
       ~is_declared:(StringSet.mem !declared_classes) in
     Out_channel.close h;
   in
-  ()      
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  ()
