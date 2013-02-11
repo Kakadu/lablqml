@@ -1,7 +1,11 @@
 
 .PHONY: build clean
 
-build:
+build: byte
+
+all: byte native
+
+native:
 	ocamlbuild -j 0 -use-ocamlfind main.native xmltool.native
 
 byte:
