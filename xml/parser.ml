@@ -64,10 +64,10 @@ let string_split ~on:d str =
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list } 
 and func_arg = { arg_type:cpptype; arg_name:string option; arg_default: string option }
 and meth = { 
-  m_res:cpptype; 
-  m_name:string; 
-  m_args:func_arg list; 
-  m_declared: string; 
+  m_res:cpptype;
+  m_name:string;
+  m_args:func_arg list;
+  m_declared: string;
   m_out_name:string;
   m_access:[`Public | `Protected| `Private];
   m_modif: [`Normal | `Static   | `Abstract]
@@ -236,8 +236,6 @@ let str_replace ~patt init = List.fold_left
   ~f:(fun aggr (patt, v) -> 
     Str.global_replace (Str.regexp patt) v aggr
   ) ~init patt
-
-exception Break
 
 let strip_dd ~prefix:p s =
   let plen = String.length p+2 in
