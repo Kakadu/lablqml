@@ -4,6 +4,7 @@ open Core.Std
 open Printf
 open SuperIndex
 
+let () = Printexc.record_backtrace true
 type options = {
   mutable print_virtuals: bool;
   mutable nocpp: bool;
@@ -95,8 +96,33 @@ let main out_dir =
         | (`Group _, `Single _)  -> 1
         | (`Group a, `Group b)   -> compare a b
         | (`Single a, `Single b) -> compare a b
+      let to_string = function
+        | `Single s -> sprintf "Single %s" (NameKey.to_string s)
+        | `Group xs -> sprintf "Group %s" (String.concat ~sep:"," (List.map xs ~f:NameKey.to_string))
     end in
-    let module Gout = Graph.Imperative.Digraph.Concrete(V2) in
+    let module Gout = struct
+      include Graph.Imperative.Digraph.Concrete(V2)
+      let graph_attributes (_:t) = []
+      let default_vertex_attributes _ = []
+      let get_subgraph _ = None
+      let default_edge_attributes _ = []
+      let edge_attributes _ = []
+
+      let vertex_name v = match V.label v with
+        | `Single s -> NameKey.to_string s
+        | `Group xs -> String.concat (List.map xs ~f:NameKey.to_string) (*
+        |> Str.global_replace (Str.regexp "::") "_"
+        |> Str.global_replace (Str.regexp "<") "_"
+        |> Str.global_replace (Str.regexp ">") "_"
+        |> Str.global_replace (Str.regexp ",") "_"
+        |> Str.global_replace (Str.regexp "*") "_"
+        |> Str.global_replace (Str.regexp "&amp;") "_AMP_"*)
+
+      let vertex_attributes v =
+        let (x:V2.t) = V.label v in
+        [`Label ((V2.to_string x)) ]
+
+    end in
     let module R = Reducer.Make(G)(Gout) in
 
     let (_,index,main_graph,q) = options.base in
@@ -110,7 +136,10 @@ let main out_dir =
               let f_arg = fun arg ->
                 let dest_v = NameKey.key_of_fullname arg.arg_type.t_name in
                 if (G.mem_vertex graph dest_v) && (not (G.mem_edge graph key dest_v))
-                then G.add_edge graph key dest_v
+                then begin
+                  printf "add_edge %s -> %s\n%!" (NameKey.to_string key) (NameKey.to_string dest_v);
+                  G.add_edge graph dest_v key
+                end
               in
               List.iter c.c_constrs ~f:(List.iter ~f:f_arg);
               let g = fun m ->
@@ -120,9 +149,21 @@ let main out_dir =
               MethSet.iter c.c_meths ~f:g;
               MethSet.iter c.c_slots ~f:g;
       ) index;
+      let h = open_out "1.dot" in
+      GraphPrinter.output_graph h graph;
+      close_out h;
       let gout = R.rebuild graph ~f_cycle:(fun c -> `Group c) ~f_alone:(fun c -> `Single c) in
+      let module GraphPrinter2 = Graph.Graphviz.Dot(Gout) in
+      let h = open_out "2.dot" in
+      GraphPrinter2.output_graph h gout;
+      close_out h;
       let module Top = Graph.Topological.Make(Gout) in
-      (Top.fold (fun v acc -> v::acc) gout []) |> Queue.of_list
+      let xs = Top.fold (fun v acc -> v::acc) gout [] in
+      let xs = List.rev xs in
+      printf "TopSort result\n";
+      List.iter xs ~f:(fun x ->  printf "%s\n%!" (V2.to_string x));
+      printf "End of TopSort results\n%!";
+      xs |> Queue.of_list
     in
     let open OcamlGenerator in
     print_endline "generating OCaml code";

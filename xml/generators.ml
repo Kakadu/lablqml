@@ -57,7 +57,7 @@ let pattern (index:index_t) {arg_type=t; arg_default=default; _} =
     if indir>1 then InvalidPattern
     else if isTemplateClass name then InvalidPattern
     else match name with
-      | "int"  | "bool" | "QString" | "void" ->
+      | "int"  | "bool" | "QString" | "void" | "QModelIndex" | "QVariant" ->
 	      if indir = 0 then PrimitivePattern name else InvalidPattern
       | "char" when indir = 1 -> PrimitivePattern "char*"
       | "char"
@@ -97,6 +97,8 @@ let skipArgument : index:index_t -> func_arg -> bool
 	    let key = NameKey.key_of_fullname arg_type.t_name in
 	    not (SuperIndex.mem index key)
 	  | InvalidPattern -> true
+      | PrimitivePattern "QVariant" -> true
+      | PrimitivePattern "QModelIndex" -> true
 	  | _ -> false
       end
 
@@ -115,11 +117,14 @@ let good_meth_helper ~res_cond ~arg_cond ~classname ~index meth =
     let () = match m_access with `Private -> raise DoSkip | `Public | `Protected -> () in
     if skip_class_by_name ~classname:m_declared then false
     else begin
-      match List.find m_args ~f:(fun arg -> (arg_cond arg) || (skipArgument ~index arg)) with
+      match List.find m_args ~f:(fun arg -> (not (arg_cond arg)) && (skipArgument ~index arg)) with
 	    | None -> (* all arguments are OK *)
-	        (res_cond m_res) || (is_void_type m_res) or not (skipArgument ~index (simple_arg m_res))
+            (*fprintf stdout "PIZDA (%s)\n%!" (string_of_meth meth);*)
+            if res_cond m_res then false
+            else (is_void_type m_res) or not (skipArgument ~index (simple_arg m_res))
 	    | Some {arg_type;_} ->
-              (*printf "Method %s skipped: %s\n" methname (string_of_type arg_type); *)
+            (*fprintf stdout "PIZDA 2\n%!";*)
+            (*printf "Method %s skipped: %s\n" methname (string_of_type arg_type); *)
             false
     end
   with DoSkip -> false
@@ -129,11 +134,15 @@ let is_good_meth ~classname ~index m = good_meth_helper ~classname ~index
     ~res_cond:(const false) ~arg_cond:(const false) (m:meth)
 
 let is_almost_good_meth =
-    let arg_cond {arg_type=t;_} = is_QModelIndex t in
+    let arg_cond {arg_type=t;_} =
+      let ans = is_QModelIndex t  in
+      printf "arg_cond of `%s` = %b\n%!" (string_of_type t) ans;
+      ans
+    in
     good_meth_helper ~res_cond:is_QVariant ~arg_cond
 
 type t1 = string and t2 = string
-and castResult = Success of t1 | CastError of t2 | CastValueType of t2 | CastTemplate of t2
+and castResult = Success of t1 | CastError of t2 (* | CastValueType of t2 | CastTemplate of t2*)
 exception BreakOk of t1
 (*exception BreakFail of t2*)
 exception BreakResult of castResult
@@ -170,9 +179,9 @@ let isQObject ~key graph =
   if not (G.mem_vertex graph qObjectKey) then false
   else pathChecker graph qObjectKey key
 
-  (* TODO: decide what index to use: from object or from parameter *)
-  (* TODO: rewrite function to return type Core.Common.passfail *)
-  let fromCamlCast
+(* TODO: decide what index to use: from object or from parameter *)
+(* TODO: rewrite function to return type Core.Common.passfail *)
+let fromCamlCast
       = fun (index:index_t) ({arg_default; arg_type=t; _} as arg) ?(cpp_argname=None) arg_name ->
 	let cpp_argname = match cpp_argname with
 	  | Some x -> x
@@ -194,6 +203,10 @@ let isQObject ~key graph =
 	  | PrimitivePattern "void" -> Success "Val_unit"
 	  | PrimitivePattern "char*" ->
           Success (sprintf "char* %s = String_val(%s);" cpp_argname arg_name)
+      | PrimitivePattern "QModelIndex" -> CastError "Can't create QModelIndex from OCaml object"
+      | PrimitivePattern "QVariant" ->
+          (* TODO: implement getting data from OCaml value  *)
+          Success (sprintf "QVariant %s;" cpp_argname)
       | PrimitivePattern _ -> assert false
 	  | ObjectPattern ->
 	    Success (String.concat
@@ -223,6 +236,10 @@ let isQObject ~key graph =
 	  | PrimitivePattern "QString" ->
           Success (String.concat [ansVarName; " = caml_copy_string("; arg; ".toLocal8Bit().data() );"])
 	  | PrimitivePattern "char*" -> Success (String.concat [ansVarName; " = caml_copy_string(";arg;");"])
+      | PrimitivePattern "QVariant" -> CastError "Can't convert QVariant to OCaml object"
+      | PrimitivePattern "QModelIndex" ->
+          (* TODO: Implement converting QModelIndex to OCaml type *)
+          Success (sprintf "%s = Val_int(5);" ansVarName)
 	  | PrimitivePattern _ -> raise (Common.Bug (sprintf "unexpected primitive: %s" t.t_name))
 	  | ObjectPattern ->        Success (sprintf "%s = (::value)(%s);" ansVarName arg)
 	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((::value)(%s));" ansVarName arg)

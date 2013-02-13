@@ -99,44 +99,51 @@ let wut_methods_to_remove =
     <<"signalsBlocked" << "registerUserData" << "setUserData" <<  "disconnectImpl" << "dynamicPropertyNames"
     << "connectNotify" << "disconnectNotify" << "isSignalConnected" << "childEvent" << "timerEvent"
     << "sender" << "senderSignalIndex" << "blockSignals" << "inherits" << "killTimer" << "parent"
-    << "destroy" << "customEvent")
-  ; ("QPaintDevice",
-    empty << "paintEngine" << "logicalDpiY" << "metric" << "qt_paint_device_metric"
-    << "physicalDpiX" << "physicalDpiY" << "devType" << "logicalDpiX")
+    << "destroy" << "customEvent" << "children" << "eventFilter" << "setObjectName"
+    << "property" << "setProperty" << "startTimer"
+  )
+  ; ("QPaintDevice", empty << "paintEngine" << "logicalDpiY" << "metric" << "qt_paint_device_metric"
+    << "physicalDpiX" << "physicalDpiY" << "devType" << "logicalDpiX" << "colorCount"
+    << "depth" << "height" << "heightMM" << "paintingActive" << "initPainter" << "redirected"
+    << "sharedPainter" << "width" << "widthMM"
+  )
   ; ("QGraphicsEvent",
     empty << "dragEnterEvent" << "zValue" << "qt_closestLeaf" << "childItems"
     << "addToIndex" << "grabMouse" << "isUnderMouse" << "collidingItems" << "effectiveOpacity"
     << "acceptDrops" << "setFiltersChildEvents" << "hoverMoveEvent" << "boundingRegionGranularity"
     << "handlesChildEvents" << "dropEvent" << "wheelEvent" << "inputMethodEvent"
     << "installSceneEventFilter"  << "setCacheMode" << "setAcceptedMouseButtons")
-  ; ("QFrame",
-    empty << "frameShadow" << "frameStyle" << "setMidLineWidth" << "changeEvent" << "frameShape"
-    << "midLineWidth" << "setFrameStyle" << "paintEvent" )
+  ; ("QFrame", empty << "frameShadow" << "frameStyle" << "setMidLineWidth" << "changeEvent" << "frameShape"
+    << "midLineWidth" << "setFrameStyle" << "drawFrame" << "frameRect" << "frameWidth" << "isWindowType"
+    << "lineWidth" << "mapToParent" << "setFocusProxy" << "setFrameRect" << "setFrameShape"
+    << "setInputMethodHints"  << "setLayout" << "setFrameShadow" << "setLineWidth" << "sizeHint"
+
+  )
   ; ("QPixmap",
      empty << "handle" << "setDevicePixelRatio" << "operator QVariant" << "metric"
      << "defaultDepth" << "data_ptr" << "devicePixelRatio" << "createMaskFromColor" << "isDetached" <<
      "devType" << "grabWindow"<< "fromImageReader" << "cacheKey" << "isQBitmap" << "createHeuristicMask"
      << "doImageIO" << "save")
   ; ("QWidget", empty << "fontMetrics" << "insertAction" << "insertActions" << "addActions"
-    << "removeAction" << "actions" << "setFont" << "font" << "event"
+    << "removeAction" << "actions" << "setFont" << "font" << "event" << "objectName" <<"setLocale"
     << "backgroundRole" << "foregroundRole" << "setBackgroundRole" << "setForegroundRole"
     << "dragLeaveEvent" << "testAttribute_helper" << "focusPreviousChild" << "focusNextChild"
     << "metric" << "destroy" << "findChild" << "raise" << "mapFromParent" << "style" << "ungrabGesture"
     << "contextMenuPolicy" << "setMinimumHeight" << "sizeHint" << "contentsRect" <<"setWindowModality"
     << "windowModality" << "toolTip" << "baseSize" << "isEnabledTo" << "tabletEvent" << "setAcceptDrops"
     << "focusProxy" << "mouseGrabber" << "releaseShortcut" << "normalGeometry" << "setMaximumSize"
-    << "fontInfo" << "showFullScreen" << "addAction" << "setShortcutAutoRepeat" << "focusNextPrevChild"
+    << "fontInfo" << "addAction" << "setShortcutAutoRepeat" << "focusNextPrevChild"
     << "setWhatsThis" << "visibleRegion" << "focusOutEvent" << "setContextMenuPolicy"
     << "accessibleDescription" << "overrideWindowFlags" << "dragMoveEvent" << "grabMouse" << "unsetCursor"
     << "window" << "mapTo" << "redirected" << "whatsThis" << "updateMicroFocus" << "windowHandle"
-    << "overrideWindowState"
+    << "overrideWindowState" << "setMask" << "winId"
     << "restoreGeometry" << "setWindowIcon" << "isWindowModified" << "setFixedHeight" << "maximumSize"
     << "mask" << "heightForWidth" << "setFocus" << "setHidden" << "setDisabled" << "setEnabled"
     << "lower" << "windowIconText" << "windowRole" << "windowState" << "widthMM" << "windowFilePath"
     << "updatesEnabled" << "usetLocale" << "unsetLayoutDirection" << "underMouse" << "topLevelWidget"
     << "testAttribute" << "statusTip" << "stackUnder" << "setWindowIconText" << "setWindowFlags"
     << "setUpdatesEnabled" << "setTabOrder" << "setStatusTip" << "setSizeIncrement" << "setShortcutEnabled"
-    << "setMouseTracking"
+    << "setMouseTracking" << "internalWinId" << "moveEvent" << "mapToParent" << "setLocale"
      << "setMinimumSize" << "setMinimumWidth" << "setFoxusProxy" << "setFocusPolicy" << "setFixedWidth"
      << "setBaseSize" << "setContentsMargins" << "setAutoFillBackground" << "setAttribute"  << "setBaseSize"
      << "setAccessibleDescription" << "setAccessibleName" << "releaseMouse" << "previousInFocusChain"
@@ -144,12 +151,32 @@ let wut_methods_to_remove =
      << "minimumHeight" << "maximumWidth" << "maximumHeight" << "leaveEvent" << "killTimer"
     << "keyboardGrabber" << "isWindowType" << "isWindow" << "isVisibleTo" << "isTopLevel" << "isRightToLeft"
     << "isModal" << "isMaximized" << "isMinimized" << "isLeftToRight" << "isHidden" << "isFullScreen"
-    << "isEnabledToTLW"
+    << "isEnabledToTLW" << "mapToParent" << "setLayout" << "setLayoutDirection"
     << "isEnabled" << "isAncestorOf" << "isActiveWindow" << "heightMM" << "height" << "hasMouseTracking"
     << "hasHeightForWidth" << "grabKeyboard" << "grabGesture" << "focusPolicy" << "eventFilter"
     << "enterEvent" << "ensurePolished" << "devType" << "depth" << "customEvent" << "createWinId"
-    << "colorCount" << "isWindowType"
-    << "clearMask" << "clearFocus" << "childAt" << "changeEvent" << "blockSignals" << "autoFillBackground")
+    << "colorCount" << "isWindowType" << "setInputMethodHints" << "setFocusProxy"
+    << "clearMask" << "clearFocus" << "childAt" << "changeEvent" << "blockSignals" << "autoFillBackground"
+    << "acceptDrops" << "accessibleName" << "activateWindow" << "actionEvent" << "adjustSize"
+    << "backingStore" << "childrenRect" << "childrenRegion" << "closeEvent" << "contentsMargins"
+    << "contextMenuEvent" << "create" << "cursor" << "dragEnterEvent" << "dropEvent"
+    << "effectiveWinId" << "focusInEvent" << "focusWidget" << "frameGeometry" << "frameSize"
+    << "geometry" << "getContentsMargins" << "grab" << "grabShortcut" << "graphicsEffect"
+    << "graphicsProxyWidget" << "hasFocus" << "hideEvent" << "initPainter" << "inputMethodEvent"
+    << "inputMethodHints" << "inputMethodQuery" << "isVisible" << "layout" << "layoutDirection"
+    << "locale" << "mapFrom" << "mapFromGlobal" << "mapToGlobal" << "mapToGlobal" << "minimumSize"
+    << "minimumSizeHint" << "move" << "nativeEvent" << "paintEvent" <<"paintingActive"
+    << "palette" << "pos" << "qt_qwidget_data" << "qt_widget_private" << "rect" << "redirected"
+    << "releaseKeyboard" << "render" << "repaint" << "resize" << "scroll" << "resizeEvent" << "saveGeometry"
+    << "setBackingStore" << "setCursor" << "setFixedSize" << "setGeometry" << "setGraphicsEffect"
+    << "setSizePolicy" << "setPalette" << "setMaximumWidth" << "setMaximumHeight" <<  "setStyle"
+    << "setToolTip" << "setWindowFilePath" << "setWindowOpacity" << "setWindowRole" << "setWindowState"
+    << "sharedPainter" << "size" << "sizeIncrement" << "sizePolicy" << "startTimer"
+    << "styleSheet" << "takeLayout" << "unsetLocale"<< "update" << "wheelEvent" << "wheelEvent" << "width"
+    << "windowIcon" << "windowTitle" << "close" << "hide" << "setStyleSheet" << "setVisible"
+    << "setWindowModified" << "showMaximized" << "showMinimized" << "showNormal"
+    << "x" << "y" << "windowType" << "windowOpacity" << "winId" << "windowFlags" << "showEvent"
+  )
   ; ("QGraphicsScene",
     empty << "style" << "palette" << "setPalette" << "setStyle" << "items" << "itemIndexMethod"
      << "setFont" << "font" << "dropEvent" << "dragMoveEvent" << "dragLeaveEvent" << "dragEnterEvent"
@@ -167,14 +194,68 @@ let wut_methods_to_remove =
      << "event")
   ; ("QAbstractItemModel", empty << "endInsertColumns" << "endInsertRows" << "endMoveColumns"
     << "endMoveRows" << "endRemoveColumns" << "endRemoveRows" << "endResetModel" << "eventFilter"
-    << "revert" << "submit" << "parent"
+    << "revert" << "submit" << "parent" << "beginInsertColumns" << "beginInsertRows"
+    << "beginMoveColumns" << "beginMoveRows" << "beginRemoveColumns" << "beginRemoveRows"
+    << "beginResetModel" << "buddy" << "canDropMimeData" << "canFetchMore" << "changePersistentIndex"
+    << "changePersistentIndexList" << "createIndex" << "decodeData" << "doSetRoleNames"
+    << "doSetSupportedDragActions" << "dropMimeData" << "encodeData" << "fetchMore" << "hasChildren"
+    << "hasIndex" << "headerData" << "insertColumn" << "insertColumns" << "insertRow" << "insertRows"
+    << "itemData" << "match"<< "mimeData" << "mimeTypes" << "moveColumn" << "moveColumns"
+    << "moveRow" << "moveRows" << "persistentIndexList" << "removeColumn" << "removeColumns"
+    << "removeRow" << "removeRows" << "setData" << "setHeaderData" << "setItemData" << "sibling"
+    << "sort" << "span" << "startTimer" << "supportedDragActions" << "supportedDropActions"
+  )
+  ; ("QAbstractItemView", empty << "alternatingRowColors" << "autoScrollMargin" << "doAutoScroll"
+    << "dirtyRegionOffset" << "dragDropMode" << "dragDropOverwriteMode" << "dragEnabled"
+    << "dragEnterEvent" << "dragLeaveEvent" << "dragMoveEvent" << "dropEvent" << "dropIndicatorPosition"
+    << "edit" << "editTriggers" << "executeDelayedItemsLayout" << "focusInEvent" << "focusNextPrevChild"
+    << "focusOutEvent" << "hasAutoScroll" << "horizontalScrollMode" << "horizontalStepsPerItem"
+    << "iconSize" << "indexWidget" << "inputMethodEvent" << "inputMethodQuery" << "itemDelegate"
+    << "itemDelegateForColumn" << "itemDelegateForRow" << "keyboardSearch" << "mouseDoubleClickEvent"
+    << "mouseMoveEvent" << "mousePressEvent" << "mouseReleaseEvent" << "openPersistentEditor"
+    << "resizeEvent" << "rootIndex" << "scheduleDelayedItemsLayout" << "scrollDirtyRegion"
+    << "selectedIndexes" << "selectionBehavior" << "selectionCommand" << "selectionMode"
+    << "selectionModel" << "setAlternatingRowColors" << "setAutoScroll" << "setAutoScrollMargin"
+    << "setDefaultDropAction" << "setDirtyRegion" << "setDragDropMode" << "setDragDropOverwriteMode"
+    << "setDragEnabled" << "setDropIndicatorShown" << "setEditTriggers" << "setHorizontalScrollMode"
+    << "setHorizontalStepsPerItem" << "setIconSize" << "setIndexWidget" << "setItemDelegate"
+    << "setItemDelegateForColumn" << "setItemDelegateForRow" << "setSelectionBehavior"
+    << "setSelectionMode" << "setSelectionModel" << "setState" << "setTabKeyNavigation"
+    << "setTextElideMode" << "setVerticalScrollMode" << "setVerticalStepsPerItem" << "showDropIndicator"
+    << "sizeHintForColumn" << "sizeHintForIndex" << "sizeHintForRow" << "startAutoScroll" << "startDrag"
+    << "state" << "stopAutoScroll" << "tabKeyNavigation" << "textElideMode" << "timerEvent"
+    << "verticalScrollMode" << "verticalStepsPerItem" << "viewOptions" << "viewportEvent"
+    << "clearSelection"
+
+
   )
   ; ("QAbstractListModel", empty << "parent"
   )
-  ; ("QAbstractScrollArea",
-     empty << "horizontalScrollBar" << "verticalScrollBarPolicy" <<
+  ; ("QAbstractScrollArea", empty << "horizontalScrollBar" << "verticalScrollBarPolicy" <<
     "horizontalScrollBarPolicy" << "setHorizontalScrollBar" << "verticalScrollBar" << "setVerticalScrollBar"
-     << "dragLeaveEvent" << "dropEvent")
+     << "dragLeaveEvent" << "dropEvent" << "addScrollBarWidget" << "contextMenuEvent" << "cornerWidget"
+    << "maximumViewportSize" << "minimumSizeHint" << "scrollBarWidgets" << "scrollContentsBy"
+    << "setCornerWidget" << "setHorizontalScrollBarPolicy" << "setViewport" << "setViewportMargins"
+    << "setViewportMargins" << "sizeHint" << "setupViewport" << "viewport" << "viewportEvent"
+    << "viewportSizeHint" << "wheelEvent"
+  )
+  ; ("QListView", empty << "visualIndex" << "visualRect" << "wheelEvent" << "viewMode" << "batchSize"
+    << "clearPropertyFlags" << "indexAt" << "isIndexHidden" << "isRowHidden" << "isSelectionRectVisible"
+    << "isWrapping" << "modelColumn" << "moveCursor" << "movement" << "rectForIndex" << "resizeContents"
+    << "resizeMode" << "scrollContentsBy" << "scrollTo" << "selectedIndexes" << "setBatchSize"
+    << "setModelColumn" << "setPositionForIndex" << "setRowHidden" << "setSelectionRectVisible"
+    << "setSpacing" << "setUniformItemSizes" << "spacing" << "uniformItemSizes" << "clearSelection"
+    << "commitData" << "doItemsLayout" << "horizontalScrollbarValueChanged" << "verticalScrollbarAction"
+    << "verticalScrollbarValueChanged" << "setFlow" << "setGridSize" << "setLayoutMode"
+    << "setMovement" << "setResizeMode" << "setViewMode" << "setWordWrap" << "setWrapping"
+    << "startDrag" << "timerEvent" << "verticalOffset" << "viewOptions" << "wordWrap" << "commitData"
+    << "currentChanged" << "doItemsLayout" << "editorDestroyed" << "horizontalScrollbarAction"
+    << "horizontalScrollbarValueChanged" << "reset"
+    << "rowsAboutToBeRemoved" << "scrollToBottom" << "rowsInserted" << "scrollToTop"
+    << "selectAll" << "selectionChanged" << "setCurrentIndex" << "setRootIndex" <<"setWindowTitle"
+    << "update" << "updateEditorData" << "updateEditorGeometries" << "updateGeometries"
+    << "verticalScrollbarAction" << "verticalScrollbarValueChanged"
+  )
   ; ("QByteArray", empty << "data" )
   ; ("QImage",     empty << "bits" << "scanLine")
   ; ("QTreeWidget",empty << "indexOfTopLevelItem")

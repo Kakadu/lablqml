@@ -94,6 +94,10 @@ module G = struct
   include Graph.Imperative.Digraph.Concrete(V) (* from base to subclasses *)
   let graph_attributes (_:t) = []
   let default_vertex_attributes _ = []
+  let get_subgraph _ = None
+  let default_edge_attributes _ = []
+  let edge_attributes _ = []
+
   let vertex_name v = snd (V.label v)
     |> Str.global_replace (Str.regexp "::") "_"
     |> Str.global_replace (Str.regexp "<") "_"
@@ -103,9 +107,6 @@ module G = struct
     |> Str.global_replace (Str.regexp "&amp;") "_AMP_"
 
   let vertex_attributes v = [`Label (snd (V.label v)) ]
-  let get_subgraph _ = None
-  let default_edge_attributes _ = []
-  let edge_attributes _ = []
 
   let kill_and_fall g ?(index=SuperIndex.empty) root =
     let ans = ref index in

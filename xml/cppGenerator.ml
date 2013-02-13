@@ -69,8 +69,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         ) in
         let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
           | Success s  -> s
-          | CastError _ | CastValueType _
-          | CastTemplate _  ->
+          | CastError _ ->
               (*printf "arg_cast failed: %s" (string_of_arg arg);*)
               raise BreakSilent
         ) in
@@ -139,8 +138,10 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
           in
           let resCast = match toCamlCast index res_arg "ans" "_ans" with
             | Success s -> s
-            | CastError _ | CastValueType _ | CastTemplate _ ->
-              print_endline "resCast failed";raise (BreakSilent)
+            | CastError _ ->
+                print_endline "resCast failed";
+                close_out h;
+                assert false
           in
           fprintf h "  %s ans = _self -> %s(%s);\n" ans_type_str methname argsCall;
           fprintf h "  %s\n" resCast;
@@ -256,10 +257,13 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
            no QObject --- no stubs for proteced methods
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
+        fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public)
-	      && (m.m_modif <> `Abstract) then
+	      && (m.m_modif <> `Abstract) then begin
+          fprintf h "//here\n%!";
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args
             ?res_n_name:(Some (m.m_res, m.m_name)) h
+          end
       in
       MethSet.iter ~f c.c_meths;
       MethSet.iter ~f c.c_slots;
@@ -318,8 +322,12 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     (* Also we have to generate caller stubs for meths of twin object *)
     let iter_meth m =
       let f name =
-        self#gen_stub ~prefix ~isQObject:true classname m.m_access
-          m.m_args ?res_n_name:(Some (m.m_res, (name) )) h in
+        if ((is_almost_good_meth ~classname ~index m) && (m.m_modif = `Abstract))
+          || (is_good_meth ~classname ~index m)
+        then
+          self#gen_stub ~prefix ~isQObject:true classname m.m_access
+            m.m_args ?res_n_name:(Some (m.m_res, (name) )) h
+      in
       f m.m_name;
       if m.m_modif <> `Abstract then
 	    f ("call_super_"^m.m_name)
@@ -345,16 +353,22 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         | `Public -> (MethSet.add a m,b)
         | `Private -> (a,b)
         | `Protected -> (a,MethSet.add b m) ) in
-    let (++) = MethSet.union in
-    let new_meths = pub_meths ++ (MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))
-      ++ (MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public)) in
-    let new_meths = MethSet.map new_meths ~f:(fun m -> {m with m_modif = `Normal}) in
-    MethSet.filter new_meths ~f:(is_good_meth ~index ~classname)
-    |> MethSet.iter ~f:(fun m ->
-(*      printf "generating twin for %s\n" (string_of_meth m); flush stdout; *)
+
+    let new_meths =
+      let (++) = MethSet.union in
+      pub_meths ++ prot_meths ++ c.c_slots in(*
+      ++ (MethSet.map prot_meths ~f:(fun m -> {m with m_access=`Public}))
+      ++ (MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public)) in *)
+    (*let new_meths = MethSet.map new_meths ~f:(fun m -> {m with m_modif = `Normal}) in*)
+    (*MethSet.filter new_meths ~f:(is_good_meth ~index ~classname)*)
+    MethSet.iter new_meths ~f:(fun m ->
       fprintf h "//%s declared in %s\n" (string_of_meth m) m.m_declared;
-      let twin_methname = self#twin_methname m.m_name m.m_access in
-      fprintf h "%s %s(" (string_of_type m.m_res) twin_methname;
+      With_return.with_return begin fun r ->
+        if not (is_almost_good_meth ~classname ~index m) then r.With_return.return ();
+        printf "working with `%s`\n%!" (string_of_meth m);
+        let m = {m with m_access=`Public} in
+        let twin_methname = self#twin_methname m.m_name m.m_access in
+        fprintf h "%s %s(" (string_of_type m.m_res) twin_methname;
 
       let argslen = List.length m.m_args in
       let argnames = List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i) in
@@ -382,20 +396,27 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
             let arg_name = sprintf "args[%d]" (i+1) in
             let s = toCamlCast index arg name arg_name in
             match (s,pattern index arg) with
-              | (CastError _,_) | (CastValueType _,_) | (CastTemplate _,_) -> s
+              | (CastError ss,_) -> s
               | (Success s,ObjectPattern) ->
                 let cp = Parser.string_split ~on:"::" arg.arg_type.t_name in
                 let buf = Bigbuffer.create 50 in
                 let open Bigbuffer.Printf in
                 bprintf buf "  { setAbstrClass<%s %s>(%s,%s);\n"
                   (if arg.arg_type.t_is_const then "const" else "") arg.arg_type.t_name arg_name name;
-                bprintf buf "    ::value *call_helper=caml_named_value(\"make_%s\");\n"
+                    bprintf buf "    ::value *call_helper=caml_named_value(\"make_%s\");\n"
                   (String.concat ~sep:"." cp);
                 bprintf buf "    assert(call_helper != 0);\n";
                 bprintf buf "    %s=caml_callback(*call_helper,%s); }\n" arg_name arg_name;
                 Success (Bigbuffer.contents buf)
               | (Success _,_) -> s
-          ) |> List.map ~f:(function Success s -> s | _ -> assert false) in
+          ) |> List.map ~f:(function
+            | Success s -> s
+            | CastError s ->
+                printf "%s\n%s\n" (string_of_meth m) s;
+                assert false
+
+
+          ) in
           List.iter arg_casts  ~f:(fun s -> fprintf h "  %s;\n" s);
           fprintf h "    // delete args or not?\n";
           sprintf "caml_callbackN(meth, %d, args);" (argslen+1)
@@ -419,6 +440,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       fprintf h "  %s %s::%s(%s);\n" (if isProcedure then "" else "return")
         classname twin_methname (String.concat ~sep:"," argnames);
       fprintf h "}\n"
+      end
     );
     (* Now generate constructors*)
     List.iter c.c_constrs ~f:(fun lst ->
