@@ -239,6 +239,9 @@ let wut_methods_to_remove =
     << "setViewportMargins" << "sizeHint" << "setupViewport" << "viewport" << "viewportEvent"
     << "viewportSizeHint" << "wheelEvent"
   )
+  ; ("QEvent", empty << "QEvent::Type"
+  )
+
   ; ("QListView", empty << "visualIndex" << "visualRect" << "wheelEvent" << "viewMode" << "batchSize"
     << "clearPropertyFlags" << "indexAt" << "isIndexHidden" << "isRowHidden" << "isSelectionRectVisible"
     << "isWrapping" << "modelColumn" << "moveCursor" << "movement" << "rectForIndex" << "resizeContents"
@@ -255,6 +258,8 @@ let wut_methods_to_remove =
     << "selectAll" << "selectionChanged" << "setCurrentIndex" << "setRootIndex" <<"setWindowTitle"
     << "update" << "updateEditorData" << "updateEditorGeometries" << "updateGeometries"
     << "verticalScrollbarAction" << "verticalScrollbarValueChanged"
+  )
+  ; ("QPaintDevice", empty << "QPaintDevice::PaintDeviceMetric"
   )
   ; ("QByteArray", empty << "data" )
   ; ("QImage",     empty << "bits" << "scanLine")
@@ -291,6 +296,8 @@ let filter_methods = function
         | (Element ("slot",att,sons))  ->
             (is_abstract sons) ||
             (not (String.Set.mem set (get_attr_exn ~name:"name" att) ) )
+        | Element ("enum",att,_) ->
+            not (String.Set.mem set (get_attr_exn ~name:"name" att))
         | x  -> true
       ) in
       Some (Element (name,att,new_ch))
