@@ -243,7 +243,7 @@ let wut_methods_to_remove =
   )
 
   ; ("QListView", empty << "visualIndex" << "visualRect" << "wheelEvent" << "viewMode" << "batchSize"
-    << "clearPropertyFlags" << "indexAt" << "isIndexHidden" << "isRowHidden" << "isSelectionRectVisible"
+    << "clearPropertyFlags" << "indexAt" << "isRowHidden" << "isSelectionRectVisible"
     << "isWrapping" << "modelColumn" << "moveCursor" << "movement" << "rectForIndex" << "resizeContents"
     << "resizeMode" << "scrollContentsBy" << "scrollTo" << "selectedIndexes" << "setBatchSize"
     << "setModelColumn" << "setPositionForIndex" << "setRowHidden" << "setSelectionRectVisible"
