@@ -119,12 +119,9 @@ let good_meth_helper ~res_cond ~arg_cond ~classname ~index meth =
     else begin
       match List.find m_args ~f:(fun arg -> (not (arg_cond arg)) && (skipArgument ~index arg)) with
 	    | None -> (* all arguments are OK *)
-            (*fprintf stdout "PIZDA (%s)\n%!" (string_of_meth meth);*)
-            if res_cond m_res then false
+            if res_cond m_res then true
             else (is_void_type m_res) or not (skipArgument ~index (simple_arg m_res))
-	    | Some {arg_type;_} ->
-            (*fprintf stdout "PIZDA 2\n%!";*)
-            (*printf "Method %s skipped: %s\n" methname (string_of_type arg_type); *)
+	    | Some arg ->
             false
     end
   with DoSkip -> false
@@ -133,18 +130,17 @@ let good_meth_helper ~res_cond ~arg_cond ~classname ~index meth =
 let is_good_meth ~classname ~index m = good_meth_helper ~classname ~index
     ~res_cond:(const false) ~arg_cond:(const false) (m:meth)
 
-let is_almost_good_meth =
-    let arg_cond {arg_type=t;_} =
-      let ans = is_QModelIndex t  in
-      printf "arg_cond of `%s` = %b\n%!" (string_of_type t) ans;
-      ans
-    in
-    good_meth_helper ~res_cond:is_QVariant ~arg_cond
+let is_almost_good_meth ~classname ~index m =
+  let arg_cond {arg_type=t;_} =
+    let ans = is_QModelIndex t  in
+    let (_:string) = string_of_type t in
+    ans
+  in
+  good_meth_helper ~res_cond:is_QVariant ~arg_cond ~classname ~index (m:meth)
 
 type t1 = string and t2 = string
-and castResult = Success of t1 | CastError of t2 (* | CastValueType of t2 | CastTemplate of t2*)
+and castResult = Success of t1 | CastError of t2
 exception BreakOk of t1
-(*exception BreakFail of t2*)
 exception BreakResult of castResult
 
 let enum_conv_func_names (lst,_) =
@@ -155,7 +151,6 @@ let is_abstract_class ~prefix index name =
   let key = NameKey.make_key ~prefix ~name in
   let f = fun acc m -> match m.m_modif with
     | `Abstract ->
-        printf "Abstract meth found in class %s: %s\n%!" name (string_of_meth m);
         true
     | _ -> acc in
   let ans = match SuperIndex.find index key with
@@ -165,7 +160,6 @@ let is_abstract_class ~prefix index name =
     | None -> raise (Common.Bug (sprintf "Class %s is not in index" name))
     | Some (Enum _) -> raise (Common.Bug (sprintf "expected class %s, but enum found" name) )
   in
-  printf "is_abstract_class of %s says %b\n" (NameKey.to_string key) ans;
   ans
 
 let pathChecker graph =
@@ -239,7 +233,7 @@ let fromCamlCast
       | PrimitivePattern "QVariant" -> CastError "Can't convert QVariant to OCaml object"
       | PrimitivePattern "QModelIndex" ->
           (* TODO: Implement converting QModelIndex to OCaml type *)
-          Success (sprintf "%s = Val_int(5);" ansVarName)
+          Success (sprintf "%s = Val_int(5); Q_UNUSED(%s);" ansVarName arg)
 	  | PrimitivePattern _ -> raise (Common.Bug (sprintf "unexpected primitive: %s" t.t_name))
 	  | ObjectPattern ->        Success (sprintf "%s = (::value)(%s);" ansVarName arg)
 	  | ObjectDefaultPattern -> Success (sprintf "%s = Val_some((::value)(%s));" ansVarName arg)
@@ -254,7 +248,7 @@ let fromCamlCast
 let does_need_twin ~isQObject ~index classname =
   isQObject &&
     (match classname with
-      | "QAbstractItemView" -> false
+(*      | "QAbstractItemView" -> false*)
       | _ -> true
     ) &&
     (
@@ -269,16 +263,16 @@ let does_need_twin ~isQObject ~index classname =
             (* We need to locate abstract members which are non-generatable *)
             let ans =
               let f m =
-                (m.m_modif = `Abstract) && not (is_good_meth ~classname ~index m) in
+                (m.m_modif = `Abstract) && not (is_almost_good_meth ~classname ~index m) in
               MethSet.union (MethSet.filter meths ~f) (MethSet.filter slots ~f)
             in
             if MethSet.length ans = 0
             then true
             else begin
-              printf "Cannot allow twinning for class `%s`\n" classname;
-              printf "because following methods are abstract and ungeneratable:\n";
+              printf "\tCannot allow twinning for class `%s`\n" classname;
+              printf "\tbecause following methods are abstract and ungeneratable:\n\t\t";
               MethSet.iter ans ~f:(fun {m_name;_} -> printf "%s " m_name);
-              printf "\n%!";
+              printf "\t\n%!";
               false
             end
     )

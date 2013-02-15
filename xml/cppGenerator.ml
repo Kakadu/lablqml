@@ -3,7 +3,6 @@ open Core.Common
 open Generators
 open SuperIndex
 open Parser
-
 open Core.Std
 
 module List = struct
@@ -140,7 +139,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
             | Success s -> s
             | CastError _ ->
                 print_endline "resCast failed";
-                close_out h;
+                Out_channel.close h;
                 assert false
           in
           fprintf h "  %s ans = _self -> %s(%s);\n" ans_type_str methname argsCall;
@@ -254,13 +253,12 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
 
       let f m =
         (* when class is descedant QObject we should generate stubs for protected meths,
-           no QObject --- no stubs for proteced methods
+           no QObject --- no stubs for protected methods
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
-        fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
-        if (is_good_meth ~classname ~index m) && (m.m_declared = classname) && (m.m_access = `Public)
+        if (is_good_meth ~classname ~index m)&&(m.m_declared = classname)&&(m.m_access = `Public)
 	      && (m.m_modif <> `Abstract) then begin
-          fprintf h "//here\n%!";
+
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args
             ?res_n_name:(Some (m.m_res, m.m_name)) h
           end
@@ -332,8 +330,8 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       if m.m_modif <> `Abstract then
 	    f ("call_super_"^m.m_name)
     in
-    let public_slots = MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public) in
     MethSet.iter new_meths ~f:iter_meth;
+    let public_slots = MethSet.filter c.c_slots ~f:(fun s -> s.m_access=`Public) in
     MethSet.iter public_slots ~f:iter_meth;
     fprintf h "\n}\n";
     ()
@@ -374,7 +372,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let argnames = List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i) in
       let argsstr = List.map2_exn argnames m.m_args ~f:(fun name arg ->
         string_of_arg {arg with arg_name=Some name}) |> String.concat ~sep:", " in
-      fprintf h "%s) {\n" argsstr;
+      fprintf h "%s) %s {\n" argsstr (if m.m_res.t_is_const then "const" else "");
       fprintf h "  CAMLparam0();\n";  (* because it is a pure C++ method *)
       if not (is_void_type m.m_res) then
         self#declare_locals ["camlobj";"_ans";"meth"] h

@@ -1,6 +1,6 @@
 true: thread,debug
-true: package(str), package(core), package(tyxml.parser), package(ocamlgraph), package(sexplib.syntax)
+true: package(str), package(core), package(tyxml), package(tyxml.parser), package(ocamlgraph), package(sexplib.syntax)
 true: package(tarjangraph)
 "generators.ml" or "parser.ml": syntax(camlp4o)
-<xmltool.*>: package(tyxml)
+<xmltool.*>: package(tyxml.parser)
 "ocamlGenerator.ml": -warn_A

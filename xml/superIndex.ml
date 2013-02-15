@@ -36,10 +36,6 @@ module SuperIndex = Map.Make(NameKey)
 
 type index_t = index_data SuperIndex.t
 
-let skip_enum key e = match List.hd_exn (List.rev (fst key)) with
-  | "QSsl" -> true
-  | _ -> false
-
 let is_enum_exn ~key t = match SuperIndex.find_exn t key with
   | Class _ -> false
   | Enum _ -> true
@@ -89,7 +85,6 @@ let to_channel t ch =
 module Evaluated = Set.Make(NameKey)
 module V = NameKey
 
-
 module G = struct
   include Graph.Imperative.Digraph.Concrete(V) (* from base to subclasses *)
   let graph_attributes (_:t) = []
@@ -128,15 +123,17 @@ module G = struct
 end
 module GraphPrinter = Graph.Graphviz.Dot(G)
 
-let overrides subclass_of a b =
+(* function to test does method a overrides method  ~base *)
+let overrides subclass_of a ~base =
   let len = List.length in
+  let b = base in
   let open With_return in
   With_return.with_return (fun r ->
-    if (a.m_name <> b.m_name) then r.return false;
+    if a.m_name <> b.m_name then r.return false;
     if len a.m_args <> len b.m_args then r.return false;
     List.iter2_exn  a.m_args b.m_args ~f:(fun {arg_type=a;_} {arg_type=b;_} ->
-      if (compare_cpptype a b = 0) then r.return true
-      else if (subclass_of a.t_name ~base:b.t_name) && (a.t_indirections=b.t_indirections) then r.return true
+      if compare_cpptype a b = 0 then ()
+      else if (subclass_of a.t_name ~base:b.t_name) && (a.t_indirections=b.t_indirections) then ()
       else r.return false
     );
     true
@@ -153,11 +150,11 @@ let names_print_helper s ~set =
    * abstract meths which are not implemented by abstract methods in this class
  *)
 let super_filter_meths subclass_of ~base ~cur =
-  let (<=<) : MethSet.Elt.t -> MethSet.Elt.t -> bool = overrides subclass_of in
+  let (<=<) : MethSet.Elt.t -> base:MethSet.Elt.t -> bool = overrides subclass_of in
 
-  let base_not_impl = ref MethSet.empty in
-  let cur_impl = ref MethSet.empty in
-  let cur_new = ref MethSet.empty in
+  let base_not_impl = ref MethSet.empty in (* abstract meths which are not implemented here *)
+  let cur_impl = ref MethSet.empty in (* abstract meths which are implemented here *)
+  let cur_new = ref MethSet.empty in (* methods declared in current class *)
   let rec loop base cur =
 (*    printf "Inside loo: (cur.length, cur_new.length)  = (%d,%d)\n"
       (MethSet.length cur) (MethSet.length !cur_new); *)
@@ -171,8 +168,15 @@ let super_filter_meths subclass_of ~base ~cur =
         (* метод cur_el не реализует ни одного абстрактного *)
         Ref.replace cur_new (fun set -> MethSet.add set cur_el)
       end else begin
-        (* нашли абстрактный метод, реализованный в cur_el *)
-        let el = MethSet.min_elt_exn a  in
+        (* we found abstract method just implemented in cur_el *)
+        let el = MethSet.min_elt_exn a in
+        (*if el.m_out_name = "rowCount"
+        then begin
+          printf "\t\tFound method columnCount:\n";
+          printf "\t\t\tbase  : %s %s\n" (string_of_m_access     el.m_access) (string_of_meth el);
+          printf "\t\t\tcur_el: %s %s\n" (string_of_m_access cur_el.m_access) (string_of_meth cur_el);
+          flush stdout
+        end;*)
         Ref.replace cur_impl (fun set -> MethSet.add set { cur_el with m_out_name = el.m_out_name })
       end;
       loop b (MethSet.remove cur cur_el)
@@ -194,11 +198,8 @@ let build_graph root_ns : index_t * G.t =
 
   let on_enum_found prefix e =
     let key = NameKey.make_key ~name:e.e_flag_name ~prefix in
-    if not (skip_enum key e) then
-      let data = Enum e in
-      ( printf "Adding enum %s with key %s\n%!" e.e_name (NameKey.to_string key);
-        index := SuperIndex.add ~key ~data !index
-      )
+    let data = Enum e in
+    index := SuperIndex.add ~key ~data !index
   in
   let on_class_found prefix name c =
     let key = NameKey.make_key ~name ~prefix in
@@ -231,6 +232,7 @@ let build_graph root_ns : index_t * G.t =
   List.iter ~f:(on_enum_found []) root_ns.ns_enums;
 
   (* simplify_graph *)
+(*
   let dead_roots = List.map ~f:NameKey.key_of_fullname
     [
      (* to avoid bugs *)
@@ -248,8 +250,8 @@ let build_graph root_ns : index_t * G.t =
      (* part of QtWebKit namespace *)
      "QGraphicsWebView"
       ] in
-  List.iter dead_roots ~f:(fun x -> index := G.kill_and_fall ~index:(!index) g x);
-
+  List.iter dead_roots ~f:(fun x -> index := G.kill_and_fall ~index:(!index) g x); *)
+(*
   let prefixes = ["QXml"; "QHost"; "QHttp"; "QNetwork"; "QScript"; "QSsl";
   "QUrl"; "QGL"; "QThread"; "QVFb" ] @
   ["QIconEngine"; "QWeb"] (* QWebKit namespace *) in
@@ -260,7 +262,7 @@ let build_graph root_ns : index_t * G.t =
         | (name::_,_) ->
           List.fold_left ~init:false ~f:(fun acc prefix -> acc or (String.is_prefix ~prefix name)) prefixes
         | _ -> assert false)
-    );
+    ); *)
   (!index,g)
 
 let build_superindex root_ns =
@@ -396,12 +398,6 @@ let build_superindex root_ns =
         let ans_signals = List.map bases_data ~f:(fun c -> c.c_sigs)
           |> List.concat |>  ((@) c.c_sigs) |> List.dedup in
 
-        List.iter c.c_enums ~f:(fun ({e_name;_} as e) ->
-          let new_key = NameKey.key_of_fullname (snd key ^"::" ^ e_name) in
-          if SuperIndex.mem !index new_key then assert false;
-          if not (skip_enum new_key e) then
-            Ref.replace index (SuperIndex.add ~key:new_key ~data:(Enum e))
-        );
         let ans_class = {
           c_inherits = c.c_inherits;
           c_props = c.c_props;
