@@ -97,7 +97,7 @@ let () = match !target with
 
         (* compiling xml *)
 
-        make "build" ~dir: "xml" "\ncompiling xml...\n";
+        make "native" ~dir: "xml" "\ncompiling xml...\n";
         print_endline "\nGenerator is compiled!\n";
 
         (*print_endline "\nexecuting xmltool...\n";
@@ -110,13 +110,16 @@ let () = match !target with
            " " ^ (cpp_includes ()) ^ " test_gen/out")
           "error while generating code";
 
+        make ~dir:"test_gen" "clean" "cleaning OCaml files";
+        make ~dir:"test_gen" "helpers" "compiling helpers";
+
         print_endline "\ncompiling generated OCaml file...\n";
         make ~dir:"test_gen/out" ~j:1 "" "compiling generated OCaml code";
 
         print_endline "\ncompiling generated C++ files...\n";
         make ~dir:"test_gen/out/cpp" ~j:cores_count "" 
           "compiling generated C++ files";
-
+        (*
         print_endline "\ncompiling mocml\n";
         make ~dir:"moc" "" "building mocml...";
 
@@ -125,7 +128,7 @@ let () = match !target with
           if not (Sys.file_exists file) then
             symlink ~src: "../../moc/_build/main.native" ~dst: file
         in
-        (*List.iter add_mocml ["test_gen/test4" ; "test_gen/test5" ; "test_gen/test6"];
+        List.iter add_mocml ["test_gen/test4" ; "test_gen/test5" ; "test_gen/test6"];
         *)
 
         print_endline "\ncompiling the lablqt library...\n";
