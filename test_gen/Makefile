@@ -14,9 +14,15 @@ BIND_ML_OBJS_OPT=out/stubs.cmx out/classes.cmx out/creators.cmx
 
 all: byte opt
 
-byte: $(CMOS) kamlo $(C_STUBS) mklib
+byte: helpers_cmo kamlo $(C_STUBS) mklib
 
-opt: $(CMXS) kamlo $(C_STUBS) mklib_opt
+opt:  helpers_cmx kamlo $(C_STUBS) mklib_opt
+
+helpers: helpers_cmx helpers_cmo
+
+helpers_cmo: $(CMOS)
+
+helpers_cmx: $(CMXS)
 
 test:
 	$(MAKE) -C test
@@ -48,10 +54,10 @@ clean: clean_tests
 	rm -f *.o *.a *.cm[iaox] *.cmxa dlllablqt.so 
 
 clean_tests:
-	$(MAKE) -C test  clean
-	$(MAKE) -C test4 clean
+	$(MAKE) -C test  clean --no-print-directory
+	$(MAKE) -C test4 clean --no-print-directory
 	echo "" > test5/.depend
-	$(MAKE) -C test5 clean
+	$(MAKE) -C test5 clean --no-print-directory
 	echo "" > test6/.depend
-	$(MAKE) -C test6 clean
+	$(MAKE) -C test6 clean --no-print-directory
 

@@ -21,7 +21,15 @@ external connect': [`qobject] obj -> signal:string -> dst:[`qobject] obj -> slot
 let connect: 'a 'b. 'c -> 'a sssignal -> 'd -> ('a, 'b) ssslot -> unit = 
   fun sender si receiver sl -> (
         Printf.printf "Connecting %s -> %s\n" si#name sl#name;
-        let b = connect' sender#handler si#name receiver#handler sl#name in
+        let (_:bool) = connect' sender#handler si#name receiver#handler sl#name in
         ()
   )
+
+
+module QVariant = struct
+    type t
+end
+module QModelIndex = struct
+    type t
+end
 
