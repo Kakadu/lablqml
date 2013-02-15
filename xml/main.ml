@@ -43,7 +43,7 @@ let main out_dir =
     | None ->
         let ch = open_in "xml.backup" in
         let root: Simplexmlparser.xml list = Marshal.from_channel ch in
-        close_in ch;
+        In_channel.close ch;
         print_endline "XML tree restored from backup";
         root
   in
@@ -67,7 +67,7 @@ let main out_dir =
   end else begin
     let ch = open_in "tree.backup" in
     options.base <- Marshal.from_channel ch;
-    close_in ch;
+    In_channel.close ch;
     print_endline "Index restored."
   end;
   print_endline "HERE";
@@ -137,7 +137,7 @@ let main out_dir =
                 let dest_v = NameKey.key_of_fullname arg.arg_type.t_name in
                 if (G.mem_vertex graph dest_v) && (not (G.mem_edge graph key dest_v))
                 then begin
-                  printf "add_edge %s -> %s\n%!" (NameKey.to_string key) (NameKey.to_string dest_v);
+                  (*printf "add_edge %s -> %s\n%!" (NameKey.to_string key) (NameKey.to_string dest_v);*)
                   G.add_edge graph dest_v key
                 end
               in
@@ -151,12 +151,12 @@ let main out_dir =
       ) index;
       let h = open_out "1.dot" in
       GraphPrinter.output_graph h graph;
-      close_out h;
+      Out_channel.close h;
       let gout = R.rebuild graph ~f_cycle:(fun c -> `Group c) ~f_alone:(fun c -> `Single c) in
       let module GraphPrinter2 = Graph.Graphviz.Dot(Gout) in
       let h = open_out "2.dot" in
       GraphPrinter2.output_graph h gout;
-      close_out h;
+      Out_channel.close h;
       let module Top = Graph.Topological.Make(Gout) in
       let xs = Top.fold (fun v acc -> v::acc) gout [] in
       let xs = List.rev xs in
