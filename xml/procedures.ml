@@ -100,7 +100,7 @@ let wut_methods_to_remove =
     << "connectNotify" << "disconnectNotify" << "isSignalConnected" << "childEvent" << "timerEvent"
     << "sender" << "senderSignalIndex" << "blockSignals" << "inherits" << "killTimer" << "parent"
     << "destroy" << "customEvent" << "children" << "eventFilter" << "setObjectName"
-    << "property" << "setProperty" << "startTimer"
+    << "property" << "setProperty" << "startTimer" << "objectName"
   )
   ; ("QPaintDevice", empty << "paintEngine" << "logicalDpiY" << "metric" << "qt_paint_device_metric"
     << "physicalDpiX" << "physicalDpiY" << "devType" << "logicalDpiX" << "colorCount"
@@ -117,7 +117,8 @@ let wut_methods_to_remove =
     << "midLineWidth" << "setFrameStyle" << "drawFrame" << "frameRect" << "frameWidth" << "isWindowType"
     << "lineWidth" << "mapToParent" << "setFocusProxy" << "setFrameRect" << "setFrameShape"
     << "setInputMethodHints"  << "setLayout" << "setFrameShadow" << "setLineWidth" << "sizeHint"
-
+    (* inner emums *)
+    << "QFrame::Shadow" << "QFrame::Shape" << "QFrame::StyleMask"
   )
   ; ("QPixmap",
      empty << "handle" << "setDevicePixelRatio" << "operator QVariant" << "metric"
@@ -176,6 +177,7 @@ let wut_methods_to_remove =
     << "windowIcon" << "windowTitle" << "close" << "hide" << "setStyleSheet" << "setVisible"
     << "setWindowModified" << "showMaximized" << "showMinimized" << "showNormal"
     << "x" << "y" << "windowType" << "windowOpacity" << "winId" << "windowFlags" << "showEvent"
+    << "mouseMoveEvent" << "mousePressEvent" << "mouseReleaseEvent"
   )
   ; ("QGraphicsScene",
     empty << "style" << "palette" << "setPalette" << "setStyle" << "items" << "itemIndexMethod"
@@ -203,7 +205,10 @@ let wut_methods_to_remove =
     << "itemData" << "match"<< "mimeData" << "mimeTypes" << "moveColumn" << "moveColumns"
     << "moveRow" << "moveRows" << "persistentIndexList" << "removeColumn" << "removeColumns"
     << "removeRow" << "removeRows" << "setData" << "setHeaderData" << "setItemData" << "sibling"
-    << "sort" << "span" << "startTimer" << "supportedDragActions" << "supportedDropActions"
+    << "sort" << "span" << "startTimer" << "supportedDragActions" << "supportedDropActions" << "flags"
+    (* enums *)
+
+    << "LayoutChangeHint"
   )
   ; ("QAbstractItemView", empty << "alternatingRowColors" << "autoScrollMargin" << "doAutoScroll"
     << "dirtyRegionOffset" << "dragDropMode" << "dragDropOverwriteMode" << "dragEnabled"
@@ -226,10 +231,10 @@ let wut_methods_to_remove =
     << "state" << "stopAutoScroll" << "tabKeyNavigation" << "textElideMode" << "timerEvent"
     << "verticalScrollMode" << "verticalStepsPerItem" << "viewOptions" << "viewportEvent"
     << "clearSelection"
-
-
+    (* enums *)
+    << "QAbstractItemView::EditTrigger"
   )
-  ; ("QAbstractListModel", empty << "parent"
+  ; ("QAbstractListModel", empty << "setParent" <<  "isWindowType" << "dropMimeData"
   )
   ; ("QAbstractScrollArea", empty << "horizontalScrollBar" << "verticalScrollBarPolicy" <<
     "horizontalScrollBarPolicy" << "setHorizontalScrollBar" << "verticalScrollBar" << "setVerticalScrollBar"
@@ -238,6 +243,7 @@ let wut_methods_to_remove =
     << "setCornerWidget" << "setHorizontalScrollBarPolicy" << "setViewport" << "setViewportMargins"
     << "setViewportMargins" << "sizeHint" << "setupViewport" << "viewport" << "viewportEvent"
     << "viewportSizeHint" << "wheelEvent"
+    << "mouseMoveEvent" << "mousePressEvent" << "mouseReleaseEvent"
   )
   ; ("QEvent", empty << "QEvent::Type"
   )
