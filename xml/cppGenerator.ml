@@ -237,9 +237,9 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       fprintf h "#define %s_val(v) ((%s *) Field(v,0))\n\n" classname classname;
       let isAbstract = self#is_abstr_class c in
       printf "class %s: is abstract=%b, is QObject=%b\n" c.c_name isAbstract isQObject;
-      if isAbstract then
+      if isAbstract then begin
         fprintf h "//class has pure virtual members - no constructors\n"
-      else begin
+      end else begin
         let f args =
           let m = meth_of_constr ~classname args in
           (* in stubs file we generate stubs for calling native (not twin) implementation of methods.
@@ -257,7 +257,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m)&&(m.m_declared = classname)&&(m.m_access = `Public)
-	      && (List.mem m.m_modif `Abstract) then begin
+	      && (not (List.mem m.m_modif `Abstract)) then begin
 
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args
             ?res_n_name:(Some (m.m_res, m.m_name)) h
@@ -327,7 +327,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
             m.m_args ?res_n_name:(Some (m.m_res, (name) )) h
       in
       f m.m_name;
-      if List.mem m.m_modif `Abstract then
+      if not (List.mem m.m_modif `Abstract) then
 	    f ("call_super_"^m.m_name)
     in
     MethSet.iter new_meths ~f:iter_meth;
@@ -372,7 +372,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       let argnames = List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i) in
       let argsstr = List.map2_exn argnames m.m_args ~f:(fun name arg ->
         string_of_arg {arg with arg_name=Some name}) |> String.concat ~sep:", " in
-      fprintf h "%s) %s {\n" argsstr (if m.m_res.t_is_const then "const" else "");
+      fprintf h "%s) %s{\n" argsstr (if List.mem m.m_modif `Const then "const " else "");
       fprintf h "  CAMLparam0();\n";  (* because it is a pure C++ method *)
       if not (is_void_type m.m_res) then
         self#declare_locals ["camlobj";"_ans";"meth"] h
