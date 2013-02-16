@@ -195,7 +195,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
 
   method is_abstr_class c =
     let ans = ref false in
-    let f m = match m.m_modif with `Abstract -> ans:=true | _ -> () in
+    let f m = if List.mem m.m_modif `Abstract then ans:=true in
     MethSet.iter c.c_meths ~f;
     MethSet.iter c.c_slots ~f;
     !ans
@@ -257,7 +257,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m)&&(m.m_declared = classname)&&(m.m_access = `Public)
-	      && (m.m_modif <> `Abstract) then begin
+	      && (List.mem m.m_modif `Abstract) then begin
 
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args
             ?res_n_name:(Some (m.m_res, m.m_name)) h
@@ -320,14 +320,14 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     (* Also we have to generate caller stubs for meths of twin object *)
     let iter_meth m =
       let f name =
-        if ((is_almost_good_meth ~classname ~index m) && (m.m_modif = `Abstract))
+        if ((is_almost_good_meth ~classname ~index m) && (List.mem m.m_modif `Abstract))
           || (is_good_meth ~classname ~index m)
         then
           self#gen_stub ~prefix ~isQObject:true classname m.m_access
             m.m_args ?res_n_name:(Some (m.m_res, (name) )) h
       in
       f m.m_name;
-      if m.m_modif <> `Abstract then
+      if List.mem m.m_modif `Abstract then
 	    f ("call_super_"^m.m_name)
     in
     MethSet.iter new_meths ~f:iter_meth;

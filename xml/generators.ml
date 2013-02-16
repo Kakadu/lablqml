@@ -149,10 +149,7 @@ let enum_conv_func_names (lst,_) =
 
 let is_abstract_class ~prefix index name =
   let key = NameKey.make_key ~prefix ~name in
-  let f = fun acc m -> match m.m_modif with
-    | `Abstract ->
-        true
-    | _ -> acc in
+  let f acc m = acc || (List.mem m.m_modif `Abstract) in
   let ans = match SuperIndex.find index key with
     | Some (Class (c,_)) ->
       (MethSet.fold ~init:false c.c_meths ~f) or ((MethSet.fold ~init:false c.c_slots ~f))
@@ -263,7 +260,7 @@ let does_need_twin ~isQObject ~index classname =
             (* We need to locate abstract members which are non-generatable *)
             let ans =
               let f m =
-                (m.m_modif = `Abstract) && not (is_almost_good_meth ~classname ~index m) in
+                (List.mem m.m_modif `Abstract) && not (is_almost_good_meth ~classname ~index m) in
               MethSet.union (MethSet.filter meths ~f) (MethSet.filter slots ~f)
             in
             if MethSet.length ans = 0

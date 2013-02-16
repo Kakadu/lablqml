@@ -466,7 +466,7 @@ class ocamlGenerator graph dir index = object (self)
       let iter_meth' = fun m ->
         if is_good_meth ~classname ~index m
         then itermeth_nocheck ~isQObject:need_twin m
-        else if (is_almost_good_meth ~classname ~index m) && (m.m_modif=`Abstract)
+        else if (is_almost_good_meth ~classname ~index m) && (List.mem m.m_modif `Abstract)
         then begin
           (* C++ code will be generated to call OCaml's code.
            * in OCaml side this code should be written by the human after sublcassing *)
@@ -491,7 +491,7 @@ class ocamlGenerator graph dir index = object (self)
         MethSet.iter c.c_meths ~f:(fun m ->
           if is_good_meth ~classname ~index m
           then itermeth_nocheck ~isQObject:false m
-          else if (is_almost_good_meth ~classname ~index m) && (m.m_modif=`Abstract)
+          else if (is_almost_good_meth ~classname ~index m) && (List.mem m.m_modif `Abstract)
           then begin
 	        self#gen_meth_stubs ~isQObject:true ~is_abstract:false ~classname h_stubs m;
 

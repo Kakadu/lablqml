@@ -39,16 +39,12 @@ let make_out_name ~classname cpp_name = match (classname,cpp_name) with
   | (_,"method") -> "method1"
   | _ -> cpp_name
 
-let endswith ~postfix:p s =
-  if String.length p > (String.length s) then false
-  else (Str.last_chars s (String.length p) = p)
-
 let string_split ~on:d str =
   let dlen = String.length d in
   let matches i =
     try
       for j=0 to dlen-1 do
-	if d.[j] <> str.[j+i] then raise Not_found
+	    if d.[j] <> str.[j+i] then raise Not_found
       done;
       true
     with Not_found -> false (* Reused existing exception *)
@@ -75,7 +71,7 @@ and meth = {
   m_declared: string;
   m_out_name:string;
   m_access:[`Public | `Protected| `Private];
-  m_modif: [`Normal | `Static   | `Abstract]
+  m_modif :[`Static | `Abstract | `Const | `Virtual | `Explicit | `Inline ] list
 }
 with sexp
 
@@ -186,7 +182,7 @@ let is_void_type t = (t.t_name = "void") && (t.t_indirections=0)
 let meth_of_constr ~classname m_args =
   let m_declared = classname and m_name=classname and m_out_name=classname
   and m_res={ t_name=classname; t_indirections=1; t_is_ref=false; t_params=[]; t_is_const=false } in
-  { m_declared; m_name; m_args; m_res; m_out_name; m_access=`Public; m_modif=`Normal }
+  { m_declared; m_name; m_args; m_res; m_out_name; m_access=`Public; m_modif=[] }
 
 let string_of_type t =
   let b = Buffer.create 10 in
@@ -375,7 +371,7 @@ and parse_class nsname c =
       let aggr lst =
 	    let args = ref [] in
 	    let ret = ref None in
-	    let modif  = ref `Normal in
+	    let modif  = ref [] in
 	    let policy = ref `Private in
 
 	    List.iter lst ~f:(fun x -> match x with
@@ -387,10 +383,19 @@ and parse_class nsname c =
 
 	      | Element ("accessPolicy",("value",p)::_,_) -> policy := str2policy p
 	      | Element ("modifiers",_,lst) ->
-	          let set = List.map lst ~f:(function Element (n,_,_) -> n | PCData _ -> assert false) in
-              modif := if List.mem set "abstract" then `Abstract
-		        else if List.mem set "static" then `Static
-		        else `Normal
+              let add x = Ref.replace modif (fun modif -> x::modif) in
+              List.iter lst ~f:(function PCData _ -> assert false | Element (n,_,_) ->
+                begin
+                  match n with
+                    | "abstract" -> add `Abstract
+                    | "const"    -> add `Const
+                    | "explicit" -> add `Explicit
+                    | "inline"   -> add `Inline
+                    | "static"   -> add `Static
+                    | "virtual"  -> add `Virtual
+                    | _ -> ()
+                end
+              )
           | PCData _ -> raise (Common.Bug "XML file is incorrect")
           | Element (name,_,_) ->
               raise (Common.Bug (sprintf "Unknown XML tag `%s`" name))

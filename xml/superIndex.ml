@@ -45,8 +45,19 @@ let is_class_exn ~key t = match SuperIndex.find_exn t key with
   | Enum _ -> false
 
 let to_channel t ch =
-  let of_modif = function
-    | `Abstract -> "abstract" | `Normal -> "" | `Static -> "static  " in
+  let of_modif xs =
+    if xs = [] then ""
+    else
+      let f = function
+        | `Abstract -> "abstract"
+        | `Const    -> "const"
+        | `Explicit -> "explicit"
+        | `Inline   -> "inline"
+        | `Static   -> "static"
+        | `Virtual  -> "virtual"
+      in
+      List.map xs ~f |> String.concat ~sep:" "
+  in
   let of_access = function
     | `Public -> "public   " | `Private -> "private  " | `Protected -> "protected" in
   let print_enum ~key {e_name;e_items; e_access; e_flag_name} =
@@ -358,11 +369,11 @@ let build_superindex root_ns =
         add2name_set base_meths;
         add2name_set base_slots;
 
-        let f = fun (a,b) el ->
-          match el.m_modif with
-            | `Abstract -> (MS.add a el,b)
-            | `Static -> (a,b)
-            | `Normal -> (a,MS.add b el) in
+        let f (a,b) el =
+          if List.mem el.m_modif `Abstract then (MS.add a el,b)
+          else if List.mem el.m_modif `Static then (a,b)
+          else (a,MS.add b el)
+        in
 
         let base_abstr_meths,base_normal_meths = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_meths in
         let base_abstr_slots,base_normal_slots = MethSet.fold ~init:(MS.empty,MS.empty) ~f base_slots in
