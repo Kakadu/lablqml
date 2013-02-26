@@ -211,7 +211,10 @@ let string_of_meth m =
       (* additional space for OCaml compiler (comments) *)
       if '*' = last.[String.length last - 1] then " " else ""
     in
-    Printf.sprintf "%s %s(%s%s)%s" typ m.m_name args_str space (if m.m_res.t_is_const then " const" else "")
+    Printf.sprintf "%s %s(%s%s)%s%s" typ m.m_name args_str space
+      (if List.mem m.m_modif `Abstract then "=0 " else "")
+      (if m.m_res.t_is_const then " const" else "")
+
   end
 
 let string_of_constr ~classname c =
