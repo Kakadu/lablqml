@@ -214,7 +214,7 @@ let fromCamlCast
 	    let ans = sprintf "%s %s = %s" (snd k) cpp_argname tail in
 	    Success ans
 
-  let toCamlCast
+let toCamlCast
       = fun ~index ?(forcePattern=None) {arg_type=t;arg_default=default;_} arg ansVarName ->
 	let patt = match forcePattern with
 	  | Some x -> x
@@ -237,6 +237,59 @@ let fromCamlCast
 	  | EnumPattern (e,k) ->
 	    let func_name = enum_conv_func_names k |> snd in
 	    Success (sprintf "%s = %s(%s);" ansVarName func_name arg)
+
+
+(* Classes can be:
+ * * Normal       where there are no pure virtual members
+ * * SemiAbstract all pure virtual members has good arguments and return type
+ *                so they can be wrapped in twin class and they call OCaml members
+ * * Abstract     some pure virtual members are non-generatable to OCaml. There is no
+ *                twin class for them and if some function return type is that class
+ *                only public members are allowed to call.
+ *  TODO: think about the classes where there is
+ *)
+let classify_class ~index classname =
+  let key = NameKey.key_of_fullname classname in
+  match SuperIndex.find index key with
+    | None  -> None
+    | Some (Enum _) -> None
+    | Some (Class (c,_)) ->
+        let f xs =
+          With_return.with_return (fun r ->
+            MethSet.fold ~init:`Normal xs ~f:(fun acc meth ->
+
+              if not (List.mem meth.m_modif `Abstract)
+              then acc
+              else if (is_almost_good_meth ~classname ~index meth) && (List.mem meth.m_modif `Abstract)
+              then `SemiAbstract
+              else r.With_return.return `Abstract
+            )
+          )
+        in
+        Some (f (MethSet.union c.c_meths c.c_slots) )
+
+let classify_class_exn ~index classname =
+  match classify_class ~index classname with
+    | Some x -> x
+    | None -> failwithf "Bad arguments of classify_class" ()
+(*
+ * Yet another classification.
+ * * if class is _not_ QObject
+ *   * We can't store pointer to OCaml value in it
+ *   * Hence we can't make twin class, because it will not know about OCaml object.
+ *   * protected and private methods will be hidden for us
+ *   * hence, we can call only public methods
+ * * if class is QObject
+ *   * is Normal
+ *   * SemiAbstract
+ *   * Abstract
+ *)
+let classify2_exn ~index ~graph classname =
+  let key = NameKey.key_of_fullname classname in
+  if isQObject ~key graph
+  then begin
+    `QObject (classify_class_exn ~index classname)
+  end else `NonQObject
 
 (* I don't understand how to use QAbstractItemView  because of method
  * virtual QModelIndex 	indexAt(const QPoint & point) const = 0
