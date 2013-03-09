@@ -490,6 +490,1148 @@
             <enumerator value="0x01ffffff">Key_unknown</enumerator>
         </enum>
     </namespace>
+    <class name="QAbstractItemView">
+        <inherits >
+            <class name="QAbstractScrollArea"/>
+        </inherits>
+        <enum name="QAbstractItemView::DragDropMode">
+            <accessPolicy value="public"/>
+            <enumerator >NoDragDrop</enumerator>
+            <enumerator >DragOnly</enumerator>
+            <enumerator >DropOnly</enumerator>
+            <enumerator >DragDrop</enumerator>
+            <enumerator >InternalMove</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::SelectionBehavior">
+            <accessPolicy value="public"/>
+            <enumerator >SelectItems</enumerator>
+            <enumerator >SelectRows</enumerator>
+            <enumerator >SelectColumns</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::ScrollMode">
+            <accessPolicy value="public"/>
+            <enumerator >ScrollPerItem</enumerator>
+            <enumerator >ScrollPerPixel</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::CursorAction">
+            <accessPolicy value="protected"/>
+            <enumerator >MoveUp</enumerator>
+            <enumerator >MoveDown</enumerator>
+            <enumerator >MoveLeft</enumerator>
+            <enumerator >MoveRight</enumerator>
+            <enumerator >MoveHome</enumerator>
+            <enumerator >MoveEnd</enumerator>
+            <enumerator >MovePageUp</enumerator>
+            <enumerator >MovePageDown</enumerator>
+            <enumerator >MoveNext</enumerator>
+            <enumerator >MovePrevious</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::DropIndicatorPosition">
+            <accessPolicy value="protected"/>
+            <enumerator >OnItem</enumerator>
+            <enumerator >AboveItem</enumerator>
+            <enumerator >BelowItem</enumerator>
+            <enumerator >OnViewport</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::ScrollHint">
+            <accessPolicy value="public"/>
+            <enumerator >EnsureVisible</enumerator>
+            <enumerator >PositionAtTop</enumerator>
+            <enumerator >PositionAtBottom</enumerator>
+            <enumerator >PositionAtCenter</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::SelectionMode">
+            <accessPolicy value="public"/>
+            <enumerator >NoSelection</enumerator>
+            <enumerator >SingleSelection</enumerator>
+            <enumerator >MultiSelection</enumerator>
+            <enumerator >ExtendedSelection</enumerator>
+            <enumerator >ContiguousSelection</enumerator>
+        </enum>
+        <enum name="QAbstractItemView::State">
+            <accessPolicy value="protected"/>
+            <enumerator >NoState</enumerator>
+            <enumerator >DraggingState</enumerator>
+            <enumerator >DragSelectingState</enumerator>
+            <enumerator >EditingState</enumerator>
+            <enumerator >ExpandingState</enumerator>
+            <enumerator >CollapsingState</enumerator>
+            <enumerator >AnimatingState</enumerator>
+        </enum>
+        <slot name="horizontalScrollbarAction" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="verticalOffset" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <abstract />
+                <const />
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="rowsInserted" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="closePersistentEditor" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="currentChanged" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="defaultDropAction" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="Qt::DropAction" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <signal name="pressed" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <function name="visualRect" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <abstract />
+                <const />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="QRect" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="commitData" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="setRootIndex" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="closeEditor" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QAbstractItemDelegate::EndEditHint" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="selectionChanged" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QItemSelection" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QItemSelection" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <signal name="doubleClicked" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <slot name="scrollToBottom" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="rowsAboutToBeRemoved" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="updateEditorData" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="moveCursor" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <abstract />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QAbstractItemView::CursorAction" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="Qt::KeyboardModifiers" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="QModelIndex" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="scrollToTop" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="horizontalScrollbarValueChanged" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="reset" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="updateEditorGeometries" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="currentIndex" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="QModelIndex" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="setCurrentIndex" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="isIndexHidden" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <abstract />
+                <const />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="bool" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="editorDestroyed" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QObject" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="doItemsLayout" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="keyPressEvent" declaredIn="QAbstractItemView">
+            <modifiers />
+            <arguments >
+                <argument type="QKeyEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <signal name="activated" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <function name="setSelection" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <abstract />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QRect" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QItemSelectionModel::SelectionFlags" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="horizontalOffset" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <abstract />
+                <const />
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="verticalScrollbarAction" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="update" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="update" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <inline />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="setModel" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QAbstractItemModel" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="verticalScrollbarValueChanged" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <function name="model" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="QAbstractItemModel" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="scrollTo" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <abstract />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="EnsureVisible" type="QAbstractItemView::ScrollHint" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="indexAt" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <abstract />
+                <const />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QPoint" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="QModelIndex" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <slot name="dataChanged" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="QVector&lt;int&gt;()" type="QVector&lt;int&gt;" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="updateGeometries" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <slot name="selectAll" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <virtual />
+            </modifiers>
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </slot>
+        <constructor name="QAbstractItemView" declaredIn="QAbstractItemView">
+            <modifiers />
+            <arguments >
+                <argument type="QAbstractItemView" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QAbstractItemView" declaredIn="QAbstractItemView">
+            <modifiers />
+            <arguments >
+                <argument type="QAbstractItemViewPrivate" indirections="0" isReference="true" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QAbstractItemView" declaredIn="QAbstractItemView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <explicit />
+            </modifiers>
+            <arguments >
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <function name="visualRegionForSelection" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers >
+                <abstract />
+                <const />
+                <virtual />
+            </modifiers>
+            <arguments >
+                <argument type="QItemSelection" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="QRegion" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <signal name="clicked" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <signal name="entered" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <signal name="viewportEntered" declaredIn="QAbstractItemView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments />
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <property name="autoScroll">
+            <read value="hasAutoScroll"/>
+            <write value="setAutoScroll"/>
+        </property>
+        <property name="autoScrollMargin">
+            <read value="autoScrollMargin"/>
+            <write value="setAutoScrollMargin"/>
+        </property>
+        <property name="editTriggers">
+            <read value="editTriggers"/>
+            <write value="setEditTriggers"/>
+        </property>
+        <property name="tabKeyNavigation">
+            <read value="tabKeyNavigation"/>
+            <write value="setTabKeyNavigation"/>
+        </property>
+        <property name="showDropIndicator">
+            <read value="showDropIndicator"/>
+            <write value="setDropIndicatorShown"/>
+        </property>
+        <property name="dragEnabled">
+            <read value="dragEnabled"/>
+            <write value="setDragEnabled"/>
+        </property>
+        <property name="dragDropOverwriteMode">
+            <read value="dragDropOverwriteMode"/>
+            <write value="setDragDropOverwriteMode"/>
+        </property>
+        <property name="dragDropMode">
+            <read value="dragDropMode"/>
+            <write value="setDragDropMode"/>
+        </property>
+        <property name="defaultDropAction">
+            <read value="defaultDropAction"/>
+            <write value="setDefaultDropAction"/>
+        </property>
+        <property name="alternatingRowColors">
+            <read value="alternatingRowColors"/>
+            <write value="setAlternatingRowColors"/>
+        </property>
+        <property name="selectionMode">
+            <read value="selectionMode"/>
+            <write value="setSelectionMode"/>
+        </property>
+        <property name="selectionBehavior">
+            <read value="selectionBehavior"/>
+            <write value="setSelectionBehavior"/>
+        </property>
+        <property name="iconSize">
+            <read value="iconSize"/>
+            <write value="setIconSize"/>
+        </property>
+        <property name="textElideMode">
+            <read value="textElideMode"/>
+            <write value="setTextElideMode"/>
+        </property>
+        <property name="verticalScrollMode">
+            <read value="verticalScrollMode"/>
+            <write value="setVerticalScrollMode"/>
+        </property>
+        <property name="horizontalScrollMode">
+            <read value="horizontalScrollMode"/>
+            <write value="setHorizontalScrollMode"/>
+        </property>
+    </class>
+    <class name="QFrame">
+        <inherits >
+            <class name="QWidget"/>
+        </inherits>
+        <constructor name="QFrame" declaredIn="QFrame">
+            <modifiers />
+            <arguments >
+                <argument type="QFrame" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QFrame" declaredIn="QFrame">
+            <modifiers />
+            <arguments >
+                <argument type="QFramePrivate" indirections="0" isReference="true" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" type="Qt::WindowFlags" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QFrame" declaredIn="QFrame">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <explicit />
+            </modifiers>
+            <arguments >
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" type="Qt::WindowFlags" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <function name="paintEvent" declaredIn="QFrame">
+            <modifiers />
+            <arguments >
+                <argument type="QPaintEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <property name="frameShape">
+            <read value="frameShape"/>
+            <write value="setFrameShape"/>
+        </property>
+        <property name="frameShadow">
+            <read value="frameShadow"/>
+            <write value="setFrameShadow"/>
+        </property>
+        <property name="lineWidth">
+            <read value="lineWidth"/>
+            <write value="setLineWidth"/>
+        </property>
+        <property name="midLineWidth">
+            <read value="midLineWidth"/>
+            <write value="setMidLineWidth"/>
+        </property>
+        <property name="frameWidth">
+            <read value="frameWidth"/>
+        </property>
+        <property name="frameRect">
+            <read value="frameRect"/>
+            <write value="setFrameRect"/>
+            <designable value="false"/>
+        </property>
+    </class>
+    <class name="QListView">
+        <inherits >
+            <class name="QAbstractItemView"/>
+        </inherits>
+        <enum name="QListView::ResizeMode">
+            <accessPolicy value="public"/>
+            <enumerator >Fixed</enumerator>
+            <enumerator >Adjust</enumerator>
+        </enum>
+        <enum name="QListView::LayoutMode">
+            <accessPolicy value="public"/>
+            <enumerator >SinglePass</enumerator>
+            <enumerator >Batched</enumerator>
+        </enum>
+        <enum name="QListView::ViewMode">
+            <accessPolicy value="public"/>
+            <enumerator >ListMode</enumerator>
+            <enumerator >IconMode</enumerator>
+        </enum>
+        <enum name="QListView::Flow">
+            <accessPolicy value="public"/>
+            <enumerator >LeftToRight</enumerator>
+            <enumerator >TopToBottom</enumerator>
+        </enum>
+        <enum name="QListView::Movement">
+            <accessPolicy value="public"/>
+            <enumerator >Static</enumerator>
+            <enumerator >Free</enumerator>
+            <enumerator >Snap</enumerator>
+        </enum>
+        <function name="contentsSize" declaredIn="QListView">
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="QSize" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="mouseReleaseEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QMouseEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="horizontalOffset" declaredIn="QListView">
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="int" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="layoutMode" declaredIn="QListView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="QListView::LayoutMode" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="visualRegionForSelection" declaredIn="QListView">
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments >
+                <argument type="QItemSelection" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="QRegion" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <constructor name="QListView" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QListView" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QListView" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QListViewPrivate" indirections="0" isReference="true" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QListView" declaredIn="QListView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <explicit />
+            </modifiers>
+            <arguments >
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <function name="isIndexHidden" declaredIn="QListView">
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="bool" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="resizeEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QResizeEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="dropEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QDropEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="dragMoveEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QDragMoveEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="mouseMoveEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QMouseEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="flow" declaredIn="QListView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="QListView::Flow" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="dragLeaveEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QDragLeaveEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="dataChanged" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QModelIndex" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="QVector&lt;int&gt;()" type="QVector&lt;int&gt;" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="paintEvent" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QPaintEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="gridSize" declaredIn="QListView">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <const />
+            </modifiers>
+            <arguments />
+            <return type="QSize" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <signal name="indexesMoved" declaredIn="QListView">
+            <accessPolicy value="protected"/>
+            <modifiers />
+            <arguments >
+                <argument type="QModelIndexList" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </signal>
+        <function name="setSelection" declaredIn="QListView">
+            <modifiers />
+            <arguments >
+                <argument type="QRect" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QItemSelectionModel::SelectionFlags" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <property name="movement">
+            <read value="movement"/>
+            <write value="setMovement"/>
+        </property>
+        <property name="flow">
+            <read value="flow"/>
+            <write value="setFlow"/>
+        </property>
+        <property name="isWrapping">
+            <read value="isWrapping"/>
+            <write value="setWrapping"/>
+        </property>
+        <property name="resizeMode">
+            <read value="resizeMode"/>
+            <write value="setResizeMode"/>
+        </property>
+        <property name="layoutMode">
+            <read value="layoutMode"/>
+            <write value="setLayoutMode"/>
+        </property>
+        <property name="spacing">
+            <read value="spacing"/>
+            <write value="setSpacing"/>
+        </property>
+        <property name="gridSize">
+            <read value="gridSize"/>
+            <write value="setGridSize"/>
+        </property>
+        <property name="viewMode">
+            <read value="viewMode"/>
+            <write value="setViewMode"/>
+        </property>
+        <property name="modelColumn">
+            <read value="modelColumn"/>
+            <write value="setModelColumn"/>
+        </property>
+        <property name="uniformItemSizes">
+            <read value="uniformItemSizes"/>
+            <write value="setUniformItemSizes"/>
+        </property>
+        <property name="batchSize">
+            <read value="batchSize"/>
+            <write value="setBatchSize"/>
+        </property>
+        <property name="wordWrap">
+            <read value="wordWrap"/>
+            <write value="setWordWrap"/>
+        </property>
+        <property name="selectionRectVisible">
+            <read value="isSelectionRectVisible"/>
+            <write value="setSelectionRectVisible"/>
+        </property>
+    </class>
     <class name="QAbstractListModel">
         <inherits >
             <class name="QAbstractItemModel"/>
@@ -583,6 +1725,141 @@
                 <arguments />
             </return>
         </function>
+    </class>
+    <class name="QAbstractScrollArea">
+        <inherits >
+            <class name="QFrame"/>
+        </inherits>
+        <function name="setVerticalScrollBarPolicy" declaredIn="QAbstractScrollArea">
+            <accessPolicy value="public"/>
+            <modifiers />
+            <arguments >
+                <argument type="Qt::ScrollBarPolicy" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <constructor name="QAbstractScrollArea" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QAbstractScrollArea" indirections="0" isReference="true" isConstant="true" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QAbstractScrollArea" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QAbstractScrollAreaPrivate" indirections="0" isReference="true" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <constructor name="QAbstractScrollArea" declaredIn="QAbstractScrollArea">
+            <accessPolicy value="public"/>
+            <modifiers >
+                <explicit />
+            </modifiers>
+            <arguments >
+                <argument default="0" type="QWidget" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+        </constructor>
+        <function name="mouseDoubleClickEvent" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QMouseEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="dragEnterEvent" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QDragEnterEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="dragMoveEvent" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QDragMoveEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="paintEvent" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QPaintEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="resizeEvent" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QResizeEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="eventFilter" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QObject" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+                <argument type="QEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="bool" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <function name="keyPressEvent" declaredIn="QAbstractScrollArea">
+            <modifiers />
+            <arguments >
+                <argument type="QKeyEvent" indirections="1" isReference="false" isConstant="false" isFunctionPointer="false">
+                    <arguments />
+                </argument>
+            </arguments>
+            <return type="void" indirections="0" isReference="false" isConstant="false" isFunctionPointer="false">
+                <arguments />
+            </return>
+        </function>
+        <property name="verticalScrollBarPolicy">
+            <read value="verticalScrollBarPolicy"/>
+            <write value="setVerticalScrollBarPolicy"/>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+            <read value="horizontalScrollBarPolicy"/>
+            <write value="setHorizontalScrollBarPolicy"/>
+        </property>
     </class>
     <class name="QKeyEvent">
         <inherits >
