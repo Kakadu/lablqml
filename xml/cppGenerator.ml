@@ -45,6 +45,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       fprintf h "  CAMLparam%d(%s);\n" len (String.concat ~sep:"," names)
 
   method gen_stub ~prefix ~isQObject classname modif args ?res_n_name h =
+    let print fmt = fprintf h fmt in
     try
       let classname = if isQObject then classname^"_twin" else classname in
       let is_constr = Option.is_none res_n_name in
@@ -69,7 +70,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         let arg_casts = List.map2_exn args arg_casts ~f:(fun arg -> function
           | Success s  -> s
           | CastError _ ->
-              (*printf "arg_cast failed: %s" (string_of_arg arg);*)
+              fprintf h "//arg_cast failed: %s\n%!" (string_of_arg arg);
               raise BreakSilent
         ) in
 
@@ -81,6 +82,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         end else
           (arg_casts, argnames)
       in
+
       assert (List.length argnames = (List.length arg_casts));
       let res_type = match res_n_name with
         | None -> ptrtype_of_classname classname
@@ -93,9 +95,11 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
           match fromCamlCast index res_arg "resname" with
             | Success _ -> ()
             | _ ->
-                (*print_endline "failed resCast"; *)
+                fprintf h  "//failed resCast\n%!";
+                print "//4\n%!";
                 raise BreakSilent
       in
+      print "//5\n%!";
 
       fprintf h "value %s(" native_func_name;
       List.map argnames ~f:(fun x -> "value "^x) |> String.concat ~sep:"," |> fprintf h "%s";
@@ -205,9 +209,9 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     if not (SuperIndex.mem index key) then begin
       printf "Skipping class %s - its not in index\n" (NameKey.to_string key);
       None
-    end else if skipClass ~prefix c then begin
+    (*end else if skipClass ~prefix c then begin
       printf "skipping class %s\n" c.c_name;
-      None
+      None *)
     end else begin
       let classname = c.c_name in
       let subdir = String.concat ~sep:"/" (List.rev prefix) in
@@ -257,11 +261,18 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         *)
         fprintf h "// %s, declared in `%s`, classname=`%s`\n" (string_of_meth m) m.m_declared classname;
         if (is_good_meth ~classname ~index m)&&(m.m_declared = classname)&&(m.m_access = `Public)
-	      && (not (List.mem m.m_modif `Abstract)) then begin
-
+	      && (not (List.mem m.m_modif `Abstract))
+        then begin
           self#gen_stub ~prefix ~isQObject:false classname m.m_access m.m_args
             ?res_n_name:(Some (m.m_res, m.m_name)) h
-          end
+        end
+        (* in simple stubs file we will have stubs only for nativ*)
+          (*
+        else if (List.mem m.m_modif `Abstract) && (is_almost_good_meth ~classname ~index m)
+          then
+            self#gen_stub ~prefix ~isQObject:false (classname^"_twin") `Public m.m_args
+              ?res_n_name:(Some (m.m_res, m.m_name)) h
+          *)
       in
       MethSet.iter ~f c.c_meths;
       MethSet.iter ~f c.c_slots;
@@ -293,7 +304,8 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     | `Protected -> sprintf "prot_%s" cpp_methname
 
   method gen_twin_source ~prefix c h =
-    let classname  = c.c_name in
+    let print fmt = fprintf h fmt in
+    let classname = c.c_name in
     fprintf h "#include <QtWidgets/QtWidgets>\n";
     fprintf h "#include \"headers.h\"\n";
     fprintf h "#include \"enum_headers.h\"\n";
@@ -319,12 +331,32 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
         | `Protected -> MethSet.add a {m with m_access=`Public} ) in
     (* Also we have to generate caller stubs for meths of twin object *)
     let iter_meth m =
+      fprintf h "//generating %s\n" (string_of_meth m);
       let f name =
-        if ((is_almost_good_meth ~classname ~index m) && (List.mem m.m_modif `Abstract))
-          || (is_good_meth ~classname ~index m)
-        then
-          self#gen_stub ~prefix ~isQObject:true classname m.m_access
-            m.m_args ?res_n_name:(Some (m.m_res, (name) )) h
+        if is_good_meth ~classname ~index m
+        then self#gen_stub ~prefix ~isQObject:true classname m.m_access
+          m.m_args ?res_n_name:(Some (m.m_res, (name) )) h
+        else if is_almost_good_meth ~classname ~index m && (List.mem m.m_modif `Abstract)
+        then begin
+          (*print "//Need to make very special code\n%!";
+          print "//for %s\n%!" (string_of_meth m);*)
+          let argnames = "self" :: (List.mapi m.m_args ~f:(fun i _ -> sprintf "arg%d" i)) in
+          print "value native_pub_%s_twin_%s_%s(%s) {\n" classname
+            m.m_name
+            (List.map m.m_args ~f:(fun {arg_type;_} -> arg_type.t_name) |> String.concat ~sep:"_")
+            (List.map argnames ~f:( (^)"value ") |> String.concat ~sep:",");
+          self#declare_params h argnames;
+          print "  ::CAMLlocal2(_ans,meth);\n";
+          print "  meth = caml_get_public_method(self, caml_hash_variant(\"%s\"));\n" m.m_out_name;
+          print "  assert(meth!=0);\n";
+          print "  ::value *args = new ::value[%d];\n" (List.length m.m_args);
+          List.iteri (List.tl_exn argnames) ~f:(fun i name ->
+            print "  args[%d] = %s;\n" i name
+          );
+          print "  _ans = caml_callbackN(meth, %d, args);\n" (List.length argnames);
+          print "  CAMLreturn(_ans);\n";
+          print "}\n"
+        end
       in
       f m.m_name;
       if not (List.mem m.m_modif `Abstract) then
@@ -462,7 +494,7 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
       fromCamlCast index {arg with arg_type=unreference t} name
     ) in
     let arg_casts = List.map arg_casts ~f:(function Success s -> s | _ -> assert false) in
-    self#declare_locals locals h;
+     self#declare_locals locals h;
     List.iter arg_casts ~f:(fun s -> fprintf h "  %s\n" s);
     argnames
 

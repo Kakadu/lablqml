@@ -1,6 +1,6 @@
 #!/bin/sh
 
-lst="Qt QWidget QKeyEvent QAbstractListModel"
+lst="Qt QWidget QKeyEvent QAbstractListModel QListView"
 #lst="QVariant Qt QWidget QKeyEvent"
 #lst="Qt QObject QWidget QKeyEvent"
 #lst="QWidget QAbstractListModel Qt"

@@ -48,13 +48,12 @@ class ocamlGenerator graph dir index = object (self)
       Success (sprintf "[%s]" s)
 
   method toOcamlType_exn ?forcePattern ~low_level arg : string =
-(*    let (_:int) = self#toOcamlType in*)
     let f: pattern option = match forcePattern with x -> x in
     match self#toOcamlType ~forcePattern:f ~low_level arg with
       | Success s -> s
       | CastError err -> failwithf "CastError: %s" err ()
 
-  method gen_constr ~classname ~i h argslist =
+  method gen_constr ~classname ~is_tween h i argslist =
     (* TODO: maybe disable copy constructors *)
     try
       if List.length argslist > 5 then break2file "more then 5 parameters";
@@ -69,17 +68,14 @@ class ocamlGenerator graph dir index = object (self)
         else
           native_name
       in
-      let cpp_twin_func_name = cpp_func_name (classname^"_twin") in
-      let cpp_func_name  = cpp_func_name classname in
+      let cpp_func_name = cpp_func_name (if is_tween then classname^"_twin" else classname) in
 
-      let types = List.map argslist ~f:(fun arg ->
-        self#toOcamlType ~low_level:true arg
-      ) in
-      let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
+      let types = List.map argslist ~f:(self#toOcamlType_exn ~low_level:true) in
       let no_args = (List.length types = 0) in
 
-      let ocaml_func_name = sprintf "create_%s_%d" classname i in
-      let ocaml_twin_func_name =  sprintf "create_%s_twin_%d" classname i in
+      let ocaml_func_name =
+        if not is_tween then sprintf "create_%s_%d" classname i
+        else sprintf "create_%s_twin_%d" classname i in
 
       let print_stub caml_name stub_name =
         fprintf h "external %s' : %s -> [>`qobject] obj = \"%s\"\n" caml_name
@@ -87,10 +83,8 @@ class ocamlGenerator graph dir index = object (self)
           stub_name
       in
       print_stub ocaml_func_name cpp_func_name;
-      print_stub ocaml_twin_func_name cpp_twin_func_name;
 
-      let types = List.map argslist ~f:(self#toOcamlType ~low_level:false) in
-      let types = List.map types ~f:(function | Success s -> s | _ -> break2file "toOcamlType failed") in
+      let types = List.map argslist ~f:(self#toOcamlType_exn ~low_level:false) in
 
       let args2 = List.map3_exn types argslist argnames ~f:(fun _ arg name ->
         match pattern index arg with
@@ -107,7 +101,7 @@ class ocamlGenerator graph dir index = object (self)
           | PrimitivePattern _ -> sprintf "(%s: %s)" name ttt
           | ObjectDefaultPattern -> sprintf "(%s: %s option)" name (ocaml_class_name start.t_name)
           | ObjectPattern -> sprintf "(%s: %s)" name (ocaml_class_name start.t_name)
-      ) in
+      ) in(*
       let print_main_creator ocaml_func_name =
         let s1 = sprintf "let %s %s = " ocaml_func_name
           (if no_args then "()" else String.concat ~sep:" " args1) in
@@ -117,13 +111,12 @@ class ocamlGenerator graph dir index = object (self)
         fprintf h "%s' %s %s\n" ocaml_func_name (if no_args then "()" else String.concat ~sep:" " args2)
           (sprintf "\n    |> new %s" (ocaml_class_name classname))
       in
-      print_main_creator ocaml_func_name;
-      print_main_creator ocaml_twin_func_name;
+      print_main_creator ocaml_func_name;*)
       ()
     with BreakSilent -> ()
       | Break2File s -> fprintf h "(* %s *)\n" s
 
-  method private gen_meth_stubs ~isQObject ~is_abstract ~classname h meth =
+  method private gen_meth_stubs ~isQObject ~classname h meth =
     fprintf h "  (* method %s *)\n" (string_of_meth meth);
     assert(meth.m_access <> `Private);
     let ocaml_classname = ocaml_class_name classname in
@@ -182,19 +175,47 @@ class ocamlGenerator graph dir index = object (self)
     match pattern index (simple_arg res) with
       | ObjectPattern -> begin
         let res_classname = ocaml_class_name res.t_name in
+           let isQObject =
+             let key = NameKey.key_of_fullname res.t_name in
+             isQObject ~key graph
+           in
         fprintf h "\n";
         fprintf h "    |> (function\n";
-        fprintf h "       | Some o -> Some(match Qtstubs.get_caml_object o with\n";
+        fprintf h "       | None -> None\n";
+        (
+        match classify2_exn ~index ~graph res.t_name with
+          | `NonQObject -> begin
+            (* non QObject classes does not have twin class and we have not place to store OCaml object *)
+            (* abstract classes will not be marked `virtual` in OCaml. We will just not provide *)
+            (* constructors for them *)
+            fprintf h "       | Some o -> Some (new %s o)" res_classname
+          end
+          | `QObject `Normal ->
+              (* this class can be twin or non-twin *)
+              fprintf h "       | Some o -> Some(match Qtstubs.get_caml_object o with\n";
+              fprintf h "                       | Some x -> (x:>%s)\n" res_classname;
+              fprintf h "                       | None -> new %s_non_twin o\n" res_classname
+          | `QObject `SemiAbstract ->
+              (* also can be twin or non-twin *)
+              fprintf h "       | Some o -> Some(match Qtstubs.get_caml_object o with\n";
+              fprintf h "                       | Some x -> (x:>%s_twin)\n" res_classname;
+              fprintf h "                       | None -> new %s_non_twin o\n" res_classname
+          | `QObject `Abstract ->
+              (* will be created only outside and non-inheritable *)
+              fprintf h "       | Some o -> Some (new %s o)" res_classname
+
+        );
+          (*
+        fprintf h "       |  Some o -> Some(match Qtstubs.get_caml_object o with\n";
         fprintf h "                     | Some x -> (x:>%s)\n" res_classname;
-        fprintf h "                     | None -> new %s o)\n"
-          (if is_abstract_class ~prefix:[] index res.t_name
-           then res_classname ^ "_abstrhelper"
-           else res_classname);
-        fprintf h "       | None -> None)\n";
+        fprintf h "                     | None -> new %s o)\n"; *)
+        fprintf h "  )\n"
       end
       | _ -> ()
 
-  (* generates member code*)
+  (* generates member code
+   *  ~is_abstract true if method is pure virtual
+   * *)
   method gen_meth ?new_name ~isQObject ~is_abstract ~classname h (meth: meth MethSet.elt_) =
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
     try
@@ -276,6 +297,7 @@ class ocamlGenerator graph dir index = object (self)
 
   method gen_slot ~classname h (slot: Parser.MethKey.t) =
     try
+      let (_:string) = classname in
       (match slot.m_access with `Public -> () | `Private | `Protected -> raise BreakSilent);
       let (name,args) = (slot.m_name,slot.m_args) in
       let res = simple_arg slot.m_res in
@@ -346,15 +368,23 @@ class ocamlGenerator graph dir index = object (self)
     print_endline "end of classes generation";(*
     fprintf h1 " aa = object end\n\n\n\n\n";*)
 
+    fprintf h1 "(* stubs for creating OCaml classes values from C++ *)\n";
     List.iter !classes ~f:(fun ( (lst,_) as key) ->
       match SuperIndex.find_exn index key with
         | Class (c,_) ->
           let is_abstr = is_abstract_class index ~prefix:[] c.c_name in
-          let classname =
-           (if is_abstr then sprintf "%s_abstrhelper" else sprintf "%s") (ocaml_class_name (List.hd_exn lst))
-          in
+          let classname = List.hd_exn lst in
+          let ocaml_classname = ocaml_class_name classname in
+          fprintf h1 "(* classname = %s, isQObject = %b *)\n" classname
+            (isQObject ~key:(NameKey.make_key ~prefix:[] ~name:classname) graph);
           fprintf h1 "let () = Callback.register \"make_%s\" (new %s)\n"
-            (String.concat ~sep:"." lst) classname
+            (String.concat ~sep:"." lst)
+            (match classify2_exn classname ~index ~graph with
+              | `NonQObject -> ocaml_classname
+              | `QObject `Normal -> ocaml_classname
+              | `QObject `SemiAbstract -> ocaml_classname^"_non_twin"
+              | `QObject `Abstract -> ocaml_classname
+            ) (* TODO: check code above*)
         | _ -> assert false
     );
 
@@ -421,42 +451,192 @@ class ocamlGenerator graph dir index = object (self)
     else if skipClass ~prefix c then print_endline ("Skipping class " ^ c.c_name)
     else begin
       let classname = c.c_name in
-      printf "Generating class %s\n" classname;
-      let is_abstract = is_abstract_class ~prefix index classname in
+      printf "Generating class %s\n%!" classname;
+      let print_c fmt = fprintf h_classes fmt in
+      let print_cre fmt = fprintf h_constrs fmt in
+      let print_stu fmt = fprintf h_stubs fmt in
 
+      let clas_sort = classify_class_exn classname ~index in
+      let is_abstract = is_abstract_class ~prefix index classname in
       let ocaml_classname = ocaml_class_name classname in
       let isQObject = isQObject graph ~key in
-      fprintf h_stubs "\n(* ********** class %s *********** *)\n" classname;
-      fprintf h_stubs "(* isQObject=%b\tis_abstract=%b  *)\n" isQObject is_abstract;
-      if is_abstract then
-        fprintf h_constrs "(* class %s has pure virtual members or no constructors *)\n" classname
-      else (
-        List.iteri c.c_constrs ~f:(fun i c ->
-          self#gen_constr ~classname ~i h_constrs c
-        )
-      );
 
-      fprintf h_classes " %s%s me = object(self)\n" (if is_abstract then "virtual " else "") ocaml_classname;
-      fprintf h_classes "  method handler : [`qobject] obj = me \n\n";
-      let need_twin = does_need_twin ~isQObject classname ~index in
-      if need_twin then
-        fprintf h_classes
-            "  initializer print_endline \"initializing %s\"; Qtstubs.set_caml_object me self\n"
-            ocaml_classname;
+      let () =
+        let s = sprintf "(* isQObject=%b\t classification=%s *)\n" isQObject
+          (match clas_sort with | `Normal -> "normal"
+            | `SemiAbstract -> "SemiAbstract" | `Abstract -> "Abstract")
+        in
+        print_stu "\n(* ********** class %s *********** *)\n" classname;
+        print_stu "%s" s;
+        print_c "%s" s
+      in
 
-      List.iter c.c_sigs ~f:(self#gen_signal h_classes);
+      begin match (clas_sort,isQObject) with
+        | (`Normal,false) ->
+            printf "Normal non QObject class %s\n%!" classname;
+            List.iteri c.c_constrs ~f:(self#gen_constr ~is_tween:isQObject ~classname h_constrs);
+            print_c " %s me = object(self)\n" ocaml_classname;
+            print_c "  method handler  : [`qobject] obj = me \n\n";
+
+            (* we know that there is no almost good methods here.*)
+            let good_meths = MethSet.filter c.c_meths ~f:(is_good_meth ~classname ~index) in
+            MethSet.iter good_meths ~f:(fun m ->
+              let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~classname h_stubs m in
+	          if (m.m_access=`Public) then stub false m;
+              stub ~isQObject m;
+              stub ~isQObject
+	            {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
+              self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
+            );
+            (* TODO: slots *)
+            (* TODO: signals *)
+
+        | (`Normal,true) ->
+            printf "Normal class %s\n%!" classname;
+            (* twin class *)
+            (* We can create both QObject and non QObject classes but will only 1st *)
+            List.iteri c.c_constrs ~f:(self#gen_constr ~is_tween:true ~classname h_constrs);
+            print_c " %s me = object(self)\n" ocaml_classname;
+            print_c "  method handler  : [`qobject] obj = me \n\n";
+            print_c "  initializer print_endline \"initializing %s\";\n" ocaml_classname;
+            print_c "              Qtstubs.set_caml_object me self\n";
+            (* we know that there is no almost good methods here.*)
+            let good_meths = MethSet.filter c.c_meths ~f:(is_good_meth ~classname ~index) in
+            let do_method m =
+              let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~classname h_stubs m in
+	          if (m.m_access=`Public) then stub false m;
+              stub ~isQObject m;
+              stub ~isQObject
+	            {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
+              self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
+            in
+            MethSet.iter good_meths ~f:do_method;
+            (* slots *)
+            let good_slots = MethSet.filter c.c_slots ~f:(fun m ->
+              not (List.mem m.m_modif `Abstract) &&
+                m.m_access = `Public &&
+                is_good_meth ~classname ~index m
+            ) in
+            MethSet.iter good_slots ~f:(fun (m:meth) ->
+              self#gen_slot ~classname h_classes m;
+              do_method m;
+            );
+            (* TODO: signals *)
+            print_c "end\n";
+            print_c "class %s_non_twin me = object(self)\n" ocaml_classname;
+            print_c "  method handler : [`qobject] obj = me\n\n";
+            let good_meths = MethSet.filter good_meths
+              ~f:(fun m -> m.m_access = `Public) in
+            let f = fun m ->
+              self#gen_meth_stubs ~isQObject:false ~classname h_stubs m;
+              self#gen_meth ~isQObject:false ~is_abstract:false ~classname h_classes m
+            in
+            MethSet.iter good_meths ~f;
+            MethSet.iter good_slots ~f;
+            (* TODO: slots *)
+            (* TODO: signals *)
+
+        | (`SemiAbstract,true) ->
+            printf "SemiAbstract class %s\n%!" classname;
+            (* Two classes needed.
+             * * Virtual twin class where user can implement virtual methods
+             * * Non-virtual class for native Qt classes
+             * *)
+            (* non-twin class *)
+            print_c "%s_non_twin me = object (self)\n" ocaml_classname;
+            print_c "  method handler  : [`qobject] obj = me \n\n";
+            let pub_meths = MethSet.filter c.c_meths
+              ~f:(fun m -> (m.m_access=`Public) && is_good_meth ~index ~classname m) in
+            MethSet.iter pub_meths ~f:(fun m ->
+              let isQObject = false in
+              self#gen_meth_stubs ~isQObject ~classname h_stubs m;
+              self#gen_meth ~isQObject ~classname ~is_abstract:false h_classes m
+            );
+            print_c "end\n";
+            (* twin class *)
+            List.iteri c.c_constrs ~f:(self#gen_constr ~is_tween:true ~classname h_constrs);
+            print_c "and virtual %s me = object(self)\n" ocaml_classname;
+            print_c "  method handler  : [`qobject] obj = me \n\n";
+            print_c "  initializer print_endline \"initializing %s\";\n" ocaml_classname;
+            print_c "              Qtstubs.set_caml_object me self\n";
+
+            let (abstrs, normal) = MethSet.partition_tf c.c_meths ~f:(fun m -> List.mem m.m_modif `Abstract)
+            in
+            let normal = MethSet.filter normal ~f:(is_good_meth ~classname ~index) in
+            MethSet.iter normal ~f:(fun m ->
+              let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~classname h_stubs m in
+	          if (m.m_access=`Public) then stub false m;
+              stub ~isQObject m;
+              stub ~isQObject
+	            {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
+              self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
+            );
+            MethSet.iter abstrs ~f:(fun m ->
+              print_c "(* %s*)\n" (string_of_meth m);
+              let types = List.map m.m_args ~f:(self#toOcamlType_exn ~low_level:false) in
+              let argnames = List.mapi m.m_args ~f:(fun i _ -> "x"^(string_of_int i)) in
+              let (xs,ys) = self#get_params_helper types m.m_args argnames m.m_out_name in
+              print_c "  method virtual %s: %s\n" m.m_out_name (String.concat ~sep:"->" types)
+
+            );
+        (*
+            print_c "and %s me = object(self)\n" ocaml_classname;
+            print_c "  inherit %s_pub_only me as super\n" ocaml_classname;
+
+            MethSet.iter abstrs ~f:(fun m ->
+	          self#gen_meth_stubs ~isQObject:true ~classname h_stubs m;
+
+              print_c "(* almost_good abstract meth: %s*)\n%!" (string_of_meth m);
+              let types = List.map m.m_args ~f:(self#toOcamlType_exn ~low_level:false) in
+              let argnames = List.mapi m.m_args ~f:(fun i _ -> "x"^(string_of_int i)) in
+              let (xs,ys) = self#get_params_helper types m.m_args argnames m.m_out_name in
+              print_c "method %s %s =\n" m.m_out_name (String.concat ~sep:" " xs);
+              print_c "  (match Qtstubs.get_class_name me with\n";
+              print_c "   | Some \"%s_twin\" -> %s_twin_%s' self#handler %s\n" classname
+                (ocaml_class_name classname) m.m_out_name (String.concat ~sep:" " ys);
+              print_c "   | Some \"%s\" -> failwith(Printf.sprintf \"Can't call protected abstract meth\")\n"
+                classname;
+              print_c "   | ____ -> failwith \"Bug in logic\"\n";
+              print_c "  )";
+              self#postconvert m.m_res h_classes;
+
+              print_c "\n"
+            )
+                            *)
+        | (`SemiAbstract,false)
+            (* We can override methods in non QObject class because we does not know where to store
+             * OCaml object value *)
+        | (`Abstract,_) ->
+            printf "Totally abstract class %s\n%!" classname;
+            (* this class will not have twin object because some methods are not translatable to OCaml*)
+            (* i.e. it will be like non QObject class *)
+            let isQObject = false in
+            (* We will not mark it virtual, we just will not provide constructors to create it
+             * This class can be a return type in some method, we will use ocaml keyword  `new`
+             * to create it *)
+            (*fprintf h_constrs "(* sort of class %s is `Abstract *)\n" classname;*)
+
+            print_c " %s me = object(self)\n" ocaml_classname;
+            print_c "   method handler : [`qobject] obj = me\n";
+            MethSet.iter c.c_meths ~f:(fun m ->
+              let is_abstract = List.mem m.m_modif `Abstract in
+              if m.m_access = `Public && is_good_meth ~classname ~index m
+              then (
+                self#gen_meth_stubs ~isQObject ~classname h_stubs m;
+                self#gen_meth ~is_abstract:false ~isQObject ~classname h_classes m
+              )
+            );
+            (* TODO: slots *)
+            (* TODO: signals *)
+
+      end
+(*
       let itermeth_nocheck ~isQObject m =
 	    if m.m_access=`Protected && not isQObject then ()
 	    else if not need_twin then begin
-	      self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
+	      self#gen_meth_stubs ~isQObject ~classname h_stubs m;
           self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
 	    end else (
-          let stub ~isQObject m = self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m in
-	      if (m.m_access=`Public) then stub false m;
-          stub ~isQObject m;
-          stub ~isQObject
-	        {{m with m_out_name="call_super_"^m.m_out_name} with m_name="call_super_"^m.m_name};
-          self#gen_meth ~isQObject ~is_abstract:false ~classname h_classes m
 	    )
       in
       let itermeth ~isQObject m =
@@ -471,7 +651,7 @@ class ocamlGenerator graph dir index = object (self)
           (* C++ code will be generated to call OCaml's code.
            * in OCaml side this code should be written by the human after sublcassing *)
           (* I really don't know what to generate there *)
-	      self#gen_meth_stubs ~isQObject ~is_abstract ~classname h_stubs m;
+	      self#gen_meth_stubs ~isQObject ~classname h_stubs m;
           self#gen_meth ~isQObject ~is_abstract:true ~classname h_classes m
         end
         else () (* Do nothing *)
@@ -493,34 +673,14 @@ class ocamlGenerator graph dir index = object (self)
           then itermeth_nocheck ~isQObject:false m
           else if (is_almost_good_meth ~classname ~index m) && (List.mem m.m_modif `Abstract)
           then begin
-	        self#gen_meth_stubs ~isQObject:true ~is_abstract:false ~classname h_stubs m;
 
-            let printc fmt =
-              fprintf h_classes "  ";
-              fprintf h_classes fmt
-            in
-            printc "(* almost_good abstract meth: %s*)\n%!" (string_of_meth m);
-            let types = List.map m.m_args ~f:(self#toOcamlType_exn ~low_level:false) in
-            let argnames = List.mapi m.m_args ~f:(fun i _ -> "x"^(string_of_int i)) in
-            let (xs,ys) = self#get_params_helper types m.m_args argnames m.m_out_name in
-            printc "method %s %s =\n" m.m_out_name (String.concat ~sep:" " xs);
-            printc "  (match Qtstubs.get_class_name me with\n";
-            printc "   | Some \"%s_twin\" -> %s_twin_%s' self#handler %s\n" classname
-              (ocaml_class_name classname) m.m_out_name (String.concat ~sep:" " ys);
-            printc "   | Some \"%s\" -> failwith (Printf.sprintf \"Can't call protected abstract meth\")\n"
-              classname;
-            printc "   | ____ -> failwith \"Bug in logic\"\n";
-            printc "  )";
-            self#postconvert m.m_res h_classes;
-
-            printc "\n"
 (*            self#gen_meth ~isQObject:true ~is_abstract:false ~classname h_classes m *)
           end
         );
         MethSet.iter public_slots ~f:(itermeth ~isQObject:false);
         List.iter c.c_sigs ~f:(self#gen_signal h_classes);
       )
-
+        *)
     end
 
   method makefile dir =
