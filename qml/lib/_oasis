@@ -1,0 +1,20 @@
+OASISFormat: 0.3
+Name:        qml_wrap
+Version:     0.1
+Synopsis:    wrappers for QML objects
+Authors:     Kakadu
+License:     LGPL-3.0 with OCaml linking exception
+Plugins:     DevFiles (0.3), META (0.3), StdFiles (0.3)
+
+Library qml_wrap
+  Path:       .
+  BuildTools: ocamlbuild
+  Modules:    QmlContext
+  CSources:     stubs.c,stubs.h
+  CCOpt: -std=c++0x -I$QT5/include -x c++ -O2 
+  #CCLib: -L$QT5/lib
+
+
+Test test1
+  Command: test1
+  

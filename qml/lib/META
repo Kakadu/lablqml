@@ -1,0 +1,11 @@
+# OASIS_START
+# DO NOT EDIT (digest: e7e1896eee09d4daebac94b5a9065806)
+version = "0.1"
+description = "wrappers for QML objects"
+archive(byte) = "qml_wrap.cma"
+archive(byte, plugin) = "qml_wrap.cma"
+archive(native) = "qml_wrap.cmxa"
+archive(native, plugin) = "qml_wrap.cmxs"
+exists_if = "qml_wrap.cma"
+# OASIS_STOP
+

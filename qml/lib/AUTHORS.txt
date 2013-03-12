@@ -1,0 +1,5 @@
+(* OASIS_START *)
+(* DO NOT EDIT (digest: 6459c36ea707e3fcb6fdaf7852b55943) *)
+Authors of qml_wrap
+Kakadu
+(* OASIS_STOP *)
