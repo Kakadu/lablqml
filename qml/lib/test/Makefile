@@ -1,12 +1,32 @@
-CC=g++ -std=c++0x -I$$QT5_ROOT/qtbase/include -O2
+MOC=$$QT5/bin/moc
+CC=g++ -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -O2 -I../_build -I`ocamlc -where`
+CLINK=g++ -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
 OUT=main
-all:
-	ocamlfind opt -output-obj -dstartup ../_build/QmlContext.cmx  \
-	-linkall -verbose -o camlcode.o
-	$(CC) -fPIC -c main.cpp -I`ocamlc -where`
-	g++ -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Quick -lQt5Gui \
-	../_build/stubs.o camlcode.o  main.o -L"`ocamlc -where`" $(NATIVECCLIBS) -lasmrun \
+GEN_CMX=A.cmx
+GEN_CPP=A_c.o moc_A_c.o
+GEN_MOC=A_c.cpp
+.SUFFIXES: .cpp .h .o .ml .cmx .cmo .cmi
+.PHONY: all clean
+
+all: gen_stubs $(GEN_CMX) library_code $(GEN_MOC) $(GEN_CPP) main.o
+	$(CLINK) \
+	../_build/stubs.o camlcode.o $(GEN_CPP) main.o -L"`ocamlc -where`" $(NATIVECCLIBS) -lasmrun \
 	-o $(OUT)
+
+library_code:
+	ocamlfind opt -output-obj -dstartup $(GEN_CMX) ../_build/qml_wrap.cmxa -linkall -o camlcode.o
+
+gen_stubs: input_yaml
+	./mocml -qml_wrap
+
+moc_%.cpp: %.h
+	$(MOC) $< > $@
+
+.cpp.o:
+	$(CC) -c $< -I.
+
+.ml.cmx:
+	ocamlfind opt -c $<
 
 clean:
 	rm *.o *.cm[oiax] *.cmxa *.o.startup.s -f

@@ -1,7 +1,7 @@
 #include "stubs.h"
 
 
-void registerView(const QString& name, QQmlContext* v) {
+void registerContext(const QString& name, QQmlContext* v) {
   qDebug() << "void registerView(....)";
   //CAMLparam0();
   static value *closure = nullptr;
@@ -19,7 +19,18 @@ void registerView(const QString& name, QQmlContext* v) {
   Q_UNUSED(_ans);
   //CAMLreturn0;
 }
+// ctx:t -> name:string -> 'a  -> unit
+extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj) {
+  CAMLparam3(_ctx,_name,_cppObj);
 
+  Q_ASSERT( Tag_val(_ctx) == Abstract_tag );
+  Q_ASSERT( Tag_val(_cppObj) == Abstract_tag );
+  QQmlContext *ctx =  ((QQmlContext*) Field(_ctx,0));
+  QString name = QString(String_val(_name));
+  QObject *o =  ((QObject*) Field(_cppObj,0));
+  ctx->setContextProperty(name, o);
+  CAMLreturn(Val_unit);
+}
 extern "C" value caml_foo(value x) {
     CAMLparam1(x);
 

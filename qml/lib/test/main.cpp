@@ -13,7 +13,7 @@ int main(int argc, char ** argv)
     view.setResizeMode(QQuickView::SizeRootObjectToView);
 
     QQmlContext *ctxt = view.rootContext();
-    registerView(QString("myModel"), ctxt);
+    registerContext(QString("myModel"), ctxt);
 
     //view.setSource(QUrl("qrc:view.qml"));
     //view.show();
