@@ -8,13 +8,13 @@ GEN_MOC=A_c.cpp
 .SUFFIXES: .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all clean
 
-all: gen_stubs $(GEN_CMX) library_code $(GEN_MOC) $(GEN_CPP) main.o
+all: gen_stubs $(GEN_CMX) program.cmx library_code $(GEN_MOC) $(GEN_CPP) main.o
 	$(CLINK) \
 	../_build/stubs.o camlcode.o $(GEN_CPP) main.o -L"`ocamlc -where`" $(NATIVECCLIBS) -lasmrun \
 	-o $(OUT)
 
 library_code:
-	ocamlfind opt -output-obj -dstartup $(GEN_CMX) ../_build/qml_wrap.cmxa -linkall -o camlcode.o
+	ocamlfind opt -output-obj -dstartup $(GEN_CMX) program.cmx ../_build/qml_wrap.cmxa -linkall -o camlcode.o
 
 gen_stubs: input_yaml
 	./mocml -qml_wrap
