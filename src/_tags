@@ -1,0 +1,87 @@
+# OASIS_START
+# DO NOT EDIT (digest: f644b3a55e04288567fa5cb864e9f54b)
+# Ignore VCS directories, you can use the same kind of rule outside 
+# OASIS_START/STOP if you want to exclude directories that contains 
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library lablqt
+"lib/lablqt.cmxs": use_lablqt
+<lib/*.ml{,i}>: pkg_sexplib.syntax
+<lib/*.ml{,i}>: pkg_sexplib
+<lib/*.ml{,i}>: pkg_core
+<lib/*.ml{,i}>: pkg_threads
+<lib/*.ml{,i}>: pkg_str
+<lib/*.ml{,i}>: pkg_tyxml
+<lib/*.ml{,i}>: pkg_tyxml.parser
+<lib/*.ml{,i}>: pkg_ocamlgraph
+<lib/*.ml{,i}>: pkg_tarjangraph
+# Executable generator
+"generator/generator.native": use_lablqt
+"generator/generator.native": pkg_sexplib.syntax
+"generator/generator.native": pkg_sexplib
+"generator/generator.native": pkg_core
+"generator/generator.native": pkg_threads
+"generator/generator.native": pkg_str
+"generator/generator.native": pkg_tyxml
+"generator/generator.native": pkg_tyxml.parser
+"generator/generator.native": pkg_ocamlgraph
+"generator/generator.native": pkg_tarjangraph
+<generator/*.ml{,i}>: use_lablqt
+<generator/*.ml{,i}>: pkg_sexplib.syntax
+<generator/*.ml{,i}>: pkg_sexplib
+<generator/*.ml{,i}>: pkg_core
+<generator/*.ml{,i}>: pkg_threads
+<generator/*.ml{,i}>: pkg_str
+<generator/*.ml{,i}>: pkg_tyxml
+<generator/*.ml{,i}>: pkg_tyxml.parser
+<generator/*.ml{,i}>: pkg_ocamlgraph
+<generator/*.ml{,i}>: pkg_tarjangraph
+# Executable xmltool
+"xmltool/xmltool.native": use_lablqt
+"xmltool/xmltool.native": pkg_sexplib.syntax
+"xmltool/xmltool.native": pkg_sexplib
+"xmltool/xmltool.native": pkg_core
+"xmltool/xmltool.native": pkg_threads
+"xmltool/xmltool.native": pkg_str
+"xmltool/xmltool.native": pkg_tyxml
+"xmltool/xmltool.native": pkg_tyxml.parser
+"xmltool/xmltool.native": pkg_ocamlgraph
+"xmltool/xmltool.native": pkg_tarjangraph
+<xmltool/*.ml{,i}>: use_lablqt
+<xmltool/*.ml{,i}>: pkg_sexplib.syntax
+<xmltool/*.ml{,i}>: pkg_sexplib
+<xmltool/*.ml{,i}>: pkg_core
+<xmltool/*.ml{,i}>: pkg_threads
+<xmltool/*.ml{,i}>: pkg_str
+<xmltool/*.ml{,i}>: pkg_tyxml
+<xmltool/*.ml{,i}>: pkg_tyxml.parser
+<xmltool/*.ml{,i}>: pkg_ocamlgraph
+<xmltool/*.ml{,i}>: pkg_tarjangraph
+# Executable mocml
+"mocml/mocml.native": pkg_ocaml-syck
+"mocml/mocml.native": pkg_sexplib.syntax
+"mocml/mocml.native": pkg_sexplib
+"mocml/mocml.native": pkg_core
+"mocml/mocml.native": pkg_threads
+"mocml/mocml.native": pkg_str
+<mocml/*.ml{,i}>: pkg_ocaml-syck
+<mocml/*.ml{,i}>: pkg_sexplib.syntax
+<mocml/*.ml{,i}>: pkg_sexplib
+<mocml/*.ml{,i}>: pkg_core
+<mocml/*.ml{,i}>: pkg_threads
+<mocml/*.ml{,i}>: pkg_str
+# OASIS_STOP
+"mocml/parse.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
+"mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
+"lib/generators.ml": syntax_camlp4o, package_sexplib.syntax
+"lib/parser.ml": syntax_camlp4o, package_sexplib.syntax
+
