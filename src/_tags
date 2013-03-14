@@ -80,7 +80,7 @@
 <mocml/*.ml{,i}>: pkg_threads
 <mocml/*.ml{,i}>: pkg_str
 # OASIS_STOP
-"mocml/parse.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
+"mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
 "mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
 "lib/generators.ml": syntax_camlp4o, package_sexplib.syntax
 "lib/parser.ml": syntax_camlp4o, package_sexplib.syntax

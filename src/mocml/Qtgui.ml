@@ -1,11 +1,11 @@
 open Core.Std
-open Parse
+open ParseYaml
 open Printf
 open Helpers
 
 (* Generatess C++ stub for method *)
-let gen_meth ~classname ~ocaml_methname ?(invokable=false) 
-    file_h file_cpp ((name,args,res) as slot) = 
+let gen_meth ~classname ~ocaml_methname ?(invokable=false)
+    file_h file_cpp ((name,args,res) as slot) =
   printf "Generatig meth '%s'\n" name;
   let print_h   fmt = fprintf file_h   fmt in
   let print_cpp fmt = fprintf file_cpp fmt in
@@ -14,17 +14,17 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
   let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
   let lst = List.map args ~f:to_cpp_type in
   let arg' = List.map2_exn lst argnames ~f:(sprintf "%s %s") in
-  let () = 
+  let () =
     print_h  "  %s%s %s(%s);\n"
     (if invokable then "Q_INVOKABLE " else "") (to_cpp_type res)
     name (String.concat ~sep:"," arg') in
-  let () = 
+  let () =
     print_cpp "%s %s::%s(%s) {\n" (to_cpp_type res) classname
     name (String.concat ~sep:"," arg') in
   print_cpp "  CAMLparam0();\n";
-  let locals = 
-    (match res with `Simple _ -> [] | `List _ -> ["head"]) 
-    @ (if List.exists args ~f:(function `List _ -> true | `Simple _ -> false) 
+  let locals =
+    (match res with `Simple _ -> [] | `List _ -> ["head"])
+    @ (if List.exists args ~f:(function `List _ -> true | `Simple _ -> false)
       then ["list_cons_helper"] else [])
     @ ["_ans"]
   in
@@ -34,10 +34,10 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
   print_cpp "  value *closure = caml_named_value(\"%s\");\n" ocaml_closure;
   print_cpp "  Q_ASSERT_X(closure!=NULL, \"%s::%s\",\n"      classname name;
   print_cpp "             \"ocaml's closure `%s` not found\");\n"   ocaml_closure;
-  if List.exists args ~f:(function `List _ -> true | `Simple _ -> false) 
+  if List.exists args ~f:(function `List _ -> true | `Simple _ -> false)
   then print_cpp "  value list_cons_helper = 0;\n";
   let n = List.length argnames in
-  let call_closure_str = match n with 
+  let call_closure_str = match n with
       | 0 -> "caml_callback(*closure, Val_unit)"
       | _ -> begin
         print_cpp "  value *args = new value[%d];\n" n;
@@ -48,11 +48,11 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
             | `Simple "float"  -> failwithf "float values are not yet supported" ()
             | `Simple "unit"   -> print_cpp "  args[%d] = Val_unit;\n" i
             | `Simple "QString"
-            | `Simple "string" -> 
+            | `Simple "string" ->
                 print_cpp "  args[%d] = caml_copy_string(%s.toLocal8Bit().data() );\n" i name
-            | `Simple s when is_qt_classname s -> 
+            | `Simple s when is_qt_classname s ->
                 print_cpp "  args[%d] = (%s!=0)? Some_val(%s) : Val_none;\n" i name name
-            | `List "int" -> 
+            | `List "int" ->
                 print_cpp "  if (%s.length() == 0) args[%d] = Val_emptylist;\n" name i;
                 print_cpp "  else {\n";
                 print_cpp "    auto i = %s.end()-1;\n" name;
@@ -73,7 +73,7 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
         sprintf "caml_callbackN(*closure, %d, args)" n
       end
     in
-    let get_conv ?(varname="_ans") = function 
+    let get_conv ?(varname="_ans") = function
       | "int"   -> sprintf "Int_val(%s)" varname
       | "double"
       | "float" -> assert false
@@ -87,11 +87,11 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
       print_cpp "  %s;\n" call_closure_str;
       print_cpp "  CAMLreturn0;\n"
     end else begin
-      match res with 
+      match res with
         | `Simple s ->
             print_cpp "  _ans = %s;\n" call_closure_str;
             print_cpp "  return %s;\n" (get_conv s)
-        | `List s  -> 
+        | `List s  ->
             let conv = get_conv ~varname:"head" s in
             print_cpp "    QList<%s> ans;\n" s;
             print_cpp "    value head;\n";
@@ -100,13 +100,13 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
             print_cpp "       ans << %s;\n" conv;
             print_cpp "       _ans = Field(_ans, 1);\n";
             print_cpp "    };\n";
-            print_cpp "    CAMLreturnT(QList<int>,ans);\n"            
+            print_cpp "    CAMLreturnT(QList<int>,ans);\n"
     end;
     print_cpp "}\n";
     flush file_cpp
 
 
-let gen_cpp lst = 
+let gen_cpp lst =
   let h_file = open_out (classname ^ ".h") in
   List.iter [
     "#include <Qt/QtGui>\n";
@@ -142,9 +142,9 @@ let gen_ml lst =
   print_cpp "open Stub_helpers\n";
   print_cpp "open Classes\n\n";
 
-  List.iter lst ~f: (fun ((name, lst, typ) as slot) -> 
-    
-    let argnames = 
+  List.iter lst ~f: (fun ((name, lst, typ) as slot) ->
+
+    let argnames =
       List.mapi lst ~f: (fun i _ -> "x" ^ string_of_int i) in
     let stub_name = name_for_slot slot in
     print_cpp "let %s %s =\n" stub_name (String.concat ~sep:" " argnames);
@@ -166,9 +166,9 @@ let gen_ml lst =
   List.iter lst ~f: (fun (name, lst', typ) ->
     let argnames = List.mapi lst' ~f:(fun i _ -> sprintf "arg%d" i) in
     print_cpp "  method slot_%s = object (self: (<%s..>, %s%s) #ssslot)\n" name
-      (List.map2_exn argnames lst' 
+      (List.map2_exn argnames lst'
          ~f:(fun name t -> sprintf "%s:%s; " name (to_ocaml_typ t)) |> String.concat)
-      (lst' |> List.map ~f:to_ocaml_typ |> String.concat ~sep:"->") 
+      (lst' |> List.map ~f:to_ocaml_typ |> String.concat ~sep:"->")
       (match typ with `Simple s -> s| `List s -> s ^ " list");
     print_cpp "    method name = \"%s(%s)\"\n" name
       (lst' |> List.map ~f:to_cpp_type |> String.concat ~sep:",")
@@ -181,4 +181,3 @@ let gen_ml lst =
   print_cpp "external create_%s': unit -> [`qobject] obj = \"create%s\"\n" classname classname;
   print_cpp "let create_%s () = create_%s' () |> new %s\n" classname classname ocaml_classname;
   Out_channel.close h
-

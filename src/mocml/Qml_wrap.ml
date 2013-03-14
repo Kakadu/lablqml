@@ -2,7 +2,7 @@ open Core.Std
 module B=Bigbuffer
 open Helpers
 open B.Printf
-open Parse.Yaml2.Types
+open ParseYaml.Yaml2.Types
 
 let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   let b_h   = B.create 100 in

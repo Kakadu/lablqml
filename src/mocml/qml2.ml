@@ -1,17 +1,17 @@
 open Core
 open Core.Std
-open Parse
+open ParseYaml
 open Printf
 open Helpers
 
-open Parse.Yaml2
+open ParseYaml.Yaml2
 open Types
 
 open Bigbuffer.Printf
 include Qml
 
-(* Generates stubs which calls method of specific class. 
- * This stub will be called from 
+(* Generates stubs which calls method of specific class.
+ * This stub will be called from
  *)
 let gen_stub buf ~classname ~meth:(name,args,res_typ) caml_stub_name =
   let p fmt = bprintf buf fmt in
@@ -28,17 +28,17 @@ let gen_stub buf ~classname ~meth:(name,args,res_typ) caml_stub_name =
   print_local_declarations buf locals;
   p "  %s *obj = (%s*) (Field(_obj,0));\n" classname classname;
   let get_cpp_var = getter_of_cppvars "xx" in
-  
-  let calling_str = 
+
+  let calling_str =
     if args = [`Unit] then begin
       (* seems to be a getter*)
       sprintf "obj->%s()" name
     end else begin
-      let param_names = 
+      let param_names =
         List.map2_exn (List.tl_exn argnames) (args) ~f:(fun argname arg_typ ->
           let cpp_var = get_cpp_var () in
           p "  %s %s;\n" (TypAst.to_cpp_type arg_typ) cpp_var;
-          cpp_value_of_ocaml buf (get_ocaml_var,release_ocaml_var,get_cpp_var) 
+          cpp_value_of_ocaml buf (get_ocaml_var,release_ocaml_var,get_cpp_var)
             ~cpp_var ~ocaml_var:argname arg_typ;
           cpp_var
         )
@@ -46,7 +46,7 @@ let gen_stub buf ~classname ~meth:(name,args,res_typ) caml_stub_name =
       sprintf "obj->%s(%s)" name (String.concat ~sep:", " param_names)
     end
   in
- 
+
   let () = match res_typ with
     | `Unit ->
         p "  %s;\n" calling_str;
@@ -54,14 +54,14 @@ let gen_stub buf ~classname ~meth:(name,args,res_typ) caml_stub_name =
     | _ ->
         p "  %s ans = %s;\n" (TypAst.to_cpp_type res_typ) calling_str;
         let ansvar = get_ocaml_var () in
-        ocaml_value_of_cpp buf ~tab:1 (get_ocaml_var,release_ocaml_var) 
+        ocaml_value_of_cpp buf ~tab:1 (get_ocaml_var,release_ocaml_var)
           ~cppvar:"ans" ~ocamlvar:ansvar res_typ;
         p "  CAMLreturn(%s);\n" ansvar;
         release_ocaml_var ansvar
   in
   p "}\n\n"
 
-let setter_name_of_prop prop_name = 
+let setter_name_of_prop prop_name =
   let s = String.copy prop_name in
   s.[0] <- Char.uppercase s.[0];
   sprintf "set%s" s
@@ -106,17 +106,17 @@ let gen_cpp {classname; members; slots; props; _ } =
     let cpp_typ = TypAst.to_cpp_type typ in
     bprintf publics "  Q_PROPERTY(%s %s%s READ %s NOTIFY %s)\n" cpp_typ
       name (if declare_setter then " WRITE "^setter else "") getter notifier;
-        
+
     let private_varname = sprintf "_%s" name in
     bprintf privates "  %s %s;\n" cpp_typ private_varname;
     bprintf publics "  Q_INVOKABLE %s %s() { return %s; }\n" cpp_typ getter private_varname;
-    let () = 
-      let setter = if declare_setter then setter else 
+    let () =
+      let setter = if declare_setter then setter else
           let s = String.copy name in
           s.[0] <- Char.uppercase s.[0];
           sprintf "set%s" s
       in
-      bprintf publics "  %svoid %s(%s v) {\n" (if declare_setter then "Q_INVOKABLE " else "") 
+      bprintf publics "  %svoid %s(%s v) {\n" (if declare_setter then "Q_INVOKABLE " else "")
         setter cpp_typ;
       bprintf publics "    if (%s != v) {\n" private_varname;
       bprintf publics "      %s = v;\n" private_varname;(*
@@ -124,7 +124,7 @@ let gen_cpp {classname; members; slots; props; _ } =
       bprintf publics "      emit %s(v);\n" notifier;
       bprintf publics "  } }\n"
     in
-    
+
     bprintf signals "  void %s(%s);\n" notifier (TypAst.to_cpp_type typ);
     gen_signal_stub ~classname ~signal:notifier ~typ cpp_buf (stubname_for_signal_emit name notifier);
     bprintf publics "  void emit_%s(%s arg1) {\n" notifier (TypAst.to_cpp_type typ);
@@ -133,7 +133,7 @@ let gen_cpp {classname; members; slots; props; _ } =
     bprintf publics "  }\n\n";
 
     (* Stubs for calling setter and getter in OCaml *)
-    gen_stub cpp_buf ~classname ~meth:(getter,[`Unit],typ) 
+    gen_stub cpp_buf ~classname ~meth:(getter,[`Unit],typ)
       (ocaml_name_of_prop ~classname `Getter prop);
 (*    if declare_setter then*)
     let setter_name = if declare_setter then setter else setter_name_of_prop name in
@@ -156,7 +156,7 @@ let gen_cpp {classname; members; slots; props; _ } =
   B.add_string h_buf "signals:\n";
   B.add_buffer h_buf signals;
 
-  
+
   print_h "};\n";
   print_h "#endif\n\n";
 
@@ -189,32 +189,13 @@ let gen_ml {classname; members; slots; props; _ } =
     p "  method %s = prop_get_%s cppval ()\n" name name;
     let setter_name = match setter with
       | None -> name
-      | Some x -> x 
+      | Some x -> x
     in
     p "  method set_%s = prop_set_%s cppval\n" setter_name name;
     p "\n"
   );
-  
+
   p "end\n";
   let ch = open_out ("ocaml/"^classname^".ml") in
   B.output_buffer ch h_buf;
   Out_channel.close ch
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

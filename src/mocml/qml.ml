@@ -1,11 +1,11 @@
 open Core
 open Core.Std
-open Parse
+open ParseYaml
 open Printf
 open Helpers
 module B=Bigbuffer
 open B.Printf
-open Parse.Yaml2
+open ParseYaml.Yaml2
 open Types
 
 let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
