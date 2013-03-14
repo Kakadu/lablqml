@@ -5,3 +5,4 @@ kamlo.h
 Makefile
 ocaml/code.ml
 qml/main.qml
+Makefile
