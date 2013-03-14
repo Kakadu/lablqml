@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 882eca68f46f7ca04a2f29d2d2c6f688)
+# DO NOT EDIT (digest: f5cb1865409e208d20ee466a84222b3f)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -17,6 +17,7 @@
 "qml_wrap.cmxs": use_qml_wrap
 <*.ml{,i}>: oasis_library_qml_wrap_ccopt
 "stubs.c": oasis_library_qml_wrap_ccopt
+"modelindex.c": oasis_library_qml_wrap_ccopt
 <qml_wrap.{cma,cmxa}>: use_libqml_wrap_stubs
 # OASIS_STOP
 "test": not_hygienic, -traverse

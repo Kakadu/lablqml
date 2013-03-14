@@ -10,8 +10,8 @@ Library qml_wrap
   Path:         .
   BuildTools:   ocamlbuild
   Modules:      QmlContext
-  CSources:     stubs.c,stubs.h,kamlo.h
-  CCOpt:        -std=c++0x -I$QT5/include -x c++ -O2 
+  CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c
+  CCOpt:        -std=c++0x -I$QT5/include -x c++ -O2 -Dprivate=public 
   #CCLib: -L$QT5/lib
 
 

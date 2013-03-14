@@ -20,3 +20,13 @@ let get_view ~name =
 
 external set_context_property: ctx:t -> name:string -> 'a -> unit
   = "caml_setContextProperty"
+
+module QModelIndex = struct
+  type t = int * int 
+  let empty = (-1,-1)
+  let row = fst
+  let column = snd
+end
+
+
+

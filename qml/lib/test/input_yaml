@@ -1,5 +1,6 @@
 ---
 A:
+  basename:     QAbstractItemModel
   methods:   # arg1, arg2, ...., return value
     sizey: [unit, int]
     meth1: [int list, int]
