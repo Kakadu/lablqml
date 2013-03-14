@@ -4,10 +4,11 @@ open Printf
 
 let (|>) = Core.Fn.(|!)
 
-type t = [ `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t  ] with sexp
+type t = [`QModelIndex | `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t  ] with sexp
 
 let aux_variables_count (x : t) =
   let rec h = function
+    | `QModelIndex
     | `Unit -> 0
     | `String -> 0
     | `Int -> 0
@@ -19,20 +20,22 @@ let aux_variables_count (x : t) =
   h x
 
 let is_primitive = function
-  | `Float 
+  | `Float
   | `String | `Int | `Bool | `Unit  -> true
+  | `QModelIndex
   | `Tuple _ | `List _ -> false
-    
+
 let rec to_cpp_type (typ:t) = match typ with
   | `Float  -> "double"
   | `String -> "QString"
+  | `QModelIndex -> "QModelIndex"
   | `Int    -> "int"
   | `Bool   -> "bool"
   | `Unit   -> "void"
   | `Tuple lst when List.length lst <> 2 -> assert false
-  | `Tuple xs  -> 
+  | `Tuple xs  ->
       let a = xs |> List.hd_exn and b = xs |> List.tl_exn |> List.hd_exn in
-      sprintf "QPair<%s,%s%s>" 
+      sprintf "QPair<%s,%s%s>"
         (to_cpp_type a) (to_cpp_type b)
         (if is_primitive b then "" else " ")
   | `List t -> sprintf "QList<%s%s>" (to_cpp_type t) (if is_primitive t then "" else " ")
@@ -48,6 +51,7 @@ let to_ocaml_type typ =
     | `String -> "string"
     | `Bool   -> "bool"
     | `Unit   -> "unit"
+    | `QModelIndex -> "QModelIndex.t"
     | `Tuple xs ->
         List.map xs ~f:(fun x -> if is_primitive x then helper x else sprintf "(%s)" (helper x) )
           |> String.concat ~sep:"*"
@@ -57,22 +61,3 @@ let to_ocaml_type typ =
   in
   helper typ
 (*  Buffer.contents b *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

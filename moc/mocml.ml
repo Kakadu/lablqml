@@ -7,20 +7,21 @@ let () = Printexc.record_backtrace true
 
 type options = {
   mutable filename : string;
-  mutable target : [ `Qml | `QtGui ]
+  mutable target : [ `Qml | `QtGui | `Qml_wrap ]
 }
 
 let options = {filename = "input_yaml"; target = `Qml }
 
-let () = Core_arg.parse 
-  [ ("-qml",   Core_arg.Unit (fun () -> options.target <- `Qml),  "use qml")
-  ; ("-qtgui", Core_arg.Unit (fun () -> options.target <- `QtGui),"use QtGui")
-  ] (fun s -> options.filename <- s; 
+let () = Core_arg.parse
+  [ ("-qml",      Core_arg.Unit (fun () -> options.target <- `Qml),   "use qml")
+  ; ("-qtgui",    Core_arg.Unit (fun () -> options.target <- `QtGui), "use QtGui")
+  ; ("-qml_wrap", Core_arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
+  ] (fun s -> options.filename <- s;
     print_endline ("Setting filename " ^ s)
 ) "usage_msg"
 
-let () = match options.target with 
-  | `QtGui -> begin 
+let () = match options.target with
+  | `QtGui -> begin
     let funcs = Parse.parse options.filename in
     let () = print_endline ("slots parsed: " ^ string_of_int (List.length funcs)) in
     let slots = Core_list.map funcs ~f:(fun (name,args) ->
@@ -31,13 +32,13 @@ let () = match options.target with
       (name,body,res)
     ) in
     (*
-    let clas = 
+    let clas =
       let open Parse.Yaml2.Types in
       ({classname="UserSlots"; slots; signals=[];members=[];props=[]}) in *)
     let () = Qtgui.gen_cpp slots in (* FIXME by passing clas.slots *)
     let () = Qtgui.gen_ml slots in
     ()
-  end 
+  end
   | `Qml -> begin
     let data = Parse.Yaml2.parse_file options.filename in
     let () = print_endline "data file parsed" in
@@ -47,20 +48,7 @@ let () = match options.target with
     let () = List.iter data ~f:Qml2.gen_ml in
     ()
   end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  | `Qml_wrap -> begin
+    let data = Parse.Yaml2.parse_file options.filename in
+    List.iter data ~f:Qml_wrap.generate
+  end
