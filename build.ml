@@ -97,7 +97,7 @@ let () = match !target with
 
         (* compiling xml *)
 
-        make "native" ~dir: "xml" "\ncompiling xml...\n";
+        make "all" ~dir: "src" "\ncompiling xml...\n";
         print_endline "\nGenerator is compiled!\n";
 
         (*print_endline "\nexecuting xmltool...\n";
@@ -105,7 +105,7 @@ let () = match !target with
 *)
         print_endline "\nexecuting generator...\n";
         wrap_cmd 
-          ("./xml/main.native -xml " ^ api_xml ^ 
+          ("./src/generator.native -xml " ^ api_xml ^ 
            (if !cpp_bin_loc<>"" then " -qtloc " ^ !cpp_bin_loc else "") ^
            " " ^ (cpp_includes ()) ^ " test_gen/out")
           "error while generating code";
@@ -161,12 +161,10 @@ let () = match !target with
     wrap_cmd "ocamlfind remove lablqt" "can't remove package"
 
   | `Clean -> 
-    wrap_cmd "make -C xml clean" "cleaning in xml";
+    wrap_cmd "make -C src clean" "cleaning in sources";
 
     wrap_cmd "make -C test_gen clean" "cleaning in test_gen";
     wrap_cmd "rm -rf test_gen/out/*"  "removing generated files";
-
-    wrap_cmd "make -C moc clean" "cleaning in moc";
 
     (* I dont remove XML API file *)
     ()
