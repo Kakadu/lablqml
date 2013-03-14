@@ -29,4 +29,9 @@ test_gen/test6/test
 *.creator.user
 # tool for generating OCaml code from ui forms
 uictool
+*.creator.user.*pre[0-9]
+*.creator.user
+#
+ocaml-syck
+test_models
 
