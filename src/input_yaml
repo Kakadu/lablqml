@@ -2,8 +2,11 @@
 A:
   basename: QAbstractItemModel
   methods:   # arg1, arg2, ...., return value
-    sizey: [unit, int]
-    meth1: [int list, int]
+    sizey:
+        sig:    [unit, int]
+    meth1: 
+        sig:    [int list, int]
+
     #meth2: [unit, unit]
     #getValues: [int list, (string list*int) list * int]
   properties:
@@ -17,5 +20,6 @@ A:
             set:  setCount
             notify: countChanged
   slots:
-    clicked: [unit, unit]
+    clicked: 
+        sig:    [unit, unit]
       

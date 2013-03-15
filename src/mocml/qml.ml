@@ -11,9 +11,10 @@ open Types
 let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
   sprintf "prop_%s_%s_%s_%s" classname name
     (match sort with `Getter -> "get" | `Setter -> "set")
-    (match typ  with
+    (match TypAst.of_verbose_typ_exn typ with
       | `Float -> "float"
       | `QModelIndex -> "modelindex"
+      | `QVariant -> "qvariant"
       | `Bool -> "bool"
       | `Unit  -> "void"
       | `String -> "string" | `Int -> "int"
@@ -31,6 +32,17 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
         | `String  -> print_cpp "%s%s = QString(String_val(%s));\n" prefix dest var
         | `Bool    -> print_cpp "%s%s = Bool_val(%s);\n" prefix dest var
         | `Float   -> raise (Bug "Floats are not implemented yet")
+        | `QVariant->
+            print_cpp "%sif (Is_block(%s)) {\n" prefix var;
+            print_cpp "%s  if (caml_hash_variant(\"string\")==Field(%s,0))\n" prefix var;
+            print_cpp "%s    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));\n" prefix dest var;
+            print_cpp "%s  else if(caml_hash_variant(\"qobject\")==Field(%s,0)) {\n" prefix var;
+            print_cpp "%s     qDebug() << \"PIZDA\";\n" prefix;
+            print_cpp "%s     //pizda\n" prefix;
+            print_cpp "%s  } else Q_ASSERT(false);\n" prefix;
+            print_cpp "%s} else // empty QVariant\n" prefix;
+            print_cpp "%s    %s = QVariant();\n" prefix dest;
+            (*print_cpp "%s    %s = QVariant::fromValue"*)
         | `QModelIndex ->
             if List.mem options `AbstractItemModel
             then print_cpp "%s%s = createIndex(Int_val(Field(%s,0)),Int_val(Field(%s,1)));\n"
@@ -38,9 +50,12 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
             else raise (Bug "QModelIndex is not available")
         | `Tuple xs when List.length xs <> 2 ->
             raise (Bug "Again: tuples <> pairs")
-        | `Tuple xs ->
-            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type typ);
-            let (a,b) = match xs with a::b::_ -> (a,b) | _ -> assert false in
+        | (`Tuple xs) as ttt ->
+            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type ttt);
+            let (a,b) = match xs with
+              (*| a::b::_ -> (TypAst.of_verbose_typ_exn a,TypAst.of_verbose_typ_exn b)*)
+              | a::b::_ -> (a,b)
+              | _ -> assert false in
             let leftV = new_cpp_var () in
             print_cpp "%s%s %s;\n" prefix (TypAst.to_cpp_type a) leftV;
             to_cpp_conv ~tab:(tab+1) leftV  (sprintf "Field(%s,0)" var) a;
@@ -49,7 +64,7 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
             to_cpp_conv ~tab:(tab+1) rightV (sprintf "Field(%s,1)" var) b;
             print_cpp "%s%s = qMakePair(%s,%s);\n" prefix dest leftV rightV;
         | `List t ->
-            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type typ);
+            print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type (`List t));
             let cpp_arg_type = TypAst.to_cpp_type t in
             let temp_var = get_var () in
             let head_var = get_var () in
@@ -63,7 +78,7 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
             print_cpp "%s}\n" prefix;
             release_var temp_var;
   in
-  to_cpp_conv ~tab:1 cpp_var ocaml_var typ
+  to_cpp_conv ~tab:1 cpp_var ocaml_var (TypAst.of_verbose_typ_exn  typ)
 
 let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
   let print_cpp fmt = bprintf ch fmt in
@@ -82,8 +97,21 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
           print_cpp "%s%s = caml_copy_string(%s.toLocal8Bit().data() );" prefix dest var
       | `QModelIndex ->
           print_cpp "%s%s=caml_alloc(2,0);\n" prefix dest;
-          print_cpp "%sStore_field(%s,0,Int_val(%s.row()));\n" prefix dest var;
-          print_cpp "%sStore_field(%s,0,Int_val(%s.column()));\n" prefix dest var
+          print_cpp "%sStore_field(%s,0,Val_int(%s.row()));\n" prefix dest var;
+          print_cpp "%sStore_field(%s,1,Val_int(%s.column()));\n" prefix dest var
+      | `QVariant ->
+          print_cpp "%sif (!%s.isValid())\n" prefix var;
+          print_cpp "%s  %s=hash_variant(\"empty\");\n" prefix var;
+          print_cpp "%selse if(%s.type() == QMetaType::QString) {\n" prefix var;
+          print_cpp "%s  %s = caml_alloc(2,0);\n" prefix dest;
+          print_cpp "%s  Store_field(%s,0,%s);\n" prefix dest "hash_variant(\"string\")";
+          print_cpp "%s  Store_field(%s,1,%s);\n" prefix dest
+            (sprintf "caml_copy_string(%s.value<QString>().toLocal8Bit().data()" var);
+          print_cpp "%selse if (%s.type() == QMetaType::User) {\n" prefix var;
+          print_cpp "%selse {\n" prefix;
+          print_cpp "%s  Q_ASSERT_X(false,\"qVariant_of_cpp\",\"not all cases are supported\");\n" prefix;
+          print_cpp "%s}\n" prefix;
+
       | `Tuple lst when List.length lst <> 2 ->
           raise (Bug "tuples are not fully implemented")
       | `Tuple xs ->
@@ -118,7 +146,7 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
     in
     print_cpp "%s" "\n"
   in
-  generate_wrapper ~tab cppvar ocamlvar typ
+  generate_wrapper ~tab cppvar ocamlvar (TypAst.of_verbose_typ_exn typ)
 
 
 
@@ -180,7 +208,8 @@ let gen_signal_stub ~classname ~signal ~typ ch fn_name =
   bprintf ch "  CAMLparam2(_obj,_arg);\n";
   bprintf ch "  %s *cppobj = (%s*) (Field(_obj,0));\n" classname classname;
   bprintf ch "  %s arg;\n" (TypAst.to_cpp_type typ);
-  cpp_value_of_ocaml  ch (get_var,release_var,new_cpp_var) ~cpp_var:"arg" ~ocaml_var:"_arg" typ;
+  cpp_value_of_ocaml  ch (get_var,release_var,new_cpp_var) ~cpp_var:"arg" ~ocaml_var:"_arg"
+    (TypAst.to_verbose_typ typ);
   bprintf ch "  cppobj->emit_%s(arg);\n" signal;
   bprintf ch "  CAMLreturn(Val_unit);\n";
   bprintf ch "}\n\n"
@@ -193,22 +222,25 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
   printf "Generatig meth '%s'\n" name;
   let print_h   fmt = bprintf file_h   fmt in
   let print_cpp fmt = bprintf file_cpp fmt in
-  print_cpp "// %s\n" (List.map (args@[res]) ~f:TypAst.to_ocaml_type |> String.concat ~sep:" -> ");
-  let args = if args = [`Unit] then [] else args in
+  print_cpp "// %s\n"
+    (List.map (args@[res]) ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
+        |> String.concat ~sep:" -> ");
+  let args = if args = [`Unit |> TypAst.to_verbose_typ] then [] else args in
   let argnames = List.mapi args ~f: (fun i _ -> "x" ^ string_of_int i) in
-  let lst = List.map args ~f:(TypAst.to_cpp_type) in
+  let lst = List.map args ~f:(fun x-> x |> TypAst.of_verbose_typ_exn |> TypAst.to_cpp_type) in
   let arg' = List.map2_exn lst argnames ~f:(sprintf "%s %s") in
   let () =
     print_h  "  %s%s %s(%s);\n"
-    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (TypAst.to_cpp_type res)
+    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (Parser.string_of_type res)
     name (String.concat ~sep:"," arg') in
   let () =
-    print_cpp "%s %s::%s(%s) {\n" (TypAst.to_cpp_type res) classname
+    print_cpp "%s %s::%s(%s) {\n" (Parser.string_of_type res) classname
     name (String.concat ~sep:"," arg') in
   print_cpp "  CAMLparam0();\n";
   let locals_count = 1 + (* for _ans *)
     1 + (* for wrapping C++ object as 1st argument *)
-    List.fold_left ~f:(fun acc x -> max acc (TypAst.aux_variables_count x)) ~init:0 (res::args) in
+    List.fold_left ~init:0 (res::args)
+      ~f:(fun acc x -> max acc TypAst.(x |> of_verbose_typ_exn |> aux_variables_count)) in
   let locals =
     if locals_count = 1
     then ["_ans"]
@@ -249,35 +281,36 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     end
   in
   let (hasSetter,res) =
-    match res with
-      | `Unit  ->  begin
-        match List.find options ~f:(function `Setter _ -> true | _ -> false) with
-          | Some (`Setter signal) ->
-              print_cpp "  _ans = %s;\n" call_closure_str;
-              (Some signal, `Bool)
-          | None ->
-              print_cpp "  %s;\n" call_closure_str;
-              (None,res)
-          | _ -> assert false
-      end
-      | _      ->
-          print_cpp "  _ans = %s;\n" call_closure_str;
-          (None,res)
+    if Parser.is_void_type res then begin
+      match List.find options ~f:(function `Setter _ -> true | _ -> false) with
+        | Some (`Setter signal) ->
+            print_cpp "  _ans = %s;\n" call_closure_str;
+            (Some signal,
+             Parser.({t_name="bool";t_params=[];t_indirections=0;t_is_const=false;t_is_ref=false})
+            )
+        | None ->
+            print_cpp "  %s;\n" call_closure_str;
+            (None,res)
+        | _ -> assert false
+    end
+    else begin
+      print_cpp "  _ans = %s;\n" call_closure_str;
+      (None,res)
+    end
   in
   (* Now we should convert OCaml result value to C++*)
   let new_cpp_var = getter_of_cppvars "xx" in
   let () =
-    match res with
-      | `Unit  ->
+    if Parser.is_void_type res then begin
           assert (hasSetter = None);
           ()
-      | _ -> begin
+    end else begin
           let cpp_ans_var = "cppans" in
-          print_cpp "  %s %s;\n" (TypAst.to_cpp_type res) cpp_ans_var;
+          print_cpp "  %s %s;\n" (Parser.string_of_type  res) cpp_ans_var;
           cpp_value_of_ocaml file_cpp (get_var,release_var, new_cpp_var) cpp_ans_var "_ans" res;
           match hasSetter with
             | Some signal ->
-                assert (res = `Bool);
+                assert (Parser.is_bool_type res);
                 print_cpp "  if (cppans) emit %s(%s);\n" signal (List.hd_exn argnames)
             | None  ->
                 print_cpp "  return %s;\n" cpp_ans_var
@@ -286,11 +319,14 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
   print_cpp "}\n"
 
 let name_for_slot ?(ocaml_classname=ocaml_classname) (name,args,res,_) =
+  let args = List.map ~f:TypAst.of_verbose_typ_exn args in
+  let res = TypAst.of_verbose_typ_exn res in
   let rec typ_to_ocaml_string = function
     | `Unit  -> "unit"
     | `Int  -> "int"
     | `String   -> "string"
     | `Bool   -> "bool"
+    | `QVariant -> "qvariant"
     | `Float  -> "float"
     | `QModelIndex -> "qmodelindex"
     | `Tuple xs ->
@@ -335,22 +371,23 @@ let gen_cpp {classname; members; slots; props; _ } =
   List.iter props ~f:(fun ({name;getter;setter;notifier;typ} as prop) ->
     print_h "public:\n";
     print_h "  Q_PROPERTY(%s %s %s READ %s NOTIFY %s)\n"
-      (TypAst.to_cpp_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
+      (Parser.string_of_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
     let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Getter prop in
-    gen_meth ~classname ~ocaml_methname ~options:[] h_file cpp_file (getter,[`Unit],typ,[]);
+    gen_meth ~classname ~ocaml_methname ~options:[] h_file cpp_file (getter,[Parser.void_type],typ,[]);
     let () =
       match setter with
         | Some setter ->
             let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Setter prop in
             gen_meth ~classname ~ocaml_methname
-              ~options:[`Setter notifier] h_file cpp_file (setter,[typ],`Unit,[]);
+              ~options:[`Setter notifier] h_file cpp_file (setter,[typ],Parser.void_type,[]);
         | None -> ()
     in
     print_h "signals:\n";
-    print_h "  void %s(%s);\n" notifier (TypAst.to_cpp_type typ);
-    gen_signal_stub ~classname ~signal:notifier ~typ cpp_file (stubname_for_signal_emit name notifier);
+    print_h "  void %s(%s);\n" notifier (Parser.string_of_type typ);
+    gen_signal_stub ~classname ~signal:notifier ~typ:(TypAst.of_verbose_typ_exn typ)
+      cpp_file (stubname_for_signal_emit name notifier);
     print_h "public:\n";
-    print_h "  void emit_%s(%s arg1) {\n" notifier (TypAst.to_cpp_type typ);
+    print_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
     print_h "    emit %s(arg1);\n" notifier;
     print_h "  }\n\n"
   );
@@ -381,7 +418,8 @@ let gen_ml {classname; members; slots; props; _ } =
   let p fmt = bprintf ch fmt in
   p "type t\n";
   List.iter props ~f:(fun {typ; name; notifier; _} ->
-    p "external emit_signal_%s: t -> %s -> unit = \"%s\"\n" name (TypAst.to_ocaml_type typ)
+    p "external emit_signal_%s: t -> %s -> unit = \"%s\"\n" name
+      TypAst.(typ |> of_verbose_typ_exn |> to_ocaml_type)
       (stubname_for_signal_emit name notifier)
   );
   p "class %s cppval = object\n" (String.lowercase classname);

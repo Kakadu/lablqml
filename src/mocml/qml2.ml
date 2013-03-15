@@ -39,7 +39,7 @@ let gen_stub buf ~classname ~meth:(name,args,res_typ) caml_stub_name =
           let cpp_var = get_cpp_var () in
           p "  %s %s;\n" (TypAst.to_cpp_type arg_typ) cpp_var;
           cpp_value_of_ocaml buf (get_ocaml_var,release_ocaml_var,get_cpp_var)
-            ~cpp_var ~ocaml_var:argname arg_typ;
+            ~cpp_var ~ocaml_var:argname (TypAst.to_verbose_typ arg_typ);
           cpp_var
         )
       in
@@ -55,7 +55,7 @@ let gen_stub buf ~classname ~meth:(name,args,res_typ) caml_stub_name =
         p "  %s ans = %s;\n" (TypAst.to_cpp_type res_typ) calling_str;
         let ansvar = get_ocaml_var () in
         ocaml_value_of_cpp buf ~tab:1 (get_ocaml_var,release_ocaml_var)
-          ~cppvar:"ans" ~ocamlvar:ansvar res_typ;
+          ~cppvar:"ans" ~ocamlvar:ansvar (TypAst.to_verbose_typ res_typ);
         p "  CAMLreturn(%s);\n" ansvar;
         release_ocaml_var ansvar
   in
@@ -103,7 +103,7 @@ let gen_cpp {classname; members; slots; props; _ } =
       | Some s -> (true,s)
       | None   -> (false,"")
     in
-    let cpp_typ = TypAst.to_cpp_type typ in
+    let cpp_typ = Parser.string_of_type  typ in
     bprintf publics "  Q_PROPERTY(%s %s%s READ %s NOTIFY %s)\n" cpp_typ
       name (if declare_setter then " WRITE "^setter else "") getter notifier;
 
@@ -125,19 +125,21 @@ let gen_cpp {classname; members; slots; props; _ } =
       bprintf publics "  } }\n"
     in
 
-    bprintf signals "  void %s(%s);\n" notifier (TypAst.to_cpp_type typ);
-    gen_signal_stub ~classname ~signal:notifier ~typ cpp_buf (stubname_for_signal_emit name notifier);
-    bprintf publics "  void emit_%s(%s arg1) {\n" notifier (TypAst.to_cpp_type typ);
+    bprintf signals "  void %s(%s);\n" notifier (Parser.string_of_type typ);
+    gen_signal_stub ~classname ~signal:notifier
+      ~typ:(TypAst.of_verbose_typ_exn typ) cpp_buf (stubname_for_signal_emit name notifier);
+    bprintf publics "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
     bprintf publics "    qDebug() << \"emitted %s\";\n" notifier;
     bprintf publics "    emit %s(arg1);\n" notifier;
     bprintf publics "  }\n\n";
 
     (* Stubs for calling setter and getter in OCaml *)
-    gen_stub cpp_buf ~classname ~meth:(getter,[`Unit],typ)
+    gen_stub cpp_buf ~classname ~meth:(getter,[`Unit],TypAst.of_verbose_typ_exn typ)
       (ocaml_name_of_prop ~classname `Getter prop);
 (*    if declare_setter then*)
     let setter_name = if declare_setter then setter else setter_name_of_prop name in
-    gen_stub cpp_buf ~classname ~meth:(setter_name,[typ],`Unit) (ocaml_name_of_prop ~classname `Setter prop)
+    gen_stub cpp_buf ~classname ~meth:(setter_name,[TypAst.of_verbose_typ_exn typ],`Unit)
+      (ocaml_name_of_prop ~classname `Setter prop)
   );
   bprintf publics "public:\n";
   bprintf publics "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
@@ -167,14 +169,14 @@ let gen_cpp {classname; members; slots; props; _ } =
   B.output_buffer cpp_file cpp_buf;
   Out_channel.close cpp_file
 
-let gen_ml {classname; members; slots; props; _ } =
+let gen_ml ?(directory=".") {classname; members; slots; props; _ } =
   let h_buf = B.create 100 in
   print_time ~lang:`OCaml h_buf;
   (* we will put only functions for emitting signals *)
   let p fmt = bprintf h_buf fmt in
   p "type t\n";
   List.iter props ~f:(fun ({typ; name; notifier; setter; _} as prop) ->
-    let ocaml_typ = TypAst.to_ocaml_type typ in
+    let ocaml_typ = TypAst.to_ocaml_type (TypAst.of_verbose_typ_exn typ) in
     p "external emit_signal_%s: t -> %s -> unit =\n  \"%s\"\n" name ocaml_typ
       (stubname_for_signal_emit name notifier);
     p "external prop_get_%s:    t -> unit -> %s =\n  \"%s\"\n" name ocaml_typ
@@ -196,6 +198,6 @@ let gen_ml {classname; members; slots; props; _ } =
   );
 
   p "end\n";
-  let ch = open_out ("ocaml/"^classname^".ml") in
+  let ch = open_out (directory ^/ classname^".ml") in
   B.output_buffer ch h_buf;
   Out_channel.close ch

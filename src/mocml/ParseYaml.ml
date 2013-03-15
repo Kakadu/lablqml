@@ -32,9 +32,10 @@ let parse filename : (string * (string list)) list =
 module Yaml2 = struct
   open Core
   open Sexplib.Conv
+  open Parser
 
   module Types = struct
-    type typ = TypAst.t with sexp
+    type typ = Parser.cpptype with sexp
     type meth = string * typ list * typ * [`Const] list with sexp
     type prop = {name:string; getter:string; setter: string option; notifier: string; typ:typ} with sexp
     type clas =
@@ -78,7 +79,7 @@ module Yaml2 = struct
         let res,args =
           let l = List.rev lst in (List.hd_exn l, l |> List.tl_exn |> List.rev)
         in
-        let conv ty = TypLexer.parse_string ty in
+        let conv ty = TypLexer.parse_string ty |> TypAst.to_verbose_typ in
         (* TODO: parse `Const modifier *)
         (name,List.map args ~f:conv, conv res,[])
     | _ -> assert false
@@ -97,7 +98,7 @@ module Yaml2 = struct
         and setter   = helper     "set"
         and typ      = helper_exn "type"
         and notifier = helper_exn "notify" in
-        let typ = TypLexer.parse_string typ in
+        let typ = TypLexer.parse_string typ |> TypAst.to_verbose_typ in
         Types.({name;getter;setter;notifier;typ})
     | _ -> assert false
 

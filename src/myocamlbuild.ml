@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: ec93aae61d03358f7c32324d87cf7a22) *)
+(* DO NOT EDIT (digest: 898a79446477ba3083a97a2a0f733c92) *)
 module OASISGettext = struct
 (* # 21 "/home/kakadu/.opam/4.00.1/build/oasis.0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -480,12 +480,13 @@ let package_default =
      MyOCamlbuildBase.lib_ocaml = [("lablqt", ["lib"])];
      lib_c = [];
      flags = [];
-     includes = [("xmltool", ["lib"]); ("generator", ["lib"])];
+     includes =
+       [("xmltool", ["lib"]); ("mocml", ["lib"]); ("generator", ["lib"])];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 490 "myocamlbuild.ml"
+# 491 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

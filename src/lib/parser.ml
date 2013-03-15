@@ -86,6 +86,11 @@ let is_public = function `Public -> true | `Private -> false | `Protected -> fal
 let is_virtual = function `Virtual -> true | `Static | `Abstract -> false
 
 let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+let qmodelindex_type =
+  {t_name="QModelIndex"; t_is_const=false; t_indirections=0; t_is_ref=true; t_params=[] }
+let int_type = {t_name="int"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+let bool_type = {t_name="bool"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+let qvariant_type = {t_name="QVariant"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 
 let remove_defaults {m_res;m_name; m_args; m_declared; m_out_name; m_access; m_modif } =
   let m_args = List.map m_args ~f:(fun x -> {x with arg_default=None} ) in
@@ -168,7 +173,6 @@ and namespace = { ns_name:string; ns_classes:clas list; ns_enums:enum list; ns_n
 and slt = meth
 with sexp
 
-
 let empty_namespace = { ns_name="empty"; ns_classes=[]; ns_enums=[]; ns_ns=[] }
 
 (* convert class to pointer on this class *)
@@ -178,16 +182,22 @@ let ptrtype_of_classname name =
   { t_name=name; t_indirections=1; t_is_const=false; t_is_ref = false; t_params=[] }
 
 let is_void_type t = (t.t_name = "void") && (t.t_indirections=0)
+let is_bool_type t = (t.t_name = "bool") && (t.t_indirections=0)
 
 let meth_of_constr ~classname m_args =
   let m_declared = classname and m_name=classname and m_out_name=classname
   and m_res={ t_name=classname; t_indirections=1; t_is_ref=false; t_params=[]; t_is_const=false } in
   { m_declared; m_name; m_args; m_res; m_out_name; m_access=`Public; m_modif=[] }
 
-let string_of_type t =
+let rec string_of_type t =
   let b = Buffer.create 10 in
   if t.t_is_const then Buffer.add_string b "const ";
   Buffer.add_string b t.t_name;
+  if t.t_params <> [] then (
+    Buffer.add_char b '<';
+    List.iter t.t_params ~f:(fun x -> Buffer.add_string b (string_of_type x));
+    Buffer.add_char b '>';
+  );
   Buffer.add_string b (String.make t.t_indirections '*');
   if t.t_is_ref then Buffer.add_string b " &";
   Buffer.contents b
