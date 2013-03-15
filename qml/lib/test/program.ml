@@ -13,9 +13,7 @@ let main () =
     method columnCount _ =
       print_endline "columnCount";
       1
-    method rowCount (parent: QModelIndex.t) : int =
-      let (a,b) = QModelIndex.(row parent,column parent) in
-      print_endline "CAML rowCount"; flush stdout;
+    method rowCount _ : int =
       List.length data
 
     method hasChildren _ = self#rowCount QModelIndex.empty > 0
@@ -25,13 +23,13 @@ let main () =
       if (r<0 || r>= List.length data) then QVariant.empty
       else begin
         if (role=0 || role=555) (* DisplayRole *)
-        then ( print_endline "string"; QVariant.of_string (List.nth data r) )
+        then QVariant.of_string (List.nth data r)
         else QVariant.empty
       end
 
   end in
   let cpp_model = create_A model in
-(*  add_role cpp_model 555 "homm"; *)
+  add_role cpp_model 555 "homm";
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" cpp_model
 ;;
 let () = Callback.register "doCaml" main

@@ -9,7 +9,7 @@ Rectangle {
 
         model: myModel
         delegate: Text {
-            text: "Animal: " //+ model.homm
+            text: "Animal: " + model.homm
             //Component.onCompleted: console.log("text completed, " + homm + ", " + model.homm);
         }
         Component.onCompleted: {
