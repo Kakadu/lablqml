@@ -3,7 +3,7 @@ A:
   basename:     QAbstractItemModel
   methods:   # arg1, arg2, ...., return value
     sizey: [unit, int]
-    meth1: [int list, int]
+    #meth1: [int list, int]
     #meth2: [unit, unit]
     #getValues: [int list, (string list*int) list * int]
   properties:

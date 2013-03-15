@@ -14,10 +14,11 @@ all: gen_stubs $(GEN_CMX) program.cmx library_code $(GEN_MOC) $(GEN_CPP) main.o
 	-o $(OUT)
 
 library_code:
-	ocamlfind opt -output-obj -dstartup $(GEN_CMX) program.cmx ../_build/qml_wrap.cmxa -linkall -o camlcode.o
+	ocamlfind opt -output-obj -dstartup -I ../_build \
+	$(GEN_CMX) ../_build/qml_wrap.cmxa program.cmx  -linkall -o camlcode.o -verbose
 
 gen_stubs: input_yaml
-	./mocml -qml_wrap
+	#./mocml -qml_wrap
 
 moc_%.cpp: %.h
 	$(MOC) $< > $@
@@ -26,7 +27,7 @@ moc_%.cpp: %.h
 	$(CC) -c $< -I.
 
 .ml.cmx:
-	ocamlfind opt -c $<
+	ocamlfind opt -I ../_build -c $<
 
 clean:
 	rm *.o *.cm[oiax] *.cmxa *.o.startup.s -f

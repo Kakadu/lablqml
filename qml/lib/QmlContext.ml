@@ -7,9 +7,7 @@ let container: t M.t ref = ref M.empty
 let add_view name (v: t) =
   container := M.add name v !container
 let () =
-  print_endline "registering add_view";
-  Callback.register "register_view" add_view;
-  print_endline "registered"
+  Callback.register "register_view" add_view
 
 let get_view_exn ~name = M.find name !container
 
@@ -17,16 +15,21 @@ let get_view ~name =
   try Some (get_view_exn name)
   with Not_found -> None
 
-
-external set_context_property: ctx:t -> name:string -> 'a -> unit
+type cppobj = [ `cppobject ]
+external set_context_property: ctx:t -> name:string -> cppobj -> unit
   = "caml_setContextProperty"
 
+module QVariant = struct
+  type t = [ `empty | `string of string | `qobject of cppobj ]
+  let empty = `empty
+  let of_string s = `string s
+  let of_object o = `qobject o
+end
+
 module QModelIndex = struct
-  type t = int * int 
+  type t = int * int
   let empty = (-1,-1)
   let row = fst
   let column = snd
+  let make ~row ~column = (row,column)
 end
-
-
-

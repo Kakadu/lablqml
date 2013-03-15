@@ -21,9 +21,9 @@ int main(int argc, char ** argv) {
     view.setResizeMode(QQuickView::SizeRootObjectToView);
 
     QQmlContext *ctxt = view.rootContext();
-    registerContext(QString("myModel"), ctxt);
-    view.setSource(QUrl::fromLocalFile(QString("view.qml")));
+    registerContext(QString("rootContext"), ctxt);
     doCaml();
+    view.setSource(QUrl::fromLocalFile(QString("view.qml")));
     view.show();
 
     return app.exec();
