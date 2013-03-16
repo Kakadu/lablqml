@@ -46,9 +46,43 @@ module Yaml2 = struct
   end
 
   open YamlNode
+  let string_of_yaml y =
+    let b = Buffer.create 100 in
+    let add_string = Buffer.add_string b in
+    let rec helper = function
+      | SCALAR(uri,s) ->
+          List.iter ~f:add_string [ "SCALAR(\""; uri; "\",\""; s; "\")" ]
+      | SEQUENCE(uri,xs) ->
+          List.iter ~f:add_string [ "SEQUENCE(\""; uri; "\",[" ];
+          let () = match xs with
+            | []  -> ()
+            | [x] -> (helper x)
+            | x::xs ->
+                (helper x);
+                List.iter xs ~f:(fun y -> add_string ","; helper y)
+          in
+          add_string "])"
+      | MAPPING (uri,xs) ->
+          List.iter ~f:add_string [ "MAPPING(\""; uri; "\",[" ];
+          let add_pair x =
+            add_string "("; helper (fst x); add_string ","; helper (snd x); add_string ")"
+          in
+          let () = match xs with
+            | []  -> ()
+            | [x] -> add_pair x
+            | x::xs ->
+                add_pair x;
+                List.iter xs ~f:(fun y -> add_string ","; add_pair y)
+          in
+          add_string "])"
+    in
+    helper y;
+    Buffer.contents b
 
   let rec parse_data = function
-    | MAPPING(_,lst) -> List.map lst ~f:parse_clas
+    | MAPPING(_,lst) ->
+        printf "Classes count: %d\n" (List.length lst);
+        List.map lst ~f:parse_clas
     | _ -> assert false
   and parse_clas = function
     | (SCALAR (_, classname), MAPPING(_,lst)) ->
@@ -56,19 +90,31 @@ module Yaml2 = struct
         let (members,signals,slots,props) =
           List.fold_left ~init:([],[],[],[]) lst ~f:(fun (a,b,c,d) -> function
             | (SCALAR(_,"basename"),SCALAR(_,value)) -> basename:= Some value; (a,b,c,d)
+            | (SCALAR (_,"signals"), SCALAR("null","")) ->
+                (a,b,c,d)
             | (SCALAR (_,"signals"),MAPPING (_,map)) ->
                 let lst = List.map map ~f:parse_meth in
                 (a,lst @ b,c,d)
+            | (SCALAR (_,"slots"), SCALAR("null","")) ->
+                (a,b,c,d)
             | (SCALAR (_,"slots"),MAPPING (_,map)) ->
                 let lst = List.map map ~f:parse_meth in
                 (a,b,lst@c,d)
+            | (SCALAR (_,"methods"),SCALAR ("null","")) ->
+                (* methods not defined *)
+                (a,b,c,d)
             | (SCALAR (_,"methods"),MAPPING (_,map)) ->
                 let lst = List.map map ~f:parse_meth in
                 (lst@a,b,c,d)
+            | (SCALAR (_,"properties"),SCALAR("null","")) ->
+                (a,b,c,d)
             | (SCALAR (_,"properties"),MAPPING (_,map)) ->
                 let lst = List.map map ~f:parse_prop in
                 (a,b,c,lst@d)
-            | _ -> assert false
+            | x ->
+                printf "Don't know what to do with\n(%s,%s)\n%!"
+                  (string_of_yaml (fst x)) (string_of_yaml (snd x));
+                assert false
           ) in
         Types.({classname;members;signals;slots;props; basename= !basename})
     | _ -> assert false
