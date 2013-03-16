@@ -37,8 +37,8 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
             print_cpp "%s  if (caml_hash_variant(\"string\")==Field(%s,0))\n" prefix var;
             print_cpp "%s    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));\n" prefix dest var;
             print_cpp "%s  else if(caml_hash_variant(\"qobject\")==Field(%s,0)) {\n" prefix var;
-            print_cpp "%s     qDebug() << \"PIZDA\";\n" prefix;
-            print_cpp "%s     //pizda\n" prefix;
+            print_cpp "%s    //qDebug() << \"PIZDA\";\n" prefix;
+            print_cpp "%s    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));\n" prefix dest var;
             print_cpp "%s  } else Q_ASSERT(false);\n" prefix;
             print_cpp "%s} else // empty QVariant\n" prefix;
             print_cpp "%s    %s = QVariant();\n" prefix dest;

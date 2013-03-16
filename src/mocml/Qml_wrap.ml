@@ -77,6 +77,8 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
     let locals = List.init ~f:(fun n -> sprintf "_x%d" n) (locals_count-1) in
     Qml.print_local_declarations b_c (["_ans"; "_meth"] @ locals);
 
+    p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
+
     p_c "  _meth = caml_get_public_method(camlobj, caml_hash_variant(\"%s\"));\n" name;
     let (get_var, release_var) = Qml.get_vars_queue locals in (* tail because we need not _ans *)
 
@@ -86,8 +88,8 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
 
       | n -> begin
         (* Generating arguments for calling *)
-        p_c "  value *args = new value[%d];\n" (n);
-        p_c "  args[0] = camlobj;\n";
+        p_c "  value *args = new value[%d];\n" (n+1);
+        p_c "  args[0] = camlobj;\n"; (* Never forget that !!! *)
         List.iter2i args argnames_cpp ~f:(fun i arg cppvar ->
           Qml.ocaml_value_of_cpp b_c (get_var,release_var)
             ~tab:1 ~ocamlvar:(sprintf "args[%d]" (i+1) ) ~cppvar ( arg)
