@@ -1,8 +1,8 @@
 ---
-A:
+MainModel:
   basename:     QAbstractItemModel
   methods:   # arg1, arg2, ...., return value
-    sizey: [unit, int]
+    #sizey: [unit, int]
     #meth1: [int list, int]
     #meth2: [unit, unit]
     #getValues: [int list, (string list*int) list * int]
@@ -18,4 +18,16 @@ A:
             notify: countChanged
   slots:
     clicked: [unit, unit]
-      
+
+MiniModel:
+  basename:  QAbstractItemModel
+  methods:
+  properties:
+  slots:
+
+DataItem:
+  methods:
+    name: [unit, string]
+    sort: [unit, string]
+  properties:
+  slots:

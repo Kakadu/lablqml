@@ -2,9 +2,10 @@ MOC=$$QT5/bin/moc
 CC=g++ -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -O2 -I../_build -I`ocamlc -where`
 CLINK=g++ -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
 OUT=main
-GEN_CMX=A.cmx
-GEN_CPP=A_c.o moc_A_c.o
-GEN_MOC=A_c.cpp
+GEN_CMX=DataItem.cmx MainModel.cmx MiniModel.cmx
+GEN_CPP=DataItem_c.o moc_DataItem_c.o MainModel_c.o moc_MainModel_c.o MiniModel_c.o moc_MiniModel_c.o
+GEN_MOC=DataItem_c.cpp MainModel_c.cpp MiniModel_c.cpp
+
 .SUFFIXES: .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all clean
 
