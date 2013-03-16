@@ -51,16 +51,12 @@ let main () =
       else begin
         if (role=0 || role=555) (* DisplayRole *)
         then QVariant.of_object (List.nth data r)
-        (*then QVariant.of_string "XXX"*)
         else QVariant.empty
       end
 
   end in
-  print_endline "1";
   let cpp_model = create_MainModel model in
-  print_endline "2";
   add_role cpp_model 555 "homm";
-  print_endline "3";
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" cpp_model
 ;;
 let () = Callback.register "doCaml" main
