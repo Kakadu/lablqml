@@ -6,17 +6,16 @@ open ParseYaml.Yaml2.Types
 
 
 let qabstractItemView_members =
-      let open Parser in
-      let unref_model = unreference qmodelindex_type in
-      let model = {qmodelindex_type with t_is_const=true} in
-        [ ("parent",      [model],  unref_model, [`Const])
-        ; ("index",       [int_type; int_type; model], unref_model, [`Const])
-        ; ("columnCount", [model], int_type, [`Const])
-        ; ("rowCount",    [model], int_type, [`Const])
-        ; ("hasChildren", [model], bool_type, [`Const])
-        ; ("data",        [model; int_type], qvariant_type, [`Const])
-
-        ]
+  let open Parser in
+  let unref_model = unreference qmodelindex_type in
+  let model = {qmodelindex_type with t_is_const=true} in
+  [ ("parent",      [model],  unref_model, [`Const])
+  ; ("index",       [int_type; int_type; model], unref_model, [`Const])
+  ; ("columnCount", [model], int_type, [`Const])
+  ; ("rowCount",    [model], int_type, [`Const])
+  ; ("hasChildren", [model], bool_type, [`Const])
+  ; ("data",        [model; int_type], qvariant_type, [`Const])
+  ]
 
 let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   let b_h   = B.create 100 in
@@ -47,12 +46,10 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   p_h "\n";
   p_h "class %s: public %s {\n" classname base_classname;
   p_h "  Q_OBJECT\n";
-  p_h "  value camlobj = 0;\n";
   p_h "public:\n";
   (* constructor *)
-  p_h "  %s(value _camlobj);\n" classname;
-  p_c "%s::%s(value _camlobj) : camlobj(_camlobj) {\n" classname classname;
-  p_c "}\n";
+  p_h "  %s();\n" classname;
+  p_c "%s::%s() {}\n" classname classname;
 
   (* methods *)
   let do_meth ~classname (name,args,res,modif) = (*
@@ -66,6 +63,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       (if List.mem modif `Const then " const" else "");
     (* now source *)
     let locals_count = 1 + (* for _ans *)
+      1 + (* camlobj *)
       List.fold_left ~init:0 (res::args)
       ~f:(fun acc x -> max acc TypAst.(x |> of_verbose_typ_exn |> aux_variables_count))
     in
@@ -78,18 +76,18 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
     Qml.print_local_declarations b_c (["_ans"; "_meth"] @ locals);
 
     p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
-
-    p_c "  _meth = caml_get_public_method(camlobj, caml_hash_variant(\"%s\"));\n" name;
+    p_c "  GET_CAML_OBJECT(this,_camlobj);\n";
+    p_c "  _meth = caml_get_public_method(_camlobj, caml_hash_variant(\"%s\"));\n" name;
     let (get_var, release_var) = Qml.get_vars_queue locals in (* tail because we need not _ans *)
 
     let call_closure_str = match List.length args with
       | 0 ->
-          sprintf "caml_callback2(_meth, camlobj, Val_unit)"
+          sprintf "caml_callback2(_meth, _camlobj, Val_unit)"
 
       | n -> begin
         (* Generating arguments for calling *)
         p_c "  value *args = new value[%d];\n" (n+1);
-        p_c "  args[0] = camlobj;\n"; (* Never forget that !!! *)
+        p_c "  args[0] = _camlobj;\n"; (* Never forget that !!! *)
         List.iter2i args argnames_cpp ~f:(fun i arg cppvar ->
           Qml.ocaml_value_of_cpp b_c (get_var,release_var)
             ~tab:1 ~ocamlvar:(sprintf "args[%d]" (i+1) ) ~cppvar ( arg)
@@ -143,11 +141,11 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   in
 
   (* Also we need to have a stubs to create C++ class *)
-  p_c "extern \"C\" value caml_create_%s(value camlObj) {\n" classname;
-  p_c "  CAMLparam1(camlObj);\n";
+  p_c "extern \"C\" value caml_create_%s(value _dummyUnitVal) {\n" classname;
+  p_c "  CAMLparam1(_dummyUnitVal);\n";
   p_c "  CAMLlocal1(_ans);\n";
   p_c "  _ans = caml_alloc_small(1, Abstract_tag);\n";
-  p_c "  (*((%s **) &Field(_ans, 0))) = new %s(camlObj);\n" classname classname;
+  p_c "  (*((%s **) &Field(_ans, 0))) = new %s();\n" classname classname;
   p_c "  CAMLreturn(_ans);\n";
   p_c "}\n";
 
@@ -157,11 +155,12 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   p_ml "\n";
   (* Allow to create C++ class from OCaml *)
   p_ml "open QmlContext\n\n";
-  p_ml "class type typ_for_%s = object\n" classname;
-
+  p_ml "class virtual base_%s cppobj = object(self)\n" classname;
+  p_ml "  initializer set_caml_object cppobj self\n";
+  p_ml "  method handler = cppobj\n";
   let do_meth_caml = fun (name,args,res,_) ->
     let caml_types = List.map args ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type) in
-    p_ml "  method %s: %s %s\n" name
+    p_ml "  method virtual %s: %s %s\n" name
       (if args=[] then "" else (String.concat ~sep:"->" caml_types)^"->")
       (res |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
   in
@@ -171,7 +170,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       List.iter qabstractItemView_members ~f:(do_meth_caml);
   in
   p_ml "end\n";
-  p_ml "external create_%s: typ_for_%s -> 'a = \"caml_create_%s\"\n" classname classname classname;
+  p_ml "external create_%s: unit -> 'a = \"caml_create_%s\"\n" classname classname ;
   if base_classname = "QAbstractItemModel" then begin
     p_ml "external add_role: 'a -> int -> string -> unit = \"caml_%s_addRole\"\n" classname
   end;
