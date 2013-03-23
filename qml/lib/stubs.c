@@ -32,8 +32,12 @@ extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj)
   qDebug() << "setted property " << name << " to " << o;
   CAMLreturn(Val_unit);
 }
-extern "C" value caml_foo(value x) {
-    CAMLparam1(x);
 
-    CAMLreturn(Val_unit);
+extern "C" value caml_set_caml_object(value _cppobj,value _camlobj) {
+  CAMLparam2(_cppobj, _camlobj);
+  QObject *o = ((QObject*) Field(_cppobj,0));
+  //TODO: register_global_root
+  o->setProperty(CAMLOBJ_PROPERTY, QVariant::fromValue(_camlobj) );
+  CAMLreturn(Val_unit);
 }
+
