@@ -17,11 +17,13 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
       | `QVariant -> "qvariant"
       | `Bool -> "bool"
       | `Unit  -> "void"
-      | `String -> "string" | `Int -> "int"
+      | `String -> "string"
+      | `QByteArray -> "qbytearray"
+      | `Int -> "int"
       | `Tuple lst -> sprintf "tuple%d" (List.length lst)
       | `List _ -> sprintf "xxxx_list")
 
-let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
+let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
     ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ =
   let print_cpp fmt = bprintf ch fmt in
   let rec to_cpp_conv ~tab dest var typ =
@@ -30,6 +32,8 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
         | `Unit    -> ()
         | `Int     -> print_cpp "%s%s = Int_val(%s);\n" prefix dest var
         | `String  -> print_cpp "%s%s = QString(String_val(%s));\n" prefix dest var
+        | `QByteArray ->
+            print_cpp "%s%s = QByteArray(String_val(%s));\n" prefix dest var
         | `Bool    -> print_cpp "%s%s = Bool_val(%s);\n" prefix dest var
         | `Float   -> raise (Bug "Floats are not implemented yet")
         | `QVariant->
@@ -43,11 +47,18 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel])
             print_cpp "%s} else // empty QVariant\n" prefix;
             print_cpp "%s    %s = QVariant();\n" prefix dest;
             (*print_cpp "%s    %s = QVariant::fromValue"*)
-        | `QModelIndex ->
-            if List.mem options `AbstractItemModel
-            then print_cpp "%s%s = createIndex(Int_val(Field(%s,0)),Int_val(Field(%s,1)));\n"
-              prefix dest var var
-            else raise (Bug "QModelIndex is not available")
+        | `QModelIndex -> begin
+            match List.find options (function `AbstractItemModel _ -> true | _ -> false) with
+              | Some (`AbstractItemModel obj) ->
+                  let call =
+                    match obj with
+                      | Some o -> sprintf "%s->makeIndex" o
+                      | None  -> "createIndex"
+                  in
+                  print_cpp "%s%s = %s(Int_val(Field(%s,0)),Int_val(Field(%s,1)));\n"
+                    prefix dest call var var
+              | None -> raise (Bug "QModelIndex is not available")
+        end
         | `Tuple xs when List.length xs <> 2 ->
             raise (Bug "Again: tuples <> pairs")
         | (`Tuple xs) as ttt ->
@@ -93,6 +104,8 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
       | `Int    -> print_cpp "%s%s = Val_int (%s); " prefix dest var
       | `Bool   -> print_cpp "%s%s = Val_bool(%s); " prefix dest var
       | `Float  -> raise (Bug "float values are not yet implemented")
+      | `QByteArray ->
+          print_cpp "%s%s = caml_copy_string(%s.data() );" prefix dest var
       | `String ->
           print_cpp "%s%s = caml_copy_string(%s.toLocal8Bit().data() );" prefix dest var
       | `QModelIndex ->
@@ -324,6 +337,7 @@ let name_for_slot ?(ocaml_classname=ocaml_classname) (name,args,res,_) =
   let rec typ_to_ocaml_string = function
     | `Unit  -> "unit"
     | `Int  -> "int"
+    | `QByteArray
     | `String   -> "string"
     | `Bool   -> "bool"
     | `QVariant -> "qvariant"

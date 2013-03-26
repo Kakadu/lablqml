@@ -1,9 +1,16 @@
+open Core
 open Core.Std
 module B=Bigbuffer
 open Helpers
 open B.Printf
 open ParseYaml.Yaml2.Types
+open Parser
+open Qml
 
+let with_file path f =
+  let file = open_out path in
+  f file;
+  Out_channel.close file
 
 let qabstractItemView_members =
   let open Parser in
@@ -17,6 +24,66 @@ let qabstractItemView_members =
   ; ("data",        [model; int_type], qvariant_type, [`Const])
   ]
 
+(** generated C++ method which will be called from OCaml side
+ *  returns c++ stub name *)
+let gen_cppmeth_wrapper ~classname cbuf hbuf meth =
+  let p_c fmt = bprintf cbuf fmt in
+  let (name,args,res,_) = meth in
+  let cpp_stub_name = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in
+  let argnames = "_cppobj" :: (List.mapi args ~f:(fun i _ -> sprintf "_x%d" i)) in
+  p_c "extern \"C\" value %s(%s) {\n" cpp_stub_name
+    (List.map argnames ~f:(sprintf "value %s")|> String.concat ~sep:",");
+  Qml.print_param_declarations cbuf argnames;
+  let args = if args=[void_type] then [] else args in
+  let locals_count = 1 +
+    List.fold_left ~init:0 (res::args)
+      ~f:(fun acc x -> max acc TypAst.(x |> of_verbose_typ_exn |> aux_variables_count))
+  in
+  let locals = List.init ~f:(fun n -> sprintf "_z%d" n) locals_count in
+  Qml.print_local_declarations cbuf locals;
+  p_c "  %s *o = (%s*) (Field(_cppobj,0));\n" classname classname;
+  let (get_var, release_var) = Qml.get_vars_queue locals in
+  let new_cpp_var =
+    let count = ref 0 in
+    fun () -> incr count; sprintf "x%d" !count
+  in
+  let cpp_var_names = ref [] in
+
+  List.iteri args ~f:(fun i typ ->
+    let cpp_var = sprintf "z%d" i in
+    Ref.replace cpp_var_names (fun xs -> cpp_var::xs);
+    p_c "  %s %s;\n" (typ |> unreference |> string_of_type) cpp_var;
+    let ocaml_var = List.nth_exn argnames (i+1) in
+    cpp_value_of_ocaml ~options:[`AbstractItemModel (Some "o")] cbuf
+      (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ
+  );
+  let cpp_var_names = List.rev !cpp_var_names in
+  let call_str = sprintf "  o->%s(%s);" name (String.concat ~sep:"," cpp_var_names) in
+  p_c "  qDebug() << \"Going to call %s::%s\";\n" classname name;
+  if res=void_type then begin
+    p_c "%s\n" call_str;
+    p_c "  CAMLreturn(Val_unit);\n"
+  end else begin
+    let cppvar = new_cpp_var () in
+    p_c "  %s %s = %s\n" (res |> unreference |> string_of_type) cppvar call_str;
+    let ocamlvar = get_var () in
+    ocaml_value_of_cpp cbuf (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar res;
+    p_c "  CAMLreturn(%s);\n" ocamlvar
+  end;
+  (*
+      p_c "extern \"C\" value caml_emit_%s_dataChanged(value _cppobj,value _left,value _right){\n" classname;
+      p_c "  CAMLparam3(_cppobj,_left,_right);\n";
+      p_c "  int a = Int_val(Field(_left,0)),\n";
+      p_c "      b = Int_val(Field(_left,1)),\n";
+      p_c "      c = Int_val(Field(_right,0)),\n";
+      p_c "      d = Int_val(Field(_right,1));\n";
+      p_c "  %s *o = (%s*)(Field(_cppobj,0));\n" classname classname;
+      p_c "  o->emit_dataChanged(a,b,c,d);\n";
+      p_c "  CAMLreturn(Val_unit);\n"; *)
+   p_c "}\n";
+   cpp_stub_name
+
+
 let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   let b_h   = B.create 100 in
   let b_c   = B.create 100 in
@@ -28,6 +95,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   let p_c   fmt = bprintf b_c fmt in
   let p_ml  fmt = bprintf b_ml fmt in
 
+  p_ml "\nopen QmlContext\n\n";
 
   p_h "#ifndef %s_c_H\n" classname;
   p_h "#define %s_c_H\n" classname;
@@ -109,8 +177,27 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
     end;
     p_c "}\n";
   in
-  List.iter members ~f:(do_meth ~classname);
+
   (* *)
+  let top_externals_buf = B.create 100 in
+  let clas_def_buf = B.create 100 in
+  let external_buf = B.create 100 in
+  (* Allow to create C++ class from OCaml *)
+  bprintf clas_def_buf "class virtual base_%s cppobj = object(self)\n" classname;
+  bprintf clas_def_buf "  initializer set_caml_object cppobj self\n";
+  bprintf clas_def_buf "  method handler = cppobj\n";
+
+  let do_meth_caml (name,args,res,_) =
+    let caml_types = List.map args ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type) in
+    bprintf clas_def_buf "  method virtual %s: %s %s\n" name
+      (if args=[] then "" else (String.concat ~sep:"->" caml_types)^"->")
+      (res |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
+  in
+
+  List.iter members ~f:(fun mem ->
+    do_meth ~classname mem;
+    do_meth_caml mem;
+  );
   (* Now we will add some methods for specific basename *)
   let () =
     if base_classname = "QAbstractItemModel" then begin
@@ -119,6 +206,9 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       p_h "private:\n";
       p_h "  QHash<int, QByteArray> _roles;\n";
       p_h "public:\n";
+      p_h "  QModelIndex makeIndex(int row,int column) {\n";
+      p_h "    return createIndex(row,column);\n";
+      p_h "  }\n";
 
       p_h "Q_INVOKABLE QList<QString> roles() {\n";
       p_h "  QList<QString> ans;\n";
@@ -126,17 +216,46 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       p_h "      ans << QString(b);\n";
       p_h "  return ans;\n";
       p_h "}\n";
-      p_h "void addRole(int r,QByteArray name) { _roles.insert(r,name); }\n";
+      p_h "void addRole(int r, QByteArray name) { _roles.insert(r,name); }\n";
       p_h "virtual QHash<int, QByteArray> roleNames() const { return _roles; }\n";
+      (* signal to report changing of data *)
+      p_h "void emit_dataChanged(int a, int b, int c, int d) {\n";
+      p_h "  const QModelIndex topLeft     = createIndex(a,b);\n";
+      p_h "  const QModelIndex bottomRight = createIndex(c,d);\n";
+      p_h "  emit dataChanged(topLeft, bottomRight);\n";
+      p_h "}\n";
 
+      (* next methods declared in C++ and are not overridable in OCaml *)
+      let cpp_wrap_stubs =
+        [ (("dataChanged",[Parser.qmodelindex_type;Parser.qmodelindex_type],Parser.void_type,[]),
+           "stub_report_dataChanged", "report_dataChanged")
+        ; (("beginInsertRows",[qmodelindex_type;int_type;int_type],void_type,[]),
+           "stub_beginInsertRows", "beginInsertRows")
+        ; (("endInsertRows",[void_type],void_type,[]),
+           "stub_endInsertRows", "endInsertRows")
+        ; (("beginRemoveRows",[qmodelindex_type;int_type;int_type],void_type,[]),
+           "stub_beginRemoveRows", "beginRemoveRows")
+        ; (("endRemoveRows",[void_type],void_type,[]),
+           "stub_endRemoveRows", "endRemoveRows")
+        ]
+      in
+      List.iter cpp_wrap_stubs ~f:(fun ((_,args,res,_)as desc,stub_name,methname) ->
+        let cpp_stub_name = gen_cppmeth_wrapper ~classname b_c b_h desc in
+        bprintf top_externals_buf
+          "external %s: cppobj -> %s =\n  \"%s\"\n" stub_name
+          (List.map (args@[res]) ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
+           |> String.concat ~sep:"->")
+          cpp_stub_name;
+        bprintf clas_def_buf " method %s = %s cppobj\n" methname stub_name
+      );
+
+      List.iter qabstractItemView_members ~f:(do_meth_caml);
       (* stub for adding new roles *)
-      p_c "extern \"C\" value caml_%s_addRole(value cppobj,value num,value roleName) {\n" classname;
-      p_c "  CAMLparam3(cppobj,roleName,num);\n";
-      p_c "  %s *o  = (%s*) Field(cppobj,0);\n" classname classname;
-      p_c "  o->addRole( Int_val(num), QByteArray(String_val(roleName)) );\n";
-      p_c "  CAMLreturn(Val_unit);\n";
-      p_c "}\n";
-
+      let add_role_stub_name =
+        gen_cppmeth_wrapper ~classname b_c b_h
+          ("addRole", [int_type; bytearray_type |> unreference], void_type, []) in
+      bprintf external_buf
+        "external add_role: 'a -> int -> string -> unit = \"%s\"\n" add_role_stub_name
     end
   in
 
@@ -152,33 +271,13 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   p_h "};\n";
   p_h "#endif // %s_H\n" classname;
 
-  p_ml "\n";
-  (* Allow to create C++ class from OCaml *)
-  p_ml "open QmlContext\n\n";
-  p_ml "class virtual base_%s cppobj = object(self)\n" classname;
-  p_ml "  initializer set_caml_object cppobj self\n";
-  p_ml "  method handler = cppobj\n";
-  let do_meth_caml = fun (name,args,res,_) ->
-    let caml_types = List.map args ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type) in
-    p_ml "  method virtual %s: %s %s\n" name
-      (if args=[] then "" else (String.concat ~sep:"->" caml_types)^"->")
-      (res |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
-  in
-  List.iter members ~f:do_meth_caml;
-  let () =
-    if base_classname = "QAbstractItemModel" then
-      List.iter qabstractItemView_members ~f:(do_meth_caml);
-  in
-  p_ml "end\n";
-  p_ml "external create_%s: unit -> 'a = \"caml_create_%s\"\n" classname classname ;
-  if base_classname = "QAbstractItemModel" then begin
-    p_ml "external add_role: 'a -> int -> string -> unit = \"caml_%s_addRole\"\n" classname
-  end;
-  let with_file path f =
-    let file = open_out path in
-    f file;
-    Out_channel.close file
-  in
+  bprintf clas_def_buf "end\n";
+  bprintf external_buf "external create_%s: unit -> 'a = \"caml_create_%s\"\n" classname classname ;
+
+  p_ml "%s\n" (B.contents top_externals_buf);
+  p_ml "%s\n" (B.contents clas_def_buf);
+  p_ml "%s\n" (B.contents external_buf);
+
   with_file (directory ^/ classname ^ "_c.cpp") (fun file -> B.output_buffer file b_c);
   with_file (directory ^/ classname ^ "_c.h")   (fun file -> B.output_buffer file b_h);
   with_file (directory ^/ classname ^ ".ml")  (fun file -> B.output_buffer file b_ml)

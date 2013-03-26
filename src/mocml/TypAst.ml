@@ -5,7 +5,8 @@ open Printf
 let (|>) = Core.Fn.(|!)
 
 type t =
-  [`QModelIndex | `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t
+  [ `QModelIndex | `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t
+  | `QByteArray
   | `QVariant
   ] with sexp
 
@@ -15,6 +16,7 @@ let aux_variables_count (x : t) =
     | `QModelIndex
     | `QVariant -> 0
     | `Unit -> 0
+    | `QByteArray -> 0
     | `String -> 0
     | `Int -> 0
     | `Float  -> 0
@@ -26,6 +28,7 @@ let aux_variables_count (x : t) =
 
 let is_primitive = function
   | `Float
+  | `QByteArray
   | `String | `Int | `Bool | `Unit  -> true
   | `QModelIndex
   | `QVariant
@@ -34,6 +37,7 @@ let is_primitive = function
 let rec to_cpp_type (typ:t) = match typ with
   | `Float  -> "double"
   | `String -> "QString"
+  | `QByteArray -> "QByteArray"
   | `QModelIndex -> "QModelIndex"
   | `QVariant -> "QVariant"
   | `Int    -> "int"
@@ -55,6 +59,7 @@ let to_ocaml_type typ =
   let rec helper = function
     | `Float  -> "float"
     | `Int    -> "int"
+    | `QByteArray
     | `String -> "string"
     | `Bool   -> "bool"
     | `Unit   -> "unit"
@@ -76,6 +81,7 @@ let to_verbose_typ =
     | `Float  -> {t_name="float"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
     | `Int    -> {t_name="int"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
     | `String -> {t_name="QString"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+    | `QByteArray -> {t_name="QByteArray"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
     | `Bool   -> {t_name="bool"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
     | `Unit   -> {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
     | `QVariant->{t_name="QVariant"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
@@ -102,6 +108,7 @@ let of_verbose_typ_exn =
     | {t_name="QString";t_indirections=0;_} -> `String
     | {t_name="bool";   t_indirections=0;_} -> `Bool
     | {t_name="void";   t_indirections=0;_} -> `Unit
+    | {t_name="QByteArray"; t_indirections=0; _} -> `QByteArray
     | {t_name="QModelIndex"; t_indirections=0; _} -> `QModelIndex
     | {t_name="QVariant"; t_indirections=0; _} -> `QVariant
     | {t_name="QPair"; t_indirections=0; t_params=[l;r]; _} ->

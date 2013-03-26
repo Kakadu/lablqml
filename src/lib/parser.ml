@@ -91,6 +91,8 @@ let qmodelindex_type =
 let int_type = {t_name="int"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 let bool_type = {t_name="bool"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 let qvariant_type = {t_name="QVariant"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+let string_type = {t_name="QString"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
+let bytearray_type = {string_type with t_name="QByteArray"}
 
 let remove_defaults {m_res;m_name; m_args; m_declared; m_out_name; m_access; m_modif } =
   let m_args = List.map m_args ~f:(fun x -> {x with arg_default=None} ) in
