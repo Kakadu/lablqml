@@ -2,6 +2,7 @@
 MainModel:
   basename:     QAbstractItemModel
   methods:   # arg1, arg2, ...., return value
+    onItemSelected: [int, int, unit]
     #sizey: [unit, int]
     #meth1: [int list, int]
     #meth2: [unit, unit]
