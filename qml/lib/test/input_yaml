@@ -1,26 +1,12 @@
 ---
-MainModel:
-  basename:     QAbstractItemModel
+Controller:
+  basename:
   methods:   # arg1, arg2, ...., return value
     onItemSelected: [int, int, unit]
-    #sizey: [unit, int]
-    #meth1: [int list, int]
-    #meth2: [unit, unit]
-    #getValues: [int list, (string list*int) list * int]
   properties:
-#      readOnlyProp:
-#            type: int list
-#            get: tableCount
-#            notify: tablesChanged
-      count:
-            type: int
-            get:  count
-            set:  setCount
-            notify: countChanged
   slots:
-    clicked: [unit, unit]
 
-MiniModel:
+AbstractModel:
   basename:  QAbstractItemModel
   methods:
   properties:

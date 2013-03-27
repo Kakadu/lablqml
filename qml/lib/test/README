@@ -1,0 +1,17 @@
+This is example for QML+OCaml app.
+`make depend` generates files using `input_yaml` file
+`make` builds all
+`./main` is main executable
+`make clean` does not remove generated files
+
+
+N.B. This build uses $QT5_ROOT environment variable
+$ ls $QT5_ROOT
+configure        qtbase              qtmultimedia  qtsvg                        README
+configure.bat    qtdeclarative       qt.pro        qttools                      README.git
+gnuwin32         qtdoc               qtqa          qttranslations
+init-repository  qtgraphicaleffects  qtquick1      qtwebkit
+Makefile         qtimageformats      qtrepotools   qtwebkit-examples-and-demos
+qtactiveqt       qtjsbackend         qtscript      qtxmlpatterns
+
+

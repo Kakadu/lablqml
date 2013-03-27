@@ -11,9 +11,19 @@ let () = Arg.parse
 
 open QmlContext
 
+class virtual abstractListModel cppobj = object(self)
+  inherit AbstractModel.base_AbstractModel cppobj as super
+  method parent _ = QModelIndex.empty
+  method index row column parent =
+    if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
+    else QModelIndex.empty
+  method columnCount _ = 1
+  method hasChildren _ = self#rowCount QModelIndex.empty > 0
+end
+
 let root = S.(build_tree (read_modules "/home/kakadu/.opam/4.00.1/lib/ocaml"))
 let selected = ref [-1]
-let cpp_data: (MiniModel.base_MiniModel * DataItem.base_DataItem list) list ref  = ref []
+let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
 
 let cpp_data_helper ys =
   let f xs =
@@ -25,19 +35,13 @@ let cpp_data_helper ys =
         method sort () = "1"
       end) in
     (* creating miniModel for this list *)
-    let cppobj = MiniModel.create_MiniModel () in
-    MiniModel.add_role cppobj 555 "qwe";
+    let cppobj = AbstractModel.create_AbstractModel () in
+    AbstractModel.add_role cppobj 555 "qwe";
 
     let o =
       object(self)
-        inherit MiniModel.base_MiniModel cppobj as super
-        method parent _ = QModelIndex.empty
-        method index row column parent =
-          if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
-          else QModelIndex.empty
-        method columnCount _ = 1
+        inherit abstractListModel cppobj as super
         method rowCount _ = List.length data
-        method hasChildren _ = self#rowCount QModelIndex.empty > 0
         method data index role =
           let r = QModelIndex.row index in
           if (r<0 || r>= List.length data) then QVariant.empty
@@ -52,7 +56,7 @@ let cpp_data_helper ys =
   in
   List.map ys ~f
 
-let initial_cpp_data () : (MiniModel.base_MiniModel * DataItem.base_DataItem list) list =
+let initial_cpp_data () : (abstractListModel * DataItem.base_DataItem list) list =
   let xs = Tree.proj root [-1] in
   assert (List.length xs = 1);
   cpp_data_helper xs
@@ -107,21 +111,15 @@ let item_selected mainModel x y : unit =
 let main () =
   cpp_data := initial_cpp_data ();
 
-  let cpp_model = MainModel.create_MainModel () in
-  MainModel.add_role cpp_model 555 "homm";
+  let cpp_model = AbstractModel.create_AbstractModel () in
+  AbstractModel.add_role cpp_model 555 "homm";
 
   let model = object(self)
-    inherit MainModel.base_MainModel cpp_model as super
-    method parent _ = QModelIndex.empty
-    method index row column parent =
-      if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
-      else QModelIndex.empty
-    method columnCount _ = 1
+    inherit abstractListModel cpp_model as super
     method rowCount _ =
       let ans = List.length !cpp_data in
       printf "rowCount = %d\n%!" ans;
       ans
-    method hasChildren _ = self#rowCount QModelIndex.empty > 0
     method data index role =
       let r = QModelIndex.row index in
       if (r<0 || r>= List.length !cpp_data) then QVariant.empty
@@ -130,15 +128,20 @@ let main () =
         then QVariant.of_object (List.nth !cpp_data ~n:r |> fst)#handler
         else QVariant.empty
       end
+  end in
+
+  let controller_cppobj = Controller.create_Controller () in
+  let controller = object
+    inherit Controller.base_Controller controller_cppobj as super
     method onItemSelected x y  =
-      try item_selected self x y
+      try item_selected model x y
       with exc ->
         Printexc.to_string exc |> print_endline;
         printf "Backtrace:\n%s\n%!" (Printexc.get_backtrace ());
         exit 0
   end in
-  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" cpp_model
-
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
 
 let () = Callback.register "doCaml" main

@@ -64,7 +64,7 @@ Rectangle {
                             anchors.fill: parent
                             onClicked: {
                                 lv1.currentIndex = index;
-                                myModel.onItemSelected(mainIndex,index);
+                                controller.onItemSelected(mainIndex,index);
                             }
                         }
                     }

@@ -3,9 +3,10 @@ CC=g++ -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -I../_build -I`ocamlc -where
    -Dprotected=public -Dprivate=public
 CLINK=g++ -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
 OUT=main
-GEN_CMX=DataItem.cmx MainModel.cmx MiniModel.cmx
-GEN_CPP=DataItem_c.o moc_DataItem_c.o MainModel_c.o moc_MainModel_c.o MiniModel_c.o moc_MiniModel_c.o
-GEN_MOC=DataItem_c.cpp MainModel_c.cpp MiniModel_c.cpp
+GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
+MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
+GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.cpp=.o)
+GEN_MOC=$(GEN_CMX:.cmx=_c.cpp)
 OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix -linkpkg
 
 CMX=helpers.cmx tree.cmx S.cmx program.cmx
@@ -40,7 +41,7 @@ moc_%.cpp: %.h
 	$(OCAMLOPT) -I ../_build -c $<
 
 clean:
-	rm *.o *.cm[oiax] *.cmxa *.o.startup.s -f
+	rm *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) -f
 
 -include  $(shell ocamlc -where)/Makefile.config
 include .depend
