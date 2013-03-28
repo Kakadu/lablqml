@@ -1,8 +1,6 @@
 import QtQuick 2.0
 
 Rectangle {
-//    width: 800
-//    height: 600
     property string backgroundColor: "#FFFFDF"
     // next two properties regulate how big  text blocks and latters will be
     property int defaultFontSize: 20
@@ -12,10 +10,13 @@ Rectangle {
     color: backgroundColor
 
     ListView {
+        //id: mainView
         model: myModel
         height: 400
         width: parent.width
         orientation: ListView.Horizontal
+        spacing: 10
+        anchors.leftMargin: 5
         ScrollBar {
             flickable: parent
             vertical: false
@@ -27,7 +28,8 @@ Rectangle {
             property int mainIndex: index
             height: 400
             width: 250
-            color: "lightgray"
+            color: backgroundColor
+
             anchors.rightMargin: 5
             anchors.leftMargin: 5
             ListView {
@@ -42,35 +44,53 @@ Rectangle {
                     hideScrollBarsWhenStopped: false
                     scrollbarWidth: 5
                 }
-
+                highlight: Rectangle {
+                    color: backgroundColor
+                    radius: 3; opacity: 0.7
+                    anchors.leftMargin: 5
+                    anchors.rightMargin: 10
+                    border.width: 1
+                }
+                clip: true
                 model: homm
                 spacing: 5
                 orientation: ListView.Vertical
-                delegate: Rectangle {
-                    radius: 5
+                delegate: Text {
+                    //radius: 5
                     anchors.rightMargin: 15
                     anchors.leftMargin: 5
                     height: defaultTextFieldHeight
                     width: lv1.width - 15
                     x: 5
-                    color: if (index==lv1.currentIndex) "lightgray"
-                           else backgroundColor
-                    Text {
-                        text: qwe.name() + " " + qwe.sort()
+                    text: qwe.name() + " " + qwe.sort()
+                    font.family: "Consolas"
+                    font.pixelSize: defaultFontSize
+                    MouseArea {
                         anchors.fill: parent
-                        font.family: "Consolas"
-                        font.pixelSize: defaultFontSize
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                lv1.currentIndex = index;
-                                controller.onItemSelected(mainIndex,index);
-                            }
+                        onClicked: {
+                            lv1.currentIndex = index;
+                            controller.onItemSelected(mainIndex,index);
                         }
                     }
                 }
             }
         }
+    }
+
+/*    Text {
+        id: descriptionTextField
+        //anchors.top: mainView.bottom
+        //anchors.left: mainView.left;
+        //anchors.fill: root
+        //x: 0
+        //y: lv1.height
+        font.family: "Comic Sans MS"
+        text: {
+            //if (mainData.showDescription) mainData.itemDescription
+            //else ""
+            ""
+        }
 
     }
+*/
 }

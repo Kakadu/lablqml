@@ -15,7 +15,6 @@ void doCaml() {
 
 int main(int argc, char ** argv) {
     caml_main(argv);
-    //caml_startup(argv);
     QGuiApplication app(argc, argv);
     QQuickView view;
     view.setResizeMode(QQuickView::SizeRootObjectToView);

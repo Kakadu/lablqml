@@ -83,6 +83,6 @@ let proj root (selected: int list) : _ tree list list =
         ans:= y.sons :: !ans
     end
   );
-  !ans
+  List.rev !ans
 
 let string_of_proj xs = List.to_string ~f:string_of_int xs

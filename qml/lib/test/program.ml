@@ -74,6 +74,7 @@ let item_selected mainModel x y : unit =
 
   printf "Redraw from: %d, last_row=%d\n%!" redraw_from last_row;
   let cpp_data_head = List.take !cpp_data ~n:redraw_from in
+
   if redraw_from <= last_row then begin
     printf "Delete some rows\n%!";
     mainModel#beginRemoveRows QModelIndex.empty redraw_from (List.length !cpp_data-1);
@@ -85,8 +86,8 @@ let item_selected mainModel x y : unit =
   end;
 
   let xs = Tree.proj root new_selected in
-  (*printf "Length cpp_data_head = %d\n%!" (List.length  cpp_data_head);
-  printf "new selected: %s\n" (Tree.string_of_proj new_selected);
+  printf "Length cpp_data_head = %d\n%!" (List.length  cpp_data_head);
+  (*printf "new selected: %s\n" (Tree.string_of_proj new_selected);
   printf "proj length: %d\n" (List.length xs);*)
   (*printf "last element length of proj is %d\n%!" (xs|>List.last|>List.length);
   Tree.print_tree root (fun _ -> "") new_selected;*)
@@ -94,11 +95,8 @@ let item_selected mainModel x y : unit =
   if leaf_selected then begin
     printf "Some leaf has been selected\n%!"
   end else begin
-    let xs = xs |> List.take ~n:(List.length cpp_data_head) in
-    let zs = cpp_data_helper xs in(*
-    printf "List.length zs = %d\n%!" (List.length zs);
-    printf "List.length xs = %d\n%!" (List.length xs);
-    printf "List.length !cpp_data = %d\n%!" (List.length !cpp_data);*)
+    let xs = List.drop xs ~n:(List.length cpp_data_head) in
+    let zs = cpp_data_helper xs in
     if List.length zs <> 0 then begin
       let from = List.length !cpp_data in
       let last = from + List.length zs-1 in
@@ -109,8 +107,7 @@ let item_selected mainModel x y : unit =
       printf "End inserting rows. cpp_data.length = %d\n%!" (List.length !cpp_data);
     end;
   end;
-  assert (List.length !cpp_data = List.length new_selected);
-  ()
+  assert (List.length !cpp_data = List.length new_selected)
 
 let main () =
   cpp_data := initial_cpp_data ();
@@ -120,10 +117,7 @@ let main () =
 
   let model = object(self)
     inherit abstractListModel cpp_model as super
-    method rowCount _ =
-      let ans = List.length !cpp_data in
-      printf "rowCount = %d\n%!" ans;
-      ans
+    method rowCount _ = List.length !cpp_data
     method data index role =
       let r = QModelIndex.row index in
       if (r<0 || r>= List.length !cpp_data) then QVariant.empty
