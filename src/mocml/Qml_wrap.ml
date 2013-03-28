@@ -106,6 +106,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   p_h "#include <QtCore/QObject>\n";
   let base_classname =
     match basename with
+      | Some ""
       | None -> "QObject"
       | Some x ->
           p_h "#include <QtCore/%s>\n" x;
@@ -207,7 +208,10 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       p_h "  QHash<int, QByteArray> _roles;\n";
       p_h "public:\n";
       p_h "  QModelIndex makeIndex(int row,int column) {\n";
-      p_h "    return createIndex(row,column);\n";
+      p_h "    if (row==-1 || column==-1)\n";
+      p_h "      return QModelIndex();\n";
+      p_h "    else\n";
+      p_h "      return createIndex(row,column,(void*)NULL);\n";
       p_h "  }\n";
 
       p_h "Q_INVOKABLE QList<QString> roles() {\n";
