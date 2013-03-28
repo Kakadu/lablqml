@@ -71,12 +71,18 @@ let print_tree root f selected =
 let proj root (selected: int list) : _ tree list list =
   assert (good_selected selected);
   let ans = ref [root.sons] in
-  List.iter selected ~f:(fun n ->
-    if n = -1 then ()
-    else begin
+  List.iteri selected ~f:(fun i n ->
+    if n = -1 then begin
+      assert (i+1 = List.length selected)
+    end else begin
       let x = List.hd !ans in
       let y = List.nth ~n x in
-      ans:= y.sons :: !ans
+      if y.sons=[] then begin
+        assert (i+1 = List.length selected)
+      end else
+        ans:= y.sons :: !ans
     end
   );
   !ans
+
+let string_of_proj xs = List.to_string ~f:string_of_int xs

@@ -65,15 +65,18 @@ let item_selected mainModel x y : unit =
   printf "Item selected: %d,%d\n%!" x y;
   let last_row = List.length !cpp_data - 1 in
   let (new_selected,redraw_from) = Tree.change_state !selected (x,y) root in
+  let leaf_selected =
+    assert (redraw_from <= List.length !cpp_data);
+    (redraw_from=List.length new_selected)
+  in
   selected := new_selected;
-  printf "New selected: [%s]\n" (List.to_string !selected ~f:string_of_int);
+  (*printf "New selected: [%s]\n" (List.to_string !selected ~f:string_of_int);*)
 
   printf "Redraw from: %d, last_row=%d\n%!" redraw_from last_row;
-  let cpp_data_head = List.take !cpp_data ~n:redraw_from in(*
-  let removed_rows_count = List.length !cpp_data - List.length cpp_data_head in*)
+  let cpp_data_head = List.take !cpp_data ~n:redraw_from in
   if redraw_from <= last_row then begin
     printf "Delete some rows\n%!";
-    mainModel#beginRemoveRows (QModelIndex.make ~row:0 ~column:0) redraw_from (List.length !cpp_data-1);
+    mainModel#beginRemoveRows QModelIndex.empty redraw_from (List.length !cpp_data-1);
     cpp_data := cpp_data_head;
     mainModel#endRemoveRows ();
     printf "Rows deleted!\n%!"
@@ -81,32 +84,33 @@ let item_selected mainModel x y : unit =
     cpp_data := cpp_data_head;
   end;
 
-  printf "Length cpp_data_head = %d\n%!" (List.length  cpp_data_head);
   let xs = Tree.proj root new_selected in
+  (*printf "Length cpp_data_head = %d\n%!" (List.length  cpp_data_head);
+  printf "new selected: %s\n" (Tree.string_of_proj new_selected);
+  printf "proj length: %d\n" (List.length xs);*)
+  (*printf "last element length of proj is %d\n%!" (xs|>List.last|>List.length);
+  Tree.print_tree root (fun _ -> "") new_selected;*)
   assert (List.length xs = List.length new_selected);
-  let xs = xs |> List.take ~n:redraw_from in
-  let zs = cpp_data_helper xs in
-  if List.length zs <> 0 then begin
-    let from = List.length !cpp_data in
-    let last = from + List.length zs-1 in
-    printf "Adding rows from %d to %d\n%!" from last;
-    let parent = QModelIndex.empty (*QModelIndex.make ~row:0 ~column:0*) in
-    mainModel#beginInsertRows parent from last;
-    cpp_data := !cpp_data @ zs;
-    mainModel#endInsertRows ();
-    printf "End inserting rows. cpp_data.length = %d\n%!" (List.length !cpp_data);
+  if leaf_selected then begin
+    printf "Some leaf has been selected\n%!"
+  end else begin
+    let xs = xs |> List.take ~n:(List.length cpp_data_head) in
+    let zs = cpp_data_helper xs in(*
+    printf "List.length zs = %d\n%!" (List.length zs);
+    printf "List.length xs = %d\n%!" (List.length xs);
+    printf "List.length !cpp_data = %d\n%!" (List.length !cpp_data);*)
+    if List.length zs <> 0 then begin
+      let from = List.length !cpp_data in
+      let last = from + List.length zs-1 in
+      printf "Adding rows from %d to %d\n%!" from last;
+      mainModel#beginInsertRows QModelIndex.empty from last;
+      cpp_data := !cpp_data @ zs;
+      mainModel#endInsertRows ();
+      printf "End inserting rows. cpp_data.length = %d\n%!" (List.length !cpp_data);
+    end;
   end;
   assert (List.length !cpp_data = List.length new_selected);
-(*  assert (List.length new_selected = mainModel#rowCount QModelIndex.empty);*)
-
-
-  printf "Sending event to change model\n%!";
-  let column = 0 in
-  let from = QModelIndex.make ~row:0 ~column in
-  (*let from = QModelIndex.make ~row:(redraw_from) ~column in*)
-  let dest = QModelIndex.make ~row:(List.length !cpp_data-1) ~column in
-  printf "Call update %s...%s\n%!" (QModelIndex.to_string from) (QModelIndex.to_string dest);
-  mainModel#report_dataChanged from dest
+  ()
 
 let main () =
   cpp_data := initial_cpp_data ();

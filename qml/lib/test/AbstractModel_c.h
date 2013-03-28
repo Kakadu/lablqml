@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-03-27 13:45:00.158747
+ * Generated at 2013-03-28 20:00:56.323257
  */
 #ifndef AbstractModel_c_H
 #define AbstractModel_c_H
@@ -22,7 +22,10 @@ private:
   QHash<int, QByteArray> _roles;
 public:
   QModelIndex makeIndex(int row,int column) {
-    return createIndex(row,column);
+    if (row==-1 || column==-1)
+      return QModelIndex();
+    else
+      return createIndex(row,column,(void*)NULL);
   }
 Q_INVOKABLE QList<QString> roles() {
   QList<QString> ans;
