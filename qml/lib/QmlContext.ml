@@ -33,4 +33,5 @@ module QModelIndex = struct
   let row = fst
   let column = snd
   let make ~row ~column = (row,column)
+  let to_string (row,column) = Printf.sprintf "(%d,%d)" row column
 end

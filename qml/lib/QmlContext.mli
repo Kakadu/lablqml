@@ -14,10 +14,11 @@ module QVariant : sig
 end
 
 module QModelIndex : sig
-    type t
-    val empty: t
-    val row: t -> int
-    val column: t -> int
-    val make: row:int -> column:int -> t
+  type t
+  val empty: t
+  val row: t -> int
+  val column: t -> int
+  val make: row:int -> column:int -> t
+  val to_string: t -> string
 end
 
