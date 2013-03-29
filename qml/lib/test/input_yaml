@@ -4,6 +4,14 @@ Controller:
   methods:   # arg1, arg2, ...., return value
     onItemSelected: [int, int, unit]
   properties:
+    hasData:
+      type:   bool
+      get:    isHasData
+      notify: hasDataChanged
+    descr:
+      type:   string
+      get:    getDescr
+      notify: descChanged
   slots:
 
 AbstractModel:
@@ -18,3 +26,4 @@ DataItem:
     sort: [unit, string]
   properties:
   slots:
+

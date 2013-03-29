@@ -80,12 +80,11 @@ Rectangle {
       Text {
         id: descriptionTextField
         x: 0; y: mainView.height
-        font.family: "Consolas"
+        font.family: "Monospace"
         font.pixelSize: defaultFontSize
         text: {
-            //if (mainData.showDescription) mainData.itemDescription
-            //else ""
-            "Description will be here"
+            if (controller.hasData) controller.descr
+            else "<No description here>"
         }
       }
     }

@@ -61,8 +61,8 @@ let initial_cpp_data () : (abstractListModel * DataItem.base_DataItem list) list
   assert (List.length xs = 1);
   cpp_data_helper xs
 
-let item_selected mainModel x y : unit =
-  (*printf "Item selected: %d,%d\n%!" x y;*)
+let item_selected controller mainModel x y : unit =
+  printf "Item selected: %d,%d\n%!" x y;
   let last_row = List.length !cpp_data - 1 in
   let (new_selected,redraw_from) = Tree.change_state !selected (x,y) root in
   let leaf_selected =
@@ -91,9 +91,12 @@ let item_selected mainModel x y : unit =
     let cur_item = List.last xs |> List.nth ~n:(List.last new_selected) in
     let b = Buffer.create 500 in
     let fmt = Format.(formatter_of_buffer b) in
+    printf "1.7\n%!";
     Printtyp.signature fmt [cur_item.Tree.internal];
+    printf "2\n%!";
+    Format.pp_print_flush fmt ();
     printf "Some leaf has been selected:\n%s%!" (Buffer.contents b);
-
+    controller#updateDescription (Buffer.contents b);
   end else begin
     let xs = List.drop xs ~n:(List.length cpp_data_head) in
     let zs = cpp_data_helper xs in
@@ -129,14 +132,32 @@ let main () =
   end in
 
   let controller_cppobj = Controller.create_Controller () in
-  let controller = object
+  let controller = object(self)
     inherit Controller.base_Controller controller_cppobj as super
     method onItemSelected x y  =
-      try item_selected model x y
+      try item_selected self model x y
       with exc ->
         Printexc.to_string exc |> print_endline;
         printf "Backtrace:\n%s\n%!" (Printexc.get_backtrace ());
         exit 0
+    val mutable desc = None
+    method isHasData () = match desc with Some _ -> true | _ -> false
+    method getDescr () =
+      print_endline "Inside method getDescr()";
+      match desc with
+        | Some x -> x
+        | None   ->
+            eprintf "App have tried to access description which should not exist now";
+            "<no description. Bug!>"
+    method updateDescription info =
+      printf "inside updateDescription \"%s\"\n%!" info;
+      if self#isHasData () then begin
+        desc <- Some info;
+      end else begin
+        desc <- Some info;
+        self#emit_hasDataChanged true;
+      end;
+      self#emit_descChanged info
   end in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
