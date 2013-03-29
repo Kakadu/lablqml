@@ -10,7 +10,7 @@ Rectangle {
     color: backgroundColor
 
     ListView {
-        //id: mainView
+        id: mainView
         model: myModel
         height: 400
         width: parent.width
@@ -35,7 +35,7 @@ Rectangle {
             ListView {
                 id: lv1
                 width: parent.width
-                height: parent.height - 40
+                height: parent.height - 10
 
                 currentIndex: -1
                 ScrollBar {
@@ -76,21 +76,18 @@ Rectangle {
             }
         }
     }
-
-/*    Text {
+    Rectangle {
+      Text {
         id: descriptionTextField
-        //anchors.top: mainView.bottom
-        //anchors.left: mainView.left;
-        //anchors.fill: root
-        //x: 0
-        //y: lv1.height
-        font.family: "Comic Sans MS"
+        x: 0; y: mainView.height
+        font.family: "Consolas"
+        font.pixelSize: defaultFontSize
         text: {
             //if (mainData.showDescription) mainData.itemDescription
             //else ""
-            ""
+            "Description will be here"
         }
-
+      }
     }
-*/
+
 }

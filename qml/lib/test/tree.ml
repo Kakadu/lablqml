@@ -20,6 +20,18 @@ let rec of_sig_item internal =
   | Types.Sig_class     ({Ident.name;_},_,_) -> {name; internal; sons=[]}
   | Types.Sig_class_type({Ident.name;_},_,_) -> {name; internal; sons=[]}
 
+let print_sig fmt v =
+  match v with
+  | Types.Sig_value     (id,desc)    -> Printtyp.value_description id fmt desc
+  | Types.Sig_type      (id,desc,_)  -> Printtyp.type_declaration  id fmt desc
+  | Types.Sig_exception (id,desc)    -> Printtyp.exception_declaration  id fmt desc
+  | Types.Sig_module    (id,desc,_)  -> Format.fprintf fmt "<no data>\n"
+  | Types.Sig_modtype   (id,desc)    -> Printtyp.modtype_declaration  id fmt desc
+  | Types.Sig_class     (id,desc,_) -> Printtyp.class_declaration   id fmt desc
+  | Types.Sig_class_type(id,desc,_) -> Printtyp.cltype_declaration  id fmt desc;
+  Format.pp_print_newline fmt ();
+  Format.pp_print_flush fmt ()
+
 (* [old_selected] previous indexes. Either all>=0 or (last=-1 and others >=0) *)
 let change_state (old_selected: int list) (x,y) root =
   assert (x>=0);

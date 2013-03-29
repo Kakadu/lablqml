@@ -62,7 +62,7 @@ let initial_cpp_data () : (abstractListModel * DataItem.base_DataItem list) list
   cpp_data_helper xs
 
 let item_selected mainModel x y : unit =
-  printf "Item selected: %d,%d\n%!" x y;
+  (*printf "Item selected: %d,%d\n%!" x y;*)
   let last_row = List.length !cpp_data - 1 in
   let (new_selected,redraw_from) = Tree.change_state !selected (x,y) root in
   let leaf_selected =
@@ -72,7 +72,7 @@ let item_selected mainModel x y : unit =
   selected := new_selected;
   (*printf "New selected: [%s]\n" (List.to_string !selected ~f:string_of_int);*)
 
-  printf "Redraw from: %d, last_row=%d\n%!" redraw_from last_row;
+  (*printf "Redraw from: %d, last_row=%d\n%!" redraw_from last_row;*)
   let cpp_data_head = List.take !cpp_data ~n:redraw_from in
 
   if redraw_from <= last_row then begin
@@ -86,14 +86,14 @@ let item_selected mainModel x y : unit =
   end;
 
   let xs = Tree.proj root new_selected in
-  printf "Length cpp_data_head = %d\n%!" (List.length  cpp_data_head);
-  (*printf "new selected: %s\n" (Tree.string_of_proj new_selected);
-  printf "proj length: %d\n" (List.length xs);*)
-  (*printf "last element length of proj is %d\n%!" (xs|>List.last|>List.length);
-  Tree.print_tree root (fun _ -> "") new_selected;*)
   assert (List.length xs = List.length new_selected);
   if leaf_selected then begin
-    printf "Some leaf has been selected\n%!"
+    let cur_item = List.last xs |> List.nth ~n:(List.last new_selected) in
+    let b = Buffer.create 500 in
+    let fmt = Format.(formatter_of_buffer b) in
+    Printtyp.signature fmt [cur_item.Tree.internal];
+    printf "Some leaf has been selected:\n%s%!" (Buffer.contents b);
+
   end else begin
     let xs = List.drop xs ~n:(List.length cpp_data_head) in
     let zs = cpp_data_helper xs in
