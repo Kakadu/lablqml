@@ -361,6 +361,31 @@ let print_time ?(lang=`CPP) ch =
         bprintf ch " */\n"
     | `OCaml -> bprintf ch "(* Generated at %s *)\n" Time.(now () |> to_string)
 
+let do_prop hbuf cbuf ({name;getter;setter;notifier;typ} as prop) =
+  let p_h fmt = bprintf hbuf fmt in
+  (*let p_c fmt = bprintf cbuf fmt in*)
+  p_h "public:\n";
+  p_h "  Q_PROPERTY(%s %s %s READ %s NOTIFY %s)\n"
+    (Parser.string_of_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
+  let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Getter prop in
+  gen_meth ~classname ~ocaml_methname ~options:[] hbuf cbuf (getter,[Parser.void_type],typ,[]);
+  let () =
+    match setter with
+      | Some setter ->
+          let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Setter prop in
+          gen_meth ~classname ~ocaml_methname
+            ~options:[`Setter notifier] hbuf cbuf (setter,[typ],Parser.void_type,[]);
+      | None -> ()
+  in
+  p_h "signals:\n";
+  p_h "  void %s(%s);\n" notifier (Parser.string_of_type typ);
+  gen_signal_stub ~classname ~signal:notifier ~typ:(TypAst.of_verbose_typ_exn typ)
+      cbuf (stubname_for_signal_emit name notifier);
+  p_h "public:\n";
+  p_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
+  p_h "    emit %s(arg1);\n" notifier;
+  p_h "  }\n\n"
+
 let gen_cpp {classname; members; slots; props; _ } =
   let big_name = String.capitalize classname ^ "_H" in
   let h_file = B.create 100 in
@@ -382,28 +407,7 @@ let gen_cpp {classname; members; slots; props; _ } =
   print_cpp "#include \"%s.h\"\n\n" classname;
 
   (* properties *)
-  List.iter props ~f:(fun ({name;getter;setter;notifier;typ} as prop) ->
-    print_h "public:\n";
-    print_h "  Q_PROPERTY(%s %s %s READ %s NOTIFY %s)\n"
-      (Parser.string_of_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
-    let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Getter prop in
-    gen_meth ~classname ~ocaml_methname ~options:[] h_file cpp_file (getter,[Parser.void_type],typ,[]);
-    let () =
-      match setter with
-        | Some setter ->
-            let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Setter prop in
-            gen_meth ~classname ~ocaml_methname
-              ~options:[`Setter notifier] h_file cpp_file (setter,[typ],Parser.void_type,[]);
-        | None -> ()
-    in
-    print_h "signals:\n";
-    print_h "  void %s(%s);\n" notifier (Parser.string_of_type typ);
-    gen_signal_stub ~classname ~signal:notifier ~typ:(TypAst.of_verbose_typ_exn typ)
-      cpp_file (stubname_for_signal_emit name notifier);
-    print_h "public:\n";
-    print_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
-    print_h "    emit %s(arg1);\n" notifier;
-    print_h "  }\n\n"
+  List.iter props ~f:(do_prop h_file cpp_file
   );
   print_h "public:\n";
   print_h "  explicit %s(QObject *parent = 0) : QObject(parent) {}\n" classname;
