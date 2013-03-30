@@ -8,7 +8,6 @@ QModelIndex AbstractModel::parent(const QModelIndex & x0) const {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
-  qDebug() << "Calling AbstractModel::parent";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -30,7 +29,6 @@ QModelIndex AbstractModel::index(int x0,int x1,const QModelIndex & x2) const {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,4);
   CAMLlocal3(_cca0,_cca1,_cca2);
-  qDebug() << "Calling AbstractModel::index";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -56,7 +54,6 @@ int AbstractModel::columnCount(const QModelIndex & x0) const {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
-  qDebug() << "Calling AbstractModel::columnCount";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -78,7 +75,6 @@ int AbstractModel::rowCount(const QModelIndex & x0) const {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
-  qDebug() << "Calling AbstractModel::rowCount";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -100,7 +96,6 @@ bool AbstractModel::hasChildren(const QModelIndex & x0) const {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
-  qDebug() << "Calling AbstractModel::hasChildren";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -122,7 +117,6 @@ QVariant AbstractModel::data(const QModelIndex & x0,int x1) const {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,3);
   CAMLlocal2(_cca0,_cca1);
-  qDebug() << "Calling AbstractModel::data";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -141,7 +135,6 @@ QVariant AbstractModel::data(const QModelIndex & x0,int x1) const {
     if (caml_hash_variant("string")==Field(_ans,0))
       cppans = QVariant::fromValue(QString(String_val(Field(_ans,1))));
     else if(caml_hash_variant("qobject")==Field(_ans,0)) {
-      //qDebug() << "PIZDA";
       cppans = QVariant::fromValue((QObject*) (Field(Field(_ans,1),0)));
     } else Q_ASSERT(false);
   } else // empty QVariant
@@ -156,7 +149,6 @@ extern "C" value caml_AbstractModel_dataChanged_cppmeth_wrapper(value _cppobj,va
   z0 = o->makeIndex(Int_val(Field(_x0,0)),Int_val(Field(_x0,1)));
   QModelIndex z1;
   z1 = o->makeIndex(Int_val(Field(_x1,0)),Int_val(Field(_x1,1)));
-  qDebug() << "Going to call AbstractModel::dataChanged";
   o->dataChanged(z0,z1);
   CAMLreturn(Val_unit);
 }
@@ -170,7 +162,6 @@ extern "C" value caml_AbstractModel_beginInsertRows_cppmeth_wrapper(value _cppob
   z1 = Int_val(_x1);
   int z2;
   z2 = Int_val(_x2);
-  qDebug() << "Going to call AbstractModel::beginInsertRows";
   o->beginInsertRows(z0,z1,z2);
   CAMLreturn(Val_unit);
 }
@@ -178,7 +169,6 @@ extern "C" value caml_AbstractModel_endInsertRows_cppmeth_wrapper(value _cppobj,
   CAMLparam2(_cppobj,_x0);
   CAMLlocal1(_z0);
   AbstractModel *o = (AbstractModel*) (Field(_cppobj,0));
-  qDebug() << "Going to call AbstractModel::endInsertRows";
   o->endInsertRows();
   CAMLreturn(Val_unit);
 }
@@ -192,7 +182,6 @@ extern "C" value caml_AbstractModel_beginRemoveRows_cppmeth_wrapper(value _cppob
   z1 = Int_val(_x1);
   int z2;
   z2 = Int_val(_x2);
-  qDebug() << "Going to call AbstractModel::beginRemoveRows";
   o->beginRemoveRows(z0,z1,z2);
   CAMLreturn(Val_unit);
 }
@@ -200,7 +189,6 @@ extern "C" value caml_AbstractModel_endRemoveRows_cppmeth_wrapper(value _cppobj,
   CAMLparam2(_cppobj,_x0);
   CAMLlocal1(_z0);
   AbstractModel *o = (AbstractModel*) (Field(_cppobj,0));
-  qDebug() << "Going to call AbstractModel::endRemoveRows";
   o->endRemoveRows();
   CAMLreturn(Val_unit);
 }
@@ -212,7 +200,6 @@ extern "C" value caml_AbstractModel_addRole_cppmeth_wrapper(value _cppobj,value 
   z0 = Int_val(_x0);
   QByteArray z1;
   z1 = QByteArray(String_val(_x1));
-  qDebug() << "Going to call AbstractModel::addRole";
   o->addRole(z0,z1);
   CAMLreturn(Val_unit);
 }

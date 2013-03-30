@@ -7,7 +7,6 @@ QString DataItem::name() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,1);
-  qDebug() << "Calling DataItem::name";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -22,7 +21,6 @@ QString DataItem::sort() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,1);
-  qDebug() << "Calling DataItem::sort";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);

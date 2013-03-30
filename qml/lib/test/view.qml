@@ -16,7 +16,7 @@ Rectangle {
         width: parent.width
         orientation: ListView.Horizontal
         spacing: 10
-        anchors.leftMargin: 5
+
         ScrollBar {
             flickable: parent
             vertical: false
@@ -27,11 +27,12 @@ Rectangle {
         delegate: Rectangle {
             property int mainIndex: index
             height: 400
-            width: 250
+            width: mainView.width / mainView.count - 5
             color: backgroundColor
 
             anchors.rightMargin: 5
-            anchors.leftMargin: 5
+            anchors.leftMargin: 10
+            Component.onCompleted: console.log("Main delegate.width = " + width);
             ListView {
                 id: lv1
                 width: parent.width
@@ -48,15 +49,16 @@ Rectangle {
                     color: backgroundColor
                     radius: 3; opacity: 0.7
                     anchors.leftMargin: 5
-                    anchors.rightMargin: 10
+                    anchors.rightMargin: 15
+                    width: parent.width - 10
                     border.width: 1
+                    //Component.onCompleted: console.log("hightlight.width = " + width);
                 }
                 clip: true
                 model: homm
                 spacing: 5
                 orientation: ListView.Vertical
                 delegate: Text {
-                    //radius: 5
                     anchors.rightMargin: 15
                     anchors.leftMargin: 5
                     height: defaultTextFieldHeight

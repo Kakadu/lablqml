@@ -1,4 +1,5 @@
 #!/bin/bash
 echo ""> .depend
+./mocml -qml_wrap #-with-debug
 make depend
 

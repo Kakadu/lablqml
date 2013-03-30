@@ -71,11 +71,8 @@ let item_selected controller mainModel x y : unit =
     (redraw_from=List.length new_selected)
   in
   selected := new_selected;
-  (*printf "New selected: [%s]\n" (List.to_string !selected ~f:string_of_int);*)
 
-  (*printf "Redraw from: %d, last_row=%d\n%!" redraw_from last_row;*)
   let cpp_data_head = List.take !cpp_data ~n:redraw_from in
-  printf "1\n%!";
   if redraw_from <= last_row then begin
     printf "Delete some rows\n%!";
     mainModel#beginRemoveRows QModelIndex.empty redraw_from (List.length !cpp_data-1);
@@ -85,16 +82,14 @@ let item_selected controller mainModel x y : unit =
   end else begin
     cpp_data := cpp_data_head;
   end;
-  printf "1.1\n%!";
+
   let xs = Tree.proj root new_selected in
   assert (List.length xs = List.length new_selected);
   if leaf_selected then begin
     let cur_item = List.last xs |> List.nth ~n:(List.last new_selected) in
     let b = Buffer.create 500 in
     let fmt = Format.(formatter_of_buffer b) in
-    printf "1.7\n%!";
     Printtyp.signature fmt [cur_item.Tree.internal];
-    printf "2\n%!";
     Format.pp_print_flush fmt ();
     printf "Some leaf has been selected:\n%s\n%!" (Buffer.contents b);
     controller#updateDescription (Buffer.contents b);
@@ -110,10 +105,7 @@ let item_selected controller mainModel x y : unit =
       mainModel#endInsertRows ();
       printf "End inserting rows. cpp_data.length = %d\n%!" (List.length !cpp_data);
     end;
-  end;(*
-  print_endline "Compacting";
-  Gc.compact ();*)
-  printf "10000\n%!";
+  end;
   assert (List.length !cpp_data = List.length new_selected)
 
 let main () =
@@ -124,9 +116,7 @@ let main () =
 
   let model = object(self)
     inherit abstractListModel cpp_model as super
-    method rowCount _ =
-      print_endline "???";
-      List.length !cpp_data
+    method rowCount _ =  List.length !cpp_data
     method data index role =
       let r = QModelIndex.row index in
       if (r<0 || r>= List.length !cpp_data) then QVariant.empty
@@ -142,24 +132,20 @@ let main () =
     inherit Controller.base_Controller controller_cppobj as super
     method onItemSelected x y =
       try
-        printf "method onItemSelected %d %d\n%!" x y;
         item_selected self model x y
       with exc ->
         Printexc.to_string exc |> print_endline;
         printf "Backtrace:\n%s\n%!" (Printexc.get_backtrace ());
         exit 0
     val mutable desc = None
-    method isHasData () =
-      match desc with Some _ -> true | _ -> false
+    method isHasData () = match desc with Some _ -> true | _ -> false
     method getDescr () =
-      print_endline "Inside method getDescr()";
       match desc with
         | Some x -> x
         | None   ->
             eprintf "App have tried to access description which should not exist now";
             "<no description. Bug!>"
     method updateDescription info =
-      printf "inside updateDescription \"%s\"\n%!" info;
       if self#isHasData () then begin
         desc <- Some info;
       end else begin

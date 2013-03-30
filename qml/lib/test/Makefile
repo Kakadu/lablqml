@@ -21,15 +21,12 @@ all: $(GEN_CMX) $(CMX) $(CMX_TEST) library_code $(GEN_MOC) $(GEN_CPP) main.o
 	../_build/stubs.o $(GEN_CPP) camlcode.o main.o $(NATIVECCLIBS) -lasmrun \
 	-lunix -o $(OUT)
 
-depend: gen_stubs
+depend: 
 	ocamlfind dep *.ml *.ml > .depend
 
 library_code:
 	$(OCAMLOPT) -output-obj -dstartup -I ../_build ../_build/qml_wrap.cmxa \
 	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
-
-gen_stubs: input_yaml
-	./mocml -qml_wrap
 
 moc_%.cpp: %.h
 	$(MOC) $< > $@

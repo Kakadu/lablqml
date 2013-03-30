@@ -8,7 +8,6 @@ void Controller::onItemSelected(int x0,int x1) {
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,3);
   CAMLlocal2(_cca0,_cca1);
-  qDebug() << "Calling Controller::onItemSelected";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -26,7 +25,6 @@ bool Controller::isHasData() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,1);
-  qDebug() << "Calling Controller::isHasData";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -42,7 +40,6 @@ extern "C" value caml_Controller_hasDataChanged_cppmeth_wrapper(value _cppobj,va
   Controller *o = (Controller*) (Field(_cppobj,0));
   bool z0;
   z0 = Bool_val(_x0);
-  qDebug() << "Going to call Controller::hasDataChanged";
   o->hasDataChanged(z0);
   CAMLreturn(Val_unit);
 }
@@ -51,7 +48,6 @@ QString Controller::getDescr() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   CAMLlocalN(_args,1);
-  qDebug() << "Calling Controller::getDescr";
   value _camlobj = this->_camlobjHolder;
   Q_ASSERT(Is_block(_camlobj));
   Q_ASSERT(Tag_val(_camlobj) == Object_tag);
@@ -67,7 +63,6 @@ extern "C" value caml_Controller_descChanged_cppmeth_wrapper(value _cppobj,value
   Controller *o = (Controller*) (Field(_cppobj,0));
   QString z0;
   z0 = QString(String_val(_x0));
-  qDebug() << "Going to call Controller::descChanged";
   o->descChanged(z0);
   CAMLreturn(Val_unit);
 }
