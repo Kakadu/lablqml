@@ -16,7 +16,7 @@ rule token = parse
 | ')'                       { RBRA }
 
 {
-let parse_string s = 
+let parse_string s =
   let buf = Lexing.from_string (s^"\n") in
-  main token buf 
+  main token buf
 }

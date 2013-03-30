@@ -195,11 +195,19 @@ let rec string_of_type t =
   let b = Buffer.create 10 in
   if t.t_is_const then Buffer.add_string b "const ";
   Buffer.add_string b t.t_name;
-  if t.t_params <> [] then (
-    Buffer.add_char b '<';
-    List.iter t.t_params ~f:(fun x -> Buffer.add_string b (string_of_type x));
-    Buffer.add_char b '>';
-  );
+  let () =
+    match t.t_params with
+      | [] -> ()
+      | [x] ->
+          Buffer.add_char b '<';
+          Buffer.add_string b (string_of_type x);
+          Buffer.add_char b '>'
+      | x::xs ->
+          Buffer.add_char b '<';
+          Buffer.add_string b (string_of_type x);
+          List.iter xs ~f:(fun x -> Buffer.add_char b ','; Buffer.add_string b (string_of_type x) );
+          Buffer.add_char b '>';
+  in
   Buffer.add_string b (String.make t.t_indirections '*');
   if t.t_is_ref then Buffer.add_string b " &";
   Buffer.contents b

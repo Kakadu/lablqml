@@ -98,10 +98,9 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
      * dest is where to store generated value
      * var is C++ variable to convert *)
     let prefix = String.concat ~sep:"" (List.init ~f:(fun _ -> "  ") tab) in
-    print_cpp "%s" prefix;
     let () = match typ with
       | `Unit   -> raise (Bug "Can't be unit in a variable parameter")
-      | `Int    -> print_cpp "%s%s = Val_int (%s); " prefix dest var
+      | `Int    -> print_cpp "%s%s = Val_int(%s); " prefix dest var
       | `Bool   -> print_cpp "%s%s = Val_bool(%s); " prefix dest var
       | `Float  -> raise (Bug "float values are not yet implemented")
       | `QByteArray ->
@@ -109,7 +108,7 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
       | `String ->
           print_cpp "%s%s = caml_copy_string(%s.toLocal8Bit().data() );" prefix dest var
       | `QModelIndex ->
-          print_cpp "%s%s=caml_alloc(2,0);\n" prefix dest;
+          print_cpp "%s%s = caml_alloc(2,0);\n" prefix dest;
           print_cpp "%sStore_field(%s,0,Val_int(%s.row()));\n" prefix dest var;
           print_cpp "%sStore_field(%s,1,Val_int(%s.column()));\n" prefix dest var
       | `QVariant ->
@@ -124,20 +123,18 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
           print_cpp "%selse {\n" prefix;
           print_cpp "%s  Q_ASSERT_X(false,\"qVariant_of_cpp\",\"not all cases are supported\");\n" prefix;
           print_cpp "%s}\n" prefix;
-
-      | `Tuple lst when List.length lst <> 2 ->
-          raise (Bug "tuples are not fully implemented")
-      | `Tuple xs ->
-          let a = List.hd_exn xs and b = xs |> List.tl_exn |> List.hd_exn in
-          print_cpp   "%s = caml_alloc (2,0);\n" dest;
+      | `Tuple [a;b] ->
           let leftV = get_var () in
-          generate_wrapper ~tab:(tab+1) (var ^".first") leftV a;
-          print_cpp "%s Store_field( %s, 0, %s);\n" prefix dest leftV;
-          release_var leftV;
+          generate_wrapper ~tab (var ^ ".first") leftV a;
           let rightV = get_var () in
-          generate_wrapper ~tab:(tab+1) (var ^".second") rightV b;
-          print_cpp "%s Store_field( %s, 0, %s);\n" prefix dest rightV;
+          generate_wrapper ~tab (var ^ ".second") rightV b;
+          print_cpp "%s%s = caml_alloc(2,0);\n" prefix dest;
+          print_cpp "%sStore_field( %s, 0, %s);\n" prefix dest leftV;
+          print_cpp "%sStore_field( %s, 1, %s);\n" prefix dest rightV;
           release_var rightV;
+          release_var leftV;
+      | `Tuple _ ->
+          raise (Bug "tuples are not fully implemented")
       | `List typ ->
           let cons_helper = get_var () in
           let cons_arg_var = get_var () in
@@ -157,11 +154,9 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
           release_var cons_arg_var;
           release_var cons_helper;
     in
-    print_cpp "%s" "\n"
+    print_cpp "\n"
   in
   generate_wrapper ~tab cppvar ocamlvar (TypAst.of_verbose_typ_exn typ)
-
-
 
 let print_declarations typ buf xs =
   let sort = match typ with `Local -> "local" | `Param -> "param" in
@@ -255,12 +250,14 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     List.fold_left ~init:0 (res::args)
       ~f:(fun acc x -> max acc TypAst.(x |> of_verbose_typ_exn |> aux_variables_count)) in
   let locals =
-    if locals_count = 1
-    then ["_ans"]
-    else "_ans" :: (List.init ~f:(fun n -> sprintf "_qq%d" n) (locals_count -1) )
+    let xs = List.init ~f:(fun n -> sprintf "_qq%d" n) (locals_count -1) in
+    "_ans" :: xs
   in
   assert (List.length locals = locals_count);
   print_local_declarations file_cpp locals;
+
+  let callback_locals = List.init (List.length args) ~f:(sprintf "_ccb%d") in
+  print_local_declarations file_cpp callback_locals;
 
   let ocaml_closure = ocaml_methname slot in
   (* TODO: use caml_callback, caml_callback2, caml_callback3 to speedup *)

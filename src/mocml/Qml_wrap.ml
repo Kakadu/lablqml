@@ -124,12 +124,22 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       ~f:(fun acc x -> max acc TypAst.(x |> of_verbose_typ_exn |> aux_variables_count))
     in
     let argnames_cpp = List.init ~f:(fun n -> sprintf "x%d" n) (List.length args) in
+    p_c "//%s: %s\n" name
+      (List.map (args@[res]) ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
+          |> String.concat ~sep:"->"
+      );
     p_c "%s %s::%s(%s) %s{\n" (Parser.string_of_type res) classname name
       (let types = List.map args ~f:Parser.string_of_type in
        List.map2_exn ~f:(sprintf "%s %s") types argnames_cpp |> String.concat ~sep:",")
-      (if List.mem modif `Const then " const" else "");
+      (if List.mem modif `Const then "const " else "");
+    p_c "  CAMLparam0();\n";
     let locals = List.init ~f:(fun n -> sprintf "_x%d" n) (locals_count-1) in
     Qml.print_local_declarations b_c (["_ans"; "_meth"] @ locals);
+
+    (* locals for callback *)
+    let make_cb_var = sprintf "_cca%d" in (* generate name *)
+    let cb_locals = List.mapi args ~f:(fun i _ -> make_cb_var i) in
+    print_local_declarations b_c cb_locals;
 
     p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
     p_c "  GET_CAML_OBJECT(this,_camlobj);\n";
@@ -140,24 +150,24 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       | 0 ->  sprintf "caml_callback2(_meth, _camlobj, Val_unit)"
       | n -> begin
         (* Generating arguments for calling *)
-        p_c "  value *args = new value[%d];\n" (n+1);
-        p_c "  args[0] = _camlobj;\n"; (* Never forget that !!! *)
         List.iter2i args argnames_cpp ~f:(fun i arg cppvar ->
-          let ocamlvar = sprintf "args[%d]" (i+1) in
-          Qml.ocaml_value_of_cpp b_c (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar arg
+          let ocamlvar = make_cb_var i in
+          ocaml_value_of_cpp b_c (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar arg
         );
-        p_c "  // delete args or not?\n";
+        p_c "  value args[%d] = { _camlobj,%s };\n" (1+List.length args) (String.concat ~sep:"," cb_locals);
         sprintf "caml_callbackN(_meth, %d, args)" (n+1)
       end
     in
-    if res = Parser.void_type then p_c " %s;\n" call_closure_str
-    else begin
+    if res = Parser.void_type then begin
+      p_c "  %s;\n" call_closure_str;
+      p_c "  CAMLreturn0;\n"
+    end else begin
       p_c "  _ans = %s;\n" call_closure_str;
       let cpp_ans_var = "cppans" in
       let new_cpp_var = Qml.getter_of_cppvars "xx" in
       p_c "  %s %s;\n" (Parser.string_of_type res) cpp_ans_var;
       Qml.cpp_value_of_ocaml b_c (get_var,release_var, new_cpp_var) cpp_ans_var "_ans" res;
-      p_c "  return %s;\n" cpp_ans_var;
+      p_c "  CAMLreturnT(%s,%s);\n" (string_of_type res) cpp_ans_var;
     end;
     p_c "}\n"
   in
