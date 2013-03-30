@@ -8,15 +8,18 @@ let () = Printexc.record_backtrace true
 
 type options = {
   mutable filename : string;
-  mutable target : [ `Qml | `QtGui | `Qml_wrap ]
+  mutable target : [ `Qml | `QtGui | `Qml_wrap ];
+  mutable add_debug_calls: bool
 }
 
-let options = {filename = "input_yaml"; target = `Qml }
+let options = {filename = "input_yaml"; target = `Qml; add_debug_calls = false }
 
 let () = Core_arg.parse
-  [ ("-qml",      Core_arg.Unit (fun () -> options.target <- `Qml),   "use qml")
-  ; ("-qtgui",    Core_arg.Unit (fun () -> options.target <- `QtGui), "use QtGui")
-  ; ("-qml_wrap", Core_arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
+  [ ("-qml",        Arg.Unit (fun () -> options.target <- `Qml),   "use qml")
+  ; ("-qtgui",      Arg.Unit (fun () -> options.target <- `QtGui), "use QtGui")
+  ; ("-qml_wrap",   Arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
+  ; ("-with-debug", Arg.Unit (fun () -> options.add_debug_calls <- true),
+         "Add qDebug() calls in beginning of member functions")
   ] (fun s -> options.filename <- s;
     print_endline ("Setting filename " ^ s)
 ) "usage_msg"
@@ -51,5 +54,8 @@ let () = match options.target with
   end
   | `Qml_wrap -> begin
     let data = ParseYaml.Yaml2.parse_file options.filename in
-    List.iter data ~f:Qml_wrap.generate
+    let config =
+      (if options.add_debug_calls then [`PrintMethCalls] else [])
+    in
+    List.iter data ~f:(Qml_wrap.generate ~config)
   end

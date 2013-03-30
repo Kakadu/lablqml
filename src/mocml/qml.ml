@@ -27,7 +27,7 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
     ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ =
   let print_cpp fmt = bprintf ch fmt in
   let rec to_cpp_conv ~tab dest var typ =
-      let prefix = String.concat ~sep:"" (List.init ~f:(fun _ -> "  ") tab) in
+      let prefix = String.concat ~sep:"" (List.init ~f:(const "  ") tab) in
       match typ with
         | `Unit    -> ()
         | `Int     -> print_cpp "%s%s = Int_val(%s);\n" prefix dest var
@@ -41,12 +41,10 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
             print_cpp "%s  if (caml_hash_variant(\"string\")==Field(%s,0))\n" prefix var;
             print_cpp "%s    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));\n" prefix dest var;
             print_cpp "%s  else if(caml_hash_variant(\"qobject\")==Field(%s,0)) {\n" prefix var;
-            print_cpp "%s    //qDebug() << \"PIZDA\";\n" prefix;
             print_cpp "%s    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));\n" prefix dest var;
             print_cpp "%s  } else Q_ASSERT(false);\n" prefix;
             print_cpp "%s} else // empty QVariant\n" prefix;
             print_cpp "%s    %s = QVariant();\n" prefix dest;
-            (*print_cpp "%s    %s = QVariant::fromValue"*)
         | `QModelIndex -> begin
             match List.find options (function `AbstractItemModel _ -> true | _ -> false) with
               | Some (`AbstractItemModel obj) ->

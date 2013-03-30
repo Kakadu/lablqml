@@ -26,7 +26,7 @@ let qabstractItemView_members =
 
 (** generated C++ method which will be called from OCaml side
  *  returns c++ stub name *)
-let gen_cppmeth_wrapper ~classname cbuf meth =
+let gen_cppmeth_wrapper ~classname ?(config=[]) cbuf meth =
   let p_c fmt = bprintf cbuf fmt in
   let (name,args,res,_) = meth in
   let cpp_stub_name = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in
@@ -59,7 +59,8 @@ let gen_cppmeth_wrapper ~classname cbuf meth =
   );
   let cpp_var_names = List.rev !cpp_var_names in
   let call_str = sprintf "  o->%s(%s);" name (String.concat ~sep:"," cpp_var_names) in
-  p_c "  qDebug() << \"Going to call %s::%s\";\n" classname name;
+  if List.mem config `PrintMethCalls then
+    p_c "  qDebug() << \"Going to call %s::%s\";\n" classname name;
   if res=void_type then begin
     p_c "%s\n" call_str;
     p_c "  CAMLreturn(Val_unit);\n"
@@ -73,7 +74,7 @@ let gen_cppmeth_wrapper ~classname cbuf meth =
   p_c "}\n";
   cpp_stub_name
 
-let generate ?(directory=".") {classname; basename; members; slots; props; _} =
+let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; _} =
   let b_h   = B.create 100 in
   let b_c   = B.create 100 in
   let b_ml  = B.create 100 in
@@ -150,8 +151,8 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
     let cb_locals = List.mapi args ~f:(fun i _ -> make_cb_var i) in
     p_c "  CAMLlocalN(_args,%d);\n" (List.length args + 1 (* beacuse of _camlobj *));
     print_local_declarations b_c cb_locals;
-
-    p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
+    if List.mem config `PrintMethCalls then
+      p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
     p_c "  value _camlobj = this->_camlobjHolder;\n";
     p_c "  Q_ASSERT(Is_block(_camlobj));\n";
     p_c "  Q_ASSERT(Tag_val(_camlobj) == Object_tag);\n";
@@ -217,7 +218,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
     p_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
     p_h "    emit %s(arg1);\n" notifier;
     p_h "  }\n\n";
-    let stub_name = gen_cppmeth_wrapper ~classname cbuf (notifier,[typ],void_type,[]) in
+    let stub_name = gen_cppmeth_wrapper ~config ~classname cbuf (notifier,[typ],void_type,[]) in
     p_ext "external stub_%s: cppobj -> %s -> unit = \"%s\"\n" notifier
       (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
       stub_name;
@@ -285,7 +286,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
         ]
       in
       List.iter cpp_wrap_stubs ~f:(fun ((_,args,res,_) as desc,stub_name,methname) ->
-        let cpp_stub_name = gen_cppmeth_wrapper ~classname b_c desc in
+        let cpp_stub_name = gen_cppmeth_wrapper ~config ~classname b_c desc in
         bprintf top_externals_buf
           "external %s: cppobj -> %s =\n  \"%s\"\n" stub_name
           (List.map (args@[res]) ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
@@ -297,7 +298,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       List.iter qabstractItemView_members ~f:(do_meth_caml);
       (* stub for adding new roles *)
       let add_role_stub_name =
-        gen_cppmeth_wrapper ~classname b_c
+        gen_cppmeth_wrapper ~classname b_c ~config
           ("addRole", [int_type; bytearray_type |> unreference], void_type, []) in
       bprintf external_buf
         "external add_role: 'a -> int -> string -> unit = \"%s\"\n" add_role_stub_name
