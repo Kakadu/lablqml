@@ -5,12 +5,14 @@
 #include <QtQuick/qquickview.h>
 
 void doCaml() {
+  CAMLparam0();
   static value *closure = nullptr;
   if (closure == nullptr) {
     closure = caml_named_value("doCaml");
   }
   Q_ASSERT(closure!=nullptr);
   caml_callback(*closure, Val_unit); // should be a unit
+  CAMLreturn0;
 }
 
 int main(int argc, char ** argv) {

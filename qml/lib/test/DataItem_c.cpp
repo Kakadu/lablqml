@@ -2,6 +2,7 @@
 
 DataItem::DataItem() {}
 QString DataItem::name() {
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling DataItem::name";
   GET_CAML_OBJECT(this,_camlobj);
@@ -9,9 +10,10 @@ QString DataItem::name() {
   _ans = caml_callback2(_meth, _camlobj, Val_unit);
   QString cppans;
   cppans = QString(String_val(_ans));
-  return cppans;
+  CAMLreturnT(QString,cppans);
 }
 QString DataItem::sort() {
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling DataItem::sort";
   GET_CAML_OBJECT(this,_camlobj);
@@ -19,7 +21,7 @@ QString DataItem::sort() {
   _ans = caml_callback2(_meth, _camlobj, Val_unit);
   QString cppans;
   cppans = QString(String_val(_ans));
-  return cppans;
+  CAMLreturnT(QString,cppans);
 }
 extern "C" value caml_create_DataItem(value _dummyUnitVal) {
   CAMLparam1(_dummyUnitVal);

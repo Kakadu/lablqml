@@ -95,7 +95,7 @@ let item_selected controller mainModel x y : unit =
     Printtyp.signature fmt [cur_item.Tree.internal];
     printf "2\n%!";
     Format.pp_print_flush fmt ();
-    printf "Some leaf has been selected:\n%s%!" (Buffer.contents b);
+    printf "Some leaf has been selected:\n%s\n%!" (Buffer.contents b);
     controller#updateDescription (Buffer.contents b);
   end else begin
     let xs = List.drop xs ~n:(List.length cpp_data_head) in
@@ -109,7 +109,9 @@ let item_selected controller mainModel x y : unit =
       mainModel#endInsertRows ();
       printf "End inserting rows. cpp_data.length = %d\n%!" (List.length !cpp_data);
     end;
-  end;
+  end;(*
+  print_endline "Compacting";
+  Gc.compact ();*)
   assert (List.length !cpp_data = List.length new_selected)
 
 let main () =
@@ -120,7 +122,9 @@ let main () =
 
   let model = object(self)
     inherit abstractListModel cpp_model as super
-    method rowCount _ = List.length !cpp_data
+    method rowCount _ =
+      print_endline "???";
+      List.length !cpp_data
     method data index role =
       let r = QModelIndex.row index in
       if (r<0 || r>= List.length !cpp_data) then QVariant.empty
@@ -141,7 +145,8 @@ let main () =
         printf "Backtrace:\n%s\n%!" (Printexc.get_backtrace ());
         exit 0
     val mutable desc = None
-    method isHasData () = match desc with Some _ -> true | _ -> false
+    method isHasData () =
+      match desc with Some _ -> true | _ -> false
     method getDescr () =
       print_endline "Inside method getDescr()";
       match desc with
@@ -159,8 +164,15 @@ let main () =
       end;
       self#emit_descChanged info
   end in
+
+  let () =
+    let c = Gc.get () in
+    c.Gc.max_overhead <- 1000001 (* disable compactions *)
+  in
+
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
+
 
 
 let () = Callback.register "doCaml" main

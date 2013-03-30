@@ -2,6 +2,7 @@
 
 AbstractModel::AbstractModel() {}
 QModelIndex AbstractModel::parent(const QModelIndex & x0)  const{
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling AbstractModel::parent";
   GET_CAML_OBJECT(this,_camlobj);
@@ -16,9 +17,10 @@ QModelIndex AbstractModel::parent(const QModelIndex & x0)  const{
   _ans = caml_callbackN(_meth, 2, args);
   QModelIndex cppans;
   cppans = createIndex(Int_val(Field(_ans,0)),Int_val(Field(_ans,1)));
-  return cppans;
+  CAMLreturnT(QModelIndex,cppans);
 }
 QModelIndex AbstractModel::index(int x0,int x1,const QModelIndex & x2)  const{
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling AbstractModel::index";
   GET_CAML_OBJECT(this,_camlobj);
@@ -35,9 +37,10 @@ QModelIndex AbstractModel::index(int x0,int x1,const QModelIndex & x2)  const{
   _ans = caml_callbackN(_meth, 4, args);
   QModelIndex cppans;
   cppans = createIndex(Int_val(Field(_ans,0)),Int_val(Field(_ans,1)));
-  return cppans;
+  CAMLreturnT(QModelIndex,cppans);
 }
 int AbstractModel::columnCount(const QModelIndex & x0)  const{
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling AbstractModel::columnCount";
   GET_CAML_OBJECT(this,_camlobj);
@@ -52,9 +55,10 @@ int AbstractModel::columnCount(const QModelIndex & x0)  const{
   _ans = caml_callbackN(_meth, 2, args);
   int cppans;
   cppans = Int_val(_ans);
-  return cppans;
+  CAMLreturnT(int,cppans);
 }
 int AbstractModel::rowCount(const QModelIndex & x0)  const{
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling AbstractModel::rowCount";
   GET_CAML_OBJECT(this,_camlobj);
@@ -69,9 +73,10 @@ int AbstractModel::rowCount(const QModelIndex & x0)  const{
   _ans = caml_callbackN(_meth, 2, args);
   int cppans;
   cppans = Int_val(_ans);
-  return cppans;
+  CAMLreturnT(int,cppans);
 }
 bool AbstractModel::hasChildren(const QModelIndex & x0)  const{
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling AbstractModel::hasChildren";
   GET_CAML_OBJECT(this,_camlobj);
@@ -86,9 +91,10 @@ bool AbstractModel::hasChildren(const QModelIndex & x0)  const{
   _ans = caml_callbackN(_meth, 2, args);
   bool cppans;
   cppans = Bool_val(_ans);
-  return cppans;
+  CAMLreturnT(bool,cppans);
 }
 QVariant AbstractModel::data(const QModelIndex & x0,int x1)  const{
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling AbstractModel::data";
   GET_CAML_OBJECT(this,_camlobj);
@@ -112,7 +118,7 @@ QVariant AbstractModel::data(const QModelIndex & x0,int x1)  const{
     } else Q_ASSERT(false);
   } else // empty QVariant
       cppans = QVariant();
-  return cppans;
+  CAMLreturnT(QVariant,cppans);
 }
 extern "C" value caml_AbstractModel_dataChanged_cppmeth_wrapper(value _cppobj,value _x0,value _x1) {
   CAMLparam3(_cppobj,_x0,_x1);

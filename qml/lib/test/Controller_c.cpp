@@ -2,6 +2,7 @@
 
 Controller::Controller() {}
 void Controller::onItemSelected(int x0,int x1) {
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling Controller::onItemSelected";
   GET_CAML_OBJECT(this,_camlobj);
@@ -11,9 +12,11 @@ void Controller::onItemSelected(int x0,int x1) {
     args[1] = Val_int (x0); 
     args[2] = Val_int (x1); 
   // delete args or not?
- caml_callbackN(_meth, 3, args);
+  caml_callbackN(_meth, 3, args);
+  CAMLreturn0;
 }
 bool Controller::isHasData() {
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling Controller::isHasData";
   GET_CAML_OBJECT(this,_camlobj);
@@ -21,7 +24,7 @@ bool Controller::isHasData() {
   _ans = caml_callback2(_meth, _camlobj, Val_unit);
   bool cppans;
   cppans = Bool_val(_ans);
-  return cppans;
+  CAMLreturnT(bool,cppans);
 }
 extern "C" value caml_Controller_hasDataChanged_cppmeth_wrapper(value _cppobj,value _x0) {
   CAMLparam2(_cppobj,_x0);
@@ -34,6 +37,7 @@ extern "C" value caml_Controller_hasDataChanged_cppmeth_wrapper(value _cppobj,va
   CAMLreturn(Val_unit);
 }
 QString Controller::getDescr() {
+  CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
   qDebug() << "Calling Controller::getDescr";
   GET_CAML_OBJECT(this,_camlobj);
@@ -41,7 +45,7 @@ QString Controller::getDescr() {
   _ans = caml_callback2(_meth, _camlobj, Val_unit);
   QString cppans;
   cppans = QString(String_val(_ans));
-  return cppans;
+  CAMLreturnT(QString,cppans);
 }
 extern "C" value caml_Controller_descChanged_cppmeth_wrapper(value _cppobj,value _x0) {
   CAMLparam2(_cppobj,_x0);

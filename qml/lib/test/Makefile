@@ -1,13 +1,13 @@
 MOC=$$QT5/bin/moc
-CC=g++ -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -I../_build -I`ocamlc -where` \
+CC=g++ -g -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -I../_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
-CLINK=g++ -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
+CLINK=g++ -g -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
 OUT=main
 GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
 GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.cpp=.o)
 GEN_MOC=$(GEN_CMX:.cmx=_c.cpp)
-OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix -linkpkg
+OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix -linkpkg -g
 
 CMX=helpers.cmx tree.cmx S.cmx program.cmx
 CMX_TEST=Test.cmx
