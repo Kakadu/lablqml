@@ -1,6 +1,7 @@
 #include "DataItem_c.h"
 
 DataItem::DataItem() {}
+//name: string
 QString DataItem::name() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
@@ -12,6 +13,7 @@ QString DataItem::name() {
   cppans = QString(String_val(_ans));
   CAMLreturnT(QString,cppans);
 }
+//sort: string
 QString DataItem::sort() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);

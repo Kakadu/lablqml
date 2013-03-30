@@ -1,20 +1,21 @@
 #include "Controller_c.h"
 
 Controller::Controller() {}
+//onItemSelected: int->int->unit
 void Controller::onItemSelected(int x0,int x1) {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocal2(_cca0,_cca1);
   qDebug() << "Calling Controller::onItemSelected";
   GET_CAML_OBJECT(this,_camlobj);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("onItemSelected"));
-  value *args = new value[3];
-  args[0] = _camlobj;
-    args[1] = Val_int (x0); 
-    args[2] = Val_int (x1); 
-  // delete args or not?
+  _cca0 = Val_int(x0); 
+  _cca1 = Val_int(x1); 
+  value args[3] = { _camlobj,_cca0,_cca1 };
   caml_callbackN(_meth, 3, args);
   CAMLreturn0;
 }
+//isHasData: bool
 bool Controller::isHasData() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
@@ -36,6 +37,7 @@ extern "C" value caml_Controller_hasDataChanged_cppmeth_wrapper(value _cppobj,va
   o->hasDataChanged(z0);
   CAMLreturn(Val_unit);
 }
+//getDescr: string
 QString Controller::getDescr() {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
