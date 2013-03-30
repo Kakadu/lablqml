@@ -1,10 +1,11 @@
-(* Generated at 2013-03-30 14:13:59.894635 *)
+(* Generated at 2013-03-30 17:35:39.438469 *)
 
 open QmlContext
 
+external store: cppobj -> < .. > -> unit = "caml_store_value_in_DataItem"
 
 class virtual base_DataItem cppobj = object(self)
-  initializer set_caml_object cppobj self
+  initializer store cppobj self
   method handler = cppobj
   method virtual name: unit-> string
   method virtual sort: unit-> string

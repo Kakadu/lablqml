@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-03-30 14:13:59.892225
+ * Generated at 2013-03-30 17:35:39.436811
  */
 #ifndef AbstractModel_c_H
 #define AbstractModel_c_H
@@ -10,8 +10,16 @@
 
 class AbstractModel: public QAbstractItemModel {
   Q_OBJECT
+  value _camlobjHolder = 0;
 public:
   AbstractModel();
+  void storeCAMLobj(value x) {
+    if (_camlobjHolder != 0) {
+       //maybe unregister global root?
+    }
+    _camlobjHolder = x;
+    register_global_root(&_camlobjHolder);
+  }
   Q_INVOKABLE QModelIndex parent(const QModelIndex &) const;
   Q_INVOKABLE QModelIndex index(int,int,const QModelIndex &) const;
   Q_INVOKABLE int columnCount(const QModelIndex &) const;

@@ -21,6 +21,7 @@ class virtual abstractListModel cppobj = object(self)
   method hasChildren _ = self#rowCount QModelIndex.empty > 0
 end
 
+
 let root = S.(build_tree (read_modules "/home/kakadu/.opam/4.00.1/lib/ocaml"))
 let selected = ref [-1]
 let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
@@ -140,8 +141,9 @@ let main () =
   let controller = object(self)
     inherit Controller.base_Controller controller_cppobj as super
     method onItemSelected x y =
-      printf "method onItemSelected %d %d\n%!" x y;
-      try item_selected self model x y
+      try
+        printf "method onItemSelected %d %d\n%!" x y;
+        item_selected self model x y
       with exc ->
         Printexc.to_string exc |> print_endline;
         printf "Backtrace:\n%s\n%!" (Printexc.get_backtrace ());

@@ -18,7 +18,6 @@ let get_view ~name =
 type cppobj = [ `cppobject ]
 external set_context_property: ctx:t -> name:string -> cppobj -> unit
   = "caml_setContextProperty"
-external set_caml_object: cppobj -> < .. > -> unit = "caml_set_caml_object"
 
 module QVariant = struct
   type t = [ `empty | `string of string | `qobject of cppobj ]

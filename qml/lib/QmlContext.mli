@@ -4,7 +4,6 @@ val get_view : name:string -> t option
 
 type cppobj
 val set_context_property: ctx:t -> name:string -> cppobj -> unit
-val set_caml_object: cppobj -> < .. > -> unit 
 
 module QVariant : sig
   type t
@@ -21,4 +20,3 @@ module QModelIndex : sig
   val make: row:int -> column:int -> t
   val to_string: t -> string
 end
-

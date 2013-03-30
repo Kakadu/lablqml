@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-03-30 14:13:59.894599
+ * Generated at 2013-03-30 17:35:39.438456
  */
 #ifndef DataItem_c_H
 #define DataItem_c_H
@@ -9,8 +9,16 @@
 
 class DataItem: public QObject {
   Q_OBJECT
+  value _camlobjHolder = 0;
 public:
   DataItem();
+  void storeCAMLobj(value x) {
+    if (_camlobjHolder != 0) {
+       //maybe unregister global root?
+    }
+    _camlobjHolder = x;
+    register_global_root(&_camlobjHolder);
+  }
   Q_INVOKABLE QString name();
   Q_INVOKABLE QString sort();
 };

@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-03-30 14:13:59.889395
+ * Generated at 2013-03-30 17:35:39.435061
  */
 #ifndef Controller_c_H
 #define Controller_c_H
@@ -9,8 +9,16 @@
 
 class Controller: public QObject {
   Q_OBJECT
+  value _camlobjHolder = 0;
 public:
   Controller();
+  void storeCAMLobj(value x) {
+    if (_camlobjHolder != 0) {
+       //maybe unregister global root?
+    }
+    _camlobjHolder = x;
+    register_global_root(&_camlobjHolder);
+  }
   Q_INVOKABLE void onItemSelected(int,int);
 public:
   Q_PROPERTY(bool hasData  READ isHasData NOTIFY hasDataChanged)

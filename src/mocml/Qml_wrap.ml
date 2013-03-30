@@ -104,10 +104,19 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   p_h "\n";
   p_h "class %s: public %s {\n" classname base_classname;
   p_h "  Q_OBJECT\n";
+  p_h "  value _camlobjHolder = 0;\n";
   p_h "public:\n";
   (* constructor *)
   p_h "  %s();\n" classname;
-  p_c "%s::%s() {}\n" classname classname;
+  p_h "  void storeCAMLobj(value x) {\n";
+  p_h "    if (_camlobjHolder != 0) {\n";
+  p_h "       //maybe unregister global root?\n";
+  p_h "    }\n";
+  p_h "    _camlobjHolder = x;\n";
+  p_h "    register_global_root(&_camlobjHolder);\n";
+  p_h "  }\n";
+  p_c "%s::%s() : _camlobjHolder(0) {\n" classname classname;
+  p_c "}\n";
 
   (* methods *)
   let do_meth ~classname (name,args,res,modif) =
@@ -139,10 +148,13 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
     (* locals for callback *)
     let make_cb_var = sprintf "_cca%d" in (* generate name *)
     let cb_locals = List.mapi args ~f:(fun i _ -> make_cb_var i) in
+    p_c "  CAMLlocalN(_args,%d);\n" (List.length args + 1 (* beacuse of _camlobj *));
     print_local_declarations b_c cb_locals;
 
     p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
-    p_c "  GET_CAML_OBJECT(this,_camlobj);\n";
+    p_c "  value _camlobj = this->_camlobjHolder;\n";
+    p_c "  Q_ASSERT(Is_block(_camlobj));\n";
+    p_c "  Q_ASSERT(Tag_val(_camlobj) == Object_tag);\n";
     p_c "  _meth = caml_get_public_method(_camlobj, caml_hash_variant(\"%s\"));\n" name;
     let (get_var, release_var) = Qml.get_vars_queue locals in (* tail because we need not _ans *)
 
@@ -150,12 +162,15 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
       | 0 ->  sprintf "caml_callback2(_meth, _camlobj, Val_unit)"
       | n -> begin
         (* Generating arguments for calling *)
+        p_c "  _args[0] = _camlobj;\n";
         List.iter2i args argnames_cpp ~f:(fun i arg cppvar ->
           let ocamlvar = make_cb_var i in
-          ocaml_value_of_cpp b_c (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar arg
+          ocaml_value_of_cpp b_c (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar arg;
+          p_c "  _args[%d] = %s;\n" (i+1) ocamlvar
         );
-        p_c "  value args[%d] = { _camlobj,%s };\n" (1+List.length args) (String.concat ~sep:"," cb_locals);
-        sprintf "caml_callbackN(_meth, %d, args)" (n+1)
+        (*p_c "  value args[%d] = { _camlobj,%s };\n"
+          (1+List.length args) (String.concat ~sep:"," cb_locals);*)
+        sprintf "caml_callbackN(_meth, %d, _args)" (n+1)
       end
     in
     if res = Parser.void_type then begin
@@ -177,7 +192,7 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   let external_buf = B.create 100 in
   (* Allow to create C++ class from OCaml *)
   bprintf clas_def_buf "class virtual base_%s cppobj = object(self)\n" classname;
-  bprintf clas_def_buf "  initializer set_caml_object cppobj self\n";
+  bprintf clas_def_buf "  initializer store cppobj self\n";
   bprintf clas_def_buf "  method handler = cppobj\n";
 
   (* function to generate properties *)
@@ -298,11 +313,21 @@ let generate ?(directory=".") {classname; basename; members; slots; props; _} =
   p_c "  CAMLreturn(_ans);\n";
   p_c "}\n";
 
+  p_c "extern \"C\" value caml_store_value_in_%s(value _cppobj,value _camlobj) {\n" classname;
+  p_c "  CAMLparam2(_cppobj,_camlobj);\n";
+  p_c "  %s *o = (%s*) (Field(_cppobj,0));\n" classname classname;
+  p_c "  o->storeCAMLobj(_camlobj); // register global root in member function\n";
+  p_c "  //caml_register_global_root(&(o->_camlobjHolder));\n";
+  p_c "  CAMLreturn(Val_unit);\n";
+  p_c "}\n";
+
   p_h "};\n";
   p_h "#endif // %s_H\n" classname;
 
   bprintf clas_def_buf "end\n";
   bprintf external_buf "external create_%s: unit -> 'a = \"caml_create_%s\"\n" classname classname ;
+  bprintf top_externals_buf "external store: cppobj -> < .. > -> unit = \"%s\"\n"
+     (sprintf "caml_store_value_in_%s" classname);
 
   p_ml "%s\n" (B.contents top_externals_buf);
   p_ml "%s\n" (B.contents clas_def_buf);

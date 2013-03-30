@@ -1,4 +1,4 @@
-(* Generated at 2013-03-30 14:13:59.892256 *)
+(* Generated at 2013-03-30 17:35:39.436840 *)
 
 open QmlContext
 
@@ -12,9 +12,10 @@ external stub_beginRemoveRows: cppobj -> QModelIndex.t->int->int->unit =
   "caml_AbstractModel_beginRemoveRows_cppmeth_wrapper"
 external stub_endRemoveRows: cppobj -> unit->unit =
   "caml_AbstractModel_endRemoveRows_cppmeth_wrapper"
+external store: cppobj -> < .. > -> unit = "caml_store_value_in_AbstractModel"
 
 class virtual base_AbstractModel cppobj = object(self)
-  initializer set_caml_object cppobj self
+  initializer store cppobj self
   method handler = cppobj
  method report_dataChanged = stub_report_dataChanged cppobj
  method beginInsertRows = stub_beginInsertRows cppobj

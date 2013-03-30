@@ -1,20 +1,25 @@
 #include "AbstractModel_c.h"
 
-AbstractModel::AbstractModel() {}
+AbstractModel::AbstractModel() : _camlobjHolder(0) {
+}
 //parent: QModelIndex.t->QModelIndex.t
 QModelIndex AbstractModel::parent(const QModelIndex & x0) const {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
   qDebug() << "Calling AbstractModel::parent";
-  GET_CAML_OBJECT(this,_camlobj);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("parent"));
+  _args[0] = _camlobj;
   _cca0 = caml_alloc(2,0);
   Store_field(_cca0,0,Val_int(x0.row()));
   Store_field(_cca0,1,Val_int(x0.column()));
 
-  value args[2] = { _camlobj,_cca0 };
-  _ans = caml_callbackN(_meth, 2, args);
+  _args[1] = _cca0;
+  _ans = caml_callbackN(_meth, 2, _args);
   QModelIndex cppans;
   cppans = createIndex(Int_val(Field(_ans,0)),Int_val(Field(_ans,1)));
   CAMLreturnT(QModelIndex,cppans);
@@ -23,18 +28,24 @@ QModelIndex AbstractModel::parent(const QModelIndex & x0) const {
 QModelIndex AbstractModel::index(int x0,int x1,const QModelIndex & x2) const {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,4);
   CAMLlocal3(_cca0,_cca1,_cca2);
   qDebug() << "Calling AbstractModel::index";
-  GET_CAML_OBJECT(this,_camlobj);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("index"));
+  _args[0] = _camlobj;
   _cca0 = Val_int(x0); 
+  _args[1] = _cca0;
   _cca1 = Val_int(x1); 
+  _args[2] = _cca1;
   _cca2 = caml_alloc(2,0);
   Store_field(_cca2,0,Val_int(x2.row()));
   Store_field(_cca2,1,Val_int(x2.column()));
 
-  value args[4] = { _camlobj,_cca0,_cca1,_cca2 };
-  _ans = caml_callbackN(_meth, 4, args);
+  _args[3] = _cca2;
+  _ans = caml_callbackN(_meth, 4, _args);
   QModelIndex cppans;
   cppans = createIndex(Int_val(Field(_ans,0)),Int_val(Field(_ans,1)));
   CAMLreturnT(QModelIndex,cppans);
@@ -43,16 +54,20 @@ QModelIndex AbstractModel::index(int x0,int x1,const QModelIndex & x2) const {
 int AbstractModel::columnCount(const QModelIndex & x0) const {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
   qDebug() << "Calling AbstractModel::columnCount";
-  GET_CAML_OBJECT(this,_camlobj);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("columnCount"));
+  _args[0] = _camlobj;
   _cca0 = caml_alloc(2,0);
   Store_field(_cca0,0,Val_int(x0.row()));
   Store_field(_cca0,1,Val_int(x0.column()));
 
-  value args[2] = { _camlobj,_cca0 };
-  _ans = caml_callbackN(_meth, 2, args);
+  _args[1] = _cca0;
+  _ans = caml_callbackN(_meth, 2, _args);
   int cppans;
   cppans = Int_val(_ans);
   CAMLreturnT(int,cppans);
@@ -61,16 +76,20 @@ int AbstractModel::columnCount(const QModelIndex & x0) const {
 int AbstractModel::rowCount(const QModelIndex & x0) const {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
   qDebug() << "Calling AbstractModel::rowCount";
-  GET_CAML_OBJECT(this,_camlobj);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("rowCount"));
+  _args[0] = _camlobj;
   _cca0 = caml_alloc(2,0);
   Store_field(_cca0,0,Val_int(x0.row()));
   Store_field(_cca0,1,Val_int(x0.column()));
 
-  value args[2] = { _camlobj,_cca0 };
-  _ans = caml_callbackN(_meth, 2, args);
+  _args[1] = _cca0;
+  _ans = caml_callbackN(_meth, 2, _args);
   int cppans;
   cppans = Int_val(_ans);
   CAMLreturnT(int,cppans);
@@ -79,16 +98,20 @@ int AbstractModel::rowCount(const QModelIndex & x0) const {
 bool AbstractModel::hasChildren(const QModelIndex & x0) const {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,2);
   CAMLlocal1(_cca0);
   qDebug() << "Calling AbstractModel::hasChildren";
-  GET_CAML_OBJECT(this,_camlobj);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("hasChildren"));
+  _args[0] = _camlobj;
   _cca0 = caml_alloc(2,0);
   Store_field(_cca0,0,Val_int(x0.row()));
   Store_field(_cca0,1,Val_int(x0.column()));
 
-  value args[2] = { _camlobj,_cca0 };
-  _ans = caml_callbackN(_meth, 2, args);
+  _args[1] = _cca0;
+  _ans = caml_callbackN(_meth, 2, _args);
   bool cppans;
   cppans = Bool_val(_ans);
   CAMLreturnT(bool,cppans);
@@ -97,17 +120,22 @@ bool AbstractModel::hasChildren(const QModelIndex & x0) const {
 QVariant AbstractModel::data(const QModelIndex & x0,int x1) const {
   CAMLparam0();
   CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,3);
   CAMLlocal2(_cca0,_cca1);
   qDebug() << "Calling AbstractModel::data";
-  GET_CAML_OBJECT(this,_camlobj);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
   _meth = caml_get_public_method(_camlobj, caml_hash_variant("data"));
+  _args[0] = _camlobj;
   _cca0 = caml_alloc(2,0);
   Store_field(_cca0,0,Val_int(x0.row()));
   Store_field(_cca0,1,Val_int(x0.column()));
 
+  _args[1] = _cca0;
   _cca1 = Val_int(x1); 
-  value args[3] = { _camlobj,_cca0,_cca1 };
-  _ans = caml_callbackN(_meth, 3, args);
+  _args[2] = _cca1;
+  _ans = caml_callbackN(_meth, 3, _args);
   QVariant cppans;
   if (Is_block(_ans)) {
     if (caml_hash_variant("string")==Field(_ans,0))
@@ -194,4 +222,11 @@ extern "C" value caml_create_AbstractModel(value _dummyUnitVal) {
   _ans = caml_alloc_small(1, Abstract_tag);
   (*((AbstractModel **) &Field(_ans, 0))) = new AbstractModel();
   CAMLreturn(_ans);
+}
+extern "C" value caml_store_value_in_AbstractModel(value _cppobj,value _camlobj) {
+  CAMLparam2(_cppobj,_camlobj);
+  AbstractModel *o = (AbstractModel*) (Field(_cppobj,0));
+  o->storeCAMLobj(_camlobj); // register global root in member function
+  //caml_register_global_root(&(o->_camlobjHolder));
+  CAMLreturn(Val_unit);
 }
