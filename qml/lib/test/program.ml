@@ -74,7 +74,7 @@ let item_selected controller mainModel x y : unit =
 
   (*printf "Redraw from: %d, last_row=%d\n%!" redraw_from last_row;*)
   let cpp_data_head = List.take !cpp_data ~n:redraw_from in
-
+  printf "1\n%!";
   if redraw_from <= last_row then begin
     printf "Delete some rows\n%!";
     mainModel#beginRemoveRows QModelIndex.empty redraw_from (List.length !cpp_data-1);
@@ -84,7 +84,7 @@ let item_selected controller mainModel x y : unit =
   end else begin
     cpp_data := cpp_data_head;
   end;
-
+  printf "1.1\n%!";
   let xs = Tree.proj root new_selected in
   assert (List.length xs = List.length new_selected);
   if leaf_selected then begin
@@ -112,6 +112,7 @@ let item_selected controller mainModel x y : unit =
   end;(*
   print_endline "Compacting";
   Gc.compact ();*)
+  printf "10000\n%!";
   assert (List.length !cpp_data = List.length new_selected)
 
 let main () =
@@ -138,7 +139,8 @@ let main () =
   let controller_cppobj = Controller.create_Controller () in
   let controller = object(self)
     inherit Controller.base_Controller controller_cppobj as super
-    method onItemSelected x y  =
+    method onItemSelected x y =
+      printf "method onItemSelected %d %d\n%!" x y;
       try item_selected self model x y
       with exc ->
         Printexc.to_string exc |> print_endline;
