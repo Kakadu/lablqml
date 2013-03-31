@@ -25,14 +25,17 @@ let process_cmi_file filename : Types.signature =
   sign
 
 
-let read_modules path : Types.signature_item list =
-  let files = files_in_dir path |> List.filter ~f:(fun s -> Filename.check_suffix s ".cmi") in
-  List.map (fun filename ->
+let read_modules dirs : Types.signature_item list =
+  let files =
+    List.map dirs ~f:(fun path ->
+      files_in_dir path
+      |> List.filter ~f:(fun s -> Filename.check_suffix s ".cmi")
+      |> List.map ~f:(fun name -> (path,name))
+    ) |> List.flatten in
+  List.map (fun (path,filename) ->
     let module_name = modulename_of_file (Filename.chop_extension filename) in
     let sign = process_cmi_file (path ^/ filename) in
     Types.Sig_module (Ident.({name=module_name; flags=0;stamp=0}), Types.Mty_signature sign, Types.Trec_not)
-
-(*      List.map (fun s -> (filename,s)) sign *)
   ) files
 
 
@@ -43,3 +46,14 @@ let build_tree (xs : Types.signature) =
   (*let xs = if List.length xs > 10 then List.take ~n:10 xs else xs in*)
   let sons = List.map xs ~f:of_sig_item in
   {name="root"; internal; sons}
+
+(*let sort = SValue | SType | SExn | SMod | SModType | SCls | SClsTyp*)
+let sort_of_sig_item = function
+  | Types.Sig_value       _ -> "v"
+  | Types.Sig_type        _ -> "t"
+  | Types.Sig_exception   _ -> "cn"
+  | Types.Sig_module (_,Types.Mty_functor _,_) -> "f"
+  | Types.Sig_module      _ -> "m"
+  | Types.Sig_modtype     _ -> "mt"
+  | Types.Sig_class       _ -> "c"
+  | Types.Sig_class_type  _ -> "ct"

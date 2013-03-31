@@ -15,7 +15,7 @@ Rectangle {
         height: 400
         width: parent.width
         orientation: ListView.Horizontal
-        spacing: 10
+        spacing: 5
 
         ScrollBar {
             flickable: parent
@@ -27,12 +27,12 @@ Rectangle {
         delegate: Rectangle {
             property int mainIndex: index
             height: 400
-            width: mainView.width / mainView.count - 5
+            width: (mainView.width - (mainView.count-1)*mainView.spacing) / mainView.count
             color: backgroundColor
 
             anchors.rightMargin: 5
             anchors.leftMargin: 10
-            Component.onCompleted: console.log("Main delegate.width = " + width);
+
             ListView {
                 id: lv1
                 width: parent.width
@@ -64,7 +64,7 @@ Rectangle {
                     height: defaultTextFieldHeight
                     width: lv1.width - 15
                     x: 5
-                    text: qwe.name() + " " + qwe.sort()
+                    text: qwe.name() + " (" + qwe.sort() + ")"
                     font.family: "Consolas"
                     font.pixelSize: defaultFontSize
                     MouseArea {

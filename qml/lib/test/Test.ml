@@ -1,6 +1,6 @@
 open Printf
 
-let root = S.(build_tree (read_modules "/home/kakadu/.opam/4.00.1/lib/ocaml"))
+let root = S.(build_tree (read_modules ["/home/kakadu/.opam/4.00.1/lib/ocaml"]))
 
 let selected = ref [-1]
 

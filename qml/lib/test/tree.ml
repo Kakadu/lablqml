@@ -35,8 +35,8 @@ let print_sig fmt v =
 (* [old_selected] previous indexes. Either all>=0 or (last=-1 and others >=0) *)
 let change_state (old_selected: int list) (x,y) root =
   assert (x>=0);
-  printf "Change state\n";
-  printf "Old_selected: %s\n" (List.to_string old_selected ~f:string_of_int);
+  (*printf "Change state\n";
+  printf "Old_selected: %s\n" (List.to_string old_selected ~f:string_of_int);*)
   let selected_prefix = List.take old_selected ~n:x in
   let selected_tree =
     List.fold_left (selected_prefix) ~init: root ~f:(fun root n ->
@@ -45,14 +45,14 @@ let change_state (old_selected: int list) (x,y) root =
     ) in
   let () = if (x=0) then assert (selected_tree = root) in
   assert (List.length selected_tree.sons > y);
-  let new_selected = selected_prefix@[y] in
-  printf "New selected: %s\n" (List.to_string new_selected ~f:string_of_int);
+  let new_selected = selected_prefix@[y] in (*
+  printf "New selected: %s\n" (List.to_string new_selected ~f:string_of_int);*)
   let selected_item = List.nth selected_tree.sons ~n:y in
   let new_selected =
     if List.length selected_item.sons > 0 then new_selected@[-1]
     else new_selected
-  in
-  printf "New selected: %s\n" (List.to_string new_selected ~f:string_of_int);
+  in (*
+  printf "New selected: %s\n" (List.to_string new_selected ~f:string_of_int);*)
 
   (* We should decide which minimal index to redraw *)
   let redraw_start_from = (x+1) in

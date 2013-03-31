@@ -3,9 +3,9 @@ open Helpers
 
 let () = Printexc.record_backtrace true
 
-let path = ref "/home/kakadu/.opam/4.00.1/lib/ocaml"
+let path = ref ["/home/kakadu/.opam/4.00.1/lib/ocaml"; "/home/kakadu/.opam/4.00.1/lib/core"]
 let () = Arg.parse
-    [ ("-I", Arg.Set_string path, "Where to look for cmi files")
+    [ ("-I", Arg.String (fun s -> path := s:: !path), "Where to look for cmi files")
     ] (fun s -> printf "Unknown parameter %s\n" s; exit 0)
     "This is usage message"
 
@@ -21,19 +21,18 @@ class virtual abstractListModel cppobj = object(self)
   method hasChildren _ = self#rowCount QModelIndex.empty > 0
 end
 
-
-let root = S.(build_tree (read_modules "/home/kakadu/.opam/4.00.1/lib/ocaml"))
+let root = S.(build_tree (read_modules !path))
 let selected = ref [-1]
 let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
 
 let cpp_data_helper ys =
   let f xs =
-    let data = List.map xs ~f:(fun {Tree.name;_} ->
+    let data = List.map xs ~f:(fun {Tree.name;Tree.internal;_} ->
       let cppObj = DataItem.create_DataItem () in
       object(self)
         inherit DataItem.base_DataItem cppObj as super
         method name () = name
-        method sort () = "1"
+        method sort () = internal |> S.sort_of_sig_item
       end) in
     (* creating miniModel for this list *)
     let cppobj = AbstractModel.create_AbstractModel () in
@@ -91,7 +90,7 @@ let item_selected controller mainModel x y : unit =
     let fmt = Format.(formatter_of_buffer b) in
     Printtyp.signature fmt [cur_item.Tree.internal];
     Format.pp_print_flush fmt ();
-    printf "Some leaf has been selected:\n%s\n%!" (Buffer.contents b);
+    (*printf "Some leaf has been selected:\n%s\n%!" (Buffer.contents b);*)
     controller#updateDescription (Buffer.contents b);
   end else begin
     let xs = List.drop xs ~n:(List.length cpp_data_head) in
