@@ -3,8 +3,8 @@ import QtQuick 2.0
 Rectangle {
     property string backgroundColor: "#FFFFDF"
     // next two properties regulate how big  text blocks and latters will be
-    property int defaultFontSize: 20
-    property int defaultTextFieldHeight: 25
+    property int defaultFontSize: 19
+    property int defaultTextFieldHeight: defaultFontSize + 4
 
     id: root
     color: backgroundColor
@@ -82,31 +82,20 @@ Rectangle {
         }
     }
 
-    Flickable {
-        id: flick
+    Scrollable {
         flickableDirection: Flickable.VerticalFlick
-        //contentHeight: descriptionTextField.painterHeight
-        //contentWidth:  descriptionTextField.paintedWidth
-        //width: 300; height: 200;
-        x: 0; y: mainView.height
-        /*
-        //anchors.bottom: root.bottom
-        function ensureVisible(r)
-        {
-            if (contentX >= r.x)
-            contentX = r.x;
-            else if (contentX+width <= r.x+r.width)
-            contentX = r.x+r.width-width;
-            if (contentY >= r.y)
-            contentY = r.y;
-            else if (contentY+height <= r.y+r.height)
-            contentY = r.y+r.height-height;
-        }*/
+        contentHeight: descriptionTextField.height
+        contentWidth:  descriptionTextField.width
+        color: backgroundColor
+        anchors.top: mainView.bottom
+        anchors.left: mainView.left
+        anchors.right: mainView.right
+        anchors.bottom: root.bottom
+        hideScrollBarsWhenStopped: true
 
         TextEdit {
             id: descriptionTextField
-            width: flick.width
-            height: flick.height
+
             font.family: "Monospace"
             font.pixelSize: defaultFontSize
             focus: true
@@ -118,9 +107,6 @@ Rectangle {
                 if (controller.hasData) controller.descr
                 else "No description here"
             }
-            //onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)
         }
-        Component.onCompleted: console.log(contentHeight + ", " + contentWidth);
     }
-
 }
