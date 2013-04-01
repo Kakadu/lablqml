@@ -24,7 +24,6 @@ let process_cmi_file filename : Types.signature =
   close_in ic;
   sign
 
-
 let read_modules dirs : Types.signature_item list =
   let files =
     List.map dirs ~f:(fun path ->
@@ -47,7 +46,27 @@ let build_tree (xs : Types.signature) =
   let sons = List.map xs ~f:of_sig_item in
   {name="root"; internal; sons}
 
-(*let sort = SValue | SType | SExn | SMod | SModType | SCls | SClsTyp*)
+let compare a b =
+  let open Types in
+  let helper = function
+  | Types.Sig_value       _ -> 0
+  | Types.Sig_type        _ -> 1
+  | Types.Sig_exception   _ -> 2
+  | Types.Sig_module (_,Types.Mty_functor _,_) -> 3
+  | Types.Sig_module      _ -> 4
+  | Types.Sig_modtype     _ -> 5
+  | Types.Sig_class       _ -> 6
+  | Types.Sig_class_type  _ -> 7
+  in
+  let x = compare (helper a) (helper b) in
+  if x<>0 then x
+  else compare (Tree.name_of_item a) (Tree.name_of_item b)
+
+let rec sort_tree ({Tree.sons;_} as item) =
+  let open Tree in
+  let cmp a b = compare a.internal b.internal in
+  {item with sons = sons |> List.sort ~cmp |> List.map ~f:sort_tree}
+
 let sort_of_sig_item = function
   | Types.Sig_value       _ -> "v"
   | Types.Sig_type        _ -> "t"

@@ -8,6 +8,15 @@ type 'a tree = {
 }
 open Types
 
+let name_of_item = function
+  | Types.Sig_value     ({Ident.name;_},_)   -> name
+  | Types.Sig_type      ({Ident.name;_},_,_) -> name
+  | Types.Sig_exception ({Ident.name;_},_)   -> name
+  | Types.Sig_module    ({Ident.name;_},_,_) -> name
+  | Types.Sig_modtype   ({Ident.name;_},_)   -> name
+  | Types.Sig_class     ({Ident.name;_},_,_) -> name
+  | Types.Sig_class_type({Ident.name;_},_,_) -> name
+
 let rec of_sig_item internal =
   match internal with
   | Types.Sig_value     ({Ident.name;_},_)  -> {name; internal; sons=[]}

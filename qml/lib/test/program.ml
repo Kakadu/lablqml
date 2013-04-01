@@ -30,7 +30,7 @@ class virtual abstractListModel cppobj = object(self)
   method hasChildren _ = self#rowCount QModelIndex.empty > 0
 end
 
-let root = S.(build_tree (read_modules options.path))
+let root = S.(read_modules options.path |> build_tree |> sort_tree)
 let selected = ref [-1]
 let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
 
