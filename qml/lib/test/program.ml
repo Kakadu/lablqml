@@ -3,9 +3,18 @@ open Helpers
 
 let () = Printexc.record_backtrace true
 
-let path = ref ["/home/kakadu/.opam/4.00.1/lib/ocaml"; "/home/kakadu/.opam/4.00.1/lib/core"]
+type options =
+    { mutable path: string list
+    ; mutable with_color: bool
+    }
+
+let options =
+  { path = ["/home/kakadu/.opam/4.00.1/lib/ocaml"; "/home/kakadu/.opam/4.00.1/lib/core"]
+  ; with_color = true
+  }
+
 let () = Arg.parse
-    [ ("-I", Arg.String (fun s -> path := s:: !path), "Where to look for cmi files")
+    [ ("-I", Arg.String (fun s -> options.path <- s :: options.path), "Where to look for cmi files")
     ] (fun s -> printf "Unknown parameter %s\n" s; exit 0)
     "This is usage message"
 
@@ -21,7 +30,7 @@ class virtual abstractListModel cppobj = object(self)
   method hasChildren _ = self#rowCount QModelIndex.empty > 0
 end
 
-let root = S.(build_tree (read_modules !path))
+let root = S.(build_tree (read_modules options.path))
 let selected = ref [-1]
 let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
 
@@ -90,8 +99,8 @@ let item_selected controller mainModel x y : unit =
     let fmt = Format.(formatter_of_buffer b) in
     Printtyp.signature fmt [cur_item.Tree.internal];
     Format.pp_print_flush fmt ();
-    (*printf "Some leaf has been selected:\n%s\n%!" (Buffer.contents b);*)
-    controller#updateDescription (Buffer.contents b);
+    let desc = Buffer.contents b |> Richify.make  in
+    controller#updateDescription desc;
   end else begin
     let xs = List.drop xs ~n:(List.length cpp_data_head) in
     let zs = cpp_data_helper xs in
