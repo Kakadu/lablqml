@@ -9,14 +9,22 @@ type options =
     }
 
 let options =
-  { path = ["/home/kakadu/.opam/4.00.1/lib/ocaml"; "/home/kakadu/.opam/4.00.1/lib/core"]
+  { path = [] (* ["/home/kakadu/.opam/4.00.1/lib/ocaml"; "/home/kakadu/.opam/4.00.1/lib/core"] *)
   ; with_color = true
   }
 
-let () = Arg.parse
+
+let () =
+  let usage_msg =
+    [ "This is OCamlBrowser clone written in QtQuick 2.0."
+    ] |> String.concat "\n"
+  in
+  Arg.parse
     [ ("-I", Arg.String (fun s -> options.path <- s :: options.path), "Where to look for cmi files")
     ] (fun s -> printf "Unknown parameter %s\n" s; exit 0)
-    "This is usage message"
+    usage_msg;
+  if List.length options.path = 0
+  then print_endline "Include paths are empty. Please specufy some via -I <path> option"
 
 open QmlContext
 
