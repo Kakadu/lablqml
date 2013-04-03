@@ -37,6 +37,8 @@ Rectangle {
             bottom: dialog.bottom
             right: dialog.right
             top: currentPathContainer.bottom
+            bottomMargin: 5
+            topMargin: 5
         }
         spacing: 5
         ListView {
