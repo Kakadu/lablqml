@@ -13,13 +13,22 @@ Rectangle {
         text: folderModel.folder
         renderType: Text.NativeRendering
     }
-    ListModel {
-        id: pathModel
-        ListElement { name: "a" }
-        ListElement { name: "b" }
-    }
 
-    property variant pathModel: ["a", "b"]
+    property var pathModel: ["a", "b", "c", "d"]
+    function removePath(index) {
+        if ((0<=index) && (index<pathModel.length)) {
+            for (var j=index; j<pathModel.length-1; ++j)
+                pathModel[j] = pathModel[j+1];
+            pathModel.pop();
+            pathModelChanged();
+        } else {
+            console.debug("Wrong argument " + index + " in function removePath()")
+        }
+    }
+    function addPath(s) {
+        pathModel.push(s);
+        pathModelChanged();
+    }
 
     Row {
         height: 600
@@ -78,7 +87,6 @@ Rectangle {
                             anchors.fill: parent
                             propagateComposedEvents: true
                             onClicked: {
-                                //console.log(folderModel.folder);
                                 if (fileName == "..")
                                     folderModel.folder = folderModel.parentFolder;
                                 else if (fileIsDir) {
@@ -100,13 +108,7 @@ Rectangle {
                         MouseArea {
                             anchors.fill: parent
                             propagateComposedEvents: true
-                            onClicked: {
-                                //var o = Qt.createQmlObject("import QtQuick 2.0; ListElement { name: \"" + fileName + "\" }", pathModel, "");
-                                //pathModel.append(o);
-                                // does not implemented yet
-                                console.log('addButton clicked: ' + fileName);
-                                console.log(pathModel)
-                            }
+                            onClicked: dialog.addPath(folderModel.parentFolder + "/" + fileName);
                         }
                     }
                 }
@@ -131,11 +133,11 @@ Rectangle {
                     id: deleteButton
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: pathModel.remove(index)
+                        onClicked: removePath(index)
                     }
                 }
                 Text {
-                    text: name
+                    text: modelData
                     font.pixelSize: 20
                     anchors.left: deleteButton.right
                 }
