@@ -24,7 +24,7 @@ int main(int argc, char ** argv) {
     QQmlContext *ctxt = view.rootContext();
     registerContext(QString("rootContext"), ctxt);
     doCaml();
-    view.setSource(QUrl::fromLocalFile(QString("view.qml")));
+    view.setSource(QUrl::fromLocalFile(QString("Root.qml")));
     view.show();
 
     return app.exec();
