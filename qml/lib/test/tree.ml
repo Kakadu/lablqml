@@ -44,15 +44,15 @@ let print_sig fmt v =
 (* [old_selected] previous indexes. Either all>=0 or (last=-1 and others >=0) *)
 let change_state (old_selected: int list) (x,y) root =
   assert (x>=0);
-  (*printf "Change state\n";
-  printf "Old_selected: %s\n" (List.to_string old_selected ~f:string_of_int);*)
+  printf "Change state\n";
+  printf "Old_selected: %s\n" (List.to_string old_selected ~f:string_of_int);
   let selected_prefix = List.take old_selected ~n:x in
   let selected_tree =
     List.fold_left (selected_prefix) ~init: root ~f:(fun root n ->
       assert (List.length root.sons>n);
       List.nth root.sons ~n
     ) in
-  let () = if (x=0) then assert (selected_tree = root) in
+(*  let () = if (x=0) then assert (selected_tree = root) in*)
   assert (List.length selected_tree.sons > y);
   let new_selected = selected_prefix@[y] in (*
   printf "New selected: %s\n" (List.to_string new_selected ~f:string_of_int);*)

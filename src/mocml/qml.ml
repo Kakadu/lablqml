@@ -84,7 +84,9 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
             print_cpp "%s  %s %s;\n" prefix cpp_arg_type temp_cpp_var;
             to_cpp_conv ~tab:(tab+1) temp_cpp_var head_var t;
             print_cpp "%s  %s << %s;\n" prefix dest temp_cpp_var;
+            print_cpp "%s  %s = Field(%s,1);\n" prefix temp_var temp_var;
             print_cpp "%s}\n" prefix;
+            release_var head_var;
             release_var temp_var;
   in
   to_cpp_conv ~tab:1 cpp_var ocaml_var (TypAst.of_verbose_typ_exn  typ)
@@ -141,7 +143,7 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
           print_cpp "%s  auto it = (%s).end() - 1;\n" prefix var;
           print_cpp "%s  for (;;) {\n" prefix;
           print_cpp "%s    %s = caml_alloc(2,0);\n" prefix cons_helper;
-          generate_wrapper ~tab:(tab+1)  "*it" cons_arg_var typ;
+          generate_wrapper ~tab:(tab+1)  "(*it)" cons_arg_var typ;
           print_cpp "%s    Store_field(%s, 0, %s);\n" prefix cons_helper cons_arg_var;
           print_cpp "%s    Store_field(%s, 1, %s);\n" prefix cons_helper dest;
           print_cpp "%s    %s = %s;\n" prefix dest cons_helper;

@@ -3,6 +3,8 @@ Controller:
   basename:
   methods:   # arg1, arg2, ...., return value
     onItemSelected: [int, int, unit]
+    setPaths: [ string list, unit]
+    paths: [unit, string list]
   properties:
     hasData:
       type:   bool
@@ -26,4 +28,3 @@ DataItem:
     sort: [unit, string]
   properties:
   slots:
-

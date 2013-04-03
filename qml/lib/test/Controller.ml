@@ -1,4 +1,4 @@
-(* Generated at 2013-03-31 00:17:18.873081 *)
+(* Generated at 2013-04-03 16:17:32.868811 *)
 
 open QmlContext
 
@@ -10,6 +10,8 @@ class virtual base_Controller cppobj = object(self)
   initializer store cppobj self
   method handler = cppobj
   method virtual onItemSelected: int->int-> unit
+  method virtual setPaths: string list-> unit
+  method virtual paths: unit-> string list
   method emit_hasDataChanged = stub_hasDataChanged self#handler
   method virtual isHasData: unit -> bool
   method emit_descChanged = stub_descChanged self#handler

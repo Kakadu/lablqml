@@ -46,12 +46,25 @@ Rectangle {
         }
     ]
     state: "BROWSE_API"
+    function setCurrentPaths() {
+        // get OCaml paths and set them to temporary model
+        var lst = controller.paths() // So hackful because we need to convert QList<String> to Array
+        var ans = [];
+        for (var x in lst ) ans.push(lst[x])
+        editPathsContainer.pathModel = ans
+    }
+    function applyPaths() {
+        // transfer selected paths to OCaml
+        console.log("applyPaths()")
+        controller.setPaths(editPathsContainer.pathModel)
+    }
 
     Rectangle {
         id: bottomToolbar
         anchors.left: root.left
         anchors.right: root.right
         anchors.bottom: root.bottom
+        anchors.topMargin: 10
         height: 35
         color: backgroundColor
 
@@ -75,8 +88,15 @@ Rectangle {
                     anchors.fill: parent
                     onClicked: {
                         switch (root.state) {
-                        case "BROWSE_API": root.state = "EDIT_PATHS"; break;
-                        case "EDIT_PATHS": root.state = "BROWSE_API"; break;
+                        case "BROWSE_API":
+                            setCurrentPaths();
+                            console.log(editPathsContainer.pathsModel)
+                            root.state = "EDIT_PATHS";
+                            break;
+                        case "EDIT_PATHS":
+                            applyPaths();
+                            root.state = "BROWSE_API";
+                            break;
                         default:
                             console.error("Error while switching state")
                         }

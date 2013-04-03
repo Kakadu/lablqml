@@ -38,7 +38,11 @@ class virtual abstractListModel cppobj = object(self)
   method hasChildren _ = self#rowCount QModelIndex.empty > 0
 end
 
-let root = S.(read_modules options.path |> build_tree |> sort_tree)
+let update_paths xs =
+  printf "Setting new paths:\n%s\n%!" (List.to_string xs ~f:(sprintf "%s"));
+  options.path <- xs;
+  S.(read_modules options.path |> build_tree |> sort_tree)
+let root = ref (update_paths options.path)
 let selected = ref [-1]
 let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
 
@@ -74,14 +78,14 @@ let cpp_data_helper ys =
   List.map ys ~f
 
 let initial_cpp_data () : (abstractListModel * DataItem.base_DataItem list) list =
-  let xs = Tree.proj root [-1] in
+  let xs = Tree.proj !root [-1] in
   assert (List.length xs = 1);
   cpp_data_helper xs
 
 let item_selected controller mainModel x y : unit =
   printf "Item selected: %d,%d\n%!" x y;
   let last_row = List.length !cpp_data - 1 in
-  let (new_selected,redraw_from) = Tree.change_state !selected (x,y) root in
+  let (new_selected,redraw_from) = Tree.change_state !selected (x,y) !root in
   let leaf_selected =
     assert (redraw_from <= List.length !cpp_data);
     (redraw_from=List.length new_selected)
@@ -99,7 +103,7 @@ let item_selected controller mainModel x y : unit =
     cpp_data := cpp_data_head;
   end;
 
-  let xs = Tree.proj root new_selected in
+  let xs = Tree.proj !root new_selected in
   assert (List.length xs = List.length new_selected);
   if leaf_selected then begin
     let cur_item = List.last xs |> List.nth ~n:(List.last new_selected) in
@@ -124,6 +128,23 @@ let item_selected controller mainModel x y : unit =
   end;
   assert (List.length !cpp_data = List.length new_selected)
 
+let do_update_paths model xs =
+  if options.path <> xs then begin
+    (* there we need to clear model ... *)
+    model#beginRemoveRows QModelIndex.empty 0 (List.length !cpp_data-1);
+    cpp_data := [];
+    model#endRemoveRows ();
+    root := update_paths xs;
+    (* ... and repopuly it *)
+    if !root.Tree.sons <> [] then begin
+      model#beginInsertRows QModelIndex.empty 0 0;
+      cpp_data := initial_cpp_data ();
+      selected := [-1];
+      model#endInsertRows ()
+    end else
+      selected := [];
+  end
+
 let main () =
   cpp_data := initial_cpp_data ();
 
@@ -132,7 +153,7 @@ let main () =
 
   let model = object(self)
     inherit abstractListModel cpp_model as super
-    method rowCount _ =  List.length !cpp_data
+    method rowCount _ = List.length !cpp_data
     method data index role =
       let r = QModelIndex.row index in
       if (r<0 || r>= List.length !cpp_data) then QVariant.empty
@@ -153,6 +174,8 @@ let main () =
         Printexc.to_string exc |> print_endline;
         printf "Backtrace:\n%s\n%!" (Printexc.get_backtrace ());
         exit 0
+    method paths () = options.path
+    method setPaths xs = do_update_paths model xs
     val mutable desc = None
     method isHasData () = match desc with Some _ -> true | _ -> false
     method getDescr () =
@@ -170,11 +193,11 @@ let main () =
       end;
       self#emit_descChanged info
   end in
-
+  (*
   let () =
     let c = Gc.get () in
     c.Gc.max_overhead <- 1000001 (* disable compactions *)
-  in
+  in*)
 
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler

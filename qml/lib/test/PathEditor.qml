@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import Qt.labs.folderlistmodel 1.0
+import "main.js" as Main
 
 Rectangle {
     id: dialog
@@ -26,6 +27,9 @@ Rectangle {
         }
     }
     function addPath(s) {
+        console.log (typeof(s));
+        if (s.startsWith("file://"))
+            s = s.substr(7);
         pathModel.push(s);
         pathModelChanged();
     }
@@ -56,9 +60,10 @@ Rectangle {
 
             FolderListModel {
                 id: folderModel
-                folder: "/home/kakadu/mand"
+                folder: "/home/kakadu/.opam/4.00.1/lib"
                 showDotAndDotDot: true
                 showDirsFirst: true
+                showHidden: true
             }
 
             Component {
@@ -110,7 +115,7 @@ Rectangle {
                         MouseArea {
                             anchors.fill: parent
                             propagateComposedEvents: true
-                            onClicked: dialog.addPath(folderModel.parentFolder + "/" + fileName);
+                            onClicked: dialog.addPath(folderModel.folder +"/"+ fileName);
                         }
                     }
                 }

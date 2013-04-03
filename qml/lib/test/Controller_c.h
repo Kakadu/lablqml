@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-03-31 00:17:18.872570
+ * Generated at 2013-04-03 16:17:32.768707
  */
 #ifndef Controller_c_H
 #define Controller_c_H
@@ -20,6 +20,8 @@ public:
     register_global_root(&_camlobjHolder);
   }
   Q_INVOKABLE void onItemSelected(int,int);
+  Q_INVOKABLE void setPaths(QList<QString>);
+  Q_INVOKABLE QList<QString> paths();
 public:
   Q_PROPERTY(bool hasData  READ isHasData NOTIFY hasDataChanged)
   Q_INVOKABLE bool isHasData();
