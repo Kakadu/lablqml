@@ -49,14 +49,14 @@ let build_tree (xs : Types.signature) =
 let compare a b =
   let open Types in
   let helper = function
-  | Types.Sig_value       _ -> 0
-  | Types.Sig_type        _ -> 1
-  | Types.Sig_exception   _ -> 2
+  | Types.Sig_type        _ -> 0
+  | Types.Sig_modtype     _ -> 1
+  | Types.Sig_module      _ -> 2
   | Types.Sig_module (_,Types.Mty_functor _,_) -> 3
-  | Types.Sig_module      _ -> 4
-  | Types.Sig_modtype     _ -> 5
   | Types.Sig_class       _ -> 6
   | Types.Sig_class_type  _ -> 7
+  | Types.Sig_value       _ -> 8
+  | Types.Sig_exception   _ -> 9
   in
   let x = compare (helper a) (helper b) in
   if x<>0 then x
