@@ -2,3 +2,7 @@ camlcode.o.startup.s
 mocml
 main
 test
+# C++
+.moc
+.pch
+.obj
