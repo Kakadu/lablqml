@@ -2,5 +2,9 @@
 export PATH=$QT5_ROOT/qtbase/bin:$PATH
 cd folderlistmodel
 qmake 
+make clean
+patch -p4 -R < ../folderlistmodel.diff
+patch -p4    < ../folderlistmodel.diff
+qmake
 make
 cp $QT5_ROOT/qtbase/qml/Qt/labs/folderlistmodel/libqmlfolderlistmodelplugin.so ..
