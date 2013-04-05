@@ -5,6 +5,7 @@ Controller:
     onItemSelected: [int, int, unit]
     setPaths: [ string list, unit]
     paths: [unit, string list]
+    getFullPath: [unit, string]
   properties:
     hasData:
       type:   bool

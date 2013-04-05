@@ -69,21 +69,35 @@ Rectangle {
                         onClicked: {
                             lv1.currentIndex = index;
                             controller.onItemSelected(mainIndex,index);
+                            currentPathHolder.text = controller.getFullPath()
                         }
                     }
                 }
             }
         }
     }
+    Text {
+        id: currentPathHolder
+        height: defaultTextFieldHeight
+        font.pixelSize: defaultFontSize
+        font.bold: true
+        anchors {
+            top: mainView.bottom
+            left: mainView.left
+            right: mainView.right
+        }
+        text: ""
+    }
 
     Scrollable {
+        id: descriptionTextFieldHolder
         flickableDirection: Flickable.VerticalFlick
         contentHeight: descriptionTextField.height
         contentWidth:  descriptionTextField.width
         color: backgroundColor
-        anchors.top: mainView.bottom
-        anchors.left: mainView.left
-        anchors.right: mainView.right
+        anchors.top: currentPathHolder.bottom
+        anchors.left: currentPathHolder.left
+        anchors.right: currentPathHolder.right
         anchors.bottom: browseAPIContainer.bottom
         hideScrollBarsWhenStopped: true
 

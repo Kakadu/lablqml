@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-04-03 16:17:32.768707
+ * Generated at 2013-04-05 13:05:29.624670
  */
 #ifndef Controller_c_H
 #define Controller_c_H
@@ -22,6 +22,7 @@ public:
   Q_INVOKABLE void onItemSelected(int,int);
   Q_INVOKABLE void setPaths(QList<QString>);
   Q_INVOKABLE QList<QString> paths();
+  Q_INVOKABLE QString getFullPath();
 public:
   Q_PROPERTY(bool hasData  READ isHasData NOTIFY hasDataChanged)
   Q_INVOKABLE bool isHasData();

@@ -184,6 +184,15 @@ let main () =
         | None   ->
             eprintf "App have tried to access description which should not exist now";
             "<no description. Bug!>"
+    method getFullPath () =
+      let indexes = if List.last !selected = -1 then List.(!selected |> rev |> tl |> rev) else !selected in
+      (*printf "List.length indexes = %d\n" (List.length indexes);*)
+      assert (List.for_all ((<=)0) indexes);
+      let proj = Tree.proj !root indexes |> List.take ~n:(List.length indexes) in
+      (*printf "List.length proj = %d\n%!" (List.length proj);*)
+      assert (List.length proj = List.length indexes);
+      List.map2 proj indexes ~f:(fun xs n -> let x = List.nth xs ~n in x.Tree.name) |> String.concat "."
+
     method updateDescription info =
       if self#isHasData () then begin
         desc <- Some info;

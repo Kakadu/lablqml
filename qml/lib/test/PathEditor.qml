@@ -64,6 +64,7 @@ Rectangle {
                 showDotAndDotDot: true
                 showDirsFirst: true
                 showHidden: true
+                showFiles: false
             }
 
             Component {
@@ -83,8 +84,7 @@ Rectangle {
                         font.pixelSize: 20
                         font.bold: fileIsDir
                         color: "black"
-                        font.family: if (fileIsDir) "Terminal"
-                                     else "Consolas"
+                        font.family: "Monospace"
 
                         text: fileName
                         height: parent.height - 2

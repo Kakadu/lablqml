@@ -71,6 +71,20 @@ QList<QString> Controller::paths() {
   }
   CAMLreturnT(QList<QString>,cppans);
 }
+//getFullPath: string
+QString Controller::getFullPath() {
+  CAMLparam0();
+  CAMLlocal3(_ans,_meth,_x0);
+  CAMLlocalN(_args,1);
+  value _camlobj = this->_camlobjHolder;
+  Q_ASSERT(Is_block(_camlobj));
+  Q_ASSERT(Tag_val(_camlobj) == Object_tag);
+  _meth = caml_get_public_method(_camlobj, caml_hash_variant("getFullPath"));
+  _ans = caml_callback2(_meth, _camlobj, Val_unit);
+  QString cppans;
+  cppans = QString(String_val(_ans));
+  CAMLreturnT(QString,cppans);
+}
 //isHasData: bool
 bool Controller::isHasData() {
   CAMLparam0();
