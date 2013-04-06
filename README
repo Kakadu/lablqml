@@ -1,3 +1,7 @@
+Qml test application is in qml/lib/test
+It depends on code in src, qml/lib and Qt5 stuff. I recently removed hardcoded paths to Qt5, so I leave configuring environment to you.
+
+====================================================
 My thoughts about which bindings for Qt should be
 
 File `build.ml` is a script for pseudo-autobuild.
