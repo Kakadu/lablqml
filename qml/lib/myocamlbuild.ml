@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: a19712c21192d4ee1f0c6e3b2b8ab0dc) *)
+(* DO NOT EDIT (digest: baaffaaf3091e655094de9856746c23e) *)
 module OASISGettext = struct
 (* # 21 "/home/kakadu/.opam/4.00.1/build/oasis.0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -489,11 +489,15 @@ let package_default =
                       A "-ccopt";
                       A "-std=c++0x";
                       A "-ccopt";
-                      A "-I${QT5}/include";
-                      A "-ccopt";
                       A "-x";
                       A "-ccopt";
                       A "c++";
+                      A "-ccopt";
+                      A "`pkg-config";
+                      A "-ccopt";
+                      A "--cflags";
+                      A "-ccopt";
+                      A "Qt5Qml`";
                       A "-ccopt";
                       A "-O2";
                       A "-ccopt";
@@ -507,6 +511,6 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 511 "myocamlbuild.ml"
+# 515 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

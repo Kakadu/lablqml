@@ -11,9 +11,7 @@ Library qml_wrap
   BuildTools:   ocamlbuild
   Modules:      QmlContext
   CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c
-  CCOpt:        -std=c++0x -I$QT5/include -x c++ -O2 -Dprivate=public 
-  #CCLib: -L$QT5/lib
-
+  CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Qml` -O2 -Dprivate=public 
 
 Test test1
   Command: test1
