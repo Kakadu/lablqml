@@ -1,7 +1,8 @@
 MOC=$$QT5/bin/moc
-CC=g++ -g -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -I../_build -I`ocamlc -where` \
+CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I../_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
-CLINK=g++ -g -L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
+#CC=g++ -g -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -I../_build -I`ocamlc -where` -Dprotected=public -Dprivate=public
+CLINK=g++ -g `pkg-config --libs Qt5Quick` #-L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
 OUT=main
 GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
