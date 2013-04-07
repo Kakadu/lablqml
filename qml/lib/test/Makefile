@@ -1,8 +1,7 @@
-MOC=$$QT5/bin/moc
+MOC=`qmake -query QT_INSTALL_BINS`/moc
 CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I../_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
-#CC=g++ -g -fPIC -std=c++0x -I$$QT5_ROOT/qtbase/include -I../_build -I`ocamlc -where` -Dprotected=public -Dprivate=public
-CLINK=g++ -g `pkg-config --libs Qt5Quick` #-L$$QT5_ROOT/qtbase/lib -lQt5Core -lQt5Qml -lQt5Quick -lQt5Gui
+CLINK=g++ -g `pkg-config --libs Qt5Quick`
 OUT=main
 GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )

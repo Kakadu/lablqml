@@ -1,10 +1,9 @@
 #!/bin/bash
-export PATH=$QT5_ROOT/qtbase/bin:$PATH
 cd folderlistmodel
 qmake 
 make clean
-patch -p4 -R < ../folderlistmodel.diff
+git co *.cpp *.h
 patch -p4    < ../folderlistmodel.diff
 qmake
 make
-cp $QT5_ROOT/qtbase/qml/Qt/labs/folderlistmodel/libqmlfolderlistmodelplugin.so ..
+cp `qmake -query QT_INSTALL_PREFIX`/qml/Qt/labs/folderlistmodel/libqmlfolderlistmodelplugin.so ..
