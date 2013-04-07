@@ -1,9 +1,20 @@
 #!/bin/bash
+
+# code for version checking
+verlte() {
+    [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+}
+verlt() {
+    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+}
+QT_VERSION=`qmake -query QT_VERSION`
+verlte 5.1.0 $QT_VERSION || (echo "Minimal Qt version is 5.1.0 (your is $QT_VERSION)"; exit 0)
+
+echo "Building custom folderlistmodel plugin"
 cd folderlistmodel
-qmake 
-make clean
-git co *.cpp *.h
-patch -p4    < ../folderlistmodel.diff
-qmake
+if [ ! -e Makefile ];
+then
+  qmake
+fi
 make
 cp `qmake -query QT_INSTALL_PREFIX`/qml/Qt/labs/folderlistmodel/libqmlfolderlistmodelplugin.so ..
