@@ -71,9 +71,11 @@ public:
     void setSortFlags(QDir::SortFlags flags);
     void setNameFilters(const QStringList & nameFilters);
     void setShowDirs(bool showFolders);
+    void setShowFiles(bool on);
     void setShowDirsFirst(bool show);
     void setShowDotDot(bool on);
     void setShowOnlyReadable(bool on);
+    void setShowHidden(bool on);
 
 public Q_SLOTS:
 #ifndef QT_NO_FILESYSTEMWATCHER
@@ -103,8 +105,10 @@ private:
     bool folderUpdate;
     bool sortUpdate;
     bool showDirs;
+    bool showFiles;
     bool showDirsFirst;
     bool showDotDot;
+    bool showHidden;
     bool showOnlyReadable;
 };
 

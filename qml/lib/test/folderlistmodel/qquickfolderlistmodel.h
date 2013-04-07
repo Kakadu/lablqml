@@ -70,9 +70,11 @@ class QQuickFolderListModel : public QAbstractListModel, public QQmlParserStatus
     Q_PROPERTY(SortField sortField READ sortField WRITE setSortField)
     Q_PROPERTY(bool sortReversed READ sortReversed WRITE setSortReversed)
     Q_PROPERTY(bool showDirs READ showDirs WRITE setShowDirs)
+    Q_PROPERTY(bool showFiles READ showFiles WRITE setShowFiles)
     Q_PROPERTY(bool showDirsFirst READ showDirsFirst WRITE setShowDirsFirst)
     Q_PROPERTY(bool showDotAndDotDot READ showDotAndDotDot WRITE setShowDotAndDotDot)
     Q_PROPERTY(bool showOnlyReadable READ showOnlyReadable WRITE setShowOnlyReadable)
+    Q_PROPERTY(bool showHidden READ showHidden WRITE setShowHidden)
     Q_PROPERTY(int count READ count NOTIFY rowCountChanged)
 //![class props]
 
@@ -123,12 +125,17 @@ public:
 
     bool showDirs() const;
     void setShowDirs(bool showDirs);
+    bool showFiles() const;
+    void setShowFiles(bool showDirs);
+
     bool showDirsFirst() const;
     void setShowDirsFirst(bool showDirsFirst);
     bool showDotAndDotDot() const;
     void setShowDotAndDotDot(bool on);
     bool showOnlyReadable() const;
     void setShowOnlyReadable(bool on);
+    bool showHidden() const;
+    void setShowHidden(bool on);
 //![prop funcs]
 
     Q_INVOKABLE bool isFolder(int index) const;

@@ -71,9 +71,11 @@ public:
     QStringList nameFilters;
     bool sortReversed;
     bool showDirs;
+    bool showFiles;
     bool showDirsFirst;
     bool showDots;
     bool showOnlyReadable;
+    bool showHidden;
 
     ~QQuickFolderListModelPrivate() {}
     void init();
@@ -625,6 +627,27 @@ void  QQuickFolderListModel::setShowDirs(bool on)
 }
 
 /*!
+    \qmlproperty bool FolderListModel::showFiles
+
+    If true, files are included in the model.
+
+    By default, this property is true.
+*/
+bool QQuickFolderListModel::showFiles() const
+{
+    Q_D(const QQuickFolderListModel);
+    return d->showFiles;
+}
+
+void  QQuickFolderListModel::setShowFiles(bool on)
+{
+    Q_D(QQuickFolderListModel);
+
+    d->fileInfoThread.setShowFiles(on);
+    d->showFiles = on;
+}
+
+/*!
     \qmlproperty bool FolderListModel::showDirsFirst
 
     If true, if directories are included in the model they will
@@ -695,6 +718,28 @@ void QQuickFolderListModel::setShowOnlyReadable(bool on)
 
     if (on != d->showOnlyReadable) {
         d->fileInfoThread.setShowOnlyReadable(on);
+    }
+}
+/*!
+    \qmlproperty bool FolderListModel::showHidden
+
+    If true, hidden files and directories will be shown.
+
+    By default, this property is false.
+
+    \sa showDirs
+*/
+bool QQuickFolderListModel::showHidden() const
+{
+    Q_D(const QQuickFolderListModel);
+    return d->showHidden;
+}
+
+void QQuickFolderListModel::setShowHidden(bool on) {
+    Q_D(QQuickFolderListModel);
+
+    if (on != d->showHidden) {
+        d->fileInfoThread.setShowHidden(on);
     }
 }
 
