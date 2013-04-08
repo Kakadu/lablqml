@@ -127,7 +127,7 @@ let main out_dir =
 
     let (_,index,main_graph,q) = options.base in
     let components = (* Queue generation *)
-      let module T = Tarjan.Make(G) in
+      let module T = Graph.Components.Make(G) in
       let graph = G.copy main_graph in
       SuperIndex.iter ~f:(fun ~key ~data ->
         match data with
