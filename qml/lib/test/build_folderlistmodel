@@ -8,7 +8,12 @@ verlt() {
     [ "$1" = "$2" ] && return 1 || verlte $1 $2
 }
 QT_VERSION=`qmake -query QT_VERSION`
-verlte 5.1.0 $QT_VERSION || (echo "Minimal Qt version is 5.1.0 (your is $QT_VERSION)"; exit 0)
+if ! verlte 5.1.0 $QT_VERSION ; then
+  echo "Minimal Qt version is 5.1.0 (your is $QT_VERSION)" 
+  exit
+fi
+
+
 
 echo "Building custom folderlistmodel plugin"
 cd folderlistmodel

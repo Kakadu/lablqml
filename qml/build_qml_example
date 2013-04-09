@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# code for version checking
+function verlte() {
+    [ "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+}
+function verlt() {
+    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+}
+QT_VERSION=`qmake -query QT_VERSION`
+if ! verlte 5.1.0 $QT_VERSION ; then
+  echo "Minimal Qt version is 5.1.0 (your is $QT_VERSION)" 
+  exit
+fi
+
+function build_syck() {
+  echo "Building ocaml-syck"
+  local olddir=$PWD
+  cd /tmp && rm -fr ocaml-syck
+  bzr branch lp:ubuntu/ocaml-syck && cd ocaml-syck && make
+  if ! make install DESTDIR=`opam config var lib`/ocaml-syck ; then
+    echo "installing ocaml-syck failed"
+    exit 0
+  fi;
+  cd $olddir  
+}
+
+function build_generator() {
+  ocamlfind query ocaml-syck
+  if [ $? != 0 ]; then
+    echo "ocaml-syck library is not installed. Use 'bzr branch lp:ubuntu/ocaml-syck' to get it"
+    build_syck    
+  fi
+  cd ../src
+  ./configure && ocamlbuild mocml/mocml.native
+  if [ $? != 0 ]; then
+    echo "Failed to build generator by unknown reason"
+    exit 1
+  fi
+  if [ ! -e lib/test/mocml ]; then
+    ln -s ../src/mocml.native lib/test/mocml
+  fi
+  cd -
+  echo "Generator is built";
+}
+
+function build_qml_library() {
+  pkg-config --cflags Qt5Qml
+  if [ $? != 0 ]; then
+    echo "pkg-config exists with <> 0. Please set correct PKG_CONFIG_PATH environment variable"
+    echo "Something like:"
+    echo "     export PKG_CONFIG_PATH=\`qmake -query QT_INSTALL_LIBS\`/pkgconfig:$PKG_CONFIG_PATH"
+    exit 0
+  fi
+  cd lib
+  ./configure && make 
+  cd ..
+}
+
+function build_example () {
+  cd lib/test
+  ./build_folderlistmodel
+  ./configure && make
+  cd -
+  if [ ! -e qocamlbrowser ]; then
+    ln -s lib/test/main qocamlbrowser
+  fi
+}
+
+build_generator
+build_qml_library
+build_example

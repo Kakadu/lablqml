@@ -1,5 +1,20 @@
 #!/bin/bash
-echo ""> .depend
+
+if [ ! -e ./mocml ]
+then
+    echo "Building generator"
+    cd ../../../src
+    ./configure
+    ocamlbuild mocml/mocml.native
+    if [ $? != 0 ]; then
+      exit 0
+    fi
+    cd -
+    echo "Adding symlink"
+    ln -s ../../../src/mocml.native mocml
+fi
+echo "Executing generator"
 ./mocml -qml_wrap #-with-debug
+echo ""> .depend
 make depend
 
