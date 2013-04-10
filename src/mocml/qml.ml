@@ -46,7 +46,7 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
             print_cpp "%s} else // empty QVariant\n" prefix;
             print_cpp "%s    %s = QVariant();\n" prefix dest;
         | `QModelIndex -> begin
-            match List.find options (function `AbstractItemModel _ -> true | _ -> false) with
+            match List.find options (function `AbstractItemModel _ -> true) with
               | Some (`AbstractItemModel obj) ->
                   let call =
                     match obj with

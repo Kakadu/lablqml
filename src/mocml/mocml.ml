@@ -44,7 +44,7 @@ let () = match options.target with
     ()
   end
   | `Qml -> begin
-    let data = ParseYaml.Yaml2.parse_file options.filename in
+    let data = ParseYaml.Json.parse_file options.filename in
     let () = print_endline "data file parsed" in
     let open ParseYaml.Yaml2 in
     let () = data |> Types.sexp_of_data |> Sexplib.Sexp.to_string_hum |> print_endline in
@@ -53,7 +53,13 @@ let () = match options.target with
     ()
   end
   | `Qml_wrap -> begin
-    let data = ParseYaml.Yaml2.parse_file options.filename in
+    let data =
+      try  ParseYaml.Json.parse_file options.filename
+      with exc ->
+        Printf.printf "%s\n" (Exn.to_string exc);
+        Printexc.print_backtrace Out_channel.stdout;
+        exit 0
+    in
     let config =
       (if options.add_debug_calls then [`PrintMethCalls] else [])
     in

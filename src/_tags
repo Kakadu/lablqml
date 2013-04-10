@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: c39c2589a50970bf6db5f54c7ddb7f77)
+# DO NOT EDIT (digest: 711b2fafb59229173a2f85ec521f9ec6)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -63,28 +63,28 @@
 <xmltool/*.ml{,i}>: pkg_ocamlgraph
 # Executable mocml
 "mocml/mocml.native": use_lablqt
-"mocml/mocml.native": pkg_ocaml-syck
 "mocml/mocml.native": pkg_sexplib.syntax
 "mocml/mocml.native": pkg_sexplib
 "mocml/mocml.native": pkg_core
 "mocml/mocml.native": pkg_threads
 "mocml/mocml.native": pkg_str
+"mocml/mocml.native": pkg_yojson
 "mocml/mocml.native": pkg_tyxml
 "mocml/mocml.native": pkg_tyxml.parser
 "mocml/mocml.native": pkg_ocamlgraph
 <mocml/*.ml{,i}>: use_lablqt
-<mocml/*.ml{,i}>: pkg_ocaml-syck
 <mocml/*.ml{,i}>: pkg_sexplib.syntax
 <mocml/*.ml{,i}>: pkg_sexplib
 <mocml/*.ml{,i}>: pkg_core
 <mocml/*.ml{,i}>: pkg_threads
 <mocml/*.ml{,i}>: pkg_str
+<mocml/*.ml{,i}>: pkg_yojson
 <mocml/*.ml{,i}>: pkg_tyxml
 <mocml/*.ml{,i}>: pkg_tyxml.parser
 <mocml/*.ml{,i}>: pkg_ocamlgraph
 # OASIS_STOP
-"mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
-"mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_ocaml-syck
+"mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
+"mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
 "lib/generators.ml": syntax_camlp4o, package_sexplib.syntax
 "lib/parser.ml": syntax_camlp4o, package_sexplib.syntax
 

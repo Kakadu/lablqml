@@ -29,7 +29,7 @@ Executable xmltool
 Executable mocml
   Path:             mocml
   BuildTools:       ocamlbuild
-  BuildDepends:     lablqt,ocaml-syck,sexplib.syntax,sexplib,core,threads,str
+  BuildDepends:     lablqt,sexplib.syntax,sexplib,core,threads,str,yojson
   CompiledObject:   native
   MainIs:           mocml.ml
   
