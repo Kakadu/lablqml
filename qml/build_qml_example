@@ -13,24 +13,7 @@ if ! verlte 5.1.0 $QT_VERSION ; then
   exit
 fi
 
-function build_syck() {
-  echo "Building ocaml-syck"
-  local olddir=$PWD
-  cd /tmp && rm -fr ocaml-syck
-  bzr branch lp:ubuntu/ocaml-syck && cd ocaml-syck && make
-  if ! make install DESTDIR=`opam config var lib`/ocaml-syck ; then
-    echo "installing ocaml-syck failed"
-    exit 0
-  fi;
-  cd $olddir  
-}
-
 function build_generator() {
-  ocamlfind query ocaml-syck
-  if [ $? != 0 ]; then
-    echo "ocaml-syck library is not installed. Use 'bzr branch lp:ubuntu/ocaml-syck' to get it"
-    build_syck    
-  fi
   cd ../src
   ./configure && ocamlbuild mocml/mocml.native
   if [ $? != 0 ]; then
@@ -62,9 +45,7 @@ function build_example () {
   ./build_folderlistmodel
   ./configure && make
   cd -
-  if [ ! -e qocamlbrowser ]; then
-    ln -s lib/test/main qocamlbrowser
-  fi
+  echo "Now You can do 'cd list/test && ./main'" 
 }
 
 build_generator

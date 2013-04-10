@@ -167,12 +167,10 @@ module Json = struct
   and parse_class (j: json) =
     match j with
       | `Assoc xs ->
-          Printf.printf "1\n";
           let basename = List.Assoc.find xs "basename"
              |> Option.map ~f:(function `String s -> s | _ -> assert false) in
           let classname = List.Assoc.find_exn xs "classname"
              |> (function `String s -> s | _ -> assert false) in
-          Printf.printf "1\n";
           let members = List.Assoc.find_exn xs "methods"
              |> (function
                  | `List ys  -> ys |> List.map ~f:(function `Assoc x -> x | _ -> assert false)
@@ -180,7 +178,6 @@ module Json = struct
                  | x ->
                      pretty_to_channel stdout x;
                      assert false ) in
-          Printf.printf "1\n";
           let slots : _ list = List.Assoc.find_exn xs "slots"
              |> (function
                  | `List xs -> List.map xs ~f:(function `Assoc x -> x | _ -> assert false)
