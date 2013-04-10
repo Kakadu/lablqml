@@ -105,7 +105,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_h "\n";
   p_h "class %s: public %s {\n" classname base_classname;
   p_h "  Q_OBJECT\n";
-  p_h "  value _camlobjHolder = 0;\n";
+  p_h "  value _camlobjHolder;\n";
   p_h "public:\n";
   (* constructor *)
   p_h "  %s();\n" classname;
