@@ -14,7 +14,7 @@ then
     ln -s ../../../src/mocml.native mocml
 fi
 echo "Executing generator"
-./mocml -qml_wrap #-with-debug
+./mocml -qml_wrap input.json #-with-debug
 echo ""> .depend
 make depend
 

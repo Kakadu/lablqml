@@ -1,0 +1,53 @@
+[
+{
+  "classname": "Controller",
+  "methods": [
+      { "name":      "onItemSelected",
+        "signature": ["int",         "int", "unit"] },
+      { "name":      "setPaths",
+        "signature": ["string list", "unit"] },
+      { "name":      "paths",
+        "signature": ["unit",        "string list"] },
+      { "name":      "getFullPath",
+        "signature": ["unit",        "string"] }
+  ],
+  "properties": [{
+      "name" :"hasData",
+      "type":   "bool",
+      "get":    "isHasData",
+      "notify": "hasDataChanged"
+    },
+	{ "name":   "descr",
+      "type":   "string",
+      "get":    "getDescr",
+      "notify": "descChanged"
+    }
+  ],
+  "slots": [],
+  "signals": []
+},
+
+{
+    "classname": "AbstractModel",
+    "basename":  "QAbstractItemModel",
+    "methods": [],
+    "properties": [],
+    "slots": [],
+    "signals": []
+},
+{
+    "classname": "DataItem",
+    "methods": [
+        { "name":      "name",
+          "signature": ["unit", "string"]
+        },
+        { "name":      "sort",
+          "signature": ["unit", "string"]
+	    }
+    ],
+    "properties": [],
+    "slots": [],
+    "signals": []
+}
+
+]
