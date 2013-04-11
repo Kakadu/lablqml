@@ -97,7 +97,7 @@ let () = match !target with
 
         (* compiling xml *)
 
-        make "all" ~dir: "src" "\ncompiling xml...\n";
+        make "all" ~dir: "../src" "\ncompiling xml...\n";
         print_endline "\nGenerator is compiled!\n";
 
         (*print_endline "\nexecuting xmltool...\n";
@@ -105,7 +105,7 @@ let () = match !target with
 *)
         print_endline "\nexecuting generator...\n";
         wrap_cmd 
-          ("./src/generator.native -xml " ^ api_xml ^ 
+          ("../src/generator.native -xml " ^ api_xml ^ 
            (if !cpp_bin_loc<>"" then " -qtloc " ^ !cpp_bin_loc else "") ^
            " " ^ (cpp_includes ()) ^ " test_gen/out")
           "error while generating code";
