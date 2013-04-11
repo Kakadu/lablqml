@@ -1,8 +1,5 @@
-Qml test application is in qml/lib/test
-It depends on code in src, qml/lib and Qt5 stuff. I recently removed hardcoded paths to Qt5, so I leave configuring environment to you.
-
 ====================================================
-My thoughts about which bindings for Qt should be
+My thoughts about which bindings for QtGui should be. I paused developing of this project and I'm focused now on QtQuick. See `../qml/` for details.
 
 File `build.ml` is a script for pseudo-autobuild.
 You can download and compile lablqt automatically (if all depends are installed) using these commands.
