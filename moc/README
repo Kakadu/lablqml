@@ -1,6 +1,0 @@
-MOC-like generator to help lablqt's user to create it's own slots and signals.
-
-program read input file
-and generates stubs, to use it.
-Qt's moc is needed to compile this stubs.
-

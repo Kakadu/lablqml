@@ -1,2 +1,0 @@
-#!/bin/bash
-fdp -Tpng < outgraph.dot > a.png && gwenview a.png

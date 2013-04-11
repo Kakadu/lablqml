@@ -1,9 +1,0 @@
-*~
-*#*
-*.backup
-outgraph.dot
-superindex.log
-out
-*.native
-*.byte
-_build
