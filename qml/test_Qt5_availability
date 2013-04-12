@@ -1,7 +1,7 @@
 #!/bin/bash
 # code for version checking
 function verlte() {
-    [ "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+    [ "$1" = "`echo -e "$1\n$2" | sort | head -n1`" ]
 }
 function verlt() {
     [ "$1" = "$2" ] && return 1 || verlte $1 $2
@@ -20,7 +20,7 @@ QDeclarativeView viewer;
 viewer.show();
 return 0;
 }" > testQtDeclarative.cpp
-g++ `pkg-config --cflags QtDeclarative` `pkg-config --libs QtDeclarative` testQtDeclarative.cpp 
+g++ `pkg-config --cflags Qt5Quick` `pkg-config --libs Qt5Quick` testQtDeclarative.cpp 
 if [ $? != 0 ]; then
   echo "Compilation of test application failed"
   exit 1
