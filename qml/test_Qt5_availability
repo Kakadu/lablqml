@@ -1,0 +1,28 @@
+#!/bin/bash
+# code for version checking
+function verlte() {
+    [ "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+}
+function verlt() {
+    [ "$1" = "$2" ] && return 1 || verlte $1 $2
+}
+QT_VERSION=`qmake -query QT_VERSION`
+if ! verlte 5.0.0 $QT_VERSION ; then
+  echo "Minimal Qt version is 5.1.0 (your is $QT_VERSION)" 
+  exit 1
+fi
+curdir=$PWD
+
+cd /tmp
+echo "#include <QtDeclarative/QDeclarativeView>
+int main() {
+QDeclarativeView viewer;
+viewer.show();
+return 0;
+}" > testQtDeclarative.cpp
+g++ `pkg-config --cflags QtDeclarative` `pkg-config --libs QtDeclarative` testQtDeclarative.cpp 
+if [ $? != 0 ]; then
+  echo "Compilation of test application failed"
+  exit 1
+fi
+echo "Your Qt installation seems to be OK"
