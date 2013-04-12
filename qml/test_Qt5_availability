@@ -14,13 +14,13 @@ fi
 curdir=$PWD
 
 cd /tmp
-echo "#include <QtDeclarative/QDeclarativeView>
+echo "#include <QtQuick/qquickview.h>
 int main() {
-QDeclarativeView viewer;
+QQuickView viewer;
 viewer.show();
 return 0;
 }" > testQtDeclarative.cpp
-g++ `pkg-config --cflags Qt5Quick` `pkg-config --libs Qt5Quick` testQtDeclarative.cpp 
+g++ -fPIC `pkg-config --cflags Qt5Quick` `pkg-config --libs Qt5Quick` testQtDeclarative.cpp 
 if [ $? != 0 ]; then
   echo "Compilation of test application failed"
   exit 1
