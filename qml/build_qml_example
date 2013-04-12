@@ -7,9 +7,10 @@ function verlte() {
 function verlt() {
     [ "$1" = "$2" ] && return 1 || verlte $1 $2
 }
+QT_MIN_VERSION="5.0.0"
 QT_VERSION=`qmake -query QT_VERSION`
-if ! verlte 5.0.0 $QT_VERSION ; then
-  echo "Minimal Qt version is 5.1.0 (your is $QT_VERSION)" 
+if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
+  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)" 
   exit
 fi
 
@@ -45,7 +46,7 @@ function build_example () {
   ./build_folderlistmodel
   ./configure && make
   cd -
-  echo "Now You can do 'cd list/test && ./main'" 
+  echo "Now You can do 'cd lib/test && ./main -I <some dir>'" 
 }
 
 build_generator
