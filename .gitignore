@@ -18,7 +18,7 @@ main.opt
 # generated graphviz files
 outgraph.dot
 *.dot
-*.png
+#*.png
 for_test5.xml
 #tests
 test_gen/test6/UserSlots.cpp
