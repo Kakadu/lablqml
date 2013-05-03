@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-04-05 13:05:29.626894
+ * Generated at 2013-05-03 09:16:18.007280
  */
 #ifndef DataItem_c_H
 #define DataItem_c_H
@@ -9,7 +9,7 @@
 
 class DataItem: public QObject {
   Q_OBJECT
-  value _camlobjHolder = 0;
+  value _camlobjHolder;
 public:
   DataItem();
   void storeCAMLobj(value x) {

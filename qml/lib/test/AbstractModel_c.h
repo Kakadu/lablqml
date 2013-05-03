@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-04-05 13:05:29.625862
+ * Generated at 2013-05-03 09:16:18.006395
  */
 #ifndef AbstractModel_c_H
 #define AbstractModel_c_H
@@ -10,7 +10,7 @@
 
 class AbstractModel: public QAbstractItemModel {
   Q_OBJECT
-  value _camlobjHolder = 0;
+  value _camlobjHolder;
 public:
   AbstractModel();
   void storeCAMLobj(value x) {

@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-04-05 13:05:29.624670
+ * Generated at 2013-05-03 09:16:17.857920
  */
 #ifndef Controller_c_H
 #define Controller_c_H
@@ -9,7 +9,7 @@
 
 class Controller: public QObject {
   Q_OBJECT
-  value _camlobjHolder = 0;
+  value _camlobjHolder;
 public:
   Controller();
   void storeCAMLobj(value x) {
