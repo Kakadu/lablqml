@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Script for building OCaml+QML from cold start
+function verlte() {
+    [ "$1" = "`echo -e "$1\n$2" | sort | head -n1`" ]
+}
+
+function maybe_exit() {
+  if [ $1 != 0 ]; then
+    echo "ERROR: $2"
+    exit 1
+  fi
+}
+ROOT_DIR=$PWD
+# checking ocaml version
+OCAML_VERSION_MIN="4.00.1"
+OCAML_VERSION=`ocamlc -version`
+maybe_exit $? "ocamlc executable not found"
+if ! verlte $OCAML_VERSION_MIN $OCAML_VERSION ; then
+  echo "Minimal OCaml version is $OCAML_VERSION_MIN (your is $OCAML_VERSION)" 
+  exit
+else 
+  echo "OCaml $OCAML_VERSION found."
+fi
+
+# checking for ocamlfind
+OCAMLFIND_LOC=`which ocamlfind`
+maybe_exit $? "ocamlfind not found"
+echo "ocamlfind found."
+
+#checking Qt installation
+OCAMLFIND_LOC=`which qmake`
+maybe_exit $? "qmake not found"
+QT_VERSION=`qmake -query QT_VERSION`
+echo "qmake found for Qt $QT_VERSION"
+
+QT_MIN_VERSION="5.0.0"
+if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
+  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)" 
+  exit 1
+fi
+
+function compile_test() {
+# tries to build test C++ application with Qt linking
+cd /tmp
+echo "#include <QtQuick/qquickview.h>
+int main() {
+QQuickView viewer;
+viewer.show();
+return 0;
+}" > testQtDeclarative.cpp
+g++ -fPIC `pkg-config --cflags Qt5Quick`  testQtDeclarative.cpp `pkg-config --libs Qt5Quick`
+}
+
+compile_test
+if [ $? != 0 ]; then
+  echo "Linking test C++ application failed"
+  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 for website there is \
+  a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
+    Libs: -L\${libdir} -lQt5Core\n\
+  for\n\
+    Libs: -Wl,-rpath,\${libdir} -L\${libdir} -lQt5Core\n"
+  exit 1
+else 
+  echo "Test C++ aplication built successfully"
+fi
+
+
+
+OCAML_PACKAGES=(core yojson tyxml ocamlgraph) #required ocaml packages
+res=0
+
+for item in ${OCAML_PACKAGES[*]}
+do
+  LOC=`ocamlfind query $item`
+  if [ $? != 0 ]; then
+    #echo "OCaml package $item not found."
+    res=$(($res+1))
+  else
+    echo "OCaml package $item found at $LOC."
+  fi 
+  #printf "   %s\n" $item
+done
+if [ $res != 0 ]; then
+  echo "There are packages to install. Exit."
+  exit 1
+fi
+
+echo "Generating makefile"
+echo -e "\
+.PHONY: all\n\
+all: generator lib test\n\
+	cd $ROOT_DIR/../src; ./configure && ocamlbuild mocml/mocml.native\n\
+	if [ ! -e  $ROOT_DIR/lib/test/mocml ]; then ln -s $ROOT_DIR/../src/mocml.native $ROOT_DIR/lib/test/mocml; fi
+lib: $ROOT_DIR/lib/Makefile\n\
+	if [ ! -e  $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
+	make -C $ROOT_DIR/lib\n\
+generator:\n\
+	cd $ROOT_DIR/lib && ./configure && make\n\
+\n\
+test: lib\n\
+	if [ -ne $ROOT_DIR/lib/test/.depend ]; then touch -ne $ROOT_DIR/lib/test/.depend; fi
+	cd $ROOT_DIR/lib/test && ./configure && make\n\
+clean:\n\
+	\$(MAKE) -C lib/test clean\n\
+	\$(MAKE) -C lib clean\n\
+	\$(MAKE) -C $ROOT_DIR/../src clean\n\
+" > Makefile
