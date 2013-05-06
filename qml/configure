@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Script for building OCaml+QML from cold start
+echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
 function verlte() {
     [ "$1" = "`echo -e "$1\n$2" | sort | head -n1`" ]
 }
@@ -21,6 +22,8 @@ if ! verlte $OCAML_VERSION_MIN $OCAML_VERSION ; then
 else 
   echo "OCaml $OCAML_VERSION found."
 fi
+
+#TODO: maybe add g++ version checking
 
 # checking for ocamlfind
 OCAMLFIND_LOC=`which ocamlfind`
@@ -63,7 +66,7 @@ if [ $? != 0 ]; then
 else 
   echo "Test C++ aplication built successfully"
 fi
-
+cd $ROOT_DIR
 
 
 OCAML_PACKAGES=(core yojson tyxml ocamlgraph) #required ocaml packages
@@ -85,21 +88,21 @@ if [ $res != 0 ]; then
   exit 1
 fi
 
-echo "Generating makefile"
+echo "Generating Makefile"
 echo -e "\
-.PHONY: all\n\
+.PHONY: all generator lib test\n\
 all: generator lib test\n\
-	cd $ROOT_DIR/../src; ./configure && ocamlbuild mocml/mocml.native\n\
-	if [ ! -e  $ROOT_DIR/lib/test/mocml ]; then ln -s $ROOT_DIR/../src/mocml.native $ROOT_DIR/lib/test/mocml; fi
-lib: $ROOT_DIR/lib/Makefile\n\
+	\n\
+generator:\n\
+	cd $ROOT_DIR/../src; ./configure && ocamlbuild mocml/mocml.native
+	if [ ! -e  $ROOT_DIR/lib/test/mocml ]; then ln -s $ROOT_DIR/../src/mocml.native $ROOT_DIR/lib/test/mocml; fi\n\
+lib:\n\
 	if [ ! -e  $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
 	make -C $ROOT_DIR/lib\n\
-generator:\n\
-	cd $ROOT_DIR/lib && ./configure && make\n\
-\n\
 test: lib\n\
 	if [ -ne $ROOT_DIR/lib/test/.depend ]; then touch -ne $ROOT_DIR/lib/test/.depend; fi
 	cd $ROOT_DIR/lib/test && ./configure && make\n\
+	echo 'Now you can change dir to lib/test and execute ./main -I \`ocamlc -where\`, for example'\n\
 clean:\n\
 	\$(MAKE) -C lib/test clean\n\
 	\$(MAKE) -C lib clean\n\
