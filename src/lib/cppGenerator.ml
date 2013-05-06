@@ -499,7 +499,6 @@ class cppGenerator ~graph ~includes ~bin_prefix dir index = object (self)
     argnames
 
   method gen_enum_in_ns ~key ~dir:string {e_name;e_items;e_access;e_flag_name} =
-    let (_: index_data SuperIndex.key_) = key in
     let _f () =
       let (x:index_data) = SuperIndex.find_exn index key in
       ignore x

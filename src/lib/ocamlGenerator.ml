@@ -216,7 +216,7 @@ class ocamlGenerator graph dir index = object (self)
   (* generates member code
    *  ~is_abstract true if method is pure virtual
    * *)
-  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h (meth: meth MethSet.elt_) =
+  method gen_meth ?new_name ~isQObject ~is_abstract ~classname h (meth: meth) =
     let (res,methname,args) = (meth.m_res,meth.m_name,meth.m_args) in
     try
       let () = match meth.m_access with `Private -> raise BreakSilent | _ -> () in
