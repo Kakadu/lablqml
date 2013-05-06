@@ -9,6 +9,7 @@ Rectangle {
 
     id: root
     color: backgroundColor
+    width: 800; height: 600;
 
     ApiBrowser {
         id: browseAPIContainer
