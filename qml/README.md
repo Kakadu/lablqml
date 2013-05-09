@@ -1,5 +1,5 @@
-I have started developing from QtGui but last time I deal with QtQuick because 
-it is more perspective technology.
+I have started developing from QtGui but last time I deal with QtQuick 
+(version 2.0 from Qt5) because it is more perspective technology.
 
 You can execute `./configure` to get Makefile to build all QML-related things.
 You can find some explanations what will happen if you execute it below.
