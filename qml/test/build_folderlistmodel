@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # code for version checking
 verlte() {
@@ -23,4 +23,13 @@ then
   qmake
 fi
 make
-cp `qmake -query QT_INSTALL_PREFIX`/qml/Qt/labs/folderlistmodel/libqmlfolderlistmodelplugin.so ..
+cd ..
+DESTDIR=Qt/labs/folderlistmodel
+if [ ! -e $DESTDIR ]; then
+  mkdir -p $DESTDIR
+fi
+cp -f folderlistmodel/qmldir $DESTDIR
+cp -f folderlistmodel/plugins.qmltypes $DESTDIR
+cp -f folderlistmodel/libqmlfolderlistmodelplugin.so* $DESTDIR
+
+

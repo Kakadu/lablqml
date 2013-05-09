@@ -95,16 +95,18 @@ all: generator lib test\n\
 	\n\
 generator:\n\
 	cd $ROOT_DIR/../src; ./configure && ocamlbuild mocml/mocml.native
-	if [ ! -e  $ROOT_DIR/lib/test/mocml ]; then ln -s $ROOT_DIR/../src/mocml.native $ROOT_DIR/lib/test/mocml; fi\n\
+	if [ ! -e $ROOT_DIR/test/mocml ]; then ln -s $ROOT_DIR/../src/mocml.native $ROOT_DIR/lib/mocml; fi\n\
 lib:\n\
-	if [ ! -e  $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
+	if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
 	make -C $ROOT_DIR/lib\n\
-test: lib\n\
-	if [ -ne $ROOT_DIR/lib/test/.depend ]; then touch -ne $ROOT_DIR/lib/test/.depend; fi
-	cd $ROOT_DIR/lib/test && ./configure && make\n\
-	echo 'Now you can change dir to lib/test and execute ./main -I \`ocamlc -where\`, for example'\n\
+folderlistmodel:\n\
+	cd test && ./buildfolderlistmodel\n\
+test: lib folderlistmodel\n\
+	if [ ! -e $ROOT_DIR/test/.depend ]; then touch -ne $ROOT_DIR/test/.depend; fi
+	cd $ROOT_DIR/test && ./configure && make\n\
+	echo 'Now you can change dir to test and execute ./main -I \`ocamlc -where\`, for example'\n\
 clean:\n\
-	\$(MAKE) -C lib/test clean\n\
+	\$(MAKE) -C test clean\n\
 	\$(MAKE) -C lib clean\n\
 	\$(MAKE) -C $ROOT_DIR/../src clean\n\
 " > Makefile

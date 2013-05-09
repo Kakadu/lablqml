@@ -10,5 +10,5 @@ SOURCES += qquickfolderlistmodel.cpp plugin.cpp \
 HEADERS += qquickfolderlistmodel.h \
     fileproperty_p.h \
     fileinfothread_p.h
-
-load(qml_plugin)
+TEMPLATE = lib
+#load(qml_plugin)

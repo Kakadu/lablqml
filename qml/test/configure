@@ -3,7 +3,7 @@
 if [ ! -e ./mocml ]
 then
     echo "Building generator"
-    cd ../../../src
+    cd ../../src
     ./configure
     ocamlbuild mocml/mocml.native
     if [ $? != 0 ]; then
@@ -11,7 +11,7 @@ then
     fi
     cd -
     echo "Adding symlink"
-    ln -s ../../../src/mocml.native mocml
+    ln -s ../../src/mocml.native mocml
 fi
 echo "Executing generator"
 ./mocml -qml_wrap input.json #-with-debug
