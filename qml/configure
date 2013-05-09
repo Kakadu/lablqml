@@ -106,7 +106,7 @@ test: lib folderlistmodel\n\
 	cd $ROOT_DIR/test && ./configure && make\n\
 	echo 'Now you can change dir to test and execute ./main -I \`ocamlc -where\`, for example'\n\
 clean:\n\
-	\$(MAKE) -C test clean\n\
+	if [ ! -e $ROOT_DIR/test/.depend ]; then touch $ROOT_DIR/test/.depend; fi && \$(MAKE) -C test clean\n\
 	\$(MAKE) -C lib clean\n\
 	\$(MAKE) -C $ROOT_DIR/../src clean\n\
 " > Makefile
