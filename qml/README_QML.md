@@ -19,12 +19,12 @@ LD_LIBRARY_PATH and PKG_CONFIG_PATH before building.
 
 ######Test example
 
-Test example can be found in `lib/test`. There is Makefile there to build it. 
+Test example can be found in `test`. There is Makefile there to build it. 
 This example uses custom component Qt.labs.FolderListModel which can be built 
 using `build_forlderlistmodel` script. You can built example itself using 
 Makefile. Script `./configure` generates some files using `mocml` generator 
-mentioned before. Dont forget to add symlink to it: `ln -s 
-../../../src/mocml.native mocml`.
+mentioned before. Dont forget to add symlink to it: 
+  `ln -s ../../src/mocml.native mocml`.
 
 N.B. This example is OCamlBrowser clone and it depends on `compiler-libs` 
 ocamlfind package. Thats why you need ocaml(>=4.00.1).
