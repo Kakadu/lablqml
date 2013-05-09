@@ -100,7 +100,7 @@ lib:\n\
 	if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
 	make -C $ROOT_DIR/lib\n\
 folderlistmodel:\n\
-	cd test && ./buildfolderlistmodel\n\
+	cd test && ./build_folderlistmodel || exit 1\n\
 test: lib folderlistmodel\n\
 	if [ ! -e $ROOT_DIR/test/.depend ]; then touch -ne $ROOT_DIR/test/.depend; fi
 	cd $ROOT_DIR/test && ./configure && make\n\
