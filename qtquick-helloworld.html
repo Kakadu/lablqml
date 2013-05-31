@@ -24,6 +24,7 @@ Contents:
 <li> <a href="#part1">"Hallo world!" in QML</a> </li>
 <li> <a href="#part2">Writing OCaml code</a> </li>
 <li> <a href="#part3">QtQuick Controls, Layouts and Model/View pattern </a> </li>
+<li> <a href="#part4">Defining model in OCaml</a> </li>
 </ol>
 
 <h4 id="part1">First QtQuick application</h4>
@@ -145,7 +146,7 @@ moc_%.cpp: %.h
 	$(CC) -c $< -I.
 
 .ml.cmx:
-	$(OCAMLOPT) -I ../lib/_build -c $<
+	$(OCAMLOPT) -I ${LABLQT}/qml/lib/_build -c $<
 
 clean:
 	rm *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) -f
@@ -174,7 +175,7 @@ To generate code we will use <code>mocml</code> generator which you will get aft
 }
 ]
 </pre>
-After executing <code>mocml input.json</code> three files will be generated: `Controller_c.h`, `Controller_c.cpp` and `Controller.ml`. A part of `Controller.ml` will look like that:
+After executing <code>mocml -qml_wrap input.json</code> three files will be generated: `Controller_c.h`, `Controller_c.cpp` and `Controller.ml`. A part of `Controller.ml` will look like that:
 <pre>
 class virtual base_Controller cppobj = object(self)
   ...
@@ -282,6 +283,115 @@ It is a ListModel with three elements. Each element has two properties of type <
 </pre>
 You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly.  Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed). Screenshot there:
 <center><image src="images/QtQuickControls1.png"/></center><br/><br/>
+
+P.S. All works great but while implementing QtQuick.Controls developers have added some restrictions on startup C++ file. This one will work OK: <br/>
+<button onclick="$('#main_cpp2').toggle();">main.cpp for QtQuick.Controls</button> <br/>
+<pre id="main_cpp2">
+int main(int argc, char ** argv) {
+    caml_main(argv);
+    QApplication app(argc, argv);
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+
+    QQmlContext *ctxt = engine.rootContext();
+    registerContext(QString("rootContext"), ctxt);
+    doCaml();
+
+    component.loadUrl(QUrl("Root.qml"));
+    QObject *topLevel = component.create();
+    QQuickWindow *window = qobject_cast<QQuickWindow *>(topLevel);
+
+    window->show();
+
+    return app.exec();
+}</pre>
+
+<h4 id="part4">Defining model in OCaml</h4>
+Often we want dynamic models which will report to view about newly added rows, column and changed data. In Qt world it is achieved by defining model in C++ as a sublclass of <code>QAbstractItemModel</code>. We also have special option in JSON allows subclass generated object from <code>QAbstractItemModel</code> automatically.
+<pre>
+{
+    "classname": "MainModel",
+    "basename":  "QAbstractItemModel",
+    "methods": [],
+    "properties": [],
+    "slots": [],
+    "signals": []
+}
+</pre>
+Our model will provide access to objects which have two properties: <code>author</code> and <code>title</code>. We will call it <code>DataItem</code> and put into <code>input.json</code> too.<br/>
+<pre>
+{
+    "classname": "DataItem",
+    "methods": [],
+    "properties":
+      [ { "name":      "author",
+          "get":       "author",
+          "set":       "setName",
+          "notify":    "nameChanged",
+          "type":      "string" }
+      , { "name":      "title",
+          "get":       "title",
+          "set":       "setTitle",
+          "notify":    "titleChanged",
+          "type":      "string" }
+      ],
+    "slots": [],
+    "signals": []
+}
+</pre>
+Don't forget to add <code>GEN_CMX=MainModel.cmx DataItem.cmx</code> to compile generated files.
+<p>
+Let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author
+<pre>
+  let data =
+    [ ("Анна Керенина",           "Лев Толстой")
+    ; ("Война и Мир",             "Лев Толстой")
+    ; ("Les Misérables",          "Victor Hugo")
+    ; ("Les Trois Mousquetaires", "Alexandre Dumas, père")
+    ] in
+</pre>
+Using it we need to construct DataItems:
+<pre>
+  let dataItems = List.map (fun (title,author) ->
+    let cppobj = DataItem.create_DataItem () in
+    object
+      inherit DataItem.base_DataItem cppobj as super
+      method author () = author
+      method title () = title
+    end
+  ) data in
+</pre>
+Generated MainModel class gas many virtual methods. We need only 1-dimensional model, that's why some methods has very simple implementation
+<pre>
+  let model_cppobj = MainModel.create_MainModel () in
+  MainModel.add_role model_cppobj 555 "someRoleName";
+
+  let model = object(self)
+    inherit MainModel.base_MainModel model_cppobj as super
+    method parent _ = QModelIndex.empty
+    method columnCount _ = 1
+    method index row column parent =
+      if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
+      else QModelIndex.empty
+    method hasChildren _ = self#rowCount QModelIndex.empty > 0
+    method rowCount _ = List.length dataItems
+</pre>
+In method <code>data</code> we will return dataItem from our list if role of element is OK (<b>TODO: add link to Qt documentation about roles</b>).
+<pre>
+    method data index role =
+      let r = QModelIndex.row index in
+      if (r<0 || r>= List.length data) then QVariant.empty
+      else begin
+        match role with
+          | 0 | 555 -> QVariant.of_object (List.nth dataItems r)#handler
+          | _ -> QVariant.empty
+      end
+  end in
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"mainModel" model#handler
+</pre>
+And if model of our TableView is <code>mainModel</code> we will get something like this: <br/>
+<center><image src="images/QtQuickControls2.png"/></center><br/><br/>
 
 <!--
 <h4 id="part3">Behind the scene</h4>
