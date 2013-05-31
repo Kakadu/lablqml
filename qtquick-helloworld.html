@@ -82,7 +82,7 @@ In <code>main.cpp</code> we do startup initialization on C++ side. Function <cod
 <p>
 Let's write this OCaml startup code in <code>program.ml</code><br/>
 </p>
-<button onclick="$('#main_cpp').toggle();">Show/hide main.cpp</button> <br/>
+<button onclick="$('#program_ml').toggle();">Show/hide program.ml</button> <br/>
 <pre id="program_ml">
 let main () = print_endline "startup initialiation at OCaml side"
 let () = Callback.register "doCamlInitialization" main
@@ -178,7 +178,7 @@ end
 As you see, base class <code>base_Controller</code> is created.
 We will inherit it and implement virtual method <code>onMouseClicked</code> in file <code>program.ml:</code>.
 <br/>
-<button onclick="$('#subclassing').toggle();">Show/hide generator input file</button> <br/>
+<button onclick="$('#subclassing').toggle();">Show/hide program.ml</button> <br/>
 <pre id="subclassing">
 open QmlContext
 
