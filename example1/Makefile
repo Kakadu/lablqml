@@ -3,7 +3,7 @@ CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I${LABLQT}/qml/lib/_bu
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g
 CLINKLIBS=`pkg-config --libs Qt5Quick`
-OUT=main
+OUT=helloworld1
 GEN_CMX=
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
 GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.cpp=.o)

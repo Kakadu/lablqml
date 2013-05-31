@@ -1,0 +1,4 @@
+*.cm[oxi]
+*.o
+camlcode.o.startup.s
+helloworld1
