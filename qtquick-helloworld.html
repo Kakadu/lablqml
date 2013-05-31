@@ -7,20 +7,25 @@ body {
   font-family: Helvetica, arial, freesans, clean, sans-serif;
   font-size:  15px;
 }
+.hidden-pre {
+  display: none;
+}
 </style>
 <body>
 <h2>QtQuick approach for developing applications</h2>
-The main purpose of QtQuick is to allow fast developing of rich user interfaces. The main programming language is ECMAScript now. C++ is still allowed for creating custom widgets or implementing some speed-dependent code. You can expose <code>QObject</code>-based classes to QtQuick runtime and use its methods like it is a real ECMAscript object.
-
+From release Qt 5.0 well-known Qt Widgets from QtGui have become obsolete and were moved to QtWidgets module. New main GUI toolkit is QtQuick (version 1.0 in Qt < 5.0 and version 2.0 with Qt > 5.0). It allows to create GUI in declarative manner with some Javacript code for simple event handling. The parts of application which are critical for speed should be written in C++.
 <p>
 Using lablqt we want to avoid writing C++ code to connect OCaml and QtQuick runtime. We want to write only OCaml and QtQuick code (i.e. <code>*.qml</code> files) without any C++.<br/>
-</p>
+<p>
+Initially, QtQuick was created for mobile applications, resizable layouts was not supported well and probably it was not a good choice for desktop applications. From version Qt 5.1 module <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. They are a set controls for desktop applications: toolbars, buttons, menus and layouts. They also look native on different plaatforms. Mine first "Hallo world" application will use simple controls from Qt&lt;5.1. In the second I'm going to show you <code>QtQuick.Controls</code>.
+<p>
 Contents:
 <ol>
-<li> <a href="#part1">Hallo world in QML</a> </li>
-<li> <a href="#part2">Writing OCaml code</a> </li> <!--
-<li> <a href="#part3">Behind the scene  </a> </li> -->
+<li> <a href="#part1">"Hallo world!" in QML</a> </li>
+<li> <a href="#part2">Writing OCaml code</a> </li>
+<li> <a href="#part3">QtQuick Controls, Layouts and Model/View pattern </a> </li>
 </ol>
+
 <h4 id="part1">First QtQuick application</h4>
 
 If we put this to <code>Root.qml</code> we will get a rectangle with text <code>Click me!</code> in its center. After clicking on window text <code>clicked</code> will appear at console.<br/>
@@ -40,13 +45,13 @@ Rectangle {
         onClicked: console.log("clicked")
     }
 }
-</pre>
+</pre><br/>
 This QML file is already correct application. If you execute it using command <code>qmlscene Root.qml</code> you will get a window like this:<br/><br/>
 <center><image src="images/qml1.png"/></center><br/><br/>
 
 At this moment OCaml+QtQuick applications should make startup from C++. So they will share <code>main.cpp</code> file which is entry point to our program. You can copy'n'paste it to your repo. N.B. It uses some headers and external function from OCaml+QtQuick library. We will remember it while compilation<br/>
 <button onclick="$('#main_cpp').toggle();">Show/hide main.cpp</button> <br/>
-<pre id="main_cpp">
+<pre id="main_cpp" class="hidden-pre">
 #include "stubs.h"
 
 #include &lt;QtGui/QGuiApplication&gt;
@@ -77,7 +82,8 @@ int main(int argc, char ** argv) {
 
     return app.exec();
 }
-</pre>
+</pre><br/>
+
 In <code>main.cpp</code> we do startup initialization on C++ side. Function <code>registerContext</code> exposes Qml context (where global variables are stored) for OCaml. We will refer it using string <code>"rootContext"</code> in <code>program.ml</code> file. Also we call <code>doOCamlInitialization</code> to execute user startup code on OCaml side.
 <p>
 Let's write this OCaml startup code in <code>program.ml</code><br/>
@@ -100,7 +106,7 @@ function with_qt5() {
 </pre>
 
 <button onclick="$('#Makefile').toggle();">Show/hide Makefile</button> <br/>
-<pre id="Makefile">
+<pre id="Makefile" class="hidden-pre">
 MOC=`qmake -query QT_INSTALL_BINS`/moc
 CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I${LABLQT}/qml/lib/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
@@ -153,7 +159,7 @@ include .depend
 And let's create OCaml object which will be exposed to QtQuick engine.
 It will have single method <code>onMouseClicked</code> with type <code>string -> unit</code>.
 To generate code we will use <code>mocml</code> generator which you will get after compiling in <code>$LABLQT/src</code>. Let's put this to <code>input.json</code> (file name doesn't matter):<br/>
-<button onclick="$('#json_file').toggle();">Show/hide generator input file</button> <br/>
+<button onclick="$('#json_file').toggle();" class="hidden-pre">Show/hide generator input file</button> <br/>
 <pre id="json_file">
 [
 {
@@ -179,7 +185,7 @@ As you see, base class <code>base_Controller</code> is created.
 We will inherit it and implement virtual method <code>onMouseClicked</code> in file <code>program.ml:</code>.
 <br/>
 <button onclick="$('#subclassing').toggle();">Show/hide program.ml</button> <br/>
-<pre id="subclassing">
+<pre id="subclassing" class="hidden-pre">
 open QmlContext
 
 let main () =
@@ -192,13 +198,13 @@ let main () =
 
 let () = Callback.register "doCaml" main
 </pre>
-By executing <code>QmlContext.set_context_property</code> we expose created object for using in QML.
-Now we can use in QML.
+By executing <code>QmlContext.set_context_property</code> we expose created object for using in QML
+with name <code>"controller"</code>. Now we can use it there:
 <pre>
-    MouseArea {
-        anchors.fill: parent      // all space in parent Rectangle will be clickable
-        onClicked: controller.onMouseClicked("message");
-    }
+MouseArea {
+    anchors.fill: parent      // all space in parent Rectangle will be clickable
+    onClicked: controller.onMouseClicked("message");
+}
 </pre>
 Also we need to put into Makefile information about generated files. We need to add new target to <code>GEN_CMX</code>:
 <pre>
@@ -209,6 +215,74 @@ After executing program when you will click on window you will se console output
 <p>
 Code of this example you can find <a href="https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld">there</a>.
 </p>
+
+<h4 id="part3">QtQuick Controls, Layouts and Model/View pattern</h4>
+Since Qt version 5.1 it easy to create desktop applications which look like native.
+
+<button onclick="$('#menus').toggle();">Show/hide QML menus</button> <br/>
+<pre id="menus" class="hidden-pre">
+ApplicationWindow {
+    width: 1366
+    height: 768
+    menuBar: MenuBar {
+        Menu {
+            title: "Edit"
+
+            MenuItem {
+                text: "Cut";    shortcut: "Ctrl+X";
+                onTriggered: console.log("")
+            }
+            MenuItem {
+                text: "Copy";   shortcut: "Ctrl+C"
+                onTriggered: console.log("")
+            }
+            MenuItem {
+                text: "Paste";  shortcut: "Ctrl+V"
+                onTriggered: console.log("")
+            }
+        }
+    }
+    ....
+}
+</pre>
+ToolBars are supported too:
+<button onclick="$('#toolbars').toggle();">Show/hide QML toolbars</button> <br/>
+<pre id="toolbars">
+    toolBar: ToolBar {
+        RowLayout {
+            anchors.margins: 8
+            anchors.fill: parent
+            ToolButton {
+                text: "Press me"
+                onClicked: console.log("Press me clicked")
+            }
+        }
+    }
+</pre>
+QtQuick uses Model/View pattern for creating views. I.e. when you create a view you should provide an object with data (model) and a way to render it. Models can be created both in QML file and in C++. Let's create a model with QML:<br/>
+<button onclick="$('#qml_models').toggle();">Show/hide QML models</button> <br/>
+<pre id="qml_models">
+    ListModel {
+        id: libraryModel
+        ListElement{ title: "A Masterpiece" ; author: "Gabriel" }
+        ListElement{ title: "Brilliance"    ; author: "Jens" }
+        ListElement{ title: "Outstanding"   ; author: "Frederik" }
+    }
+</pre>
+It is a ListModel with three elements. Each element has two properties of type <code>string</code>: title and author. We will use them while declaring view for this model:<br/>
+<button onclick="$('#qml_tableview1').toggle();">Show/hide QML table view</button> <br/>
+<pre id="qml_tableview1">
+    TableView {
+        model: libraryModel
+        anchors.fill: parent
+
+        TableViewColumn { title: "Title";  role: "title"  }
+        TableViewColumn { title: "Author"; role: "author" }
+    }
+</pre>
+You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly.  Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed). Screenshot there:
+<center><image src="images/QtQuickControls1.png"/></center><br/><br/>
+
 <!--
 <h4 id="part3">Behind the scene</h4>
 Coming soon
