@@ -1,0 +1,5 @@
+*.cm[oxi]
+*.o
+camlcode.o.startup.s
+helloworld2
+mocml
