@@ -5,8 +5,8 @@
         <script src="scripts/jquery-2.0.2.min.js"></script>
         <style type="text/css">
             body {
-                font-family: Helvetica, arial, freesans, clean, sans-serif;
-                font-size:  15px;
+                font-family: Georgia, Consolas,Helvetica, arial, freesans, clean, sans-serif;
+                font-size:  16px;
             }
             .hidden-pre {
                 display: none;
@@ -29,7 +29,7 @@ Contents:
 <li> <a href="#part4">Defining model in OCaml</a> </li>
 </ol>
 
-<h4 id="part1">First QtQuick application</h4>
+<h3 id="part1">First QtQuick application</h3>
 
 If we put this to <code>Root.qml</code> we will get a rectangle with text <code>Click me!</code> in its center. After clicking on window text <code>clicked</code> will appear at console.<br/>
 <button onclick="$('#code1').toggle();">Show/hide QML script</button> <br/>
@@ -158,7 +158,7 @@ include .depend
 </pre>
 
 <hr/>
-<h4 id="part2">Writing OCaml logic</h4>
+<h3 id="part2">Writing OCaml logic</h3>
 And let's create OCaml object which will be exposed to QtQuick engine.
 It will have single method <code>onMouseClicked</code> with type <code>string -> unit</code>.
 To generate code we will use <code>mocml</code> generator which you will get after compiling in <code>$LABLQT/src</code>. Let's put this to <code>input.json</code> (file name doesn't matter):<br/>
@@ -219,9 +219,11 @@ After executing program when you will click on window you will se console output
 Code of this example you can find <a href="https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld">there</a>.
 </p>
 
-<h4 id="part3">QtQuick Controls, Layouts and Model/View pattern</h4>
-Since Qt version 5.1 it easy to create desktop applications which look like native.
-
+<h3 id="part3">QtQuick Controls, Layouts and Model/View pattern</h3>
+Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found 
+<a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html">there</a> and 
+<a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquicklayouts/qtquicklayouts-index.html">there</a>.
+<br/>
 <button onclick="$('#menus').toggle();">Show/hide QML menus</button> <br/>
 <pre id="menus" class="hidden-pre">
 ApplicationWindow {
@@ -248,9 +250,9 @@ ApplicationWindow {
     ....
 }
 </pre>
-ToolBars are supported too:
+ToolBars are supported too:<br/>
 <button onclick="$('#toolbars').toggle();">Show/hide QML toolbars</button> <br/>
-<pre id="toolbars">
+<pre id="toolbars" class="hidden-pre">
     toolBar: ToolBar {
         RowLayout {
             anchors.margins: 8
@@ -283,7 +285,9 @@ It is a ListModel with three elements. Each element has two properties of type <
         TableViewColumn { title: "Author"; role: "author" }
     }
 </pre>
-You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly.  Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed). Screenshot there:
+You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly.  Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed). 
+<p>
+Screenshot there:<br/>
 <center><image src="images/QtQuickControls1.png"/></center><br/><br/>
 
 P.S. All works great but while implementing QtQuick.Controls developers have added some restrictions on startup C++ file. This one will work OK: <br/>
@@ -309,8 +313,8 @@ int main(int argc, char ** argv) {
     return app.exec();
 }</pre>
 
-<h4 id="part4">Defining model in OCaml</h4>
-Often we want dynamic models which will report to view about newly added rows, column and changed data. In Qt world it is achieved by defining model in C++ as a sublclass of <code>QAbstractItemModel</code>. We also have special option in JSON allows subclass generated object from <code>QAbstractItemModel</code> automatically.
+<h3 id="part4">Defining model in OCaml</h3>
+Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of <code>QAbstractItemModel</code>. We also have special option in JSON which subclasses generated object from <code>QAbstractItemModel</code> automatically.
 <pre>
 {
     "classname": "MainModel",
@@ -344,7 +348,7 @@ Our model will provide access to objects which have two properties: <code>author
 </pre>
 Don't forget to add <code>GEN_CMX=MainModel.cmx DataItem.cmx</code> to compile generated files.
 <p>
-Let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author
+Let's define out model and expose it to QtQuick engine in initialization block of <code>program.ml</code>. Initial data will be a list of pairs title/author
 <pre>
   let data =
     [ ("Анна Керенина",           "Лев Толстой")
@@ -395,41 +399,5 @@ In method <code>data</code> we will return dataItem from our list if role of ele
 And if model of our TableView is <code>mainModel</code> we will get something like this: <br/>
 <center><image src="images/QtQuickControls2.png"/></center><br/><br/>
 
-<!--
-<h4 id="part3">Behind the scene</h4>
-Coming soon
-
-####Initialization order
-In hallo world application we make startup from C++ side. Typical main.cpp file is
-<pre>
-int main(int argc, char ** argv) {
-    caml_main(argv);                  // default initialization of OCaml runtime
-    QGuiApplication app(argc, argv);  //
-    QQuickView view;                  // creating out view
-    view.setResizeMode(QQuickView::SizeRootObjectToView);
-
-    QQmlContext *ctxt = view.rootContext();   // get object which represents context: objects exposed to QtQuick engine
-    registerContext(QString("rootContext"), ctxt); // share QQmlContext* object with OCaml runtime
-    doCaml();                                      // User initialization code
-    view.setSource(QUrl::fromLocalFile(QString("Root.qml"))); // open .qml file in current context
-    view.show();  // show widget
-
-    return app.exec();
-}
-</pre>
-Function`doCaml` should look like this. It just calls OCaml stub, no any interesting.
-<pre>
-void doCaml() {
-  CAMLparam0();
-  static value *closure = nullptr;
-  if (closure == nullptr) {
-    closure = caml_named_value("doCaml");
-  }
-  Q_ASSERT(closure!=nullptr);
-  caml_callback(*closure, Val_unit); // should be a unit
-  CAMLreturn0;
-}
-</pre>
--->
 </body>
 </html>
