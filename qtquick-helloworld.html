@@ -314,7 +314,9 @@ int main(int argc, char ** argv) {
 }</pre>
 
 <h3 id="part4">Defining model in OCaml</h3>
-Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of <code>QAbstractItemModel</code>. We also have special option in JSON which subclasses generated object from <code>QAbstractItemModel</code> automatically.
+Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of <code>QAbstractItemModel</code>. More information in this topic you can get at <a href="http://qt-project.org/doc/qt-4.8/modelview.html#2-2-extending-the-read-only-example-with-roles">Qt Project</a>.
+<p>
+We also have special option in JSON which subclasses generated object from <code>QAbstractItemModel</code> automatically.
 <pre>
 {
     "classname": "MainModel",
