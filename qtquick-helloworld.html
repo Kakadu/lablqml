@@ -12,14 +12,14 @@
                 display: none;
             }
         </style>
-</head> 
+    </head> 
 <body>
 <h2>QtQuick approach for developing applications</h2>
 From release Qt 5.0 well-known Qt Widgets from QtGui have become obsolete and were moved to QtWidgets module. New main GUI toolkit is QtQuick (version 1.0 in Qt < 5.0 and version 2.0 with Qt > 5.0). It allows to create GUI in declarative manner with some Javacript code for simple event handling. The parts of application which are critical for speed should be written in C++.
 <p>
 Using lablqt we want to avoid writing C++ code to connect OCaml and QtQuick runtime. We want to write only OCaml and QtQuick code (i.e. <code>*.qml</code> files) without any C++.<br/>
 <p>
-Initially, QtQuick was created for mobile applications, resizable layouts was not supported well and probably it was not a good choice for desktop applications. From version Qt 5.1 module <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. They are a set controls for desktop applications: toolbars, buttons, menus and layouts. They also look native on different plaatforms. Mine first "Hallo world" application will use simple controls from Qt&lt;5.1. In the second I'm going to show you <code>QtQuick.Controls</code>.
+Initially, QtQuick was created for mobile applications, resizable layouts was not supported well and probably it was not a good choice for desktop applications. From version Qt 5.1 module <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. They are a set controls for desktop applications: toolbars, buttons, menus and layouts. They also look native on different plaatforms. Our first "Hallo world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>.
 <p>
 Contents:
 <ol>
@@ -60,7 +60,7 @@ At this moment OCaml+QtQuick applications should make startup from C++. So they 
 #include &lt;QtGui/QGuiApplication&gt;
 #include &lt;QtQuick/qquickview.h&gt;
 
-void doCaml() {
+void doCamlInitialization() {
   CAMLparam0();
   static value *closure = nullptr;
   if (closure == nullptr) {
@@ -79,7 +79,7 @@ int main(int argc, char ** argv) {
 
     QQmlContext *ctxt = view.rootContext();
     registerContext(QString("rootContext"), ctxt);
-    doCaml();
+    doCamlInitialization();
     view.setSource(QUrl::fromLocalFile(QString("Root.qml")));
     view.show();
 
@@ -91,14 +91,13 @@ In <code>main.cpp</code> we do startup initialization on C++ side. Function <cod
 <p>
 Let's write this OCaml startup code in <code>program.ml</code><br/>
 </p>
-<button onclick="$('#program_ml').toggle();">Show/hide program.ml</button> <br/>
-<pre id="program_ml">
-let main () = print_endline "startup initialiation at OCaml side"
-let () = Callback.register "doCamlInitialization" main
+<pre>
+let init () = print_endline "startup initialiation at OCaml side"
+let () = Callback.register "doCamlInitialization" init
 </pre>
 Using this <code>Makefile</code> you can compile all this sources.
 It is not minimal because we will reuse it soon.<br/>
-N.B. Don't forget to setup environment for Qt5. I usually do it by modifiing <code>~/.bashrc</code>:
+N.B. Don't forget to setup environment for Qt5. I usually do it by modifing <code>~/.bashrc</code>:
 <pre>
 export QTDIR=blah/blah/qt5
 function with_qt5() {
@@ -139,7 +138,7 @@ depend:
 library_code:
 	$(OCAMLOPT) -output-obj -dstartup \
 	-I ${LABLQT}/qml/lib/_build ${LABLQT}/qml/lib/_build/qml_wrap.cmxa str.cmxa \
-	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
+	$(GEN_CMX) $(CMX) -linkall -o camlcode.o
 
 moc_%.cpp: %.h
 	$(MOC) $< > $@
@@ -199,7 +198,7 @@ let main () =
   end in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
-let () = Callback.register "doCaml" main
+let () = Callback.register "doCamlInitialzation" main
 </pre>
 By executing <code>QmlContext.set_context_property</code> we expose created object for using in QML
 with name <code>"controller"</code>. Now we can use it there:
@@ -216,7 +215,8 @@ GEN_CMX=Controller.cmx
 After executing program when you will click on window you will se console output.
 
 <p>
-Code of this example you can find <a href="https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld">there</a>.
+Code of this example you can find 
+<a href="https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld">there</a>.
 </p>
 
 <h3 id="part3">QtQuick Controls, Layouts and Model/View pattern</h3>
@@ -302,7 +302,7 @@ int main(int argc, char ** argv) {
 
     QQmlContext *ctxt = engine.rootContext();
     registerContext(QString("rootContext"), ctxt);
-    doCaml();
+    doCamlInitialization();
 
     component.loadUrl(QUrl("Root.qml"));
     QObject *topLevel = component.create();
@@ -385,7 +385,7 @@ Generated MainModel class gas many virtual methods. We need only 1-dimensional m
     method hasChildren _ = self#rowCount QModelIndex.empty > 0
     method rowCount _ = List.length dataItems
 </pre>
-In method <code>data</code> we will return dataItem from our list if role of element is OK (<b>TODO: add link to Qt documentation about roles</b>).
+In method <code>data</code> we will return dataItem from our list if role of element is OK.
 <pre>
     method data index role =
       let r = QModelIndex.row index in
@@ -403,3 +403,4 @@ And if model of our TableView is <code>mainModel</code> we will get something li
 
 </body>
 </html>
+
