@@ -300,7 +300,7 @@ int main(int argc, char ** argv) {
 
     component.loadUrl(QUrl("Root.qml"));
     QObject *topLevel = component.create();
-    QQuickWindow *window = qobject_cast<QQuickWindow *>(topLevel);
+    QQuickWindow *window = qobject_cast&lt;QQuickWindow*&gt;(topLevel);
 
     window->show();
 
