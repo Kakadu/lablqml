@@ -17,9 +17,12 @@
 <h2>QtQuick approach for developing applications</h2>
 From release Qt 5.0 well-known Qt Widgets from QtGui have become obsolete and were moved to QtWidgets module. New main GUI toolkit is QtQuick (version 1.0 in Qt < 5.0 and version 2.0 with Qt > 5.0). It allows to create GUI in declarative manner with some Javacript code for simple event handling. The parts of application which are critical for speed should be written in C++.
 <p>
-Using lablqt we want to avoid writing C++ code to connect OCaml and QtQuick runtime. We want to write only OCaml and QtQuick code (i.e. <code>*.qml</code> files) without any C++.<br/>
+With lablqt we don't need to write C++ code which connects OCaml and QtQuick runtimes. We will to write only OCaml and QtQuick code (i.e. <code>*.qml</code> files) without any C++.<br/>
 <p>
-Initially, QtQuick was created for mobile applications, resizable layouts was not supported well and probably it was not a good choice for desktop applications. From version Qt 5.1 module <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. They are a set controls for desktop applications: toolbars, buttons, menus and layouts. They also look native on different plaatforms. Our first "Hallo world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>.
+Initially, QtQuick was created for mobile applications and resizable layouts were not supported well. 
+Probably QtQuick was not a good choice for desktop applications. From version Qt 5.1 modules <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. 
+They are a set controls for desktop applications: toolbars, buttons, menus and layouts. 
+They also look native on different platforms. Our first "Hallo world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>.
 <p>
 Contents:
 <ol>
