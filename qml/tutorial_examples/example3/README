@@ -1,0 +1,3 @@
+For compilation you need  correct Qt5 environment with LABLQT variable set.
+
+In this example we have model decalred in OCaml and used with QtQuick Controls TableView
