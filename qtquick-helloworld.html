@@ -1,7 +1,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Hallo world with QtQuick 2 and OCaml</title>
+        <title>Hello world with QtQuick 2 and OCaml</title>
         <script src="scripts/jquery-2.0.2.min.js"></script>
         <style type="text/css">
             body {
@@ -22,17 +22,17 @@ With lablqt we don't need to write C++ code which connects OCaml and QtQuick run
 Initially, QtQuick was created for mobile applications and resizable layouts were not supported well. 
 Probably QtQuick was not a good choice for desktop applications. From version Qt 5.1 modules <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. 
 They are a set controls for desktop applications: toolbars, buttons, menus and layouts. 
-They also look native on different platforms. Our first "Hallo world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>.
+They also look native on different platforms. Our first "Hello world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>.
 <p>
 Contents:
 <ol>
-<li> <a href="#part1">"Hallo world!" in QML</a> </li>
+<li> <a href="#part1">"Hello world!" in QML</a> </li>
 <li> <a href="#part2">Writing OCaml code</a> </li>
 <li> <a href="#part3">QtQuick Controls, Layouts and Model/View pattern </a> </li>
 <li> <a href="#part4">Defining model in OCaml</a> </li>
 </ol>
 
-<h3 id="part1">First QtQuick application</h3>
+<h3 id="part1">"Hello world!" in QML</h3>
 
 If we put this to <code>Root.qml</code> we will get a rectangle with text <code>Click me!</code> in its center. After clicking on window text <code>clicked</code> will appear at console.<br/>
 <button onclick="$('#code1').toggle();">Show/hide QML script</button> <br/>
