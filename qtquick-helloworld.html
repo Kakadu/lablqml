@@ -12,26 +12,53 @@
                 display: none;
             }
         </style>
-    </head> 
+    </head>
 <body>
 <h2>QtQuick approach for developing applications</h2>
 From release Qt 5.0 well-known Qt Widgets from QtGui have become obsolete and were moved to QtWidgets module. New main GUI toolkit is QtQuick (version 1.0 in Qt < 5.0 and version 2.0 with Qt > 5.0). It allows to create GUI in declarative manner with some Javacript code for simple event handling. The parts of application which are critical for speed should be written in C++.
 <p>
 With lablqt we don't need to write C++ code which connects OCaml and QtQuick runtimes. We will to write only OCaml and QtQuick code (i.e. <code>*.qml</code> files) without any C++.<br/>
 <p>
-Initially, QtQuick was created for mobile applications and resizable layouts were not supported well. 
-Probably QtQuick was not a good choice for desktop applications. From version Qt 5.1 modules <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt. 
-They are a set controls for desktop applications: toolbars, buttons, menus and layouts. 
-They also look native on different platforms. Our first "Hello world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>. Sources of this examples you can clone from 
+Initially, QtQuick was created for mobile applications and resizable layouts were not supported well.
+Probably QtQuick was not a good choice for desktop applications. From version Qt 5.1 modules <code>QtQuick.Controls</code> and <code>QtQuick.Layouts</code> are part of Qt.
+They are a set controls for desktop applications: toolbars, buttons, menus and layouts.
+They also look native on different platforms. Our first "Hello world" application will use simple controls from Qt&lt;5.1. In the second I'll going to show you <code>QtQuick.Controls</code>. Sources of this examples you can clone from
 <a href="https://github.com/Kakadu/lablqt/tree/qml-dev/qml/tutorial_examples">Github</a>.
 <p>
 Contents:
 <ol>
+<li> <a href="#part0">Shortest guide about getting Qt 5</a> </li>
 <li> <a href="#part1">"Hello world!" in QML</a> </li>
 <li> <a href="#part2">Writing OCaml code</a> </li>
 <li> <a href="#part3">QtQuick Controls, Layouts and Model/View pattern </a> </li>
 <li> <a href="#part4">Defining model in OCaml</a> </li>
 </ol>
+
+<h3 id="part0">Shortest guide about getting Qt 5</h3>
+<button onclick="$('#getting_qt5').toggle();">Show/hide</button> <br/>
+<div id="getting_qt5" class="hidden-pre">
+Official manual is available <a href="http://qt-project.org/wiki/Building_Qt_5_from_Git">there</a> but I will give you my scripts to get minimal working Qt5 installation. I will skip part about cloning and installing dependencies 'cause these are described in <a href="http://qt-project.org/wiki/Building_Qt_5_from_Git#b50aae10a392d80cb2253ce34e686ae3">manual</a>.<br/>
+Getting modules:
+<pre>
+$ cat my-init
+#!/bin/bash
+MODULES=qtbase,qtdeclarative,qtjsbackend,qtactiveqt,qtquickcontrols #,qtwebkit,qtxmlpatterns
+# qtxmlpatterns for QtQuick.XmlListModel import
+# webkit for ubuntu-rss-reader app
+perl ./init-repository --module-subset=$MODULES -f $@
+</pre>
+In configure stage it will do some tests about environment. Don't worry if it will compile something.
+<pre>
+$ cat my-configure
+#!/bin/bash
+set -x
+./configure -developer-build -opensource -nomake examples -nomake tests -confirm-license \
+  -no-gtkstyle -no-glib -no-cups  $@
+</pre>
+And than you can build module <code>qtdeclarative</code> which contains all QtQuick 2.0 code. Do it using <code>make module-qtdeclarative</code>. <br/>
+
+Build time depends on your hardware. The best results I have seen are about 5 minutes on AMD CPU with 10 cores.
+</div>
 
 <h3 id="part1">"Hello world!" in QML</h3>
 
@@ -219,13 +246,13 @@ GEN_CMX=Controller.cmx
 After executing program when you will click on window you will se console output.
 
 <p>
-Code of this example you can find 
+Code of this example you can find
 <a href="https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld">there</a>.
 </p>
 
 <h3 id="part3">QtQuick Controls, Layouts and Model/View pattern</h3>
-Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found 
-<a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html">there</a> and 
+Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found
+<a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html">there</a> and
 <a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquicklayouts/qtquicklayouts-index.html">there</a>.
 <br/>
 <button onclick="$('#menus').toggle();">Show/hide QML menus</button> <br/>
@@ -289,7 +316,7 @@ It is a ListModel with three elements. Each element has two properties of type <
         TableViewColumn { title: "Author"; role: "author" }
     }
 </pre>
-You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly.  Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed). 
+You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly.  Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed).
 <p>
 Screenshot there:<br/>
 <center><image src="images/QtQuickControls1.png"/></center><br/><br/>
@@ -407,4 +434,3 @@ And if model of our TableView is <code>mainModel</code> we will get something li
 
 </body>
 </html>
-
