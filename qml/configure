@@ -17,9 +17,9 @@ OCAML_VERSION_MIN="4.00.1"
 OCAML_VERSION=`ocamlc -version`
 maybe_exit $? "ocamlc executable not found"
 if ! verlte $OCAML_VERSION_MIN $OCAML_VERSION ; then
-  echo "Minimal OCaml version is $OCAML_VERSION_MIN (your is $OCAML_VERSION)" 
+  echo "Minimal OCaml version is $OCAML_VERSION_MIN (your is $OCAML_VERSION)"
   exit
-else 
+else
   echo "OCaml $OCAML_VERSION found."
 fi
 
@@ -38,7 +38,7 @@ echo "qmake found for Qt $QT_VERSION"
 
 QT_MIN_VERSION="5.0.0"
 if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
-  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)" 
+  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)"
   exit 1
 fi
 
@@ -63,7 +63,7 @@ if [ $? != 0 ]; then
   for\n\
     Libs: -Wl,-rpath,\${libdir} -L\${libdir} -lQt5Core\n"
   exit 1
-else 
+else
   echo "Test C++ aplication built successfully"
 fi
 cd $ROOT_DIR
@@ -89,7 +89,7 @@ do
         exit 1
       fi
     fi
-  fi 
+  fi
   #printf "   %s\n" $item
 done
 if [ $res != 0 ]; then
@@ -118,4 +118,7 @@ clean:\n\
 	rm -f $ROOT_DIR/test/.depend && touch $ROOT_DIR/test/.depend && \$(MAKE) -C test clean\n\
 	\$(MAKE) -C lib clean\n\
 	\$(MAKE) -C $ROOT_DIR/../src clean\n\
+install: generator\n\
+	cp ../src/_build/mocml/mocml.native \$(PREFIX)/bin/mocml\
+\
 " > Makefile
