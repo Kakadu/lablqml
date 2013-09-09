@@ -1,0 +1,6 @@
+all:
+		cp src/_build/mocml/mocml.native $(PREFIX)/bin/mocml
+
+uninstall:
+		rm -fr $(PREFIX)/bin/mocml
+

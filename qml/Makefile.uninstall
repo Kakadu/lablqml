@@ -1,3 +1,0 @@
-all:
-		rm -fr $(PREFIX)/bin/mocml
-
