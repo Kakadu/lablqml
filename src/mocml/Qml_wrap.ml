@@ -12,67 +12,6 @@ let with_file path f =
   f file;
   Out_channel.close file
 
-let qabstractItemView_members =
-  let open Parser in
-  let unref_model = unreference qmodelindex_type in
-  let model = {qmodelindex_type with t_is_const=true} in
-  [ ("parent",      [model],  unref_model, [`Const])
-  ; ("index",       [int_type; int_type; model], unref_model, [`Const])
-  ; ("columnCount", [model], int_type, [`Const])
-  ; ("rowCount",    [model], int_type, [`Const])
-  ; ("hasChildren", [model], bool_type, [`Const])
-  ; ("data",        [model; int_type], qvariant_type, [`Const])
-  ]
-
-(** generated C++ method which will be called from OCaml side
- *  returns c++ stub name *)
-let gen_cppmeth_wrapper ~classname ?(config=[]) cbuf meth =
-  let p_c fmt = bprintf cbuf fmt in
-  let (name,args,res,_) = meth in
-  let cpp_stub_name = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in
-  let argnames = "_cppobj" :: (List.mapi args ~f:(fun i _ -> sprintf "_x%d" i)) in
-  p_c "extern \"C\" value %s(%s) {\n" cpp_stub_name
-    (List.map argnames ~f:(sprintf "value %s")|> String.concat ~sep:",");
-  Qml.print_param_declarations cbuf argnames;
-  let args = if args=[void_type] then [] else args in
-  let locals_count = 1 +
-    List.fold_left ~init:0 (res::args)
-      ~f:(fun acc x -> max acc TypAst.(x |> of_verbose_typ_exn |> aux_variables_count))
-  in
-  let locals = List.init ~f:(fun n -> sprintf "_z%d" n) locals_count in
-  Qml.print_local_declarations cbuf locals;
-  p_c "  %s *o = (%s*) (Field(_cppobj,0));\n" classname classname;
-  let (get_var, release_var) = Qml.get_vars_queue locals in
-  let new_cpp_var =
-    let count = ref 0 in
-    fun () -> incr count; sprintf "x%d" !count
-  in
-  let cpp_var_names = ref [] in
-
-  List.iteri args ~f:(fun i typ ->
-    let cpp_var = sprintf "z%d" i in
-    Ref.replace cpp_var_names (fun xs -> cpp_var::xs);
-    p_c "  %s %s;\n" (typ |> unreference |> string_of_type) cpp_var;
-    let ocaml_var = List.nth_exn argnames (i+1) in
-    cpp_value_of_ocaml ~options:[`AbstractItemModel (Some "o")] cbuf
-      (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ
-  );
-  let cpp_var_names = List.rev !cpp_var_names in
-  let call_str = sprintf "  o->%s(%s);" name (String.concat ~sep:"," cpp_var_names) in
-  if List.mem config `PrintMethCalls then
-    p_c "  qDebug() << \"Going to call %s::%s\";\n" classname name;
-  if res=void_type then begin
-    p_c "%s\n" call_str;
-    p_c "  CAMLreturn(Val_unit);\n"
-  end else begin
-    let cppvar = new_cpp_var () in
-    p_c "  %s %s = %s\n" (res |> unreference |> string_of_type) cppvar call_str;
-    let ocamlvar = get_var () in
-    ocaml_value_of_cpp cbuf (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar res;
-    p_c "  CAMLreturn(%s);\n" ocamlvar
-  end;
-  p_c "}\n";
-  cpp_stub_name
 
 let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; _} =
   let b_h   = B.create 100 in
@@ -86,6 +25,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   let p_ml  fmt = bprintf b_ml fmt in
 
   p_ml "\nopen QmlContext\n\n";
+  (*p_ml "\nopen QmlContext\nopen QtGraphics\n\n";*)
 
   p_h "#ifndef %s_c_H\n" classname;
   p_h "#define %s_c_H\n" classname;
@@ -94,6 +34,9 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_h "#include \"kamlo.h\"\n";
   p_h "#include <QtCore/QDebug>\n";
   p_h "#include <QtCore/QObject>\n";
+  p_h "#include <QtWidgets/QGraphicsSceneMouseEvent>\n";
+  p_h "#include <QtGui/QKeyEvent>\n";
+
   let base_classname =
     match basename with
       | Some ""
@@ -203,29 +146,53 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     let p_ext fmt = bprintf top_externals_buf fmt in
     p_h "public:\n";
     let setter_string = match setter with Some x -> " WRITE "^x | None -> " " in
-    p_h "  Q_PROPERTY(%s %s%s READ %s NOTIFY %s)\n"
-      (string_of_type typ) name setter_string getter notifier;
+    let prop_descr_str = sprintf "Q_PROPERTY(%s %s%s READ %s NOTIFY %s)"
+      (string_of_type typ) name setter_string getter notifier in
+    p_h "  %s\n" prop_descr_str;
     do_meth ~classname (getter,[void_type],typ,[]);
-    let () =
-      match setter with
-        | Some setter ->
-            do_meth ~classname (setter,[typ],bool_type,[]);
-        | None -> ()
-    in
     p_h "signals:\n";
     p_h "  void %s(%s);\n" notifier (string_of_type typ);
     p_h "public:\n";
     p_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
     p_h "    emit %s(arg1);\n" notifier;
     p_h "  }\n\n";
-    let stub_name = gen_cppmeth_wrapper ~config ~classname cbuf (notifier,[typ],void_type,[]) in
+    let stub_name = WrapAbstractItemModel.gen_cppmeth_wrapper
+      ~config ~classname cbuf (notifier,[typ],void_type,[]) in
     p_ext "external stub_%s: cppobj -> %s -> unit = \"%s\"\n" notifier
       (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
       stub_name;
 
+    bprintf clas_def_buf "  (* %s *)\n" prop_descr_str;
+    let () =
+      match setter with
+        | Some setter ->
+            do_meth ~classname (setter,[typ],bool_type,[]);
+            bprintf clas_def_buf "  method virtual %s: %s -> unit\n" setter
+              (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type);
+        | None -> ()
+    in
+
     p_ml "  method emit_%s = stub_%s self#handler\n" notifier notifier;
     p_ml "  method virtual %s: unit -> %s\n" getter
-      (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
+      (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type);
+    let () = match setter with
+      | Some setter ->
+          let (tt,convt) =
+            if typ = Parser.int_type then "int","of_int"
+            else if typ = Parser.qpoint_type then "QPoint","of_qpoint"
+            else if typ = Parser.string_type then "string","of_string"
+            else failwith "only QVariant-compatible types can be in properties"
+          in
+          p_ml "  method prop_%s = object\n" name;
+          p_ml "    inherit [%s] qvariant_prop \"%s\" as base\n" tt name;
+          p_ml "    method get = self#%s ()\n" getter;
+          p_ml "    method set x = self#%s x\n" setter;
+          p_ml "    method wrap_in_qvariant x = QVariant.%s x\n" convt;
+          p_ml "  end\n";
+      | None  ->
+          p_ml "  (* don't decare properties without setter *)\n"
+    in
+    ()
   in
 
   let do_meth_caml (name,args,res,_) =
@@ -239,70 +206,23 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     do_meth ~classname mem;
     do_meth_caml mem;
   );
+  List.iter slots ~f:(fun ((name,args,_,_) as mem) ->
+    p_h "public slots:\n";
+    do_meth ~classname mem;
+    let f x = x |> TypAst.of_verbose_typ_exn |> TypAst.to_cpp_type in
+    let slot_string = sprintf "1%s(%s)" name (String.concat ~sep:","(List.map ~f args)) in
+    bprintf clas_def_buf
+      "  method slot_%s : Slot.t = Slot.create (Obj.magic self#handler) \"%s\"\n" name slot_string;
+    do_meth_caml mem;
+  );
   List.iter props ~f:(do_prop b_h b_c clas_def_buf);
 
   (* Now we will add some methods for specific basename *)
   let () =
-    if base_classname = "QAbstractItemModel" then begin
-      let model_members = qabstractItemView_members in
-      List.iter model_members ~f:(do_meth ~classname);
-      p_h "private:\n";
-      p_h "  QHash<int, QByteArray> _roles;\n";
-      p_h "public:\n";
-      p_h "  QModelIndex makeIndex(int row,int column) {\n";
-      p_h "    if (row==-1 || column==-1)\n";
-      p_h "      return QModelIndex();\n";
-      p_h "    else\n";
-      p_h "      return createIndex(row,column,(void*)NULL);\n";
-      p_h "  }\n";
-
-      p_h "Q_INVOKABLE QList<QString> roles() {\n";
-      p_h "  QList<QString> ans;\n";
-      p_h "  foreach(QByteArray b, _roles.values() )\n";
-      p_h "      ans << QString(b);\n";
-      p_h "  return ans;\n";
-      p_h "}\n";
-      p_h "void addRole(int r, QByteArray name) { _roles.insert(r,name); }\n";
-      p_h "virtual QHash<int, QByteArray> roleNames() const { return _roles; }\n";
-      (* signal to report changing of data *)
-      p_h "void emit_dataChanged(int a, int b, int c, int d) {\n";
-      p_h "  const QModelIndex topLeft     = createIndex(a,b);\n";
-      p_h "  const QModelIndex bottomRight = createIndex(c,d);\n";
-      p_h "  emit dataChanged(topLeft, bottomRight);\n";
-      p_h "}\n";
-
-      (* next methods declared in C++ and are not overridable in OCaml *)
-      let cpp_wrap_stubs =
-        [ (("dataChanged",[Parser.qmodelindex_type;Parser.qmodelindex_type],Parser.void_type,[]),
-           "stub_report_dataChanged", "report_dataChanged")
-        ; (("beginInsertRows",[qmodelindex_type;int_type;int_type],void_type,[]),
-           "stub_beginInsertRows", "beginInsertRows")
-        ; (("endInsertRows",[void_type],void_type,[]),
-           "stub_endInsertRows", "endInsertRows")
-        ; (("beginRemoveRows",[qmodelindex_type;int_type;int_type],void_type,[]),
-           "stub_beginRemoveRows", "beginRemoveRows")
-        ; (("endRemoveRows",[void_type],void_type,[]),
-           "stub_endRemoveRows", "endRemoveRows")
-        ]
-      in
-      List.iter cpp_wrap_stubs ~f:(fun ((_,args,res,_) as desc,stub_name,methname) ->
-        let cpp_stub_name = gen_cppmeth_wrapper ~config ~classname b_c desc in
-        bprintf top_externals_buf
-          "external %s: cppobj -> %s =\n  \"%s\"\n" stub_name
-          (List.map (args@[res]) ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
-           |> String.concat ~sep:"->")
-          cpp_stub_name;
-        bprintf clas_def_buf " method %s = %s cppobj\n" methname stub_name
-      );
-
-      List.iter qabstractItemView_members ~f:(do_meth_caml);
-      (* stub for adding new roles *)
-      let add_role_stub_name =
-        gen_cppmeth_wrapper ~classname b_c ~config
-          ("addRole", [int_type; bytearray_type |> unreference], void_type, []) in
-      bprintf external_buf
-        "external add_role: 'a -> int -> string -> unit = \"%s\"\n" add_role_stub_name
-    end
+    if base_classname = "QAbstractItemModel" then
+      WrapAbstractItemModel.wrap ~classname ~config do_meth do_meth_caml
+        b_h b_c external_buf top_externals_buf clas_def_buf
+    else ()
   in
 
   (* Also we need to have a stubs to create C++ class *)

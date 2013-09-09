@@ -87,4 +87,4 @@
 "mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
 "lib/generators.ml": syntax_camlp4o, package_sexplib.syntax
 "lib/parser.ml": syntax_camlp4o, package_sexplib.syntax
-
+true: debug

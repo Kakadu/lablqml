@@ -1,7 +1,7 @@
 %{
   open TypAst
 %}
-%token INT FLOAT STRING BOOL STAR LBRA RBRA UNIT
+%token INT FLOAT STRING BOOL STAR LBRA RBRA UNIT MOUSEEVENT GS_MOUSEEVENT KEYEVENT
 %token LIST
 %token EOL
 %left  STAR
@@ -16,6 +16,9 @@ expr:
   INT            { `Int }
 | UNIT           { `Unit }
 | FLOAT          { `Float }
+| MOUSEEVENT     { `QMouseEvent }
+| GS_MOUSEEVENT  { `QGMouseEvent }
+| KEYEVENT       { `QKeyEvent   }
 | BOOL           { `Bool }
 | STRING         { `String }
 | expr LIST      { `List $1 }

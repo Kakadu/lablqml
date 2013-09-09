@@ -205,15 +205,18 @@ module Json = struct
     in
     let conv ty = TypLexer.parse_string ty |> TypAst.to_verbose_typ in
     (* TODO: parse `Const modifier *)
-    (name,List.map args ~f:conv, conv res,[])
+    (name, List.map args ~f:conv, conv res,[])
   and parse_prop xs =
-    let helper_exn s = List.Assoc.find_exn xs s |> (function `String s  -> s|_ -> assert false) in
+    let helper_exn s =
+      try List.Assoc.find_exn xs s |> (function `String s  -> s|_ -> assert false)
+      with Not_found as exn -> printf "%s is not set\n%!" s; raise exn
+    in
     let helper name = try Some (helper_exn name) with Not_found -> None in
-    let name = helper_exn "name"
-    and getter   = helper_exn "get"
-    and setter   = helper     "set"
-    and typ      = helper_exn "type"
-    and notifier = helper_exn "notify" in
+    let name = helper_exn "name" in
+    let getter   = helper_exn "get" in
+    let setter   = helper     "set" in
+    let typ      = helper_exn "type" in
+    let notifier = helper_exn "notify" in
     let typ = TypLexer.parse_string typ |> TypAst.to_verbose_typ in
     Types.({name;getter;setter;notifier;typ})
 

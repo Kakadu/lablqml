@@ -18,6 +18,9 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
       | `Bool -> "bool"
       | `Unit  -> "void"
       | `String -> "string"
+      | `QMouseEvent -> "qmousevenent"
+      | `QGMouseEvent -> "qgsmousevenent"
+      | `QKeyEvent   -> "qkeyevent"
       | `QByteArray -> "qbytearray"
       | `Int -> "int"
       | `Tuple lst -> sprintf "tuple%d" (List.length lst)
@@ -26,7 +29,7 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
 let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
     ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ =
   let print_cpp fmt = bprintf ch fmt in
-  let rec to_cpp_conv ~tab dest var typ =
+  let rec to_cpp_conv ~tab dest var (typ: TypAst.t) =
       let prefix = String.concat ~sep:"" (List.init ~f:(const "  ") tab) in
       match typ with
         | `Unit    -> ()
@@ -45,6 +48,9 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
             print_cpp "%s  } else Q_ASSERT(false);\n" prefix;
             print_cpp "%s} else // empty QVariant\n" prefix;
             print_cpp "%s    %s = QVariant();\n" prefix dest;
+        | `QKeyEvent   -> assert false
+        | `QGMouseEvent
+        | `QMouseEvent -> assert false
         | `QModelIndex -> begin
             match List.find options (function `AbstractItemModel _ -> true) with
               | Some (`AbstractItemModel obj) ->
@@ -55,11 +61,12 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
                   in
                   print_cpp "%s%s = %s(Int_val(Field(%s,0)),Int_val(Field(%s,1)));\n"
                     prefix dest call var var
-              | None -> raise (Bug "QModelIndex is not available")
+              | None -> raise (Bug "QModelIndex is not available without QAbstractItemModel base")
         end
         | `Tuple xs when List.length xs <> 2 ->
             raise (Bug "Again: tuples <> pairs")
-        | (`Tuple xs) as ttt ->
+        | (`Tuple xs)  ->
+            let (ttt:TypAst.t) = `Tuple xs in
             print_cpp "%s//generating: %s\n" prefix (TypAst.to_ocaml_type ttt);
             let (a,b) = match xs with
               (*| a::b::_ -> (TypAst.of_verbose_typ_exn a,TypAst.of_verbose_typ_exn b)*)
@@ -93,7 +100,7 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
 
 let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
   let print_cpp fmt = bprintf ch fmt in
-  let rec generate_wrapper ~tab var dest typ : unit =
+  let rec generate_wrapper ~tab var dest (typ: TypAst.t) : unit =
     (* tab is for left tabularies. typ is a type
      * dest is where to store generated value
      * var is C++ variable to convert *)
@@ -103,6 +110,18 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
       | `Int    -> print_cpp "%s%s = Val_int(%s); " prefix dest var
       | `Bool   -> print_cpp "%s%s = Val_bool(%s); " prefix dest var
       | `Float  -> raise (Bug "float values are not yet implemented")
+      | `QKeyEvent ->
+          (* We use only key code and keyboard modifier *)
+          print_cpp "%s%s = caml_alloc(2,0);\n" prefix dest;
+          print_cpp "%sStore_field( %s, 0, %s);\n" prefix dest (sprintf "Val_int(%s->key())" var);
+          print_cpp "%sStore_field( %s, 1, %s);\n" prefix dest (sprintf "Val_int(%s->modifiers())" var);
+      | `QGMouseEvent ->
+          print_cpp "%s%s = caml_alloc(2,0);\n" prefix dest;
+          print_cpp "%sStore_field( %s, 0, %s);\n" prefix dest (sprintf "Val_int(%s->button())" var);
+          print_cpp "%sStore_field( %s, 1, %s);\n" prefix dest (sprintf "Val_int(%s->widget())" var);
+      | `QMouseEvent ->
+          (* we use only pressed button *)
+          print_cpp "%s%s = Val_int(%s->button());\n" prefix dest var;
       | `QByteArray ->
           print_cpp "%s%s = caml_copy_string(%s.data() );" prefix dest var
       | `String ->
@@ -336,8 +355,11 @@ let name_for_slot ?(ocaml_classname=ocaml_classname) (name,args,res,_) =
     | `Int  -> "int"
     | `QByteArray
     | `String   -> "string"
-    | `Bool   -> "bool"
+    | `Bool     -> "bool"
     | `QVariant -> "qvariant"
+    | `QKeyEvent -> "qkeyevent"
+    | `QGMouseEvent -> "qgsmouseevent"
+    | `QMouseEvent -> "qmouseevent"
     | `Float  -> "float"
     | `QModelIndex -> "qmodelindex"
     | `Tuple xs ->
