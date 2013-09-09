@@ -1,7 +1,6 @@
-#include "../stubs.h"
+#include "stubs.h"
 
 #include <QtGui/QGuiApplication>
-#include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickview.h>
 
 void doCaml() {

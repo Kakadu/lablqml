@@ -1,11 +1,13 @@
 /*
- * Generated at 2013-05-09 20:17:43.137060+04:00
+ * Generated at 2013-09-09 23:09:08.738123+04:00
  */
 #ifndef Controller_c_H
 #define Controller_c_H
 #include "kamlo.h"
 #include <QtCore/QDebug>
 #include <QtCore/QObject>
+#include <QtWidgets/QGraphicsSceneMouseEvent>
+#include <QtGui/QKeyEvent>
 
 class Controller: public QObject {
   Q_OBJECT
