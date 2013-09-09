@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 cd qml
-./configure && make
+./configure && make generator
 
