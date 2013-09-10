@@ -12,7 +12,7 @@ type options = {
   mutable add_debug_calls: bool
 }
 
-let options = {filename = "input_yaml"; target = `Qml; add_debug_calls = false }
+let options = {filename = "input_yaml"; target = `Qml_wrap; add_debug_calls = false }
 
 let () = Core_arg.parse
   [ ("-qml",        Arg.Unit (fun () -> options.target <- `Qml),   "use qml")
@@ -53,6 +53,10 @@ let () = match options.target with
     ()
   end
   | `Qml_wrap -> begin
+    if Core_sys.file_exists options.filename <> `Yes then (
+      Printf.printf "File '%s' not found\n" options.filename;
+      exit 1
+    );
     let data =
       try  ParseYaml.Json.parse_file options.filename
       with exc ->
