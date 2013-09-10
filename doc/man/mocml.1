@@ -1,0 +1,73 @@
+.\" Pipe this output to groff -man -Tutf8 | less
+.\"
+.TH "MOCML" 1 "" "MOCML 0.1.1" "Mocml Manual"
+.\" Disable hyphenantion and ragged-right
+.nh
+.ad l
+.SH NAME
+.P
+mocml \- tool for autogeneration binding code between OCaml and QtQuick 2.0
+.SH SYNOPSIS
+.P
+\fBmocml\fR \f filename\fR ...
+.SH DESCRIPTION
+.P
+Mocml autogenerates code of C++ classes to use them for interfacing QtQuick. It reads input file and geenrates C++ class for using it in QtQuick and OCaml classes where you should implement it's methods. While invokating C++ classes' methods it invokes methods of OCaml class.
+.P
+.P
+.\"Use either \fBopam <command> \-\-help\fR or \fBopam help <command>\fR for more information on a specific command.
+.SH INPUT FILE EXAMPLES
+Data is described in JSON.
+
+[{
+    "classname": "AbstractModel",
+    "basename":  "QAbstractItemModel",
+    "methods": [],
+    "properties": [],
+    "slots": [],
+    "signals": []
+}]
+.P
+A single class \fBAbstractItemModel\fR will be created and inherited from \fBQAbstractItemModel\fR. The last one have some pure virtual members which will be included to result file. They are predefined in Qt and are not listed in methods or properties sections of input file. If you class has no basename section no any members will be implicitely added.
+.TP 4
+[{
+    "classname": "Controller",
+    "methods": [
+      { "name":      "onItemSelected",
+        "signature": ["int",         "int", "unit"] },
+      { "name":      "setPaths",
+        "signature": ["string list", "unit"] },
+      { "name":      "paths",
+        "signature": ["unit",        "string list"] },
+    ],
+    "properties": [],
+    "slots": [],
+    "signals": []
+}]
+.P
+A single class \fBController\fR will be created and inherited from \fBQObject\fR which is base class for all Qt objects. Only three methods will be added: descibed in methods section ones. First one has signature
+
+\fImethod virtual onItemSelected: int->int->unit\fR
+
+, takes two ints and returns void. It will be ususally used from Javascript like
+
+\fIcontroller.onItemSelected(mainIndex,index)\fR
+
+The 2nd one takes list of ints and returns void. List is built-in type into QtQuick and code to convert it to OCaml lst will be generated during mocml execution. It will be usuaaly used in javascript something like
+
+\fIproperty var pathModel: [1,2,3]
+
+controller.setPaths(pathModel)\fR
+
+3rd one is simple. It takes nothing and returns a list. Calling it from Javascript will look like something like that:
+
+\fIvar xs = controller.paths()\fR
+.TP 4
+\fB\-y\fR, \fB\-\-yes\fR
+Disable interactive mode and answer yes to all questions that would otherwise be asked to the user. This is equivalent to setting \fB$OPAMYES\fR to a non\-empty string.
+.SH AUTHORS
+.P
+Dmitrii Kosarev aka Kakadu <kakadu.hafanana@gmail.com>
+.\".SH BUGS
+.\".P
+.\"Check bug reports at https://github.com/OCamlPro/opam/issues.

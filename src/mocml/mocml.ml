@@ -20,6 +20,8 @@ let () = Core_arg.parse
   ; ("-qml_wrap",   Arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
   ; ("-with-debug", Arg.Unit (fun () -> options.add_debug_calls <- true),
          "Add qDebug() calls in beginning of member functions")
+  ; ("-help",       Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
+  ; ("-h",          Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
   ] (fun s -> options.filename <- s;
     print_endline ("Setting filename " ^ s)
 ) "usage_msg"

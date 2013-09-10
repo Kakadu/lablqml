@@ -1,6 +1,7 @@
 all:
 		cp src/_build/mocml/mocml.native $(PREFIX)/bin/mocml
+		cp doc/man/mocml.1 $(MAN)/man.1/mocml.1
 
 uninstall:
-		rm -fr $(PREFIX)/bin/mocml
+		rm -fr $(PREFIX)/bin/mocml $(MAN)/man.1/mocml.1
 
