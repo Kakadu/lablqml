@@ -1,0 +1,3 @@
+#git: "https://github.com/Kakadu/lablqt.git"
+#git: "/home/kakadu/mand/prog/ocaml/lablqt/"
+archive: "https://github.com/Kakadu/lablqt/archive/0.1.2.tar.gz"

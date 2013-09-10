@@ -1,0 +1,13 @@
+opam-version: "1"
+maintainer: "kakadu.hafanana@gmail.com"
+build: [
+
+  
+  ["./makeqml"]
+  [make "-f" "Makefile.install" "PREFIX=%{prefix}%" "MAN=%{man}%" ]
+]
+remove: [
+  [make "-f" "Makefile.install" "PREFIX=%{prefix}%" "MAN=%{man}%" "uninstall" ]
+]
+depends: ["core" "yojson" "tyxml" "ocamlgraph" ]
+
