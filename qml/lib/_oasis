@@ -1,18 +1,19 @@
 OASISFormat: 0.3
-Name:        qml_wrap
+Name:        lablqml
 Version:     0.1
 Synopsis:    wrappers for QML objects
 Authors:     Kakadu
 License:     LGPL-3.0 with OCaml linking exception
-Plugins:     DevFiles (0.3), META (0.3), StdFiles (0.3)
+Plugins:     DevFiles (0.3), META (0.3)
 
-Library qml_wrap
+Library lablqml
   Path:         .
   BuildTools:   ocamlbuild
   Modules:      QmlContext
+  DataFiles:    stubs.h,kamlo.h
   CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c
   CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Qml` -O2 -Dprivate=public 
 
-Test test1
-  Command: test1
+#Test test1
+#  Command: test1
   
