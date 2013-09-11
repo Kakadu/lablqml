@@ -1,8 +1,9 @@
 #include "../stubs.h"
 
 #include <QtGui/QGuiApplication>
-#include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickview.h>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlComponent>
 
 void doCaml() {
   CAMLparam0();
@@ -18,14 +19,24 @@ void doCaml() {
 int main(int argc, char ** argv) {
     caml_main(argv);
     QGuiApplication app(argc, argv);
-    QQuickView view;
-    view.setResizeMode(QQuickView::SizeRootObjectToView);
 
-    QQmlContext *ctxt = view.rootContext();
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+
+    QQmlContext *ctxt = engine.rootContext();
     registerContext(QString("rootContext"), ctxt);
     doCaml();
-    view.setSource(QUrl::fromLocalFile(QString("Root.qml")));
-    view.show();
 
+    component.loadUrl(QUrl("Root.qml"));
+    QObject *topLevel = component.create(ctxt);
+    if (component.isError()) {
+      qDebug() << component.errors();
+      return 1;
+    }
+    QQuickWindow *window = qobject_cast<QQuickWindow*>(topLevel);
+    // allow using Qt.quit() from QML
+    QObject::connect(&engine,SIGNAL(quit()),&app,SLOT(quit()) );
+	window->setTitle( QObject::tr("QOCamlBrowser: Demo app for lablqt&mocml") );
+    window->showMaximized();
     return app.exec();
 }

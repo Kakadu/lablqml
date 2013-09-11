@@ -1,109 +1,102 @@
-import QtQuick 2.0
-import Qt.labs.folderlistmodel 2.0
+import QtQuick 2.1
+import QtQuick.Controls 1.0
+import QtQuick.Layouts 1.0
 
-Rectangle {
-    property string backgroundColor: "#FFFFDF"
+ApplicationWindow {
     // next two properties regulate how big  text blocks and latters will be
     property int defaultFontSize: 19
     property int defaultTextFieldHeight: defaultFontSize + 4
+    property string backgroundColor: "#FFFFDF"
 
-    id: root
-    color: backgroundColor
-    width: 800; height: 600;
-
-    ApiBrowser {
-        id: browseAPIContainer
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-            bottom: bottomToolbar.top
+    menuBar: MenuBar {
+        Menu {
+            title: "File"
+            //MenuItem { text: "Open..." }
+            MenuItem {
+                text: "Close"
+                shortcut: "Ctrl-Q"
+                onTriggered: { Qt.quit() }
+            }
         }
-        color: backgroundColor
-    }
 
-    PathEditor {
-        id: editPathsContainer
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-            bottom: bottomToolbar.top
+        Menu {
+            title: "Edit"
+            MenuItem { text: "Cut" }
+            MenuItem { text: "Copy" }
+            MenuItem { text: "Paste" }
         }
     }
-
-    states: [
-        State {
-            name: "BROWSE_API"
-            PropertyChanges { target: browseAPIContainer; visible: true }
-            PropertyChanges { target: editPathsContainer; visible: false }
-            PropertyChanges { target: switchStateButton; text: qsTr("Edit search paths") }
-        },
-        State {
-            name: "EDIT_PATHS"
-            PropertyChanges { target: editPathsContainer; visible: true }
-            PropertyChanges { target: browseAPIContainer; visible: false }
-            PropertyChanges { target: switchStateButton; text: qsTr("Back to API browsing") }
+    ExclusiveGroup {
+        Action {
+            id: api_browsing_action
+            text: "Api Browsing"
+            checkable: true
+            Component.onCompleted: checked = true
+            onTriggered: {
+                root.applyPaths();
+                root.state = "BROWSE_API";
+            }
         }
-    ]
-    state: "BROWSE_API"
-    function setCurrentPaths() {
-        // get OCaml paths and set them to temporary model
-        var lst = controller.paths() // So hackful because we need to convert QList<String> to Array
-        var ans = [];
-        for (var x in lst ) ans.push(lst[x])
-        editPathsContainer.pathModel = ans
-    }
-    function applyPaths() {
-        // transfer selected paths to OCaml
-        console.log("applyPaths()")
-        controller.setPaths(editPathsContainer.pathModel)
-    }
-
-    Rectangle {
-        id: bottomToolbar
-        anchors.left: root.left
-        anchors.right: root.right
-        anchors.bottom: root.bottom
-        anchors.topMargin: 10
-        height: 35
-        color: backgroundColor
-
-        Rectangle {
-            radius: 10
-            height: 30
-            width: 250
-            color: backgroundColor
-            border { color: "darkgray"; width: 3 }
-
-            x: 0; y:0
-            Text {
-                id: switchStateButton
-                anchors.centerIn: parent
-                font.pixelSize: defaultFontSize
-                font.family: "Monospace"
-                height: defaultTextFieldHeight
-                color: "black"
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        switch (root.state) {
-                        case "BROWSE_API":
-                            setCurrentPaths();
-                            console.log(editPathsContainer.pathsModel)
-                            root.state = "EDIT_PATHS";
-                            break;
-                        case "EDIT_PATHS":
-                            applyPaths();
-                            root.state = "BROWSE_API";
-                            break;
-                        default:
-                            console.error("Error while switching state")
-                        }
-                    }
-                }
+        Action {
+            id: path_editing_action
+            text: "Path Editing"
+            checkable: true
+            Component.onCompleted: checked = false
+            onTriggered: {
+                root.setCurrentPaths();
+                console.log(editPathsContainer.pathsModel)
+                root.state = "EDIT_PATHS";
             }
         }
     }
+    toolBar: ToolBar {
+        RowLayout {
+            ToolButton { text: "Path Editing"; action: path_editing_action }
+            ToolButton { text: "API browsing"; action: api_browsing_action }
+        }
+    }
+
+    Rectangle {
+        id: root
+        color: backgroundColor
+        width: 800; height: 600;
+        anchors.fill: parent
+
+        states: [
+            State {
+                name: "BROWSE_API"
+                PropertyChanges { target: browseAPIContainer; visible: true }
+                PropertyChanges { target: editPathsContainer; visible: false }
+            },
+            State {
+                name: "EDIT_PATHS"
+                PropertyChanges { target: editPathsContainer; visible: true }
+                PropertyChanges { target: browseAPIContainer; visible: false }
+            }
+        ]
+        state: "BROWSE_API"
+
+        ApiBrowser {
+            id: browseAPIContainer
+            anchors.fill: parent
+        }
+
+        PathEditor {
+            id: editPathsContainer
+            anchors.fill: parent
+        }
+
+        function setCurrentPaths() {
+            // get OCaml paths and set them to temporary model
+            var lst = controller.paths() // So hackful because we need to convert QList<String> to Array
+            var ans = [];
+            for (var x in lst ) ans.push(lst[x])
+            editPathsContainer.pathModel = ans
+        }
+        function applyPaths() {
+            // transfer selected paths to OCaml
+            controller.setPaths(editPathsContainer.pathModel)
+        }
+    }
 }
+

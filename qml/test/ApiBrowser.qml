@@ -1,15 +1,22 @@
 import QtQuick 2.0
+import QtQuick.Controls 1.0
+import QtQuick.Layouts 1.0
 
-Rectangle {
+SplitView {
     id: browseAPIContainer
+    orientation: Qt.Vertical
 
     ListView {
         id: mainView
         model: myModel
-        height: 400
         width: parent.width
+
         orientation: ListView.Horizontal
         spacing: 5
+        // SplitView props
+        Layout.minimumHeight: 100
+        Layout.maximumHeight: 600
+        Layout.fillHeight: true
 
         ScrollBar {
             flickable: parent
@@ -20,86 +27,79 @@ Rectangle {
         }
         delegate: Rectangle {
             property int mainIndex: index
-            height: 400
+            height: parent.height
             width: (mainView.width - (mainView.count-1)*mainView.spacing) / mainView.count
             color: backgroundColor
 
             anchors.rightMargin: 5
             anchors.leftMargin: 10
-
-            ListView {
-                id: lv1
+            ScrollView {
                 width: parent.width
-                height: parent.height - 10
+                height: parent.height - 5
+                contentItem: ListView {
+                    id: lv1
+                    anchors.fill: parent
+                    currentIndex: -1
 
-                currentIndex: -1
-                ScrollBar {
-                    flickable: lv1
-                    vertical: true
-                    hideScrollBarsWhenStopped: false
-                    scrollbarWidth: 5
-                }
-                highlight: Rectangle {
-                    color: backgroundColor
-                    radius: 3; opacity: 0.7
-                    anchors.leftMargin: 5
-                    anchors.rightMargin: 15
-                    width: parent.width - 10
-                    border.width: 1
-                    //y: lv1.currentItem.y
-                    //Behavior on y { SpringAnimation { spring: 3; damping: 0.2 } }
-                }
-                //highlightMoveDuration: -1
-                clip: true
-                model: homm
-                spacing: 5
-                orientation: ListView.Vertical
+                    highlight: Rectangle {
+                        color: backgroundColor
+                        radius: 3
+                        opacity: 0.7
+                        anchors.leftMargin: 5
+                        anchors.rightMargin: 15
+                        width: parent.width - 10
+                        border.width: 1
+                    }
+                    highlightMoveDuration: 300
+                    clip: true
+                    model: homm
+                    spacing: 5
+                    orientation: ListView.Vertical
 
-                delegate: Text {
-                    anchors.rightMargin: 15
-                    anchors.leftMargin: 5
-                    height: defaultTextFieldHeight
-                    width: lv1.width - 15
-                    x: 5
-                    text: qwe.name() + " (" + qwe.sort() + ")"
-                    font.family: "Consolas"
-                    font.pixelSize: defaultFontSize
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            lv1.currentIndex = index;
-                            controller.onItemSelected(mainIndex,index);
-                            currentPathHolder.text = controller.getFullPath()
+                    delegate: Text {
+                        anchors.rightMargin: 15
+                        anchors.leftMargin: 5
+                        height: defaultTextFieldHeight
+                        width: lv1.width - 15
+                        x: 5
+                        text: qwe.name() + " (" + qwe.sort() + ")"
+                        font.family: "Consolas"
+                        font.pixelSize: defaultFontSize
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                lv1.currentIndex = index;
+                                controller.onItemSelected(mainIndex,index);
+                                currentPathHolder.text = controller.getFullPath()
+                            }
                         }
                     }
                 }
             }
         }
     }
+
     Text {
         id: currentPathHolder
         height: defaultTextFieldHeight
+        Layout.minimumHeight: defaultTextFieldHeight
+        Layout.maximumHeight: defaultTextFieldHeight
         font.pixelSize: defaultFontSize
         font.bold: true
         anchors {
-            top: mainView.bottom
             left: mainView.left
             right: mainView.right
         }
         text: ""
     }
 
-    Scrollable {
+    ScrollView {
         id: descriptionTextFieldHolder
-        flickableDirection: Flickable.VerticalFlick
-        contentHeight: descriptionTextField.height
-        contentWidth:  descriptionTextField.width
-        color: backgroundColor
-        anchors.top: currentPathHolder.bottom
         anchors.left: currentPathHolder.left
         anchors.right: currentPathHolder.right
-        anchors.bottom: browseAPIContainer.bottom
-        hideScrollBarsWhenStopped: true
+        Layout.minimumHeight: 100
+        Layout.maximumHeight: 400
+        height: 300
 
         TextEdit {
             id: descriptionTextField
