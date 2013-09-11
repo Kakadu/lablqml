@@ -2,11 +2,13 @@ opam-version: "1"
 maintainer: "kakadu.hafanana@gmail.com"
 build: [
 
-  
-  ["./makeqml"]
+  ["sh" "-c" "cd qml/lib && bash configure --datarootdir=%{lib}%" ]
+  ["sh" "-c" "cd qml/lib && make && make install"]
+  ["sh" "-c" "cd qml && bash configure && %{make}% generator"]
   [make "-f" "Makefile.install" "PREFIX=%{prefix}%" "MAN=%{man}%" ]
 ]
 remove: [
+  ["ocamlfind" "remove" "lablqml"]
   [make "-f" "Makefile.install" "PREFIX=%{prefix}%" "MAN=%{man}%" "uninstall" ]
 ]
 depends: ["core" "yojson" "tyxml" "ocamlgraph" ]
