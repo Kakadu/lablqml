@@ -209,7 +209,7 @@ module Json = struct
   and parse_prop xs =
     let helper_exn s =
       try List.Assoc.find_exn xs s |> (function `String s  -> s|_ -> assert false)
-      with Not_found as exn -> printf "%s is not set\n%!" s; raise exn
+      with Not_found as exn -> (* printf "%s is not set\n%!" s;*) raise exn
     in
     let helper name = try Some (helper_exn name) with Not_found -> None in
     let name = helper_exn "name" in
