@@ -2,11 +2,11 @@ opam-version: "1"
 maintainer: "kakadu.hafanana@gmail.com"
 build: [
   ["./configure"]
-  ["make"]
-  ["make" "install"]
+  [make]
+  [make "install"]
 ]
 remove: [
-  ["make" "uninstall"]
+  [make "uninstall"]
 ]
 depends: [ "mocml" ]
 
