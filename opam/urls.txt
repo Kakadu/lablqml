@@ -2,6 +2,6 @@ version 30a04cf33ee91a3ecf4b75c71268f316 0o644
 packages/qocamlbrowser.0.1/url f1f3ad35d28c4eb362cd83ce19a07e01 0o644
 packages/qocamlbrowser.0.1/opam 8a9c8775ab9dccef6442b86edc5c55e8 0o644
 packages/qocamlbrowser.0.1/descr 631d21ff147f343c0b2de268b14b164b 0o644
-packages/mocml.0.1.2/url 13064aa4b5fd1dbe991c5c2f8329acbe 0o644
-packages/mocml.0.1.2/opam 8e569d2e07787e2e65d112f03086c98f 0o644
+packages/mocml.0.1.2/url 59f569e09226c9ffaedd552823fdc94d 0o644
+packages/mocml.0.1.2/opam 26e2c0eff31d0df0febe27f7333cac8c 0o644
 packages/mocml.0.1.2/descr 5d428b8c93fc8a662905abd118fd8900 0o644
