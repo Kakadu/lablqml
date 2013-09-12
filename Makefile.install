@@ -1,4 +1,7 @@
-all:
+.PHONY: install uninstall
+all: install
+
+install:
 		cp src/_build/mocml/mocml.native $(PREFIX)/bin/mocml
 		cp doc/man/mocml.1 $(MAN)/man1/mocml.1
 
