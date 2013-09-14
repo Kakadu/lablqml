@@ -1,9 +1,31 @@
 <head>
 <title>Using OCaml and Qt together</title>
+<style type="text/css">
+body {
+font-family: Georgia, Consolas,Helvetica, arial, freesans, clean, sans-serif;
+font-size:  18px;
+font-weight: 200;
+line-height: 31.5px;
+text-rendering: optimizelegibility;
+color: rgb(45,45,45);
+}
+</style>
+<script src="scripts/jquery-2.0.2.min.js"></script>
 <script src="scripts/highslide-full.js" type="text/javascript"></script>
 <link rel="stylesheet" type="text/css" href="http://highslide.com/highslide/highslide.css">
 <link rel="stylesheet" href="css/slimmenu.css" type="text/css">
 <script src="scripts/jquery.slimmenu.js"></script>
+<!--
+<link rel="stylesheet" type="text/css" href="css/jquery-spoiler.css">
+
+<script type="text/javascript"> /* spoiler */
+	jQuery(document).ready(function(){
+		jQuery('.spoiler-text').hide()
+		jQuery('.spoiler').click(function(){
+			jQuery(this).toggleClass("folded").toggleClass("unfolded").next().slideToggle()
+		})
+	})
+</script> -->
 </head>
 
 <!-- slim menu grabbed from https://github.com/adnantopal/slimmenu -->
@@ -19,6 +41,9 @@
   </li>
   <li>
     <a href="#screenshots">Screenshots</a>
+  </li>
+  <li>
+    <a href="#todo">TODO</a>
   </li>
 </ul>
 
@@ -66,5 +91,28 @@
 </p>
 <p>
 <h3 id="status">Current status</h3>
-TODO:
+The first I should mention is that this project (also known as lablqt) is not bindings as people usually understand it. It was going to be bindings but I realised to generate code for widgets is not very easy and the result will not be convenient enough to deal with (is short words: too many inheritance in Qt Widgets). Also, Qt5 has been realised where <b>Qt Widgets have been claimed as obsolete</b> and a modern for declaratively creating GUI recommended. It uses QML markup to declare GUI, ECMAscript for simple scripting GUI-related actions for controls and C++ for implemeting speed-sensitive business-logic.
+<br/>
+At the current moment I think that with my project it is to replace C++ by OCaml (for small application). For big ones some improvements probably not because complex controls could be needed which are inconvinient to implement in pure QML+ECMAScript. I need to pick some big GUI project and test it.
+</p>
+
+<p id="todo">
+<h3>TODO</h3>
+<ul>
+<li>Test OPAM installation on many computers</li>
+<li>Try my approach on application with complex GUI</li>
+<li>Try building applications for mobile devices (Sailfish, Android)</li>
+</ul>
+</p>
+
+<p id="opam">
+<h3>Lablqt in OPAM</h3>
+<b>N.B.</b>You need Qt5(&gt;=5.0.0) to compile. Please be sure that dev packages are installed too.
+
+<pre>
+opam remote add lablqt http://kakadu.github.io/lablqt/opam
+opam update
+opam install mocml         # code generator tool and library
+opam install qocamlbrowser # Demo application
+</pre>
 </p>
