@@ -1,0 +1,359 @@
+QtQuick approach for developing applications
+============================================
+Dmitrii Kosarev aka Kakadu ("kakadu.hafanana" ^ "@" ^ "gmail.com")
+
+From release Qt 5.0 well-known Qt Widgets from QtGui have become obsolete and were moved to QtWidgets module. New main GUI toolkit is QtQuick (version 1.0 in Qt < 5.0 and version 2.0 with Qt > 5.0). It allows to create GUI in declarative manner with some ECMASript code for simple event handling. The parts of application which are critical for speed should be written in C++.
+
+Aim of lablqt is to allow writing speed-critical logic in OCaml instead of C++.
+
+Initially, QtQuick was created for mobile applications and resizable layouts were not supported well. Probably QtQuick was not a good choice for desktop applications. From version Qt 5.1 modules QtQuick.Controls and QtQuick.Layouts are part of Qt. They are a set controls for desktop applications: toolbars, buttons, menus and layouts. They also look native on different platforms. Our first "Hello world" application will use simple controls from Qt<5.1. In the second I'll going to show you QtQuick.Controls. Sources of this examples you can clone from Github.
+
+Getting Qt5 TODO
+----------------
+
+[[hello_world]]
+"Hello world!" in QML
+---------------------
+
+If we put this to Root.qml we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.
+
+----
+import QtQuick 2.0
+Rectangle {
+    color: "#FFFFDF" // we declare rectangle with custom background color
+    width:  400;
+    height: 300;     // with custom size
+    Text {
+        anchors.centerIn: parent
+        text: "Click me!"         // text in center of window
+    }
+    MouseArea {
+        anchors.fill: parent      // all space in parent Rectangle will be clickable
+        onClicked: console.log("clicked")
+    }
+}
+----
+
+This QML file is already correct application. If you execute it using command qmlscene Root.qml you will get a window like this:
+
+image:images/qml1.png[]
+
+At this moment OCaml+QtQuick applications should make startup from
+C++. File 'main.cpp' will be common for all of them. This one is
+adopted from by Demo application
+https://raw.github.com/Kakadu/QOcamlBrowser_quick
+----
+#include "stubs.h"
+
+#include <QtGui/QGuiApplication>
+#include <QtQuick/qquickview.h>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlComponent>
+
+void doCaml() {
+  CAMLparam0();
+  static value *closure = nullptr;
+  if (closure == nullptr) {
+    closure = caml_named_value("doCaml");
+  }
+  Q_ASSERT(closure!=nullptr);
+  caml_callback(*closure, Val_unit); // should be a unit
+  CAMLreturn0;
+}
+
+int main(int argc, char ** argv) {
+    caml_main(argv);
+    QGuiApplication app(argc, argv);
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    QQmlContext *ctxt = engine.rootContext();
+    registerContext(QString("rootContext"), ctxt);
+    doCaml();
+
+    component.loadUrl(QUrl("qrc:/Root.qml"));
+    QObject *topLevel = component.create(ctxt);
+    if (component.isError()) {
+      qDebug() << component.errors();
+      return 1;
+    }
+    QQuickWindow *window = qobject_cast<QQuickWindow*>(topLevel);
+    window->showMaximized();
+    return app.exec();
+}
+----
+In main.cpp we do startup initialization on C++ side. Function
+registerContext exposes Qml context (where global variables are
+stored) for OCaml. We will refer it using string "rootContext" in
+program.ml file. Also we call doOCamlInitialization to execute user
+startup code on OCaml side.
+
+----
+Let's write this OCaml startup code in program.ml
+let init () = print_endline "startup initialiation at OCaml side"
+let () = Callback.register "doCamlInitialization" init
+----
+
+In the same repo https://github.com/Kakadu/QOcamlBrowser_quick you
+can find Makefile to build whole project. Also you use qmake for Qt
+part and use QMAKE_EXTRA_TARGETS to call compilation of OCaml code
+
+[[ocaml_side]]
+Writing OCaml logic
+-------------------
+
+Let's create OCaml object which will be exposed to QtQuick engine. It
+will have single method `onMouseClicked` with type `string ->
+unit`. To generate code we will use mocml generator which you will get
+after compiling in `$LABLQT/src`. Let's put this to `input.json` (file
+name doesn't matter, is configurable):
+
+----
+[ {
+  "classname": "Controller",
+  "methods":
+     [ { "name":      "onMouseClicked",
+         "signature": ["string", "unit"] }
+     ],
+  "properties": [],
+  "slots": [],
+  "signals": []
+} ]
+----
+
+After executing `mocml input.json` three files will be
+generated: `Controller_c.h`, `Controller_c.cpp` and `Controller.ml`. A
+part of `Controller.ml` will look like that:
+
+----
+class virtual base_Controller cppobj = object(self)
+  ...
+  method virtual onMouseClicked: string -> unit
+end
+----
+As you see, base class `base_Controller` is created. We will inherit it and implement virtual method `onMouseClicked` in file `program.ml`:
+
+----
+open QmlContext
+
+let main () =
+  let controller_cppobj = Controller.create_Controller () in
+  let controller = object(self)
+    inherit Controller.base_Controller controller_cppobj as super
+    method onMouseClicked msg = Printf.printf "OCaml says: '%s'\n%!" msg
+  end in
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
+
+let () = Callback.register "doCamlInitialzation" main
+----
+
+After executing `QmlContext.set_context_property` we are able to use
+created object in QtQuick with name "controller". Like this:
+
+----
+MouseArea {
+    anchors.fill: parent      // all space in parent Rectangle will be clickable
+    onClicked: controller.onMouseClicked("message");
+}
+----
+After executing program when you will click on window you will se console output.
+Code of this example you can find there: https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld
+
+[[views]]
+QtQuick Controls, Layouts and Model/View pattern
+------------------------------------------------
+
+Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found there and there.
+----
+ApplicationWindow {
+    width: 1366
+    height: 768
+    menuBar: MenuBar {
+        Menu {
+            title: "Edit"
+
+            MenuItem {
+                text: "Cut";    shortcut: "Ctrl+X";
+                onTriggered: console.log("")
+            }
+            MenuItem {
+                text: "Copy";   shortcut: "Ctrl+C"
+                onTriggered: console.log("")
+            }
+            MenuItem {
+                text: "Paste";  shortcut: "Ctrl+V"
+                onTriggered: console.log("")
+            }
+        }
+    }
+    ....
+}
+----
+ToolBars are supported too:
+----
+    toolBar: ToolBar {
+        RowLayout {
+            anchors.margins: 8
+            anchors.fill: parent
+            ToolButton {
+                text: "Press me"
+                onClicked: console.log("Press me clicked")
+            }
+        }
+    }
+----
+QtQuick uses Model/View pattern for creating views. I.e. when you create a view you should provide an object with data (model) and a way to render it. Models can be created both in QML file and in C++. Let's create a model with QML:
+----
+    ListModel {
+        id: libraryModel
+        ListElement{ title: "A Masterpiece" ; author: "Gabriel" }
+        ListElement{ title: "Brilliance"    ; author: "Jens" }
+        ListElement{ title: "Outstanding"   ; author: "Frederik" }
+    }
+----
+It is a ListModel with three elements. Each element has two properties of type string: title and author. We will use them while declaring view for this model:
+
+----
+    TableView {
+        model: libraryModel
+        anchors.fill: parent
+
+        TableViewColumn { title: "Title";  role: "title"  }
+        TableViewColumn { title: "Author"; role: "author" }
+    }
+----
+You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly. Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed).
+Screenshot there: image:images/QtQuickControls1.png[title]
+
+[[datamodels]]
+Defining model in OCaml
+-----------------------
+Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of QAbstractItemModel. More information in this topic you can get at Qt Project.
+We also have special option in JSON which subclasses generated object from QAbstractItemModel automatically.
+----
+{
+    "classname": "MainModel",
+    "basename":  "QAbstractItemModel",
+    "methods": [],
+    "properties": [],
+    "slots": [],
+    "signals": []
+}
+----
+Our model will provide access to objects which have two properties:
+    author and title. We will call it DataItem and put into input.json
+    too.
+----
+{
+    "classname": "DataItem",
+    "methods": [],
+    "properties":
+      [ { "name":      "author",
+          "get":       "author",
+          "set":       "setName",
+          "notify":    "nameChanged",
+          "type":      "string" }
+      , { "name":      "title",
+          "get":       "title",
+          "set":       "setTitle",
+          "notify":    "titleChanged",
+          "type":      "string" }
+      ],
+    "slots": [],
+    "signals": []
+}
+----
+Now Let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author
+----
+  let data =
+    [ ("Анна Керенина",           "Лев Толстой")
+    ; ("Война и Мир",             "Лев Толстой")
+    ; ("Les Misérables",          "Victor Hugo")
+    ; ("Les Trois Mousquetaires", "Alexandre Dumas, père")
+    ] in
+----
+Using it we need to construct DataItems:
+----
+  let dataItems = List.map (fun (title,author) ->
+    let cppobj = DataItem.create_DataItem () in
+    object
+      inherit DataItem.base_DataItem cppobj as super
+      method author () = author
+      method title () = title
+    end
+  ) data in
+----
+Generated MainModel class gas many virtual methods. We need only
+    1-dimensional model, that's why some methods has very simple
+    implementation
+----
+  let model_cppobj = MainModel.create_MainModel () in
+  MainModel.add_role model_cppobj 555 "someRoleName";
+
+  let model = object(self)
+    inherit MainModel.base_MainModel model_cppobj as super
+    method parent _ = QModelIndex.empty
+    method columnCount _ = 1
+    method index row column parent =
+      if (row>=0 && row 0
+    method rowCount _ = List.length dataItems
+In method data we will return dataItem from our list if role of element is OK.
+    method data index role =
+      let r = QModelIndex.row index in
+      if (r<0 || r>= List.length data) then QVariant.empty
+      else begin
+        match role with
+          | 0 | 555 -> QVariant.of_object (List.nth dataItems r)#handler
+          | _ -> QVariant.empty
+      end
+  end in
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext")
+    ~name:"mainModel" model#handler
+----
+And if model of our TableView is mainModel we will get something like
+    this: image:images/QtQuickControls2.png[title]
+
+
+////
+The First Section
+-----------------
+Article sections start at level 1 and can be nested up to four levels
+deep.
+footnote:[An example footnote.]
+indexterm:[Example index entry]
+
+And now for something completely different: ((monkeys)), lions and
+tigers (Bengal and Siberian) using the alternative syntax index
+entries.
+(((Big cats,Lions)))
+(((Big cats,Tigers,Bengal Tiger)))
+(((Big cats,Tigers,Siberian Tiger)))
+Note that multi-entry terms generate separate index entries.
+
+Here are a couple of image examples: an image:images/smallnew.png[]
+example inline image followed by an example block image:
+////
+
+////
+[glossary]
+Example Glossary
+----------------
+Glossaries are optional. Glossaries entries are an example of a style
+of AsciiDoc labeled lists.
+
+[glossary]
+A glossary term::
+  The corresponding (indented) definition.
+
+A second glossary term::
+  The corresponding (indented) definition.
+////
+
+ifdef::backend-docbook[]
+[index]
+Example Index
+-------------
+////////////////////////////////////////////////////////////////
+The index is normally left completely empty, it's contents being
+generated automatically by the DocBook toolchain.
+////////////////////////////////////////////////////////////////
+endif::backend-docbook[]
