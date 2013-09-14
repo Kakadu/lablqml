@@ -857,7 +857,7 @@ asciidoc.install(2);
 <div class="sect1">
 <h2 id="hello_world">"Hello world!" in QML</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If we put this to Root.qml we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.</p></div>
+<div class="paragraph"><p>If we put this to <em>Root.qml</em> we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>import QtQuick 2.0
@@ -875,7 +875,7 @@ Rectangle {
     }
 }</pre>
 </div></div>
-<div class="paragraph"><p>This QML file is already correct application. If you execute it using command qmlscene Root.qml you will get a window like this:</p></div>
+<div class="paragraph"><p>This QML file is already correct application. If you execute it using command <span class="monospaced">qmlscene Root.qml</span> you will get a window like this:</p></div>
 <div class="paragraph"><p><span class="image">
 <img src="images/qml1.png" alt="images/qml1.png">
 </span></p></div>
@@ -884,6 +884,7 @@ C++. File <em>main.cpp</em> will be common for all of them. This one is
 adopted from by Demo application
 <a href="https://raw.github.com/Kakadu/QOcamlBrowser_quick">https://raw.github.com/Kakadu/QOcamlBrowser_quick</a></p></div>
 <div class="listingblock">
+<div class="title">Typical main.cpp</div>
 <div class="content monospaced">
 <pre>#include "stubs.h"
 
@@ -923,10 +924,10 @@ int main(int argc, char ** argv) {
     return app.exec();
 }</pre>
 </div></div>
-<div class="paragraph"><p>In main.cpp we do startup initialization on C++ side. Function
+<div class="paragraph"><p>In <em>main.cpp</em> we do startup initialization on C++ side. Function
 registerContext exposes Qml context (where global variables are
 stored) for OCaml. We will refer it using string "rootContext" in
-program.ml file. Also we call doOCamlInitialization to execute user
+<em>program.ml</em> file. Also we call doOCamlInitialization to execute user
 startup code on OCaml side.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
@@ -948,6 +949,7 @@ unit</span>. To generate code we will use mocml generator which you will get
 after compiling in <span class="monospaced">$LABLQT/src</span>. Let&#8217;s put this to <span class="monospaced">input.json</span> (file
 name doesn&#8217;t matter, is configurable):</p></div>
 <div class="listingblock">
+<div class="title">Input file for mocml tool</div>
 <div class="content monospaced">
 <pre>[ {
   "classname": "Controller",
@@ -964,6 +966,7 @@ name doesn&#8217;t matter, is configurable):</p></div>
 generated: <span class="monospaced">Controller_c.h</span>, <span class="monospaced">Controller_c.cpp</span> and <span class="monospaced">Controller.ml</span>. A
 part of <span class="monospaced">Controller.ml</span> will look like that:</p></div>
 <div class="listingblock">
+<div class="title">Class skeleton generated my mocml</div>
 <div class="content monospaced">
 <pre>class virtual base_Controller cppobj = object(self)
   ...
@@ -972,6 +975,7 @@ end</pre>
 </div></div>
 <div class="paragraph"><p>As you see, base class <span class="monospaced">base_Controller</span> is created. We will inherit it and implement virtual method <span class="monospaced">onMouseClicked</span> in file <span class="monospaced">program.ml</span>:</p></div>
 <div class="listingblock">
+<div class="title">OCaml initialization code</div>
 <div class="content monospaced">
 <pre>open QmlContext
 
@@ -989,9 +993,12 @@ let () = Callback.register "doCamlInitialzation" main</pre>
 created object in QtQuick with name "controller". Like this:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
-<pre>MouseArea {
-    anchors.fill: parent      // all space in parent Rectangle will be clickable
-    onClicked: controller.onMouseClicked("message");
+<pre>Rectangle { // root rectangle
+          ....
+          MouseArea {
+              anchors.fill: parent      // all space in parent Rectangle will be clickable
+              onClicked: controller.onMouseClicked("message");
+          }
 }</pre>
 </div></div>
 <div class="paragraph"><p>After executing program when you will click on window you will se console output.
@@ -1001,8 +1008,9 @@ Code of this example you can find there: <a href="https://github.com/Kakadu/labl
 <div class="sect1">
 <h2 id="views">QtQuick Controls, Layouts and Model/View pattern</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found there and there.</p></div>
+<div class="paragraph"><p>Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found <a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html">there</a> and <a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquicklayouts/qtquicklayouts-index.html">there</a>.</p></div>
 <div class="listingblock">
+<div class="title">Menus with QtQuick Controls</div>
 <div class="content monospaced">
 <pre>ApplicationWindow {
     width: 1366
@@ -1028,8 +1036,8 @@ Code of this example you can find there: <a href="https://github.com/Kakadu/labl
     ....
 }</pre>
 </div></div>
-<div class="paragraph"><p>ToolBars are supported too:</p></div>
 <div class="listingblock">
+<div class="title">ToolBars are supported too</div>
 <div class="content monospaced">
 <pre>    toolBar: ToolBar {
         RowLayout {
@@ -1042,7 +1050,12 @@ Code of this example you can find there: <a href="https://github.com/Kakadu/labl
         }
     }</pre>
 </div></div>
-<div class="paragraph"><p>QtQuick uses Model/View pattern for creating views. I.e. when you create a view you should provide an object with data (model) and a way to render it. Models can be created both in QML file and in C++. Let&#8217;s create a model with QML:</p></div>
+<div class="paragraph"><p>QtQuick uses Model/View pattern for creating views. I.e. when you
+                create a view you should provide an object with data
+                (model) and a way to render it. Models can be created
+                both in QML file and in C++. Let&#8217;s create a model with
+                QML:
+.Simple model for TableView</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>    ListModel {
@@ -1054,6 +1067,7 @@ Code of this example you can find there: <a href="https://github.com/Kakadu/labl
 </div></div>
 <div class="paragraph"><p>It is a ListModel with three elements. Each element has two properties of type string: title and author. We will use them while declaring view for this model:</p></div>
 <div class="listingblock">
+<div class="title">Simple TableView example</div>
 <div class="content monospaced">
 <pre>    TableView {
         model: libraryModel
@@ -1072,9 +1086,12 @@ Screenshot there: <span class="image">
 <div class="sect1">
 <h2 id="datamodels">Defining model in OCaml</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of QAbstractItemModel. More information in this topic you can get at Qt Project.
-We also have special option in JSON which subclasses generated object from QAbstractItemModel automatically.</p></div>
+<div class="paragraph"><p>Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of <span class="monospaced">QAbstractItemModel</span>. More information in this topic you can get at Qt Project.
+We also have special option in JSON which subclasses generated object from
+<a href="http://qt-project.org/doc/qt-5.0/qtcore/qabstractitemmodel.html">QAbstractItemModel</a>
+automatically.</p></div>
 <div class="listingblock">
+<div class="title">Input file mocml with model class defined</div>
 <div class="content monospaced">
 <pre>{
     "classname": "MainModel",
@@ -1089,6 +1106,7 @@ We also have special option in JSON which subclasses generated object from QAbst
     author and title. We will call it DataItem and put into input.json
     too.</p></div>
 <div class="listingblock">
+<div class="title">Input file for mocml with data object definition</div>
 <div class="content monospaced">
 <pre>{
     "classname": "DataItem",
@@ -1109,7 +1127,7 @@ We also have special option in JSON which subclasses generated object from QAbst
     "signals": []
 }</pre>
 </div></div>
-<div class="paragraph"><p>Now Let&#8217;s define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author</p></div>
+<div class="paragraph"><p>Now Let&#8217;s define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>  let data =
@@ -1131,7 +1149,7 @@ We also have special option in JSON which subclasses generated object from QAbst
     end
   ) data in</pre>
 </div></div>
-<div class="paragraph"><p>Generated MainModel class gas many virtual methods. We need only
+<div class="paragraph"><p>Generated MainModel class has many virtual methods. We need only
     1-dimensional model, that&#8217;s why some methods has very simple
     implementation</p></div>
 <div class="listingblock">
@@ -1144,9 +1162,17 @@ We also have special option in JSON which subclasses generated object from QAbst
     method parent _ = QModelIndex.empty
     method columnCount _ = 1
     method index row column parent =
-      if (row&gt;=0 &amp;&amp; row 0
+      if (row&gt;=0 &amp;&amp; row self#rowCount parent) then QModelIndex.make ~row ~column:0
+      else QModelIndex.empty
     method rowCount _ = List.length dataItems
-In method data we will return dataItem from our list if role of element is OK.
+    ...</pre>
+</div></div>
+<div class="paragraph"><p>In method data we will return dataItem from our list if role of
+    element is OK. Magic number 555 appears beacuse we are defining
+    user role for model.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>    ...
     method data index role =
       let r = QModelIndex.row index in
       if (r&lt;0 || r&gt;= List.length data) then QVariant.empty
@@ -1169,7 +1195,7 @@ In method data we will return dataItem from our list if role of element is OK.
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2013-09-14 22:50:55 MSK
+Last updated 2013-09-14 23:53:00 MSK
 </div>
 </div>
 </body>

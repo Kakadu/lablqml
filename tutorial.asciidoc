@@ -15,7 +15,7 @@ Getting Qt5 TODO
 "Hello world!" in QML
 ---------------------
 
-If we put this to Root.qml we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.
+If we put this to 'Root.qml' we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.
 
 ----
 import QtQuick 2.0
@@ -34,7 +34,7 @@ Rectangle {
 }
 ----
 
-This QML file is already correct application. If you execute it using command qmlscene Root.qml you will get a window like this:
+This QML file is already correct application. If you execute it using command `qmlscene Root.qml` you will get a window like this:
 
 image:images/qml1.png[]
 
@@ -42,6 +42,8 @@ At this moment OCaml+QtQuick applications should make startup from
 C++. File 'main.cpp' will be common for all of them. This one is
 adopted from by Demo application
 https://raw.github.com/Kakadu/QOcamlBrowser_quick
+
+.Typical main.cpp
 ----
 #include "stubs.h"
 
@@ -81,10 +83,10 @@ int main(int argc, char ** argv) {
     return app.exec();
 }
 ----
-In main.cpp we do startup initialization on C++ side. Function
+In 'main.cpp' we do startup initialization on C++ side. Function
 registerContext exposes Qml context (where global variables are
 stored) for OCaml. We will refer it using string "rootContext" in
-program.ml file. Also we call doOCamlInitialization to execute user
+'program.ml' file. Also we call doOCamlInitialization to execute user
 startup code on OCaml side.
 
 ----
@@ -107,6 +109,7 @@ unit`. To generate code we will use mocml generator which you will get
 after compiling in `$LABLQT/src`. Let's put this to `input.json` (file
 name doesn't matter, is configurable):
 
+.Input file for mocml tool
 ----
 [ {
   "classname": "Controller",
@@ -124,6 +127,7 @@ After executing `mocml input.json` three files will be
 generated: `Controller_c.h`, `Controller_c.cpp` and `Controller.ml`. A
 part of `Controller.ml` will look like that:
 
+.Class skeleton generated my mocml
 ----
 class virtual base_Controller cppobj = object(self)
   ...
@@ -132,6 +136,7 @@ end
 ----
 As you see, base class `base_Controller` is created. We will inherit it and implement virtual method `onMouseClicked` in file `program.ml`:
 
+.OCaml initialization code
 ----
 open QmlContext
 
@@ -150,9 +155,12 @@ After executing `QmlContext.set_context_property` we are able to use
 created object in QtQuick with name "controller". Like this:
 
 ----
-MouseArea {
-    anchors.fill: parent      // all space in parent Rectangle will be clickable
-    onClicked: controller.onMouseClicked("message");
+Rectangle { // root rectangle
+          ....
+          MouseArea {
+              anchors.fill: parent      // all space in parent Rectangle will be clickable
+              onClicked: controller.onMouseClicked("message");
+          }
 }
 ----
 After executing program when you will click on window you will se console output.
@@ -162,7 +170,9 @@ Code of this example you can find there: https://github.com/Kakadu/lablqt/tree/q
 QtQuick Controls, Layouts and Model/View pattern
 ------------------------------------------------
 
-Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found there and there.
+Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html[there] and http://doc-snapshot.qt-project.org/qt5-stable/qtquicklayouts/qtquicklayouts-index.html[there].
+
+.Menus with QtQuick Controls
 ----
 ApplicationWindow {
     width: 1366
@@ -188,7 +198,7 @@ ApplicationWindow {
     ....
 }
 ----
-ToolBars are supported too:
+.ToolBars are supported too
 ----
     toolBar: ToolBar {
         RowLayout {
@@ -201,7 +211,12 @@ ToolBars are supported too:
         }
     }
 ----
-QtQuick uses Model/View pattern for creating views. I.e. when you create a view you should provide an object with data (model) and a way to render it. Models can be created both in QML file and in C++. Let's create a model with QML:
+QtQuick uses Model/View pattern for creating views. I.e. when you
+                create a view you should provide an object with data
+                (model) and a way to render it. Models can be created
+                both in QML file and in C++. Let's create a model with
+                QML:
+.Simple model for TableView
 ----
     ListModel {
         id: libraryModel
@@ -212,6 +227,7 @@ QtQuick uses Model/View pattern for creating views. I.e. when you create a view 
 ----
 It is a ListModel with three elements. Each element has two properties of type string: title and author. We will use them while declaring view for this model:
 
+.Simple TableView example
 ----
     TableView {
         model: libraryModel
@@ -227,8 +243,12 @@ Screenshot there: image:images/QtQuickControls1.png[title]
 [[datamodels]]
 Defining model in OCaml
 -----------------------
-Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of QAbstractItemModel. More information in this topic you can get at Qt Project.
-We also have special option in JSON which subclasses generated object from QAbstractItemModel automatically.
+Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of `QAbstractItemModel`. More information in this topic you can get at Qt Project.
+We also have special option in JSON which subclasses generated object from
+http://qt-project.org/doc/qt-5.0/qtcore/qabstractitemmodel.html[QAbstractItemModel]
+automatically.
+
+.Input file mocml with model class defined
 ----
 {
     "classname": "MainModel",
@@ -242,6 +262,8 @@ We also have special option in JSON which subclasses generated object from QAbst
 Our model will provide access to objects which have two properties:
     author and title. We will call it DataItem and put into input.json
     too.
+
+.Input file for mocml with data object definition
 ----
 {
     "classname": "DataItem",
@@ -262,7 +284,7 @@ Our model will provide access to objects which have two properties:
     "signals": []
 }
 ----
-Now Let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author
+Now Let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:
 ----
   let data =
     [ ("Анна Керенина",           "Лев Толстой")
@@ -282,7 +304,7 @@ Using it we need to construct DataItems:
     end
   ) data in
 ----
-Generated MainModel class gas many virtual methods. We need only
+Generated MainModel class has many virtual methods. We need only
     1-dimensional model, that's why some methods has very simple
     implementation
 ----
@@ -294,9 +316,16 @@ Generated MainModel class gas many virtual methods. We need only
     method parent _ = QModelIndex.empty
     method columnCount _ = 1
     method index row column parent =
-      if (row>=0 && row 0
+      if (row>=0 && row self#rowCount parent) then QModelIndex.make ~row ~column:0
+      else QModelIndex.empty
     method rowCount _ = List.length dataItems
-In method data we will return dataItem from our list if role of element is OK.
+    ...
+----
+In method data we will return dataItem from our list if role of
+    element is OK. Magic number 555 appears beacuse we are defining
+    user role for model.
+----
+    ...
     method data index role =
       let r = QModelIndex.row index in
       if (r<0 || r>= List.length data) then QVariant.empty
