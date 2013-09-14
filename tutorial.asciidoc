@@ -8,12 +8,51 @@ Aim of lablqt is to allow writing speed-critical logic in OCaml instead of C++.
 
 Initially, QtQuick was created for mobile applications and resizable layouts were not supported well. Probably QtQuick was not a good choice for desktop applications. From version Qt 5.1 modules QtQuick.Controls and QtQuick.Layouts are part of Qt. They are a set controls for desktop applications: toolbars, buttons, menus and layouts. They also look native on different platforms. Our first "Hello world" application will use simple controls from Qt<5.1. In the second I'll going to show you QtQuick.Controls. Sources of this examples you can clone from Github.
 
-Getting Qt5 TODO
-----------------
+Getting Qt5
+-----------
+Using package repository
+~~~~~~~~~~~~~~~~~~~~~~~~
+In Ubuntu 13.04 everything going to be OK --- Qt5 is there. But is
+seems that in Debian/sid development packages are missing yet. So you
+should consider getting installer or compile it yourself.
+
+Official packages
+~~~~~~~~~~~~~~~~~
+are available on http://qt-project.org/downloads#qt-lib[Qt Project].
+
+Building from Git
+~~~~~~~~~~~~~~~~~
+Official Qt Project wiki is
+http://qt-project.org/wiki/Building_Qt_5_from_Git[there]. Below you
+can see `my-init` and `configure` scripts which configure
+Qt5 to build only modules needed by lablqt.
+
+.My init-repository script
+----
+$ cat my-init
+#!/bin/bash
+MODULES=qtbase,qtdeclarative,qtjsbackend,qtactiveqt,qtquickcontrols
+perl ./init-repository --module-subset=$MODULES -f $@
+----
+
+.My configure script
+----
+$ cat my-configure
+#!/bin/bash
+set -x
+./configure -developer-build -opensource -nomake examples -nomake tests -confirm-license \
+  -no-gtkstyle -no-glib -no-cups  $@
+----
+
+Qt compiles some code during `./configure` stage, don't worry, it's
+normal.
+
+Compilation time depends on your machine. I was told that with `-j8`
+we can succeed in 5 minutes.
 
 [[hello_world]]
-"Hello world!" in QML
----------------------
+"Hello world!" in QtQuick
+-------------------------
 
 If we put this to 'Root.qml' we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.
 
@@ -216,6 +255,7 @@ QtQuick uses Model/View pattern for creating views. I.e. when you
                 (model) and a way to render it. Models can be created
                 both in QML file and in C++. Let's create a model with
                 QML:
+
 .Simple model for TableView
 ----
     ListModel {
@@ -284,7 +324,7 @@ Our model will provide access to objects which have two properties:
     "signals": []
 }
 ----
-Now Let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:
+Now let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:
 ----
   let data =
     [ ("Анна Керенина",           "Лев Толстой")
@@ -322,7 +362,7 @@ Generated MainModel class has many virtual methods. We need only
     ...
 ----
 In method data we will return dataItem from our list if role of
-    element is OK. Magic number 555 appears beacuse we are defining
+    element is OK. Magic number 555 appears because we are defining
     user role for model.
 ----
     ...
