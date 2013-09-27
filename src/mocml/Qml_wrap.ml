@@ -13,7 +13,7 @@ let with_file path f =
   Out_channel.close file
 
 
-let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; _} =
+let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; signals} =
   let b_h   = B.create 100 in
   let b_c   = B.create 100 in
   let b_ml  = B.create 100 in
@@ -96,6 +96,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     print_local_declarations b_c cb_locals;
     if List.mem config `PrintMethCalls then
       p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
+
     p_c "  value _camlobj = this->_camlobjHolder;\n";
     p_c "  Q_ASSERT(Is_block(_camlobj));\n";
     p_c "  Q_ASSERT(Tag_val(_camlobj) == Object_tag);\n";
@@ -139,23 +140,30 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   bprintf clas_def_buf "  initializer store cppobj self\n";
   bprintf clas_def_buf "  method handler = cppobj\n";
 
+  let p_ext fmt = bprintf top_externals_buf fmt in
+  let declare_cpp_signal hbuf ~name ~args =
+    let p_h fmt = bprintf hbuf fmt in
+    let types = List.map ~f:string_of_type args in
+    let s1 = List.mapi types ~f:(fun i t -> sprintf "%s arg%d" t i) |> String.concat ~sep:"," in
+    let s2 = List.mapi types ~f:(fun i _ -> sprintf "arg%d" i) |> String.concat ~sep:"," in
+    p_h "signals:\n";
+    p_h "  void %s(%s);\n" name (String.concat ~sep:"," types);
+    p_h "public:\n";
+    p_h "  void emit_%s(%s) {\n" name s1;
+    p_h "    emit %s(%s);\n" name s2;
+    p_h "  }\n\n"
+  in
   (* function to generate properties *)
   let do_prop hbuf cbuf cls_body_buf {name;getter;notifier;typ;setter} =
     let p_h fmt = bprintf hbuf fmt in
     let p_ml fmt = bprintf cls_body_buf fmt in
-    let p_ext fmt = bprintf top_externals_buf fmt in
     p_h "public:\n";
     let setter_string = match setter with Some x -> " WRITE "^x | None -> " " in
     let prop_descr_str = sprintf "Q_PROPERTY(%s %s%s READ %s NOTIFY %s)"
       (string_of_type typ) name setter_string getter notifier in
     p_h "  %s\n" prop_descr_str;
     do_meth ~classname (getter,[void_type],typ,[]);
-    p_h "signals:\n";
-    p_h "  void %s(%s);\n" notifier (string_of_type typ);
-    p_h "public:\n";
-    p_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
-    p_h "    emit %s(arg1);\n" notifier;
-    p_h "  }\n\n";
+    declare_cpp_signal hbuf ~name:notifier ~args:[typ];
     let stub_name = WrapAbstractItemModel.gen_cppmeth_wrapper
       ~config ~classname cbuf (notifier,[typ],void_type,[]) in
     p_ext "external stub_%s: cppobj -> %s -> unit = \"%s\"\n" notifier
@@ -216,6 +224,17 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     do_meth_caml mem;
   );
   List.iter props ~f:(do_prop b_h b_c clas_def_buf);
+
+  List.iter signals ~f:(fun (name,args) ->
+    declare_cpp_signal b_h ~name ~args;
+    let stub_name = WrapAbstractItemModel.gen_cppmeth_wrapper
+      ~config ~classname b_c ("emit_"^name,args,void_type,[]) in
+    p_ext "external stub_%s: cppobj %s -> unit = \"%s\"\n" name
+      (List.map ~f:(fun typ -> sprintf "-> %s "
+        (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type) ) args |> String.concat ~sep:" ")
+      stub_name;
+    bprintf clas_def_buf "  method emit_%s = stub_%s self#handler\n" name name
+  );
 
   (* Now we will add some methods for specific basename *)
   let () =

@@ -37,9 +37,10 @@ module Yaml2 = struct
   module Types = struct
     type typ = Parser.cpptype with sexp
     type meth = string * typ list * typ * [`Const] list with sexp
+    type sgnl = string * typ list with sexp
     type prop = {name:string; getter:string; setter: string option; notifier: string; typ:typ} with sexp
     type clas =
-        {classname:string; slots: meth list; signals: meth list; members: meth list;
+        {classname:string; slots: meth list; signals: sgnl list; members: meth list;
          basename: string option; props: prop list}
     with sexp
     type data = clas list with sexp
@@ -191,10 +192,16 @@ module Json = struct
           let signals = List.Assoc.find_exn xs "signals"
              |> (function
                  | `List xs -> List.map xs ~f:(function `Assoc x -> x | _ -> assert false)
-                               |>  List.map ~f:parse_meth
+                               |>  List.map ~f:parse_sgnl
                  | _ -> assert false ) in
-          Types.({classname;members;signals;slots;props; basename})
+          Types.({classname; members; signals; slots; props; basename})
       | _ -> assert false
+  and parse_sgnl js =
+    let name = List.Assoc.find_exn js "name" |> js_get_string in
+    let args = List.Assoc.find_exn js "args" |> (function `List xs -> xs | _ -> assert false)
+      |> List.map ~f:(function `String s -> s | _ -> assert false)
+      |> List.map ~f:(fun x -> x|> TypLexer.parse_string |> TypAst.to_verbose_typ) in
+    (name,args)
   and parse_meth (js: (string*json) list) =
     let name = List.Assoc.find_exn js "name" |> js_get_string in
     let sign = List.Assoc.find_exn js "signature" |> (function `List xs -> xs | _ -> assert false) in
