@@ -7,6 +7,7 @@ build: [
   [make "install"]
 ]
 remove: [
+  ["touch" ".depend"]
   [make "uninstall"]
 ]
 depends: [ "mocml" ]
