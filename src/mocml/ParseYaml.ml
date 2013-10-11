@@ -37,7 +37,7 @@ module Yaml2 = struct
   module Types = struct
     type typ = Parser.cpptype with sexp
     type meth = string * typ list * typ * [`Const] list with sexp
-    type sgnl = string * typ list with sexp
+    type sgnl = string * typ list * string list option with sexp
     type prop = {name:string; getter:string; setter: string option; notifier: string; typ:typ} with sexp
     type clas =
         {classname:string; slots: meth list; signals: sgnl list; members: meth list;
@@ -45,115 +45,6 @@ module Yaml2 = struct
     with sexp
     type data = clas list with sexp
   end
-(*
-  open YamlNode
-  let string_of_yaml y =
-    let b = Buffer.create 100 in
-    let add_string = Buffer.add_string b in
-    let rec helper = function
-      | SCALAR(uri,s) ->
-          List.iter ~f:add_string [ "SCALAR(\""; uri; "\",\""; s; "\")" ]
-      | SEQUENCE(uri,xs) ->
-          List.iter ~f:add_string [ "SEQUENCE(\""; uri; "\",[" ];
-          let () = match xs with
-            | []  -> ()
-            | [x] -> (helper x)
-            | x::xs ->
-                (helper x);
-                List.iter xs ~f:(fun y -> add_string ","; helper y)
-          in
-          add_string "])"
-      | MAPPING (uri,xs) ->
-          List.iter ~f:add_string [ "MAPPING(\""; uri; "\",[" ];
-          let add_pair x =
-            add_string "("; helper (fst x); add_string ","; helper (snd x); add_string ")"
-          in
-          let () = match xs with
-            | []  -> ()
-            | [x] -> add_pair x
-            | x::xs ->
-                add_pair x;
-                List.iter xs ~f:(fun y -> add_string ","; add_pair y)
-          in
-          add_string "])"
-    in
-    helper y;
-    Buffer.contents b
-
-  let rec parse_data = function
-    | MAPPING(_,lst) ->
-        printf "Classes count: %d\n" (List.length lst);
-        List.map lst ~f:parse_clas
-    | _ -> assert false
-  and parse_clas = function
-    | (SCALAR (_, classname), MAPPING(_,lst)) ->
-        let basename = ref None in
-        let (members,signals,slots,props) =
-          List.fold_left ~init:([],[],[],[]) lst ~f:(fun (a,b,c,d) -> function
-            | (SCALAR(_,"basename"),SCALAR(_,value)) -> basename:= Some value; (a,b,c,d)
-            | (SCALAR (_,"signals"), SCALAR("null","")) ->
-                (a,b,c,d)
-            | (SCALAR (_,"signals"),MAPPING (_,map)) ->
-                let lst = List.map map ~f:parse_meth in
-                (a,lst @ b,c,d)
-            | (SCALAR (_,"slots"), SCALAR("null","")) ->
-                (a,b,c,d)
-            | (SCALAR (_,"slots"),MAPPING (_,map)) ->
-                let lst = List.map map ~f:parse_meth in
-                (a,b,lst@c,d)
-            | (SCALAR (_,"methods"),SCALAR ("null","")) ->
-                (* methods not defined *)
-                (a,b,c,d)
-            | (SCALAR (_,"methods"),MAPPING (_,map)) ->
-                let lst = List.map map ~f:parse_meth in
-                (lst@a,b,c,d)
-            | (SCALAR (_,"properties"),SCALAR("null","")) ->
-                (a,b,c,d)
-            | (SCALAR (_,"properties"),MAPPING (_,map)) ->
-                let lst = List.map map ~f:parse_prop in
-                (a,b,c,lst@d)
-            | x ->
-                printf "Don't know what to do with\n(%s,%s)\n%!"
-                  (string_of_yaml (fst x)) (string_of_yaml (snd x));
-                assert false
-          ) in
-        Types.({classname;members;signals;slots;props; basename= !basename})
-    | _ -> assert false
-  and parse_meth = function
-    | (SCALAR(_,name),SEQUENCE(_,lst)) ->
-        let lst = List.map lst ~f:(function SCALAR (_,x) -> x | _ -> assert false) in
-        (* last item in method return type *)
-        let res,args =
-          let l = List.rev lst in (List.hd_exn l, l |> List.tl_exn |> List.rev)
-        in
-        let conv ty = TypLexer.parse_string ty |> TypAst.to_verbose_typ in
-        (* TODO: parse `Const modifier *)
-        (name,List.map args ~f:conv, conv res,[])
-    | _ -> assert false
-  and parse_prop = function
-    | (SCALAR(_,name),MAPPING(_,lst)) ->
-        let helper_exn name =
-          lst |> List.filter_map ~f:(function
-            | (SCALAR(_,x),SCALAR(_,value)) when x=name -> Some value
-            | _ -> None)
-          |> (function
-             | [] -> raise Not_found
-             | x::_ -> x)
-        in
-        let helper name = try Some (helper_exn name) with Not_found -> None in
-        let getter   = helper_exn "get"
-        and setter   = helper     "set"
-        and typ      = helper_exn "type"
-        and notifier = helper_exn "notify" in
-        let typ = TypLexer.parse_string typ |> TypAst.to_verbose_typ in
-        Types.({name;getter;setter;notifier;typ})
-    | _ -> assert false
-
-  let parse_file filename : Types.clas list =
-    let p = YamlParser.make () in
-    let data = YamlParser.parse_string p Core.In_channel.(input_all (create filename)) in
-    parse_data data
-*)
 end
 
 module Json = struct
@@ -198,10 +89,18 @@ module Json = struct
       | _ -> assert false
   and parse_sgnl js =
     let name = List.Assoc.find_exn js "name" |> js_get_string in
-    let args = List.Assoc.find_exn js "args" |> (function `List xs -> xs | _ -> assert false)
+    let f name = List.Assoc.find_exn js name |> (function `List xs -> xs | _ -> assert false)
       |> List.map ~f:(function `String s -> s | _ -> assert false)
-      |> List.map ~f:(fun x -> x|> TypLexer.parse_string |> TypAst.to_verbose_typ) in
-    (name,args)
+    in
+    let args = f "args" |> List.map ~f:(fun x -> x|> TypLexer.parse_string |> TypAst.to_verbose_typ) in
+    match List.Assoc.find js "argnames" with
+    | Some xs ->
+      let argnames = xs |> (function `List xs -> xs | _ -> assert false)
+        |> List.map ~f:(function `String s -> s | _ -> assert false) in
+      if List.(length argnames <> length args)
+      then raise (Common.Bug (sprintf "In signal '%s': count of argument types should be  equal to count of argument names or arguments names should not be provded" name));
+      (name,args,Some argnames)
+    | None -> (name,args,None)
   and parse_meth (js: (string*json) list) =
     let name = List.Assoc.find_exn js "name" |> js_get_string in
     let sign = List.Assoc.find_exn js "signature" |> (function `List xs -> xs | _ -> assert false) in

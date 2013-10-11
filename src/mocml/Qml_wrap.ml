@@ -141,13 +141,13 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   bprintf clas_def_buf "  method handler = cppobj\n";
 
   let p_ext fmt = bprintf top_externals_buf fmt in
-  let declare_cpp_signal hbuf ~name ~args =
+  let declare_cpp_signal hbuf ~name ~args ~argnames =
     let p_h fmt = bprintf hbuf fmt in
     let types = List.map ~f:string_of_type args in
-    let s1 = List.mapi types ~f:(fun i t -> sprintf "%s arg%d" t i) |> String.concat ~sep:"," in
-    let s2 = List.mapi types ~f:(fun i _ -> sprintf "arg%d" i) |> String.concat ~sep:"," in
+    let s1 = List.map2_exn types argnames ~f:(sprintf "%s %s") |> String.concat ~sep:"," in
+    let s2 = argnames |> String.concat ~sep:"," in
     p_h "signals:\n";
-    p_h "  void %s(%s);\n" name (String.concat ~sep:"," types);
+    p_h "  void %s(%s);\n" name s1;
     p_h "public:\n";
     p_h "  void emit_%s(%s) {\n" name s1;
     p_h "    emit %s(%s);\n" name s2;
@@ -163,7 +163,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
       (string_of_type typ) name setter_string getter notifier in
     p_h "  %s\n" prop_descr_str;
     do_meth ~classname (getter,[void_type],typ,[]);
-    declare_cpp_signal hbuf ~name:notifier ~args:[typ];
+    declare_cpp_signal hbuf ~name:notifier ~args:[typ] ~argnames:[name];
     let stub_name = WrapAbstractItemModel.gen_cppmeth_wrapper
       ~config ~classname cbuf (notifier,[typ],void_type,[]) in
     p_ext "external stub_%s: cppobj -> %s -> unit = \"%s\"\n" notifier
@@ -225,8 +225,14 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   );
   List.iter props ~f:(do_prop b_h b_c clas_def_buf);
 
-  List.iter signals ~f:(fun (name,args) ->
-    declare_cpp_signal b_h ~name ~args;
+  List.iter signals ~f:(fun (name,args,argnames) ->
+    let argnames = match argnames with
+      | Some xs ->
+        assert List.(length args = length xs);
+        xs
+      | None -> List.mapi args ~f:(fun i _ -> sprintf "arg%d" i)
+    in
+    declare_cpp_signal b_h ~name ~args ~argnames;
     let stub_name = WrapAbstractItemModel.gen_cppmeth_wrapper
       ~config ~classname b_c ("emit_"^name,args,void_type,[]) in
     p_ext "external stub_%s: cppobj %s -> unit = \"%s\"\n" name
