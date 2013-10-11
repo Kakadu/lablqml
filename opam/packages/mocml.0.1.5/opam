@@ -5,6 +5,9 @@ build: [
   ["sh" "-c" "cd qml/lib && bash configure --datarootdir=%{lib}%" ]
   ["sh" "-c" "cd qml/lib && make && make install"]
   ["sh" "-c" "cd qml && bash configure && %{make}% generator"]
+  ["ls"]
+  ["echo" "Makefile.install"]
+  ["cat" "Makefile.install"]
   [make "-f" "Makefile.install" "PREFIX=%{prefix}%" "MAN=%{man}%" "install" ]
 ]
 remove: [
