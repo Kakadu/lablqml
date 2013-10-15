@@ -11,9 +11,8 @@ Library lablqml
   BuildTools:   ocamlbuild
   Modules:      QmlContext
   DataFiles:    stubs.h,kamlo.h
-  CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c
-  CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Qml` -O2 -Dprivate=public 
+  CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c,startup_stubs.c
+  CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Qml` -O2 -Dprivate=public
 
 #Test test1
 #  Command: test1
-  

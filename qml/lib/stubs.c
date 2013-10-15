@@ -15,6 +15,7 @@ void registerContext(const QString& name, QQmlContext* v) {
   Q_UNUSED(_ans);
   CAMLreturn0;
 }
+
 // ctx:t -> name:string -> cppobj -> unit
 extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj) {
   CAMLparam3(_ctx,_name,_cppObj);

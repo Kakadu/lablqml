@@ -20,3 +20,20 @@ module QModelIndex : sig
   val make: row:int -> column:int -> t
   val to_string: t -> string
 end
+
+module QGuiApplication : sig 
+  type t 
+  val exec : t -> unit  
+end
+module QQmlEngine : sig type t end
+
+module QQuickWindow : sig
+  type t
+  val showMaximized : t -> unit 
+end
+
+external create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
+    = "caml_create_QGuiApplication"
+external loadQml : string -> QQmlEngine.t -> QQuickWindow.t option
+    = "caml_loadQml"
+

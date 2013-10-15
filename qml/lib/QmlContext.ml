@@ -34,3 +34,20 @@ module QModelIndex = struct
   let make ~row ~column = (row,column)
   let to_string (row,column) = Printf.sprintf "(%d,%d)" row column
 end
+
+module QGuiApplication = struct
+  type t
+  external exec: t -> unit = "caml_QGuiApplication_exec"
+end
+module QQmlEngine = struct type t end
+module QQuickWindow = struct
+  type t
+  external showMaximized: t -> unit = "caml_QQuickWindow_showMaximized"
+end
+
+external create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t 
+  = "caml_create_QGuiApplication"
+external loadQml: string -> QQmlEngine.t -> QQuickWindow.t option 
+  = "caml_loadQml"
+
+

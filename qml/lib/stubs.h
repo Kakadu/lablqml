@@ -7,6 +7,9 @@
 #include <QtQuick/qquickview.h>
 #include <QtCore/QDebug>
 #include <QtQml/QQmlContext>
+#include <QtGui/QGuiApplication>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlComponent>
 
 extern void registerContext(const QString& name, QQmlContext* v);
 extern QModelIndex make_qmodelindex4(int, int, void*, const QAbstractItemModel *);

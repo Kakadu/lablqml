@@ -1,5 +1,6 @@
 # OASIS_START
-# DO NOT EDIT (digest: 76c68640c494b775703c7a4d9476bfc7)
+# DO NOT EDIT (digest: a3bdcc7a2aad7d947de078d5f6f3ac00)
 stubs.o
 modelindex.o
+startup_stubs.o
 # OASIS_STOP
