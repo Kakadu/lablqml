@@ -3,30 +3,21 @@ open Helpers
 
 let () = Printexc.record_backtrace true
 
-type options =
-    { mutable path: string list
-    ; mutable with_color: bool
-    }
+open QmlContext
 
-let options =
-  { path = [] (* ["/home/kakadu/.opam/4.00.1/lib/ocaml"; "/home/kakadu/.opam/4.00.1/lib/core"] *)
-  ; with_color = true
-  }
+type options = { mutable path: string list }
+
+let options = { path = [Config.standard_library]  }
 
 
 let () =
-  let usage_msg =
-    [ "This is OCamlBrowser clone written in QtQuick 2.0."
-    ] |> String.concat "\n"
-  in
+  let usage_msg = "This is OCamlBrowser clone written in QtQuick 2.0." in
   Arg.parse
     [ ("-I", Arg.String (fun s -> options.path <- s :: options.path), "Where to look for cmi files")
     ] (fun s -> printf "Unknown parameter %s\n" s; exit 0)
     usage_msg;
   if List.length options.path = 0
   then print_endline "Include paths are empty. Please specufy some via -I <path> option"
-
-open QmlContext
 
 class virtual abstractListModel cppobj = object(self)
   inherit AbstractModel.base_AbstractModel cppobj as super
@@ -42,6 +33,7 @@ let update_paths xs =
   printf "Setting new paths:\n%s\n%!" (List.to_string xs ~f:(sprintf "%s"));
   options.path <- xs;
   S.(read_modules options.path |> build_tree |> sort_tree)
+
 let root = ref (update_paths options.path)
 let selected = ref [-1]
 let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
@@ -119,11 +111,9 @@ let item_selected controller mainModel x y : unit =
     if List.length zs <> 0 then begin
       let from = List.length !cpp_data in
       let last = from + List.length zs-1 in
-      printf "Adding rows from %d to %d\n%!" from last;
       mainModel#beginInsertRows QModelIndex.empty from last;
       cpp_data := !cpp_data @ zs;
-      mainModel#endInsertRows ();
-      printf "End inserting rows. cpp_data.length = %d\n%!" (List.length !cpp_data);
+      mainModel#endInsertRows ()
     end;
   end;
   assert (List.length !cpp_data = List.length new_selected)
@@ -145,7 +135,7 @@ let do_update_paths model xs =
       selected := [];
   end
 
-let main () =
+let main () : unit =
   cpp_data := initial_cpp_data ();
 
   let cpp_model = AbstractModel.create_AbstractModel () in
@@ -214,3 +204,12 @@ let main () =
 
 
 let () = Callback.register "doCaml" main
+
+let () =
+  let app,engine = create_qapplication Sys.argv in
+  main ();
+  match loadQml "Root.qml" engine with
+  | Some w ->
+    QQuickWindow.showMaximized w;
+    QGuiApplication.exec  app
+  | None -> print_endline "Error during loading QML file"; exit 1

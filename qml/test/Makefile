@@ -2,7 +2,7 @@ MOC=`qmake -query QT_INSTALL_BINS`/moc
 CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I../lib/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g
-CLINKLIBS=`pkg-config --libs Qt5Quick`
+CLINKLIBS=-ccopt -lstdc++ -ccopt -L/media/disk/kakadu/prog/qt/qt5/qtbase/lib -ccopt -lQt5Quick -ccopt -lQt5Gui -ccopt -lQt5Qml -ccopt -lQt5Network -ccopt -lQt5Core
 OUT=main
 GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
@@ -16,17 +16,16 @@ CMX_TEST=Test.cmx
 .SUFFIXES: .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all depend clean
 
-all: $(GEN_CMX) $(CMX) $(CMX_TEST) library_code $(GEN_MOC) $(GEN_CPP) main.o
-	$(OCAMLOPT) helpers.cmx tree.cmx S.cmx Test.cmx -o test
-	$(CLINK) -L`ocamlc -where` \
-	../lib/_build/stubs.o $(GEN_CPP) camlcode.o main.o -lasmrun \
-	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
+all: $(GEN_CMX) $(CMX) $(GEN_MOC) $(GEN_CPP)
+	$(OCAMLOPT) -package str -linkpkg \
+	 $(GEN_CPP)  $(CLINKLIBS) \
+	-ccopt -L../lib/_build/ ../lib/_build/lablqml.cmxa $(GEN_CMX) $(CMX) -o $(OUT)
 
 depend:
 	ocamlfind dep *.ml *.ml > .depend
 
 library_code:
-	$(OCAMLOPT) -output-obj -dstartup -I ../lib/_build ../lib/_build/qml_wrap.cmxa str.cmxa \
+	$(OCAMLOPT) -output-obj -dstartup -I ../lib/_build ../lib/_build/lablqml.cmxa str.cmxa \
 	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
 
 moc_%.cpp: %.h
@@ -43,4 +42,3 @@ clean:
 
 -include  $(shell ocamlc -where)/Makefile.config
 include .depend
-
