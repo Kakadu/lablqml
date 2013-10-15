@@ -192,18 +192,10 @@ let main () : unit =
       end;
       self#emit_descChanged info
   end in
-  (*
-  let () =
-    let c = Gc.get () in
-    c.Gc.max_overhead <- 1000001 (* disable compactions *)
-  in*)
 
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
-
-
-let () = Callback.register "doCaml" main
 
 let () =
   let app,engine = create_qapplication Sys.argv in
