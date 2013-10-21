@@ -4,13 +4,13 @@ packages/qocamlbrowser.0.2/descr 022c57de438a9d08b4dd688ac4331648 0o644
 packages/qocamlbrowser.0.1/url 82cc6d41a72ba377952883d3805f9a37 0o644
 packages/qocamlbrowser.0.1/opam 552ee655144949be38ceb89308cb5b0f 0o644
 packages/qocamlbrowser.0.1/descr 631d21ff147f343c0b2de268b14b164b 0o644
-packages/mocml.0.1.5/url 19c8819d6a33901fe738f8ac2f736155 0o644
-packages/mocml.0.1.5/opam e0c773ad507eaf8f35bac09ea3cb0c73 0o644
-packages/mocml.0.1.5/descr 5d428b8c93fc8a662905abd118fd8900 0o644
+packages/mocml.0.1.6/url c8e7a0a9345abb7e60b3081ae1d7d06c 0o644
+packages/mocml.0.1.6/opam e0c773ad507eaf8f35bac09ea3cb0c73 0o644
+packages/mocml.0.1.6/descr 5d428b8c93fc8a662905abd118fd8900 0o644
 packages/mocml.0.1.2/url e8078cc163e8706fef32a635e3fdcad5 0o644
 packages/mocml.0.1.2/opam 26e2c0eff31d0df0febe27f7333cac8c 0o644
 packages/mocml.0.1.2/descr 5d428b8c93fc8a662905abd118fd8900 0o644
 archives/qocamlbrowser.0.2+opam.tar.gz 77339903ce87a6f6f82e3e26e0349ed8 0o644
 archives/qocamlbrowser.0.1+opam.tar.gz 3b4065629f9f7df4c00b1579f5a9d3d1 0o644
-archives/mocml.0.1.5+opam.tar.gz a802c491ab56fce86505e4230e33978b 0o644
+archives/mocml.0.1.6+opam.tar.gz 4c46c9b49b1453320db851512a3d1c5e 0o644
 archives/mocml.0.1.2+opam.tar.gz b0b418d4f052a836703ac115d9b39e3d 0o644
