@@ -36,7 +36,9 @@ maybe_exit $? "qmake not found"
 QT_VERSION=`qmake -query QT_VERSION`
 echo "qmake found for Qt $QT_VERSION"
 
-QT_MIN_VERSION="5.0.0"
+# in Qt 5 QtQuick2 was implemented
+# in Qt 5.1 --- QtQuickControls
+QT_MIN_VERSION="5.1.0"
 if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
   echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)"
   exit 1
@@ -51,7 +53,7 @@ QQuickView viewer;
 viewer.show();
 return 0;
 }" > testQtDeclarative.cpp
-g++ -fPIC `pkg-config --cflags Qt5Quick`  testQtDeclarative.cpp `pkg-config --libs Qt5Quick`
+g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --libs Qt5Quick`
 }
 
 compile_test
@@ -108,9 +110,7 @@ generator:\n\
 lib:\n\
 	if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
 	make -C $ROOT_DIR/lib\n\
-folderlistmodel:\n\
-	cd test && ./build_folderlistmodel || exit 1\n\
-test: lib folderlistmodel\n\
+test: lib\n\
 	rm -f $ROOT_DIR/test/.depend && touch $ROOT_DIR/test/.depend
 	cd $ROOT_DIR/test && ./configure && make\n\
 	echo 'Now you can change dir to test and execute ./main -I \`ocamlc -where\`, for example'\n\
@@ -122,3 +122,4 @@ install: generator\n\
 	cp ../src/_build/mocml/mocml.native \$(PREFIX)/bin/mocml\
 \
 " > Makefile
+

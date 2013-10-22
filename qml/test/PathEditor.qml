@@ -64,7 +64,7 @@ Rectangle {
                 folder: "/home/kakadu/.opam/4.00.1/lib"
                 showDotAndDotDot: true
                 showDirsFirst: true
-                showHidden: true
+                //showHidden: true
                 showFiles: false
             }
 
