@@ -2,8 +2,8 @@ MOC=`qmake -query QT_INSTALL_BINS`/moc
 CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I../lib/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g
-CLINKLIBS_=-lstdc++ -L$(shell qmake -query QT_INSTALL_LIBS) -lQt5Quick -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core
-CLINKLIBS=$(addprefix -ccopt , $(CLINKLIBS_))
+CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib -lQt5Quick \
+	-cclib -lQt5Gui -cclib -lQt5Qml -cclib -lQt5Network -cclib -lQt5Core
 OUT=main
 GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
