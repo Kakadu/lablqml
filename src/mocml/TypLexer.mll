@@ -23,9 +23,8 @@ rule token = parse
 | ')'                       { RBRA }
 
 {
-let parse_string s =
-  (*print_endline ("parsing string: " ^ s);
-  flush stdout; *)
+let parse_string_exn s =
   let buf = Lexing.from_string (s^"\n") in
   main token buf
+
 }

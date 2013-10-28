@@ -60,9 +60,20 @@ let () = match options.target with
       exit 1
     );
     let data =
-      try  ParseYaml.Json.parse_file options.filename
-      with exc ->
-        Printf.printf "exception: %s\n" (Exn.to_string exc);
+      try ParseYaml.Json.parse_file options.filename
+      with
+      | exc ->
+        begin match exc with
+        | ParseYaml.Json.ParseError(msg,js) ->
+          print_endline "In:";
+          Yojson.Basic.pretty_to_channel stdout js;
+          printf "\nParse error: %s\n%!" msg;
+          exit 1
+        | Yojson.Json_error msg ->
+          print_endline msg;
+          exit 1
+        | _ -> print_endline (Exn.to_string exc)
+        end;
         Printexc.print_backtrace Out_channel.stdout;
         exit 1
     in
