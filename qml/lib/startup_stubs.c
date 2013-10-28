@@ -1,5 +1,5 @@
 #include "stubs.h"
-static value Val_some(value v) {   
+static value Val_some(value v) {
   CAMLparam1( v );
   CAMLlocal1( some );
   some = caml_alloc(1, 0);
@@ -17,7 +17,7 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   char **copy = new char*[argc+1];
   for (int i = 0; i < argc; i++) {
     //int l = string_length(Field(_argv,i));
-	char *item = String_val(Field(_argv,i)); 
+	char *item = String_val(Field(_argv,i));
 	//qDebug() << "Item: " << item;
     copy[i] = strdup(item);
   }
@@ -26,7 +26,6 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
 
   QGuiApplication *app = new QGuiApplication(*r_argc, copy);
   QQmlEngine* engine = new QQmlEngine();
-  //QQmlComponent *comp = new QQmlComponent(engine);
 
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
@@ -48,18 +47,33 @@ extern "C" value caml_loadQml(value _path, value _engine) {
   CAMLlocal1(_ans);
 
   QQmlEngine *engine = (QQmlEngine*) (Field(_engine,0));
-  QQmlComponent *comp = new QQmlComponent(engine, QUrl(String_val(_path)) );
+  QUrl source(String_val(_path));
+  QQmlComponent *comp = new QQmlComponent(engine, source);
   QObject *topLevel = comp->create(engine->rootContext() );
   if (comp->isError()) {
     qDebug() << comp->errors();
     CAMLreturn(Val_none);
   }
+  Q_ASSERT(topLevel != 0);
+  //qDebug() << "Classname = " << topLevel->metaObject()->className();
+
   QQuickWindow *window = qobject_cast<QQuickWindow*>(topLevel);
+  if (window!=nullptr) {
+    // we have loaded window from QtQuick.Controls probably
+    _ans = caml_alloc_small(1, Abstract_tag);
+    (*((QQuickWindow **) &Field(_ans, 0))) = window;
+    CAMLreturn(Val_some(_ans));
+  } else {
+    // if it is not QtQuick.Controls.ApplicationWindow it seems to be some QQuickItem
+    QQuickItem *item = dynamic_cast<QQuickItem*>(topLevel);
+    Q_ASSERT(item != nullptr);
+    QQuickView *view = new QQuickView(); // QQuickVew is subclass of QQuickWindow
+    view->setContent(source, comp, item);
 
-  _ans = caml_alloc_small(1, Abstract_tag);
-  (*((QQuickWindow **) &Field(_ans, 0))) = window;
-
-  CAMLreturn(Val_some(_ans));
+    _ans = caml_alloc_small(1, Abstract_tag);
+    (*((QQuickView **) &Field(_ans, 0))) = view;
+    CAMLreturn(Val_some(_ans));
+  }
 }
 
 extern "C" value caml_QGuiApplication_exec(value _app) {

@@ -10,6 +10,7 @@
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlComponent>
+#include <QtQuick/QQuickItem>
 
 extern void registerContext(const QString& name, QQmlContext* v);
 extern QModelIndex make_qmodelindex4(int, int, void*, const QAbstractItemModel *);
