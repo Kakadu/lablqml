@@ -1,12 +1,34 @@
 [
-{
-  "classname": "Controller",
-  "methods": [
-      { "name":      "onMouseClicked",
-        "signature": ["unit", "unit"] }
-  ],
-  "properties": [],
-  "slots": [],
-  "signals": []
-}
+  {
+    "classname": "Controller",
+    "methods": [
+        { "name":      "onMouseClicked",
+          "signature": ["unit", "unit"] }
+    ],
+    "properties": [
+      {
+        "name": "x",
+        "get": "x",
+        "set": "setX",
+        "notify": "xChanged",
+        "type": "int"
+      },
+      {
+        "name": "y",
+        "get": "y",
+        "set": "setY",
+        "notify": "yChanged",
+        "type": "int"
+      },
+      {
+        "name": "state",
+        "get": "state",
+        "set": "setState",
+        "notify": "stateChanged",
+        "type": "string"
+      }
+    ],
+    "slots": [],
+    "signals": []
+  }
 ]

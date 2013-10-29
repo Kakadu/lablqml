@@ -18,15 +18,15 @@ CMX_TEST=
 
 all: $(GEN_CMX) $(CMX) $(CMX_TEST) library_code $(GEN_MOC) $(GEN_CPP) main.o
 	$(CLINK) -L`ocamlc -where` \
-	../lib/_build/stubs.o $(GEN_CPP) camlcode.o main.o -lasmrun \
+	../lib/_build/stubs.o ../lib/_build/startup_stubs.o $(GEN_CPP) camlcode.o main.o -lasmrun \
 	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
 depend:
 	ocamlfind dep *.ml *.ml > .depend
 
 library_code:
-	$(OCAMLOPT) -output-obj -dstartup -I ../lib/_build ../lib/_build/qml_wrap.cmxa str.cmxa \
-	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
+	$(OCAMLOPT) -output-obj -dstartup -I ../lib/_build ../lib/_build/lablqml.cmxa str.cmxa \
+	$(GEN_CMX) $(CMX) -linkall -o camlcode.o
 
 moc_%.cpp: %.h
 	$(MOC) $< > $@
@@ -42,4 +42,3 @@ clean:
 
 -include  $(shell ocamlc -where)/Makefile.config
 include .depend
-
