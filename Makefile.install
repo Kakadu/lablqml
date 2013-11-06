@@ -1,10 +1,14 @@
-.PHONY: install uninstall
-all: install
 
-install:
-		cp src/_build/mocml/mocml.native $(PREFIX)/bin/mocml
-		cp doc/man/mocml.1 $(MAN)/man1/mocml.1
+install.mocml:
+	cp src/_build/mocml/mocml.native $(PREFIX)/bin/mocml
+	cp doc/man/mocml.1 $(MAN)/man1/mocml.1
 
-uninstall:
-		rm -fr $(PREFIX)/bin/mocml $(MAN)/man1/mocml.1
+install.lablqml:
+	$(MAKE) -C lablqml install 
+
+install: install.mocml install.lablqml
+
+opam.install:
+	$(MAKE) install PREFIX=`opam config var prefix` MAN=`opam config var man` 
+
 

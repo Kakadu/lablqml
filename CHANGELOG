@@ -1,3 +1,13 @@
+0.1.8
+Clearing, reorganizing repository. Removing QtGUI outdated features. 
+Preparing for Qt 5.2 release.
+
+0.1.7
+Now we can statup with Rectangle {} and ApplicationWindow {} both.
+
+0.1.6
+Now we can startup from OCaml
+
 0.1.5
 Added signal argnames specification
 
