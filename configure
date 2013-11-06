@@ -111,7 +111,7 @@ generator:\n\
 lib:\n\
 	if [ ! -e $ROOT_DIR/lablqml/Makefile ]; then cd $ROOT_DIR/lablqml && ./configure; fi\n\
 	make -C $ROOT_DIR/lablqml\n\
-test: lib\n\
+test:\n\
 	cd $ROOT_DIR/qml/test && ./configure && make\n\
 	echo 'Now you can change dir to qml/test and execute './main', for example'\n\
 clean:\n\
