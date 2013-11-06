@@ -1,10 +1,10 @@
 There you can find my experienca about interfacing OCaml and Qt.
 
-* QtQuick 2.0 (from Qt5) + OCaml stuff is in `qml/`.
-* QtGui + OCaml is probably outdated and not compiled. I have paused my work with it. See build environment in `qtgui/`
-* Both project share same codegenerator which is located in `src/`
+* Code generator for QtQuick 2.0 is in `src`.
+* Library for interfacing with QtQuick 2 is in `lablqml`.
+* Test example is now in `qml/test`
 
-See corresponding READMEs for more details
+Use `./configure && make` to build it. Don't forget to install good Qt version.
 
 Happy hacking,
 Kakadu
