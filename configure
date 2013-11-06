@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Script for building OCaml+QML from cold start
+echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
+
+function verlte() {
+    [ "$1" = "`echo -e "$1\n$2" | sort | head -n1`" ]
+}
+
+function maybe_exit() {
+  if [ $1 != 0 ]; then
+    echo "ERROR: $2"
+    exit 1
+  fi
+}
+ROOT_DIR=$PWD
+# checking ocaml version
+OCAML_VERSION_MIN="4.00.1"
+OCAML_VERSION=`ocamlc -version`
+maybe_exit $? "ocamlc executable not found"
+if ! verlte $OCAML_VERSION_MIN $OCAML_VERSION ; then
+  echo "Minimal OCaml version is $OCAML_VERSION_MIN (your is $OCAML_VERSION)"
+  exit
+else
+  echo "OCaml $OCAML_VERSION found."
+fi
+
+#TODO: maybe add g++ version checking
+
+# checking for ocamlfind
+OCAMLFIND_LOC=`which ocamlfind`
+maybe_exit $? "ocamlfind not found"
+echo "ocamlfind found."
+
+#checking Qt installation
+OCAMLFIND_LOC=`which qmake`
+maybe_exit $? "qmake not found"
+QT_VERSION=`qmake -query QT_VERSION`
+echo "qmake found for Qt $QT_VERSION"
+
+# in Qt 5 QtQuick2 was implemented
+# in Qt 5.1 --- QtQuickControls
+QT_MIN_VERSION="5.1.0"
+if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
+  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)"
+  exit 1
+fi
+
+function compile_test() {
+# tries to build test C++ application with Qt linking
+cd /tmp
+echo "#include <QtQuick/qquickview.h>
+int main() {
+QQuickView viewer;
+viewer.show();
+return 0;
+}" > testQtDeclarative.cpp
+g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --libs Qt5Quick`
+}
+
+compile_test
+if [ $? != 0 ]; then
+  echo "Linking test C++ application failed"
+  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 for website there is \
+  a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
+    Libs: -L\${libdir} -lQt5Core\n\
+  for\n\
+    Libs: -Wl,-rpath,\${libdir} -L\${libdir} -lQt5Core\n"
+  exit 1
+else
+  echo "Test C++ aplication built successfully"
+fi
+cd $ROOT_DIR
+
+
+OCAML_PACKAGES=(core yojson ocamlgraph) #required ocaml packages
+res=0
+
+for item in ${OCAML_PACKAGES[*]}
+do
+  LOC=`ocamlfind query $item`
+  if [ $? != 0 ]; then
+    #echo "OCaml package $item not found."
+    res=$(($res+1))
+  else
+    echo "OCaml package $item found at $LOC."
+    if [ $item == "core" ]; then
+      echo "Do something about core"
+      CORE_VERSION=`ocamlfind query core -format %v`
+      CORE_VERSION_MIN="109.21.00"
+      if ! verlte $CORE_VERSION_MIN $CORE_VERSION ; then
+        echo "Core version >=$CORE_VERSION_MIN (your is $CORE_VERSION) is needed"
+        exit 1
+      fi
+    fi
+  fi
+  #printf "   %s\n" $item
+done
+if [ $res != 0 ]; then
+  echo "There are packages to install. Exit."
+  exit 1
+fi
+
+echo "Generating Makefile"
+echo -e "\
+.PHONY: all generator lib test\n\
+all: generator lib test\n\
+	\n\
+generator:\n\
+	cd $ROOT_DIR/src; ./configure && ocamlbuild mocml/mocml.native
+	rm -f $ROOT_DIR/qml/test/mocml && ln -s $ROOT_DIR/src/mocml.native $ROOT_DIR/qml/test/mocml\n\
+lib:\n\
+	if [ ! -e $ROOT_DIR/lablqml/Makefile ]; then cd $ROOT_DIR/lablqml && ./configure; fi\n\
+	make -C $ROOT_DIR/lablqml\n\
+test: lib\n\
+	cd $ROOT_DIR/qml/test && ./configure && make\n\
+	echo 'Now you can change dir to qml/test and execute './main', for example'\n\
+clean:\n\
+	rm -f $ROOT_DIR/qml/test/.depend && touch $ROOT_DIR/qml/test/.depend && \$(MAKE) -C test clean\n\
+	\$(MAKE) -C lablqml clean\n\
+	\$(MAKE) -C $ROOT_DIR/src clean\n\
+\n\
+" > Makefile
+cat Makefile.install >> Makefile
+
