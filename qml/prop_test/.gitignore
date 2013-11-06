@@ -11,3 +11,7 @@ Qt/
 folderlistmodel/libqmlfolderlistmodelplugin.prl
 folderlistmodel/libqmlfolderlistmodelplugin.so*
 
+Controller.ml
+Controller_c.cpp
+Controller_c.h
+
