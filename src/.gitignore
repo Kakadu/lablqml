@@ -1,7 +1,5 @@
-generator.byte
-generator.native
-xmltool.byte
-xmltool.native
 mocml.byte
 mocml.native
 setup.data
+setup.log
+

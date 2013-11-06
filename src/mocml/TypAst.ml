@@ -130,8 +130,7 @@ let of_verbose_typ_exn typ: t =
     | {t_name="QList"; t_indirections=0; t_params=[p]; _} ->
         `List (helper p)
     | x -> raise (Cant_convert_cpptype x)
-  in(*
-  print_endline typ.t_name; *)
+  in
   helper typ
 
 let of_verbose_typ x =

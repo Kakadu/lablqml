@@ -6,30 +6,10 @@ Authors:     Kakadu
 License:     LGPL-3.0 with OCaml linking exception
 Plugins:     DevFiles (0.3)
 
-Library lablqt
-  Path:             lib
-  BuildDepends:     core,tyxml,sexplib.syntax,sexplib,threads,str,tyxml.parser,ocamlgraph
-  Modules:          Generators,CppGenerator,OcamlGenerator,Parser,SuperIndex,Simplexmlwriter,Filter
-  BuildTools:       ocamlbuild
-  
-Executable generator
-  Path:             generator
-  BuildTools:       ocamlbuild
-  BuildDepends:     lablqt,threads,core
-  CompiledObject:   native
-  MainIs:           generator.ml
-  
-Executable xmltool
-  Path:             xmltool
-  BuildTools+:      ocamlbuild,ocamllex,ocamlyacc
-  BuildDepends:     lablqt,core,sexplib,threads
-  CompiledObject:   native
-  MainIs:           xmltool.ml
-  
 Executable mocml
   Path:             mocml
   BuildTools:       ocamlbuild
-  BuildDepends:     lablqt,sexplib.syntax,sexplib,core,threads,str,yojson
+  BuildDepends:     sexplib.syntax,sexplib,core,threads,str,yojson
   CompiledObject:   native
   MainIs:           mocml.ml
-  
+

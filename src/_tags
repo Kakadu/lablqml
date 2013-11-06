@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 711b2fafb59229173a2f85ec521f9ec6)
+# DO NOT EDIT (digest: d4a16d5c1ae15e407ca1fbda3d91c5cd)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -13,78 +13,23 @@
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
-# Library lablqt
-"lib/lablqt.cmxs": use_lablqt
-<lib/*.ml{,i}>: pkg_sexplib.syntax
-<lib/*.ml{,i}>: pkg_sexplib
-<lib/*.ml{,i}>: pkg_core
-<lib/*.ml{,i}>: pkg_threads
-<lib/*.ml{,i}>: pkg_str
-<lib/*.ml{,i}>: pkg_tyxml
-<lib/*.ml{,i}>: pkg_tyxml.parser
-<lib/*.ml{,i}>: pkg_ocamlgraph
-# Executable generator
-"generator/generator.native": use_lablqt
-"generator/generator.native": pkg_sexplib.syntax
-"generator/generator.native": pkg_sexplib
-"generator/generator.native": pkg_core
-"generator/generator.native": pkg_threads
-"generator/generator.native": pkg_str
-"generator/generator.native": pkg_tyxml
-"generator/generator.native": pkg_tyxml.parser
-"generator/generator.native": pkg_ocamlgraph
-<generator/*.ml{,i}>: use_lablqt
-<generator/*.ml{,i}>: pkg_sexplib.syntax
-<generator/*.ml{,i}>: pkg_sexplib
-<generator/*.ml{,i}>: pkg_core
-<generator/*.ml{,i}>: pkg_threads
-<generator/*.ml{,i}>: pkg_str
-<generator/*.ml{,i}>: pkg_tyxml
-<generator/*.ml{,i}>: pkg_tyxml.parser
-<generator/*.ml{,i}>: pkg_ocamlgraph
-# Executable xmltool
-"xmltool/xmltool.native": use_lablqt
-"xmltool/xmltool.native": pkg_sexplib.syntax
-"xmltool/xmltool.native": pkg_sexplib
-"xmltool/xmltool.native": pkg_core
-"xmltool/xmltool.native": pkg_threads
-"xmltool/xmltool.native": pkg_str
-"xmltool/xmltool.native": pkg_tyxml
-"xmltool/xmltool.native": pkg_tyxml.parser
-"xmltool/xmltool.native": pkg_ocamlgraph
-<xmltool/*.ml{,i}>: use_lablqt
-<xmltool/*.ml{,i}>: pkg_sexplib.syntax
-<xmltool/*.ml{,i}>: pkg_sexplib
-<xmltool/*.ml{,i}>: pkg_core
-<xmltool/*.ml{,i}>: pkg_threads
-<xmltool/*.ml{,i}>: pkg_str
-<xmltool/*.ml{,i}>: pkg_tyxml
-<xmltool/*.ml{,i}>: pkg_tyxml.parser
-<xmltool/*.ml{,i}>: pkg_ocamlgraph
 # Executable mocml
-"mocml/mocml.native": use_lablqt
 "mocml/mocml.native": pkg_sexplib.syntax
 "mocml/mocml.native": pkg_sexplib
 "mocml/mocml.native": pkg_core
 "mocml/mocml.native": pkg_threads
 "mocml/mocml.native": pkg_str
 "mocml/mocml.native": pkg_yojson
-"mocml/mocml.native": pkg_tyxml
-"mocml/mocml.native": pkg_tyxml.parser
-"mocml/mocml.native": pkg_ocamlgraph
-<mocml/*.ml{,i}>: use_lablqt
 <mocml/*.ml{,i}>: pkg_sexplib.syntax
 <mocml/*.ml{,i}>: pkg_sexplib
 <mocml/*.ml{,i}>: pkg_core
 <mocml/*.ml{,i}>: pkg_threads
 <mocml/*.ml{,i}>: pkg_str
 <mocml/*.ml{,i}>: pkg_yojson
-<mocml/*.ml{,i}>: pkg_tyxml
-<mocml/*.ml{,i}>: pkg_tyxml.parser
-<mocml/*.ml{,i}>: pkg_ocamlgraph
 # OASIS_STOP
 "mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
 "mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
 "lib/generators.ml": syntax_camlp4o, package_sexplib.syntax
 "lib/parser.ml": syntax_camlp4o, package_sexplib.syntax
+"mocml/Parser.ml": syntax_camlp4o, package_sexplib.syntax
 true: debug

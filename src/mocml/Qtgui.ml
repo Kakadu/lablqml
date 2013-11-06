@@ -83,7 +83,7 @@ let gen_meth ~classname ~ocaml_methname ?(invokable=false)
       | c when is_qt_classname c -> sprintf " (%s)%s" c varname
       | s -> failwithf "Can't create cast of `%s`" s ()
     in
-    if (res = `Simple "void" or res = `Simple "unit") then begin
+    if (res = `Simple "void" || res = `Simple "unit") then begin
       print_cpp "  %s;\n" call_closure_str;
       print_cpp "  CAMLreturn0;\n"
     end else begin
