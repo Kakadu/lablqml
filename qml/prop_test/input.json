@@ -30,5 +30,28 @@
     ],
     "slots": [],
     "signals": []
-  }
+  },
+
+{ "classname": "IntModel"
+, "basename" : "QAbstractItemModel"
+, "methods"  : []
+, "properties":[]
+, "slots"     :[]
+, "signals"   :[]
+},
+
+{ "classname": "DataItem"
+, "methods": []
+, "properties": [
+        { "name": "cellX"
+        , "get":  "cellX"
+        , "notify": "cellXChanged"
+        , "type": "int"
+        }
+  ]
+, "slots": []
+, "signals": []
+}
+
 ]
+

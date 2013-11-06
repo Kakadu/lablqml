@@ -4,14 +4,49 @@ let () = Printexc.record_backtrace true
 
 open QmlContext
 
+class virtual abstractListModel cppobj = object(self)
+  inherit IntModel.base_IntModel cppobj as super
+  method parent _ = QModelIndex.empty
+  method index row column parent =
+    if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
+    else QModelIndex.empty
+  method columnCount _ = 1
+  method hasChildren _ = self#rowCount QModelIndex.empty > 0
+end
+
 let main () =
+  let cpp_model = IntModel.create_IntModel () in
+  let myDefaultRoleMainModel = 555 in
+  IntModel.add_role cpp_model myDefaultRoleMainModel "cellX";
+
+  let data = List.map (fun n ->
+    let cppObj = DataItem.create_DataItem () in
+      object(self)
+        inherit DataItem.base_DataItem cppObj as super
+        method cellX () = n
+      end
+  ) [1;2;3] in
+
+  let model = object(self)
+    inherit abstractListModel cpp_model as super
+    method rowCount _ = 3
+    method data index role =
+      let n = QModelIndex.row index in
+      if (n<0 || n>= List.length data) then QVariant.empty
+      else begin
+        if (role=0 || role=myDefaultRoleMainModel) (* DisplayRole *)
+        then QVariant.of_int ((List.nth data n)#cellX ())
+        else QVariant.empty
+      end
+  end in
+
   let controller_cppobj = Controller.create_Controller () in
   let controller = object(self)
     val mutable _x = 0
     val mutable _y = 0
     val mutable _state = "state1"
     inherit Controller.base_Controller controller_cppobj as super
-    method onMouseClicked () = self#setX (_x+1); print_endline "Mouse Clicked!"
+    method onMouseClicked () = self#setX (_x+10); print_endline "Mouse Clicked!"
     method y () = _y
     method x () = _x
     method state () = _state
@@ -24,6 +59,7 @@ let main () =
 
   end in
 
-  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler;
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"intModel"   model#handler
 
 let () = Callback.register "doCaml" main

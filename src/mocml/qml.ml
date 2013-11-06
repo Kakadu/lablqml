@@ -41,11 +41,16 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
         | `Float   -> raise (Bug "Floats are not implemented yet")
         | `QVariant->
             print_cpp "%sif (Is_block(%s)) {\n" prefix var;
-            print_cpp "%s  if (caml_hash_variant(\"string\")==Field(%s,0))\n" prefix var;
+            print_cpp "%s  if (caml_hash_variant(\"string\") == Field(%s,0))\n" prefix var;
             print_cpp "%s    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));\n" prefix dest var;
-            print_cpp "%s  else if(caml_hash_variant(\"qobject\")==Field(%s,0)) {\n" prefix var;
+            print_cpp "%s  else if(caml_hash_variant(\"int\") == Field(%s,0))\n" prefix var;
+            print_cpp "%s    %s = QVariant::fromValue(Int_val(Field(%s,1)));\n" prefix dest var;
+            print_cpp "%s  else if(caml_hash_variant(\"qobject\") == Field(%s,0))\n" prefix var;
             print_cpp "%s    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));\n" prefix dest var;
-            print_cpp "%s  } else Q_ASSERT(false);\n" prefix;
+            print_cpp "%s  else Q_ASSERT_X(false,\"%s\",\"%s\");\n"
+              prefix
+              "While converting OCaml value to QVariant"
+              "Unknown variant tag";
             print_cpp "%s} else // empty QVariant\n" prefix;
             print_cpp "%s    %s = QVariant();\n" prefix dest;
         | `QKeyEvent   -> assert false
@@ -133,6 +138,7 @@ let ocaml_value_of_cpp ~tab ch (get_var,release_var) ~ocamlvar ~cppvar typ =
       | `QVariant ->
           print_cpp "%sif (!%s.isValid())\n" prefix var;
           print_cpp "%s  %s=hash_variant(\"empty\");\n" prefix var;
+          (* Should we check case when QVariant holds int? When this case appears? *)
           print_cpp "%selse if(%s.type() == QMetaType::QString) {\n" prefix var;
           print_cpp "%s  %s = caml_alloc(2,0);\n" prefix dest;
           print_cpp "%s  Store_field(%s,0,%s);\n" prefix dest "hash_variant(\"string\")";

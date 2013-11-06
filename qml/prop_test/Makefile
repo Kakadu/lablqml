@@ -5,7 +5,7 @@ CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I$(LABLQML)/_build -I`
 CLINK=g++ -g
 CLINKLIBS=`pkg-config --libs Qt5Quick`
 OUT=main
-GEN_CMX=Controller.cmx
+GEN_CMX=Controller.cmx IntModel.cmx DataItem.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
 GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.cpp=.o)
 GEN_MOC=$(GEN_CMX:.cmx=_c.cpp)
@@ -43,4 +43,3 @@ clean:
 
 -include  $(shell ocamlc -where)/Makefile.config
 include .depend
-
