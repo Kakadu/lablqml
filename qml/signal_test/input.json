@@ -1,0 +1,19 @@
+[
+  {
+    "classname": "Controller",
+    "methods": [
+        { "name":      "onMouseClicked",
+          "signature": ["unit", "unit"] }
+    ],
+    "properties": [
+    ],
+    "signals": [
+      { "name":      "ebanashka"
+      , "args":     ["string"]
+      , "argnames": ["message"]
+      }
+    ]
+  }
+
+]
+
