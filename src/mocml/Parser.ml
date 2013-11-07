@@ -1,5 +1,5 @@
 open Sexplib.Conv
-open Core.Std
+open Core_kernel.Std
 
 type cpptype = { t_name:string; t_is_const:bool; t_indirections:int; t_is_ref:bool; t_params: cpptype list }
 and func_arg = { arg_type:cpptype; arg_name:string option; arg_default: string option }

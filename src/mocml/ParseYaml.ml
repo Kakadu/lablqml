@@ -1,6 +1,6 @@
 (* Parsing config file *)
-open Core
-open Core.Std
+open Core_kernel
+open Core_kernel.Std
 
 let (|>) a f = f a
 
@@ -30,7 +30,7 @@ let parse filename : (string * (string list)) list =
   ans
 
 module Yaml2 = struct
-  open Core
+  open Core_kernel
   open Sexplib.Conv
   open Parser
 

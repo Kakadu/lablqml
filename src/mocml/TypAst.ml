@@ -1,8 +1,8 @@
 open Sexplib.Conv
-open Core.Std
+open Core_kernel.Std
 open Printf
 
-let (|>) = Core.Fn.(|!)
+let (|>) = Core_kernel.Fn.(|!)
 
 type t =
   [ `QModelIndex | `Bool | `Unit | `String | `Int | `Float | `Tuple of t list | `List of t

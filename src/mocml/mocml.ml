@@ -1,5 +1,5 @@
-open Core
-open Core.Std
+open Core_kernel
+open Core_kernel.Std
 open ParseYaml
 open Printf
 open Helpers
@@ -55,7 +55,7 @@ let () = match options.target with
     ()
   end
   | `Qml_wrap -> begin
-    if Core_sys.file_exists options.filename <> `Yes then (
+    if not (Sys.file_exists options.filename) then (
       Printf.printf "File '%s' not found\n" options.filename;
       exit 1
     );

@@ -1,5 +1,5 @@
-open Core
-open Core.Std
+open Core_kernel
+open Core_kernel.Std
 open ParseYaml
 open Printf
 open Helpers
@@ -163,10 +163,10 @@ let gen_cpp {classname; members; slots; props; _ } =
   print_h "#endif\n\n";
 
   let h_file = open_out (classname ^ ".h") in
-  B.output_buffer h_file h_buf;
+  output_string h_file (B.contents h_buf);
   Out_channel.close h_file;
   let cpp_file = open_out (classname ^ ".cpp") in
-  B.output_buffer cpp_file cpp_buf;
+  output_string cpp_file (B.contents cpp_buf);
   Out_channel.close cpp_file
 
 let gen_ml ?(directory=".") {classname; members; slots; props; _ } =
@@ -199,5 +199,5 @@ let gen_ml ?(directory=".") {classname; members; slots; props; _ } =
 
   p "end\n";
   let ch = open_out (directory ^/ classname^".ml") in
-  B.output_buffer ch h_buf;
+  output_string ch (B.contents h_buf);
   Out_channel.close ch

@@ -1,5 +1,5 @@
-open Core
-open Core.Std
+open Core_kernel
+open Core_kernel.Std
 open ParseYaml
 open Printf
 open Helpers
@@ -448,10 +448,10 @@ let gen_cpp {classname; members; slots; props; _ } =
   print_h "#endif\n\n";
 
   let header_ch = open_out (classname ^ ".h") in
-  B.output_buffer header_ch h_file;
+  output_string header_ch (Bigbuffer.contents h_file);
   Out_channel.close header_ch;
   let cpp_ch    = open_out (classname ^ ".cpp") in
-  B.output_buffer cpp_ch cpp_file;
+  output_string cpp_ch (Bigbuffer.contents cpp_file);
   Out_channel.close cpp_ch
 
 let gen_ml {classname; members; slots; props; _ } =
@@ -472,5 +472,5 @@ let gen_ml {classname; members; slots; props; _ } =
 
   p "end\n";
   let file = open_out ("ocaml/"^classname^".ml") in
-  B.output_buffer file ch;
+  output_string file (Bigbuffer.contents ch);
   Out_channel.close file

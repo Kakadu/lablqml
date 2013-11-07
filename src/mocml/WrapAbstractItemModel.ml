@@ -1,5 +1,5 @@
-open Core
-open Core.Std
+open Core_kernel
+open Core_kernel.Std
 open Parser
 open Qml
 

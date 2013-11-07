@@ -1,5 +1,5 @@
-open Core
-open Core.Std
+open Core_kernel
+open Core_kernel.Std
 module B=Bigbuffer
 open Helpers
 open B.Printf
@@ -279,6 +279,6 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_ml "%s\n" (B.contents clas_def_buf);
   p_ml "%s\n" (B.contents external_buf);
 
-  with_file (directory ^/ classname ^ "_c.cpp") (fun file -> B.output_buffer file b_c);
-  with_file (directory ^/ classname ^ "_c.h")   (fun file -> B.output_buffer file b_h);
-  with_file (directory ^/ classname ^ ".ml")  (fun file -> B.output_buffer file b_ml)
+  with_file (directory ^/ classname ^ "_c.cpp") (fun file -> output_string file (B.contents b_c));
+  with_file (directory ^/ classname ^ "_c.h")   (fun file -> output_string file (B.contents b_h));
+  with_file (directory ^/ classname ^ ".ml")    (fun file -> output_string file (B.contents b_ml))

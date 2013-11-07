@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: d4a16d5c1ae15e407ca1fbda3d91c5cd)
+# DO NOT EDIT (digest: 784c032ca0b24b88c3a25f5cd924ea80)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -16,13 +16,13 @@
 # Executable mocml
 "mocml/mocml.native": pkg_sexplib.syntax
 "mocml/mocml.native": pkg_sexplib
-"mocml/mocml.native": pkg_core
+"mocml/mocml.native": pkg_core_kernel
 "mocml/mocml.native": pkg_threads
 "mocml/mocml.native": pkg_str
 "mocml/mocml.native": pkg_yojson
 <mocml/*.ml{,i}>: pkg_sexplib.syntax
 <mocml/*.ml{,i}>: pkg_sexplib
-<mocml/*.ml{,i}>: pkg_core
+<mocml/*.ml{,i}>: pkg_core_kernel
 <mocml/*.ml{,i}>: pkg_threads
 <mocml/*.ml{,i}>: pkg_str
 <mocml/*.ml{,i}>: pkg_yojson
