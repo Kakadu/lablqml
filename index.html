@@ -7,7 +7,7 @@ font-size:  18px;
 font-weight: 200;
 line-height: 31.5px;
 text-rendering: optimizelegibility;
-color: rgb(45,45,45);
+color: rgb(0,0,0);
 }
 </style>
 <script src="scripts/jquery-2.0.2.min.js"></script>
@@ -91,14 +91,15 @@ color: rgb(45,45,45);
 </p>
 <p>
 <h3 id="status">Current status</h3>
-The first I should mention is that this project (also known as lablqt) is not bindings as people usually understand it. It was going to be bindings but I realised to generate code for widgets is not very easy and the result will not be convenient enough to deal with (is short words: too many inheritance in Qt Widgets). Also, Qt5 has been realised where <b>Qt Widgets have been claimed as obsolete</b> and a modern for declaratively creating GUI recommended. It uses QML markup to declare GUI, ECMAscript for simple scripting GUI-related actions for controls and C++ for implemeting speed-sensitive business-logic.
+The first I should mention is that this project (also known as lablqt) is not bindings as people usually understand it. It was going to be bindings but I realised it is not very easy to generate code for all widgets and the result will not be convenient enough to deal with (in short: too many inheritance in Qt widgets). Also, Qt5 has been released where Qt Widgets seems to be claimed obsolete</b> and a modern approach for creating GUI declaratively is recommended. It uses QML markup to declare GUI, ECMAscript for simple scripting GUI-related actions for GUI controls, and C++ for implemeting speed-sensitive business logic.
 <br/>
-At the current moment I think that with my project it is to replace C++ by OCaml (for small application). For big ones some improvements probably not because complex controls could be needed which are inconvinient to implement in pure QML+ECMAScript. I need to pick some big GUI project and test it.
+At the current moment I think that with my project is well enough for replacing C++ by OCaml in small applications. In large GUI applications we will probably need to implement some GUI controls in compilable language (like C++). My library doesn't allow implementing these controls in OCaml at this moment. But when I will know in what cases this complex controls are need I'm going to improve library. Maybe I need to pick some big GUI project and rewrite GUI for it.
 </p>
 
 <p id="todo">
 <h3>TODO</h3>
 <ul>
+<li>Announce library version 0.2 after Qt 5.2 release in December.</li>
 <li>Integrate my OPAM repo with default one</li>
 <li>Think about QtWidgets again</li>
 <li>How to cooperate with wxOCaml</li>
@@ -111,7 +112,7 @@ At the current moment I think that with my project it is to replace C++ by OCaml
 
 <p id="opam">
 <h3>Lablqt in OPAM</h3>
-<b>N.B.</b>You need Qt5(&gt;=5.0.0) to compile. Please be sure that dev packages are installed too.
+<b>N.B.</b>You need Qt5(&gt;=5.2.0) to compile. Please, be sure that dev packages are installed too.
 
 <pre>
 opam remote add lablqt http://kakadu.github.io/lablqt/opam
