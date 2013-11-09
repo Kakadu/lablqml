@@ -19,31 +19,24 @@ static value Val_some(value v) {
 // string array -> QGuiApplication.t * QQmlEngine.t
 extern "C" value caml_create_QGuiApplication(value _argv) {
   CAMLparam1(_argv);
-  CAMLlocal3(_ans,_1,_0);
+  CAMLlocal3(_ans,_app,_engine);
 
-  int argc = Wosize_val(_argv);
-  char **copy = new char*[argc+1];
-  for (int i = 0; i < argc; i++) {
-	char *item = String_val(Field(_argv,i));
-    copy[i] = strdup(item);
-  }
-  copy[argc] = NULL;
-  int* r_argc = new int(argc);
+  ARGC_N_ARGV(_argv, copy)
 
-  QGuiApplication *app = new QGuiApplication(*r_argc, copy);
+  QGuiApplication *app = new QGuiApplication(argc, copy);
   QQmlEngine* engine = new QQmlEngine();
 
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
 
-  _0 = caml_alloc_small(1, Abstract_tag);
-  (*((QGuiApplication **) &Field(_0, 0))) = app;
-  _1 = caml_alloc_small(1, Abstract_tag);
-  (*((QQmlEngine **) &Field(_1, 0))) = engine;
+  _app = caml_alloc_small(1, Abstract_tag);
+  (*((QGuiApplication **) &Field(_app, 0))) = app;
+  _engine = caml_alloc_small(1, Abstract_tag);
+  (*((QQmlEngine **) &Field(_engine, 0))) = engine;
 
   _ans = caml_alloc(2,0);
-  Store_field(_ans, 0, _0);
-  Store_field(_ans, 1, _1);
+  Store_field(_ans, 0, _app);
+  Store_field(_ans, 1, _engine);
   CAMLreturn(_ans);
 }
 
@@ -95,13 +88,12 @@ extern "C" value caml_QQuickWindow_showMaximized(value _w) {
   CAMLreturn(Val_unit);
 }
 
-// argv -> (context -> unit) -> string -> unit
+// argv -> (unit -> unit) -> string -> unit
 extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
   CAMLparam3(_argv, _cb, _qmlpath);
   CAMLlocal2(_ctx, _cb_res);
 
-  ARGC_N_ARGV(_argv,copy);
-  qDebug() << "argc = " << argc;
+  ARGC_N_ARGV(_argv, copy);
   QApplication app(argc, copy);
   QQmlApplicationEngine engine;
   QQmlContext *ctxt = engine.rootContext();

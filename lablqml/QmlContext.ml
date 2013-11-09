@@ -54,13 +54,18 @@ module QQuickWindow = struct
   external showMaximized: t -> unit = "caml_QQuickWindow_showMaximized"
 end
 
-external create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
+external create_qguiapplication_stub : string array -> QGuiApplication.t * QQmlEngine.t
   = "caml_create_QGuiApplication"
-external loadQml: string -> QQmlEngine.t -> QQuickWindow.t option
-  = "caml_loadQml"
+let create_qapplication argv = create_qguiapplication_stub argv
 
-external run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
+external loadQml_stub: string -> QQmlEngine.t -> QQuickWindow.t option = "caml_loadQml"
+let loadQml path engine = loadQml_stub path engine
+
+external run_with_QQmlApplicationEngine_stub : string array -> (unit -> unit) -> string -> unit
   = "caml_run_QQmlApplicationEngine"
+
+(* TODO: add labeled arguments *)
+let run_with_QQmlApplicationEngine argv init path = run_with_QQmlApplicationEngine_stub argv init path
 
 type qvariantable
 type non_qvariantable

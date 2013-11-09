@@ -33,12 +33,14 @@ module QQuickWindow : sig
   val showMaximized : t -> unit
 end
 
-external create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
-    = "caml_create_QGuiApplication"
-external loadQml : string -> QQmlEngine.t -> QQuickWindow.t option
-    = "caml_loadQml"
-external run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
-    = "caml_run_QQmlApplicationEngine"
+(** Creates QGuiApplication. No platform-dependent styling applied. *)
+val create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
+
+(** Creates QQuickWindow using file and QQmlEngine *)
+val loadQml : string -> QQmlEngine.t -> QQuickWindow.t option
+
+(** Initializates and open QQuickWindow. Uses platform dependent styling *)
+val run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
 
 type qvariantable
 type non_qvariantable

@@ -6,9 +6,7 @@ let () = Printexc.record_backtrace true
 open QmlContext
 
 type options = { mutable path: string list }
-
 let options = { path = [Config.standard_library]  }
-
 
 let () =
   let usage_msg = "This is OCamlBrowser clone written in QtQuick 2.0." in
@@ -75,7 +73,6 @@ let initial_cpp_data () : (abstractListModel * DataItem.base_DataItem list) list
   cpp_data_helper xs
 
 let item_selected controller mainModel x y : unit =
-  printf "Item selected: %d,%d\n%!" x y;
   let last_row = List.length !cpp_data - 1 in
   let (new_selected,redraw_from) = Tree.change_state !selected (x,y) !root in
   let leaf_selected =
@@ -86,11 +83,9 @@ let item_selected controller mainModel x y : unit =
 
   let cpp_data_head = List.take !cpp_data ~n:redraw_from in
   if redraw_from <= last_row then begin
-    printf "Delete some rows\n%!";
     mainModel#beginRemoveRows QModelIndex.empty redraw_from (List.length !cpp_data-1);
     cpp_data := cpp_data_head;
     mainModel#endRemoveRows ();
-    printf "Rows deleted!\n%!"
   end else begin
     cpp_data := cpp_data_head;
   end;
@@ -176,10 +171,8 @@ let main () : unit =
             "<no description. Bug!>"
     method getFullPath () =
       let indexes = if List.last !selected = -1 then List.(!selected |> rev |> tl |> rev) else !selected in
-      (*printf "List.length indexes = %d\n" (List.length indexes);*)
       assert (List.for_all (fun  x -> x>=0 ) indexes);
       let proj = Tree.proj !root indexes |> List.take ~n:(List.length indexes) in
-      (*printf "List.length proj = %d\n%!" (List.length proj);*)
       assert (List.length proj = List.length indexes);
       List.map2 proj indexes ~f:(fun xs n -> let x = List.nth xs ~n in x.Tree.name) |> String.concat "."
 
@@ -196,15 +189,5 @@ let main () : unit =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
-
 let () =
   run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
-(*
-  let app,engine = create_qapplication Sys.argv in
-  main ();
-  match loadQml "Root.qml" engine with
-  | Some w ->
-    QQuickWindow.showMaximized w;
-    QGuiApplication.exec  app
-  | None -> print_endline "Error during loading QML file"; exit 1
-*)
