@@ -12,7 +12,7 @@ Library lablqml
   Modules:      QmlContext
   DataFiles:    stubs.h,kamlo.h
   CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c,startup_stubs.c
-  CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Qml Qt5Quick` -O2 -Dprivate=public
+  CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Widgets Qt5Quick` -O2 -Dprivate=public
 
 #Test test1
 #  Command: test1
