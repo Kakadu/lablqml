@@ -3,6 +3,7 @@
 
 #include "kamlo.h"
 
+#include <QApplication>
 #include <QtCore/QAbstractItemModel>
 #include <QtQuick/qquickview.h>
 #include <QtCore/QDebug>
@@ -10,6 +11,7 @@
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlComponent>
+#include <QtQml/QQmlApplicationEngine>
 #include <QtQuick/QQuickItem>
 
 extern void registerContext(const QString& name, QQmlContext* v);

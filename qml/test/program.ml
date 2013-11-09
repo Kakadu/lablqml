@@ -198,6 +198,8 @@ let main () : unit =
 
 
 let () =
+  run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
+(*
   let app,engine = create_qapplication Sys.argv in
   main ();
   match loadQml "Root.qml" engine with
@@ -205,3 +207,4 @@ let () =
     QQuickWindow.showMaximized w;
     QGuiApplication.exec  app
   | None -> print_endline "Error during loading QML file"; exit 1
+*)

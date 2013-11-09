@@ -6,6 +6,15 @@ static value Val_some(value v) {
   Store_field( some, 0, v );
   CAMLreturn( some );
 }
+#define ARGC_N_ARGV(_argv,copy)\
+  int argc = Wosize_val(_argv);\
+  char **copy = new char*[argc+1];\
+  for (int i = 0; i < argc; i++) {\
+	char *item = String_val(Field(_argv,i));\
+    copy[i] = strdup(item);\
+  }\
+  copy[argc] = NULL;
+
 
 // string array -> QGuiApplication.t * QQmlEngine.t
 extern "C" value caml_create_QGuiApplication(value _argv) {
@@ -13,12 +22,9 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   CAMLlocal3(_ans,_1,_0);
 
   int argc = Wosize_val(_argv);
-  qDebug() << "argc = " << argc;
   char **copy = new char*[argc+1];
   for (int i = 0; i < argc; i++) {
-    //int l = string_length(Field(_argv,i));
 	char *item = String_val(Field(_argv,i));
-	//qDebug() << "Item: " << item;
     copy[i] = strdup(item);
   }
   copy[argc] = NULL;
@@ -86,5 +92,34 @@ extern "C" value caml_QQuickWindow_showMaximized(value _w) {
   CAMLparam1(_w);
   QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
   w->showMaximized();
+  CAMLreturn(Val_unit);
+}
+
+// argv -> (context -> unit) -> string -> unit
+extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
+  CAMLparam3(_argv, _cb, _qmlpath);
+  CAMLlocal2(_ctx, _cb_res);
+
+  ARGC_N_ARGV(_argv,copy);
+  qDebug() << "argc = " << argc;
+  QApplication app(argc, copy);
+  QQmlApplicationEngine engine;
+  QQmlContext *ctxt = engine.rootContext();
+
+  registerContext(QString("rootContext"), ctxt);
+  /*
+  _ctx = caml_alloc_small(1, Abstract_tag);
+  (*((QQmlContext **) &Field(_ctx, 0))) = ctxt; */
+  _cb_res = caml_callback(_cb, Val_unit);
+  Q_ASSERT(_cb_res == Val_unit);
+
+  engine.load(QString(String_val(_qmlpath)));
+  QList<QObject*> xs = engine.rootObjects();
+  if (xs.count() == 0) {
+    Q_ASSERT_X(false, "Creating C++ runtime", "Your QML file seems buggy");
+  }
+  QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0) );
+  window->showMaximized();
+  app.exec();
   CAMLreturn(Val_unit);
 }

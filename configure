@@ -39,7 +39,8 @@ echo "qmake found for Qt $QT_VERSION"
 
 # in Qt 5 QtQuick2 was implemented
 # in Qt 5.1 --- QtQuickControls
-QT_MIN_VERSION="5.1.0"
+#    Qt 5.2 --- bugfixes and QQmlApplicationEngine
+QT_MIN_VERSION="5.2.0"
 if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
   echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)"
   exit 1

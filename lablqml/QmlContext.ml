@@ -59,6 +59,8 @@ external create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
 external loadQml: string -> QQmlEngine.t -> QQuickWindow.t option
   = "caml_loadQml"
 
+external run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
+  = "caml_run_QQmlApplicationEngine"
 
 type qvariantable
 type non_qvariantable

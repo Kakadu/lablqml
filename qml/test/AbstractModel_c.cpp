@@ -132,11 +132,13 @@ QVariant AbstractModel::data(const QModelIndex & x0,int x1) const {
   _ans = caml_callbackN(_meth, 3, _args);
   QVariant cppans;
   if (Is_block(_ans)) {
-    if (caml_hash_variant("string")==Field(_ans,0))
+    if (caml_hash_variant("string") == Field(_ans,0))
       cppans = QVariant::fromValue(QString(String_val(Field(_ans,1))));
-    else if(caml_hash_variant("qobject")==Field(_ans,0)) {
+    else if(caml_hash_variant("int") == Field(_ans,0))
+      cppans = QVariant::fromValue(Int_val(Field(_ans,1)));
+    else if(caml_hash_variant("qobject") == Field(_ans,0))
       cppans = QVariant::fromValue((QObject*) (Field(Field(_ans,1),0)));
-    } else Q_ASSERT(false);
+    else Q_ASSERT_X(false,"While converting OCaml value to QVariant","Unknown variant tag");
   } else // empty QVariant
       cppans = QVariant();
   CAMLreturnT(QVariant,cppans);
