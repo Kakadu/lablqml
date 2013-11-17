@@ -10,11 +10,11 @@ text-rendering: optimizelegibility;
 color: rgb(0,0,0);
 }
 </style>
-<script src="scripts/jquery-2.0.2.min.js"></script>
-<script src="scripts/highslide-full.js" type="text/javascript"></script>
+<script type="text/javascript" src="scripts/jquery-2.0.2.min.js"></script>
+<script type="text/javascript" src="scripts/highslide-full.js"></script>
+<script type="text/javascript" src="scripts/jquery.slimmenu.js"></script>
 <link rel="stylesheet" type="text/css" href="http://highslide.com/highslide/highslide.css">
-<link rel="stylesheet" href="css/slimmenu.css" type="text/css">
-<script src="scripts/jquery.slimmenu.js"></script>
+<link rel="stylesheet" type="text/css" href="css/slimmenu.css">
 <!--
 <link rel="stylesheet" type="text/css" href="css/jquery-spoiler.css">
 
@@ -28,6 +28,7 @@ color: rgb(0,0,0);
 </script> -->
 </head>
 
+<body>
 <!-- slim menu grabbed from https://github.com/adnantopal/slimmenu -->
 <ul class="slimmenu">
   <li>
@@ -52,11 +53,11 @@ color: rgb(0,0,0);
 <div class="highslide-gallery">
   <a id="thumb1" href="images/qocamlbrowser1.png" class="highslide "
      onclick="return hs.expand(this, { slideshowGroup: 'test1'})">
-	<img src="images/qocamlbrowser1.thumb.png" alt="Highslide JS" title="Click to enlarge">
+	<img src="images/qocamlbrowser1.thumb.png" alt="Highslide JS" title="OCamlBrowser in Qt">
   </a>
   <a id="thumb2" href="images/QtQuickControls2.png" class="highslide "
      onclick="return hs.expand(this, {slideshowGroup: 'test2'})">
-	<img src="images/QtQuickControls2.thumb.png" alt="Highslide JS" title="Click to enlarge">
+	<img src="images/QtQuickControls2.thumb.png" alt="Highslide JS" title="QtQuick Controls Demo">
   </a>
 </div>
 
@@ -64,31 +65,30 @@ color: rgb(0,0,0);
 <div class="hidden-container">
 	<a href="images/qocamlbrowser1.png" class="highslide"
        onclick="return hs.expand(this, { thumbnailId: 'thumb1', slideshowGroup: 'test1' })"></a>
-	<div class="highslide-caption">
+<!--	<div class="highslide-caption">
 		Caption for the second image.
-	</div>
+	</div>-->
 
 	<a href="images/QtQuickControls2.png" class="highslide"
        onclick="return hs.expand(this, { thumbnailId: 'thumb1', slideshowGroup: 'test1' })"></a>
+    <!--
 	<div class="highslide-caption">
 		Caption for the third image.
-	</div>
-<!-- Hidden images for the second thumb -->
+	</div> -->
+    <!-- Hidden images for the second thumb -->
 	<a href="images/qocamlbrowser1.png" class="highslide"
-       onclick="return hs.expand(this, { thumbnailId: 'thumb2', slideshowGroup: 'test2' })"></a>
-	<div class="highslide-caption">
-		Caption for the second image.
-	</div>
+       onclick="return hs.expand(this, { thumbnailId: 'thumb2', slideshowGroup: 'test1' })"></a>
+<!--	<div class="highslide-caption">Caption for the second image.</div> -->
 
 	<a href="images/QtQuickControls2.png" class="highslide"
-       onclick="return hs.expand(this, { thumbnailId: 'thumb2', slideshowGroup: 'test2' })"></a>
-	<div class="highslide-caption">
-		Caption for the third image.
-	</div>
+       onclick="return hs.expand(this, { thumbnailId: 'thumb2', slideshowGroup: 'test1' })"></a>
+       <!--
+	<div class="highslide-caption">Caption for the third image.</div> -->
 </div>
 
 </div>
 </p>
+
 <p>
 <h3 id="status">Current status</h3>
 The first I should mention is that this project (also known as lablqt) is not bindings as people usually understand it. It was going to be bindings but I realised it is not very easy to generate code for all widgets and the result will not be convenient enough to deal with (in short: too many inheritance in Qt widgets). Also, Qt5 has been released where Qt Widgets seems to be claimed obsolete</b> and a modern approach for creating GUI declaratively is recommended. It uses QML markup to declare GUI, ECMAscript for simple scripting GUI-related actions for GUI controls, and C++ for implemeting speed-sensitive business logic.
@@ -100,6 +100,7 @@ At the current moment I think that with my project is well enough for replacing 
 <h3>TODO</h3>
 <ul>
 <li>Announce library version 0.2 after Qt 5.2 release in December.</li>
+<li>Can we add opamdoc-generated documentation to QOCamlBrowser?</li>
 <li>Can we avoid codegeneration using <a href="http://doc.qt.digia.com/qq/qq16-dynamicqobject.html">this</a>? (As Fabrice Le Fessant recommended)</li>
 <li>Integrate my OPAM repo with default one</li>
 <li>Think about QtWidgets again</li>
@@ -122,3 +123,5 @@ opam install mocml         # code generator tool and library
 opam install qocamlbrowser # Demo application
 </pre>
 </p>
+</body>
+
