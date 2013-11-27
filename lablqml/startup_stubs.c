@@ -78,21 +78,31 @@ extern "C" value caml_loadQml(value _path, value _engine) {
 extern "C" value caml_QGuiApplication_exec(value _app) {
   CAMLparam1(_app);
   QGuiApplication *app = (QGuiApplication*) (Field(_app,0));
+  //qDebug() << "App exec. ENTER blocking section" << __FILE__ ;
+  caml_enter_blocking_section();
   app->exec();
   CAMLreturn(Val_unit);
 }
+
 extern "C" value caml_QQuickWindow_showMaximized(value _w) {
   CAMLparam1(_w);
   QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
   w->showMaximized();
   CAMLreturn(Val_unit);
 }
+#define debug_enter_blocking \
+qDebug() << "___________ ENTER blocking section in " << __FILE__ << " +" << __LINE__;
+
+#define debug_leave_blocking \
+qDebug() << "___________ LEAVE blocking section in " << __FILE__ << " +" << __LINE__;
 
 // argv -> (unit -> unit) -> string -> unit
 extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
   CAMLparam3(_argv, _cb, _qmlpath);
   CAMLlocal2(_ctx, _cb_res);
 
+  qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. "<<__FILE__<< ", line " << __LINE__ ;
+  caml_enter_blocking_section();
   ARGC_N_ARGV(_argv, copy);
   QApplication app(argc, copy);
   QQmlApplicationEngine engine;
@@ -102,7 +112,11 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   /*
   _ctx = caml_alloc_small(1, Abstract_tag);
   (*((QQmlContext **) &Field(_ctx, 0))) = ctxt; */
+  //debug_leave_blocking;  
+  caml_leave_blocking_section();
   _cb_res = caml_callback(_cb, Val_unit);
+  //debug_enter_blocking;  
+  caml_enter_blocking_section();
   Q_ASSERT(_cb_res == Val_unit);
 
   engine.load(QString(String_val(_qmlpath)));
@@ -112,6 +126,7 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   }
   QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0) );
   window->showMaximized();
+  qDebug() << "executing app.exec()";
   app.exec();
   CAMLreturn(Val_unit);
 }

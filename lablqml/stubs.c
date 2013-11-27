@@ -11,7 +11,9 @@ void registerContext(const QString& name, QQmlContext* v) {
   _name = caml_copy_string(name.toStdString().c_str());
   _view = caml_alloc_small(1, Abstract_tag);
   (*((QQmlContext **) &Field(_view, 0))) = v;
+  caml_leave_blocking_section ();
   _ans = caml_callback2(*closure, _name, _view); // should be a unit
+  caml_enter_blocking_section();
   Q_UNUSED(_ans);
   CAMLreturn0;
 }

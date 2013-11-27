@@ -3,7 +3,7 @@
 
 #include "kamlo.h"
 
-#include <QApplication>
+#include <QtWidgets/QApplication>
 #include <QtCore/QAbstractItemModel>
 #include <QtQuick/qquickview.h>
 #include <QtCore/QDebug>
