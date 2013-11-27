@@ -59,3 +59,15 @@ module Time = struct
   let to_string {Unix.tm_sec; Unix.tm_mon; Unix.tm_min; Unix.tm_hour; Unix.tm_mday; _ } =
       sprintf "%d-%d %d:%d:%d" tm_mon tm_mday tm_hour tm_min tm_sec
 end
+
+let enter_blocking_section ~debug (buf: Bigbuffer.t) : unit =
+  if debug then
+    Bigbuffer.add_string buf
+      "  qDebug() << \"___________ ENTER blocking section in \" << __FILE__ << \" +\" << __LINE__;\n";
+  Bigbuffer.add_string buf "  caml_enter_blocking_section();\n"
+
+let leave_blocking_section ~debug (buf: Bigbuffer.t) : unit =
+  if debug then
+    Bigbuffer.add_string buf
+      "  qDebug() << \"___________ LEAVE blocking section in \" << __FILE__ << \" +\" << __LINE__;\n";
+  Bigbuffer.add_string buf "  caml_leave_blocking_section();\n"

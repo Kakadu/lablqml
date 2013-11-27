@@ -2,6 +2,7 @@ open Core_kernel
 open Core_kernel.Std
 open Parser
 open Qml
+open Helpers
 
 let qabstractItemView_members =
   let open Parser in
@@ -18,6 +19,7 @@ let qabstractItemView_members =
 (** generated C++ method which will be called from OCaml side
  *  returns c++ stub name *)
 let gen_cppmeth_wrapper ~classname ?(config=[]) (cbuf: Bigbuffer.t) meth =
+  let debugBlockingSections = List.mem config `DebugBlockingSections in
   let p_c fmt = Bigbuffer.Printf.bprintf cbuf fmt in
   let (name,args,res,_) = meth in
   let cpp_stub_name = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in
@@ -32,6 +34,7 @@ let gen_cppmeth_wrapper ~classname ?(config=[]) (cbuf: Bigbuffer.t) meth =
   in
   let locals = List.init ~f:(fun n -> sprintf "_z%d" n) locals_count in
   Qml.print_local_declarations cbuf locals;
+  enter_blocking_section ~debug:debugBlockingSections cbuf;
   p_c "  %s *o = (%s*) (Field(_cppobj,0));\n" classname classname;
   let (get_var, release_var) = Qml.get_vars_queue locals in
   let new_cpp_var =
@@ -54,12 +57,14 @@ let gen_cppmeth_wrapper ~classname ?(config=[]) (cbuf: Bigbuffer.t) meth =
     p_c "  qDebug() << \"Going to call %s::%s\";\n" classname name;
   if res=void_type then begin
     p_c "%s\n" call_str;
+    leave_blocking_section ~debug:debugBlockingSections cbuf;
     p_c "  CAMLreturn(Val_unit);\n"
   end else begin
     let cppvar = new_cpp_var () in
     p_c "  %s %s = %s\n" (res |> unreference |> string_of_type) cppvar call_str;
     let ocamlvar = get_var () in
     ocaml_value_of_cpp cbuf (get_var,release_var) ~tab:1 ~ocamlvar ~cppvar res;
+    leave_blocking_section ~debug:debugBlockingSections cbuf;
     p_c "  CAMLreturn(%s);\n" ocamlvar
   end;
   p_c "}\n";

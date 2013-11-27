@@ -9,10 +9,16 @@ let () = Printexc.record_backtrace true
 type options = {
   mutable filename : string;
   mutable target : [ `Qml | `QtGui | `Qml_wrap ];
-  mutable add_debug_calls: bool
+  mutable add_debug_calls: bool;
+  mutable debug_critical_sections: bool;
 }
 
-let options = {filename = "input_yaml"; target = `Qml_wrap; add_debug_calls = false }
+let options =
+  { filename = "input_yaml"
+  ; target = `Qml_wrap
+  ; add_debug_calls = false
+  ; debug_critical_sections = false
+  }
 
 let () = Core_arg.parse
   [ ("-qml",        Arg.Unit (fun () -> options.target <- `Qml),   "use qml")
@@ -20,6 +26,8 @@ let () = Core_arg.parse
   ; ("-qml_wrap",   Arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
   ; ("-with-debug", Arg.Unit (fun () -> options.add_debug_calls <- true),
          "Add qDebug() calls in beginning of member functions")
+  ; ("-with-debug-criticals", Arg.Unit (fun () -> options.debug_critical_sections <- true),
+         "Add qDebug() when using critical setions")
   ; ("-help",       Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
   ; ("-h",          Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
   ] (fun s -> options.filename <- s;
@@ -78,7 +86,8 @@ let () = match options.target with
         exit 1
     in
     let config =
-      (if options.add_debug_calls then [`PrintMethCalls] else [])
+      (if options.add_debug_calls then [`PrintMethCalls] else []) @
+      (if options.debug_critical_sections then [`DebugBlockingSections] else [])
     in
     List.iter data ~f:(Qml_wrap.generate ~config)
   end

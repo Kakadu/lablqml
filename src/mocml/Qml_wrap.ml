@@ -12,8 +12,9 @@ let with_file path f =
   f file;
   Out_channel.close file
 
-
 let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; signals} =
+  let debugBlockingSections = List.mem config `DebugBlockingSections in
+  (*printf "debugBlockingSections = %b\n" debugBlockingSections;*)
   let b_h   = B.create 100 in
   let b_c   = B.create 100 in
   let b_ml  = B.create 100 in
@@ -62,7 +63,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_c "%s::%s() : _camlobjHolder(0) {\n" classname classname;
   p_c "}\n";
 
-  (* methods *)
+  (* method: We generate C++ method and call OCaml in it *)
   let do_meth ~classname (name,args,res,modif) =
     let (_:Parser.cpptype list) = args in
     let (_:Parser.cpptype) = res in
@@ -94,6 +95,9 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     let cb_locals = List.mapi args ~f:(fun i _ -> make_cb_var i) in
     p_c "  CAMLlocalN(_args,%d);\n" (List.length args + 1 (* beacuse of _camlobj *));
     print_local_declarations b_c cb_locals;
+
+    leave_blocking_section ~debug:debugBlockingSections b_c;
+
     if List.mem config `PrintMethCalls then
       p_c "  qDebug() << \"Calling %s::%s\";\n" classname name;
 
@@ -101,6 +105,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     p_c "  Q_ASSERT(Is_block(_camlobj));\n";
     p_c "  Q_ASSERT(Tag_val(_camlobj) == Object_tag);\n";
     p_c "  _meth = caml_get_public_method(_camlobj, caml_hash_variant(\"%s\"));\n" name;
+
     let (get_var, release_var) = Qml.get_vars_queue locals in (* tail because we need not _ans *)
 
     let call_closure_str = match List.length args with
@@ -120,9 +125,11 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     in
     if res = Parser.void_type then begin
       p_c "  %s;\n" call_closure_str;
+      enter_blocking_section ~debug:debugBlockingSections b_c;
       p_c "  CAMLreturn0;\n"
     end else begin
       p_c "  _ans = %s;\n" call_closure_str;
+      enter_blocking_section ~debug:debugBlockingSections b_c;
       let cpp_ans_var = "cppans" in
       let new_cpp_var = Qml.getter_of_cppvars "xx" in
       p_c "  %s %s;\n" (Parser.string_of_type res) cpp_ans_var;
@@ -254,16 +261,20 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_c "extern \"C\" value caml_create_%s(value _dummyUnitVal) {\n" classname;
   p_c "  CAMLparam1(_dummyUnitVal);\n";
   p_c "  CAMLlocal1(_ans);\n";
+  enter_blocking_section ~debug:debugBlockingSections b_c;
   p_c "  _ans = caml_alloc_small(1, Abstract_tag);\n";
   p_c "  (*((%s **) &Field(_ans, 0))) = new %s();\n" classname classname;
+  leave_blocking_section ~debug:debugBlockingSections b_c;
   p_c "  CAMLreturn(_ans);\n";
   p_c "}\n";
 
   p_c "extern \"C\" value caml_store_value_in_%s(value _cppobj,value _camlobj) {\n" classname;
   p_c "  CAMLparam2(_cppobj,_camlobj);\n";
+  enter_blocking_section ~debug:debugBlockingSections b_c;
   p_c "  %s *o = (%s*) (Field(_cppobj,0));\n" classname classname;
   p_c "  o->storeCAMLobj(_camlobj); // register global root in member function\n";
   p_c "  //caml_register_global_root(&(o->_camlobjHolder));\n";
+  leave_blocking_section ~debug:debugBlockingSections b_c;
   p_c "  CAMLreturn(Val_unit);\n";
   p_c "}\n";
 
