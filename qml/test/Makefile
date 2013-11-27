@@ -10,7 +10,7 @@ GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
 GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.cpp=.o)
 GEN_MOC=$(GEN_CMX:.cmx=_c.cpp)
-OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix -linkpkg -g
+OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix,threads -thread -linkpkg -g
 
 CMX=helpers.cmx tree.cmx S.cmx Richify.cmx program.cmx
 CMX_TEST=Test.cmx

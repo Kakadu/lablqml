@@ -186,6 +186,14 @@ let main () : unit =
       self#emit_descChanged info
   end in
 
+  let () =
+      let _somefun () =
+         ignore (Sys.command "sleep 10");
+         print_endline "I have waked"
+      in
+      print_endline "Thread is created";
+      ignore (Thread.create _somefun ())
+  in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"myModel" model#handler;
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 

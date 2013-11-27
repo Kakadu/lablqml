@@ -14,7 +14,10 @@ then
     ln -s ../../src/mocml.native mocml
 fi
 echo "Executing generator"
-./mocml -qml_wrap input.json #-with-debug
+PARAMS=""
+#PARAMS="$PARAMS -with-debug"
+#PARAMS="$PARAMS -with-debug-criticals"
+./mocml -qml_wrap input.json $PARAMS
 echo ""> .depend
 make depend
 
