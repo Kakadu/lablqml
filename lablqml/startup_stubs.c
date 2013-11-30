@@ -135,7 +135,7 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   }
   QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0) );
   window->showMaximized();
-  qDebug() << "executing app.exec()";
+  //qDebug() << "executing app.exec()";
   app.exec();
   CAMLreturn(Val_unit);
 }
