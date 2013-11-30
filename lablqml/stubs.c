@@ -28,7 +28,7 @@ extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj)
   QString name = QString(String_val(_name));
   QObject *o =  ((QObject*) Field(_cppObj,0));
   ctx->setContextProperty(name, o);
-  qDebug() << "setted property " << name << " to " << o;
+  //qDebug() << "setted property " << name << " to " << o;
   CAMLreturn(Val_unit);
 }
 /*
