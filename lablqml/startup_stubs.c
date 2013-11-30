@@ -1,31 +1,35 @@
 #include "stubs.h"
 static value Val_some(value v) {
-  CAMLparam1( v );
-  CAMLlocal1( some );
+  CAMLparam1(v);
+  CAMLlocal1(some);
+
   some = caml_alloc(1, 0);
-  Store_field( some, 0, v );
-  CAMLreturn( some );
+  Store_field(some, 0, v);
+
+  CAMLreturn(some);
 }
+
 #define ARGC_N_ARGV(_argv,copy)\
-  int argc = Wosize_val(_argv);\
-  char **copy = new char*[argc+1];\
-  for (int i = 0; i < argc; i++) {\
+  int argc_val = Wosize_val(_argv);\
+  char **copy = new char*[argc_val];\
+  for (int i = 0; i < argc_val; ++i) {\
 	char *item = String_val(Field(_argv,i));\
     copy[i] = strdup(item);\
   }\
-  copy[argc] = NULL;
+  int *argc = new int(argc_val);
 
 
 // string array -> QGuiApplication.t * QQmlEngine.t
 extern "C" value caml_create_QGuiApplication(value _argv) {
   CAMLparam1(_argv);
   CAMLlocal3(_ans,_app,_engine);
+  caml_enter_blocking_section();
 
   ARGC_N_ARGV(_argv, copy)
-
-  QGuiApplication *app = new QGuiApplication(argc, copy);
+  // we need allocate argc because QApplication(int& argc,...)
+  QGuiApplication *app = new QGuiApplication(*argc, copy);
   QQmlEngine* engine = new QQmlEngine();
-
+ 
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
 
@@ -37,6 +41,7 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   _ans = caml_alloc(2,0);
   Store_field(_ans, 0, _app);
   Store_field(_ans, 1, _engine);
+  caml_leave_blocking_section();
   CAMLreturn(_ans);
 }
 
@@ -44,6 +49,7 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
 extern "C" value caml_loadQml(value _path, value _engine) {
   CAMLparam2(_path, _engine);
   CAMLlocal1(_ans);
+  caml_enter_blocking_section();
 
   QQmlEngine *engine = (QQmlEngine*) (Field(_engine,0));
   QUrl source(String_val(_path));
@@ -61,7 +67,6 @@ extern "C" value caml_loadQml(value _path, value _engine) {
     // we have loaded window from QtQuick.Controls probably
     _ans = caml_alloc_small(1, Abstract_tag);
     (*((QQuickWindow **) &Field(_ans, 0))) = window;
-    CAMLreturn(Val_some(_ans));
   } else {
     // if it is not QtQuick.Controls.ApplicationWindow it seems to be some QQuickItem
     QQuickItem *item = dynamic_cast<QQuickItem*>(topLevel);
@@ -71,8 +76,9 @@ extern "C" value caml_loadQml(value _path, value _engine) {
 
     _ans = caml_alloc_small(1, Abstract_tag);
     (*((QQuickView **) &Field(_ans, 0))) = view;
-    CAMLreturn(Val_some(_ans));
   }
+  caml_leave_blocking_section();
+  CAMLreturn(Val_some(_ans));
 }
 
 extern "C" value caml_QGuiApplication_exec(value _app) {
@@ -86,8 +92,11 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
 
 extern "C" value caml_QQuickWindow_showMaximized(value _w) {
   CAMLparam1(_w);
+  //caml_enter_blocking_section();
   QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
+  Q_ASSERT_X(w != NULL, "caml_QQuickWindow_showMaximized", "Trying to show window which is NULL");
   w->showMaximized();
+  //caml_leave_blocking_section();
   CAMLreturn(Val_unit);
 }
 #define debug_enter_blocking \
@@ -100,11 +109,11 @@ qDebug() << "___________ LEAVE blocking section in " << __FILE__ << " +" << __LI
 extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
   CAMLparam3(_argv, _cb, _qmlpath);
   CAMLlocal2(_ctx, _cb_res);
-
   qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. "<<__FILE__<< ", line " << __LINE__ ;
   caml_enter_blocking_section();
+
   ARGC_N_ARGV(_argv, copy);
-  QApplication app(argc, copy);
+  QApplication app(*argc, copy);
   QQmlApplicationEngine engine;
   QQmlContext *ctxt = engine.rootContext();
 
