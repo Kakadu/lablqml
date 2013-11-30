@@ -109,7 +109,7 @@ qDebug() << "___________ LEAVE blocking section in " << __FILE__ << " +" << __LI
 extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
   CAMLparam3(_argv, _cb, _qmlpath);
   CAMLlocal2(_ctx, _cb_res);
-  qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. "<<__FILE__<< ", line " << __LINE__ ;
+  //qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. "<<__FILE__<< ", line " << __LINE__ ;
   caml_enter_blocking_section();
 
   ARGC_N_ARGV(_argv, copy);
