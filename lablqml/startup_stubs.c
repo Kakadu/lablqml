@@ -128,7 +128,7 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   caml_enter_blocking_section();
   Q_ASSERT(_cb_res == Val_unit);
 
-  engine.load(QString(String_val(_qmlpath)));
+  engine.load(QUrl(QString(String_val(_qmlpath))));
   QList<QObject*> xs = engine.rootObjects();
   if (xs.count() == 0) {
     Q_ASSERT_X(false, "Creating C++ runtime", "Your QML file seems buggy");
