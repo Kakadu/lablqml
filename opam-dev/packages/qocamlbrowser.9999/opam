@@ -1,0 +1,14 @@
+opam-version: "1"
+maintainer: "kakadu.hafanana@gmail.com"
+ocaml-version: [>= "4.00.1"]
+build: [
+  ["./configure"]
+  [make]
+  [make "install"]
+]
+remove: [
+  ["touch" ".depend"]
+  [make "uninstall"]
+]
+depends: [ "mocml" "conf-qt" {>= "5.2"} ]
+
