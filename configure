@@ -73,7 +73,7 @@ fi
 cd $ROOT_DIR
 
 
-OCAML_PACKAGES=(core yojson ocamlgraph) #required ocaml packages
+OCAML_PACKAGES=(core yojson) #required ocaml packages
 res=0
 
 for item in ${OCAML_PACKAGES[*]}
@@ -116,7 +116,7 @@ test:\n\
 	cd $ROOT_DIR/qml/test && ./configure && make\n\
 	echo 'Now you can change dir to qml/test and execute './main', for example'\n\
 clean:\n\
-	rm -f $ROOT_DIR/qml/test/.depend && touch $ROOT_DIR/qml/test/.depend && \$(MAKE) -C test clean\n\
+	rm -f $ROOT_DIR/qml/test/.depend && touch $ROOT_DIR/qml/test/.depend && \$(MAKE) -C qml/test clean\n\
 	\$(MAKE) -C lablqml clean\n\
 	\$(MAKE) -C $ROOT_DIR/src clean\n\
 \n\
