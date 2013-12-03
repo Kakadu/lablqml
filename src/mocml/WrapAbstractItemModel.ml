@@ -70,17 +70,17 @@ let gen_cppmeth_wrapper ~classname ?(config=[]) (cbuf: Bigbuffer.t) meth =
   p_c "}\n";
   cpp_stub_name
 
-let wrap ~classname  ~config do_meth do_meth_caml b_h b_c external_buf top_externals_buf clas_def_buf =
+
+let wrap ~classname ~(config: Config.MethOptions.t) do_meth do_meth_caml b_h b_c
+    external_buf top_externals_buf clas_def_buf =
   let open Bigbuffer.Printf in
   let p_h   fmt = bprintf b_h fmt in
-  (*let p_c   fmt = bprintf b_c fmt in*)
 
-  let model_members = qabstractItemView_members in
-      List.iter model_members ~f:(do_meth ~classname);
+  List.iter qabstractItemView_members ~f:(do_meth ~classname ~config);
       p_h "private:\n";
       p_h "  QHash<int, QByteArray> _roles;\n";
       p_h "public:\n";
-      p_h "  QModelIndex makeIndex(int row,int column) {\n";
+      p_h "  QModelIndex makeIndex(int row,int column) const {\n";
       p_h "    if (row==-1 || column==-1)\n";
       p_h "      return QModelIndex();\n";
       p_h "    else\n";

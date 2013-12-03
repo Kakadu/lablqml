@@ -6,6 +6,7 @@ open B.Printf
 open ParseYaml.Yaml2.Types
 open Parser
 open Qml
+open Config
 
 let with_file path f =
   let file = open_out path in
@@ -64,7 +65,8 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_c "}\n";
 
   (* method: We generate C++ method and call OCaml in it *)
-  let do_meth ~classname (name,args,res,modif) =
+  let do_meth ~classname ~config (name,args,res,modif) =
+    let (_:Config.MethOptions.t) = config in
     let (_:Parser.cpptype list) = args in
     let (_:Parser.cpptype) = res in
     let args = if args = [Parser.void_type] then [] else args in
@@ -133,7 +135,9 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
       let cpp_ans_var = "cppans" in
       let new_cpp_var = Qml.getter_of_cppvars "xx" in
       p_c "  %s %s;\n" (Parser.string_of_type res) cpp_ans_var;
-      Qml.cpp_value_of_ocaml b_c (get_var,release_var, new_cpp_var) cpp_ans_var "_ans" res;
+      let options = Config.TypeOptions.of_meth_options config in
+      Qml.cpp_value_of_ocaml ~options ~cpp_var:cpp_ans_var ~ocaml_var:"_ans"
+        b_c (get_var,release_var, new_cpp_var) res;
       p_c "  CAMLreturnT(%s,%s);\n" (string_of_type res) cpp_ans_var;
     end;
     p_c "}\n"
@@ -169,7 +173,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     let prop_descr_str = sprintf "Q_PROPERTY(%s %s%s READ %s NOTIFY %s)"
       (string_of_type typ) name setter_string getter notifier in
     p_h "  %s\n" prop_descr_str;
-    do_meth ~classname (getter,[void_type],typ,[]);
+    do_meth ~config ~classname (getter,[void_type],typ,[]);
     declare_cpp_signal hbuf ~name:notifier ~args:[typ] ~argnames:[name];
     let stub_name = WrapAbstractItemModel.gen_cppmeth_wrapper
       ~config ~classname cbuf (notifier,[typ],void_type,[]) in
@@ -181,7 +185,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     let () =
       match setter with
         | Some setter ->
-            do_meth ~classname (setter,[typ],bool_type,[]);
+            do_meth ~config ~classname (setter,[typ],bool_type,[]);
             bprintf clas_def_buf "  method virtual %s: %s -> unit\n" setter
               (typ |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type);
         | None -> ()
@@ -218,12 +222,12 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   in
 
   List.iter members ~f:(fun mem ->
-    do_meth ~classname mem;
+    do_meth ~config ~classname mem;
     do_meth_caml mem;
   );
   List.iter slots ~f:(fun ((name,args,_,_) as mem) ->
     p_h "public slots:\n";
-    do_meth ~classname mem;
+    do_meth ~config ~classname mem;
     let f x = x |> TypAst.of_verbose_typ_exn |> TypAst.to_cpp_type in
     let slot_string = sprintf "1%s(%s)" name (String.concat ~sep:","(List.map ~f args)) in
     bprintf clas_def_buf
@@ -251,10 +255,11 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
 
   (* Now we will add some methods for specific basename *)
   let () =
-    if base_classname = "QAbstractItemModel" then
+    if base_classname = "QAbstractItemModel" then begin
+      let config  = (`AbstractItemModel (Some "this"))::config in
       WrapAbstractItemModel.wrap ~classname ~config do_meth do_meth_caml
         b_h b_c external_buf top_externals_buf clas_def_buf
-    else ()
+    end
   in
 
   (* Also we need to have a stubs to create C++ class *)

@@ -27,7 +27,7 @@ let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
       | `List _ -> sprintf "xxxx_list")
 
 let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
-    ch (get_var,release_var,new_cpp_var) ~cpp_var ~ocaml_var typ =
+    ~cpp_var ~ocaml_var ch (get_var,release_var,new_cpp_var) typ =
   let print_cpp fmt = bprintf ch fmt in
   let rec to_cpp_conv ~tab dest var (typ: TypAst.t) =
       let prefix = String.concat ~sep:"" (List.init ~f:(const "  ") tab) in
@@ -342,7 +342,8 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     end else begin
           let cpp_ans_var = "cppans" in
           print_cpp "  %s %s;\n" (Parser.string_of_type  res) cpp_ans_var;
-          cpp_value_of_ocaml file_cpp (get_var,release_var, new_cpp_var) cpp_ans_var "_ans" res;
+          cpp_value_of_ocaml file_cpp
+            (get_var,release_var, new_cpp_var) ~cpp_var:cpp_ans_var ~ocaml_var:"_ans" res;
           match hasSetter with
             | Some signal ->
                 assert (Parser.is_bool_type res);
