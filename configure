@@ -19,7 +19,7 @@ OCAML_VERSION=`ocamlc -version`
 maybe_exit $? "ocamlc executable not found"
 if ! verlte $OCAML_VERSION_MIN $OCAML_VERSION ; then
   echo "Minimal OCaml version is $OCAML_VERSION_MIN (your is $OCAML_VERSION)"
-  exit
+  exit 1
 else
   echo "OCaml $OCAML_VERSION found."
 fi
@@ -48,6 +48,7 @@ fi
 
 function compile_test() {
 # tries to build test C++ application with Qt linking
+echo "Compiling test C++&Qt application..."
 cd /tmp
 echo "#include <QtQuick/qquickview.h>
 int main() {
@@ -60,7 +61,7 @@ g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --lib
 
 compile_test
 if [ $? != 0 ]; then
-  echo "Linking test C++ application failed"
+  echo "Building test C++&Qt application failed."
   echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 for website there is \
   a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
     Libs: -L\${libdir} -lQt5Core\n\
@@ -68,7 +69,7 @@ if [ $? != 0 ]; then
     Libs: -Wl,-rpath,\${libdir} -L\${libdir} -lQt5Core\n"
   exit 1
 else
-  echo "Test C++ aplication built successfully"
+  echo "Test C++&Qt application is built successfully"
 fi
 cd $ROOT_DIR
 
@@ -85,7 +86,7 @@ do
   else
     echo "OCaml package $item found at $LOC."
     if [ $item == "core" ]; then
-      echo "Do something about core"
+      #echo "Do something about core"
       CORE_VERSION=`ocamlfind query core -format %v`
       CORE_VERSION_MIN="109.21.00"
       if ! verlte $CORE_VERSION_MIN $CORE_VERSION ; then
@@ -94,12 +95,18 @@ do
       fi
     fi
   fi
-  #printf "   %s\n" $item
 done
 if [ $res != 0 ]; then
-  echo "There are packages to install. Exit."
+  echo "There are uninstalled dependencies. Exit."
   exit 1
 fi
+
+LC=`ocamlfind list 2>/dev/null |grep lablqml | wc -l`
+if [ $LC != 0 ]; then
+  echo "It seems that lablqml is already installed. Please remove it! Exit"
+  exit 1
+fi
+
 
 echo "Generating Makefile"
 echo -e "\
