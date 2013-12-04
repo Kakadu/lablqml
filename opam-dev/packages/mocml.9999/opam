@@ -1,7 +1,6 @@
 opam-version: "1"
 maintainer: "kakadu.hafanana@gmail.com"
 build: [
-  ["git" "checkout" "qml-dev"]
   ["./configure"]
   ["make" "generator"]
   ["bash" "-c" "cd lablqml && ./configure --datarootdir=%{lib}% && %{make}%" ]

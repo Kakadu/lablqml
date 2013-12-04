@@ -1,8 +1,8 @@
 packages/qocamlbrowser.9999/url ab13c601c715b70a88e65b2ceaf1a85c 0o644
 packages/qocamlbrowser.9999/opam 8d937a1e2d634324ced1d991ced13851 0o644
 packages/qocamlbrowser.9999/descr 022c57de438a9d08b4dd688ac4331648 0o644
-packages/mocml.9999/url fc71f4bc9c7851ca3b4ce9085b70cfd9 0o644
-packages/mocml.9999/opam 15b4ef5d09f9714a5d4f9a18bf571224 0o644
+packages/mocml.9999/url 9593c222726c7067fd5aceda4c8ed6b0 0o644
+packages/mocml.9999/opam f15248ccef1a9c8dd2230b7be12c6aa7 0o644
 packages/mocml.9999/descr 5d428b8c93fc8a662905abd118fd8900 0o644
 packages/conf-qt.5.2/opam fc991fc48b75e08eb3a3402b27d34c01 0o644
 packages/conf-qt.5.2/descr 5fe5f68f7852f6dab4015c12fa5b93a7 0o644
