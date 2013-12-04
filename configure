@@ -74,7 +74,7 @@ fi
 cd $ROOT_DIR
 
 
-OCAML_PACKAGES=(core yojson) #required ocaml packages
+OCAML_PACKAGES=(core_kernel yojson) #required ocaml packages
 res=0
 
 for item in ${OCAML_PACKAGES[*]}
@@ -85,15 +85,15 @@ do
     res=$(($res+1))
   else
     echo "OCaml package $item found at $LOC."
-    if [ $item == "core" ]; then
-      #echo "Do something about core"
-      CORE_VERSION=`ocamlfind query core -format %v`
-      CORE_VERSION_MIN="109.21.00"
-      if ! verlte $CORE_VERSION_MIN $CORE_VERSION ; then
-        echo "Core version >=$CORE_VERSION_MIN (your is $CORE_VERSION) is needed"
-        exit 1
-      fi
-    fi
+    #if [ $item == "core" ]; then
+    #  #echo "Do something about core"
+    #  CORE_VERSION=`ocamlfind query core -format %v`
+    #  CORE_VERSION_MIN="109.21.00"
+    #  if ! verlte $CORE_VERSION_MIN $CORE_VERSION ; then
+    #    echo "Core version >=$CORE_VERSION_MIN (your is $CORE_VERSION) is needed"
+    #    exit 1
+    #  fi
+    #fi
   fi
 done
 if [ $res != 0 ]; then
