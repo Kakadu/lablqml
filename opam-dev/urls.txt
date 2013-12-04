@@ -6,5 +6,5 @@ packages/mocml.9999/opam 15b4ef5d09f9714a5d4f9a18bf571224 0o644
 packages/mocml.9999/descr 5d428b8c93fc8a662905abd118fd8900 0o644
 packages/conf-qt.5.2/opam fc991fc48b75e08eb3a3402b27d34c01 0o644
 packages/conf-qt.5.2/descr 5fe5f68f7852f6dab4015c12fa5b93a7 0o644
-archives/qocamlbrowser.9999+opam.tar.gz 027b353d23603020b8ad9ab2cadab7e8 0o644
-archives/mocml.9999+opam.tar.gz 71c4d6bdb83502296e4b093ae374b8f2 0o644
+archives/qocamlbrowser.9999+opam.tar.gz a8b30a3ad579b584bf3eafd57111d173 0o644
+archives/mocml.9999+opam.tar.gz e8b8b9a977cfd8de52cc7c8db8ae5813 0o644
