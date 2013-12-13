@@ -10,5 +10,5 @@ remove: [
   ["touch" ".depend"]
   [make "uninstall"]
 ]
-depends: [ "mocml" "conf-qt" {>= "5.2"} ]
+depends: [ "lablqt" "conf-qt" {>= "5.2"} ]
 

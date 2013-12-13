@@ -1,10 +1,9 @@
 packages/qocamlbrowser.0.2.6/url 7eb4b04642a846b60c9abbb6e5d2f890 0o644
-packages/qocamlbrowser.0.2.6/opam 8d937a1e2d634324ced1d991ced13851 0o644
-packages/qocamlbrowser.0.2.6/descr 022c57de438a9d08b4dd688ac4331648 0o644
-packages/mocml.0.2/url 59678a26402c389c87ce45a4228bdb43 0o644
-packages/mocml.0.2/opam d5925cbadd7e6f59301b640478c6c093 0o644
-packages/mocml.0.2/descr 5d428b8c93fc8a662905abd118fd8900 0o644
+packages/qocamlbrowser.0.2.6/opam d07ead07ea3a8031f254c6cacef982e3 0o644
+packages/qocamlbrowser.0.2.6/descr 8f1a0d87580cdcc5312421e5ee860bb0 0o644
+packages/lablqt.0.2/url 59678a26402c389c87ce45a4228bdb43 0o644
+packages/lablqt.0.2/opam f15248ccef1a9c8dd2230b7be12c6aa7 0o644
+packages/lablqt.0.2/descr 5d428b8c93fc8a662905abd118fd8900 0o644
 packages/conf-qt.5.2/opam fc991fc48b75e08eb3a3402b27d34c01 0o644
 packages/conf-qt.5.2/descr 5fe5f68f7852f6dab4015c12fa5b93a7 0o644
-archives/qocamlbrowser.0.2.6+opam.tar.gz 9ab328a684f9283b5cfd1a1a89f34cca 0o644
-archives/mocml.0.2+opam.tar.gz 9473a4216ea006cf23781a047d69ab29 0o644
+archives/lablqt.0.2+opam.tar.gz 55fe9811b90959890e076330d3406b8f 0o644

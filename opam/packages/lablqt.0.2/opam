@@ -4,7 +4,6 @@ build: [
   ["./configure"]
   ["make" "generator"]
   ["bash" "-c" "cd lablqml && ./configure --datarootdir=%{lib}% && %{make}%" ]
-  ["bash" "-c" "cd qml/test &&  ./configure && %{make}% "]
   [make "opam.install" ]
 ]
 remove: [
