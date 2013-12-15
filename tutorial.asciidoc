@@ -154,7 +154,7 @@ ApplicationWindow { // root rectangle
 }
 ----
 After executing program when you will click on window you will se console output.
-Code of this example you can find there: https://github.com/Kakadu/lablqt/tree/qml-dev/qml/halloworld
+Code of this example you can find there: https://github.com/Kakadu/lablqt/tree/qml-dev/qml/helloworld
 
 [[views]]
 QtQuick Controls, Layouts and Model/View pattern
