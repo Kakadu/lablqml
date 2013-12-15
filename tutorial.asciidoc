@@ -12,13 +12,11 @@ Getting Qt5
 -----------
 Using package repository
 ~~~~~~~~~~~~~~~~~~~~~~~~
-In Ubuntu 13.04 everything going to be OK --- Qt5 is there. But is
-seems that in Debian/sid development packages are missing yet. So you
-should consider getting installer or compile it yourself.
+In Debian/unstable and Ubuntu 13.10 current (15th of December, 2013) version of Qt is 5.1.1. Qt 5.2 can be expected in Ubuntu 14.04. When it will be updated you can install packages `qt5-qmake` and `qtdeclarative5-dev`. At this moment you should consider getting installer or compile it yourself.
 
 Official packages
 ~~~~~~~~~~~~~~~~~
-are available on http://qt-project.org/downloads#qt-lib[Qt Project].
+are available on http://download.qt-project.org/official_releases/qt/5.2/5.2.0/[Qt Project].
 
 Building from Git
 ~~~~~~~~~~~~~~~~~
@@ -54,11 +52,13 @@ we can succeed in 5 minutes.
 "Hello world!" in QtQuick
 -------------------------
 
-If we put this to 'Root.qml' we will get a rectangle with text Click me! in its center. After clicking on window text clicked will appear at console.
+If we put this to 'Root.qml' we will get a rectangle with text `Click me!` in its center. After clicking on window text clicked will appear at console.
 
 ----
 import QtQuick 2.0
-Rectangle {
+import QtQuick.Controls 1.0
+
+ApplicationWindow {
     color: "#FFFFDF" // we declare rectangle with custom background color
     width:  400;
     height: 300;     // with custom size
@@ -77,66 +77,19 @@ This QML file is already correct application. If you execute it using command `q
 
 image:images/qml1.png[]
 
-At this moment OCaml+QtQuick applications should make startup from
-C++. File 'main.cpp' will be common for all of them. This one is
-adopted from by Demo application
-https://raw.github.com/Kakadu/QOcamlBrowser_quick
+At this moment OCaml+QtQuick applications should startup from OCaml.
 
-.Typical main.cpp
+.Typical main.ml
 ----
-#include "stubs.h"
+let main () = 
+  print_endline "Startup initialization"
 
-#include <QtGui/QGuiApplication>
-#include <QtQuick/qquickview.h>
-#include <QtQml/QQmlEngine>
-#include <QtQml/QQmlComponent>
-
-void doCaml() {
-  CAMLparam0();
-  static value *closure = nullptr;
-  if (closure == nullptr) {
-    closure = caml_named_value("doCaml");
-  }
-  Q_ASSERT(closure!=nullptr);
-  caml_callback(*closure, Val_unit); // should be a unit
-  CAMLreturn0;
-}
-
-int main(int argc, char ** argv) {
-    caml_main(argv);
-    QGuiApplication app(argc, argv);
-    QQmlEngine engine;
-    QQmlComponent component(&engine);
-    QQmlContext *ctxt = engine.rootContext();
-    registerContext(QString("rootContext"), ctxt);
-    doCaml();
-
-    component.loadUrl(QUrl("qrc:/Root.qml"));
-    QObject *topLevel = component.create(ctxt);
-    if (component.isError()) {
-      qDebug() << component.errors();
-      return 1;
-    }
-    QQuickWindow *window = qobject_cast<QQuickWindow*>(topLevel);
-    window->showMaximized();
-    return app.exec();
-}
-----
-In 'main.cpp' we do startup initialization on C++ side. Function
-registerContext exposes Qml context (where global variables are
-stored) for OCaml. We will refer it using string "rootContext" in
-'program.ml' file. Also we call doOCamlInitialization to execute user
-startup code on OCaml side.
+let () =
+    run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
 
 ----
-Let's write this OCaml startup code in program.ml
-let init () = print_endline "startup initialiation at OCaml side"
-let () = Callback.register "doCamlInitialization" init
-----
 
-In the same repo https://github.com/Kakadu/QOcamlBrowser_quick you
-can find Makefile to build whole project. Also you use qmake for Qt
-part and use QMAKE_EXTRA_TARGETS to call compilation of OCaml code
+Function 'run_with_QQmlApplicationEngine' initializes Qt runtime, registers QML context which holds global variables, executes callback with user initialization code and loads .qml file. What you can do during initialization phace will be described below. QML file can be located on disk or you can compile it into your executable with http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
 
 [[ocaml_side]]
 Writing OCaml logic
@@ -186,15 +139,13 @@ let main () =
     method onMouseClicked msg = Printf.printf "OCaml says: '%s'\n%!" msg
   end in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
-
-let () = Callback.register "doCamlInitialzation" main
 ----
 
-After executing `QmlContext.set_context_property` we are able to use
-created object in QtQuick with name "controller". Like this:
+After executing `QmlContext.set_context_property` we are able to use in QML side
+variable called `controller`:
 
 ----
-Rectangle { // root rectangle
+ApplicationWindow { // root rectangle
           ....
           MouseArea {
               anchors.fill: parent      // all space in parent Rectangle will be clickable
@@ -324,7 +275,9 @@ Our model will provide access to objects which have two properties:
     "signals": []
 }
 ----
+
 Now let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:
+
 ----
   let data =
     [ ("Анна Керенина",           "Лев Толстой")
@@ -333,7 +286,9 @@ Now let's define out model and expose it to QtQuick engine in initialization blo
     ; ("Les Trois Mousquetaires", "Alexandre Dumas, père")
     ] in
 ----
+
 Using it we need to construct DataItems:
+
 ----
   let dataItems = List.map (fun (title,author) ->
     let cppobj = DataItem.create_DataItem () in
@@ -344,9 +299,11 @@ Using it we need to construct DataItems:
     end
   ) data in
 ----
+
 Generated MainModel class has many virtual methods. We need only
     1-dimensional model, that's why some methods has very simple
     implementation
+
 ----
   let model_cppobj = MainModel.create_MainModel () in
   MainModel.add_role model_cppobj 555 "someRoleName";
@@ -361,9 +318,11 @@ Generated MainModel class has many virtual methods. We need only
     method rowCount _ = List.length dataItems
     ...
 ----
+
 In method data we will return dataItem from our list if role of
     element is OK. Magic number 555 appears because we are defining
     user role for model.
+
 ----
     ...
     method data index role =
