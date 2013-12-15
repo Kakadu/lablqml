@@ -1,0 +1,12 @@
+[
+{
+  "classname": "Controller",
+  "methods":
+     [ { "name":      "onMouseClicked",
+         "signature": ["string", "unit"] }
+     ],
+  "properties": [],
+  "slots": [],
+  "signals": []
+}
+]
