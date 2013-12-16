@@ -35,7 +35,7 @@ color: rgb(0,0,0);
     <a href="http://github.com/Kakadu/lablqt">Github Page</a>
   </li>
   <li>
-    <a href="tutorial.html">a la Tutorial</a>
+    <a href="tutorial.html">Tutorial</a>
   </li>
   <li>
     <a href="#status">Current status</a>
@@ -89,15 +89,32 @@ color: rgb(0,0,0);
 </div>
 </p>
 
-<p>
 <h3 id="status">Current status</h3>
-The first I should mention is that this project (also known as lablqt) is not bindings as people usually understand it. It was going to be bindings but I realised it is not very easy to generate code for all widgets and the result will not be convenient enough to deal with (in short: too many inheritance in Qt widgets). Also, Qt5 has been released where Qt Widgets seems to be claimed obsolete</b> and a modern approach for creating GUI declaratively is recommended. It uses QML markup to declare GUI, ECMAscript for simple scripting GUI-related actions for GUI controls, and C++ for implemeting speed-sensitive business logic.
-<br/>
-At the current moment I think that with my project is well enough for replacing C++ by OCaml in small applications. In large GUI applications we will probably need to implement some GUI controls in compilable language (like C++). My library doesn't allow implementing these controls in OCaml at this moment. But when I will know in what cases this complex controls are need I'm going to improve library. Maybe I need to pick some big GUI project and rewrite GUI for it.
+<p>
+The first thing to mention is that this project (also known as lablqt)
+does not provide "bindings" as people usually understand it. It
+started as a set of bindings, but that did not work very well: is not
+very easy to generate code for all the widgets, and the result would
+not be convenient (in a word: too much inheritance in Qt widgets).
 </p>
 
-<p id="todo">
-<h3>TODO</h3>
+<p>When Qt5 was released, Qt Widgets were claimed
+<em>obsolete</em>, and a modern approach for declarative GUI was
+recommended. It uses QML markup to declare GUI, ECMAscript to script
+GUI-related actions, and C++ to implement speed-sensitive business
+logic.</p>
+
+<p>In its current state, I think that lablt can be used to replace C++
+by OCaml in small applications. In large GUI applications, we would
+probably still need to implement some GUI controls in compilable
+language (like C++). My library doesn't allow implementing these
+controls in OCaml at the moment. Once we get a better idea of the
+use-cases where controls are needed, I'm going to improve the
+library. Maybe you should pick some big GUI project and rewrite the
+GUI for it?
+</p>
+
+<h3 id="todo">TODO</h3>
 <ul>
 <li>Announce library version 0.2 after Qt 5.2 release after 3rd of December.</li>
 <li>Add lablqt to <a href="http://qt-project.org/wiki/Category:LanguageBindings">Qt language bindings page</a>.</li>
@@ -111,10 +128,9 @@ At the current moment I think that with my project is well enough for replacing 
 <li>Try building applications for mobile devices (Sailfish, Android)</li>
 <li>Test OPAM installation on many computers<img style="width: 16px;" src="images/Done-icon.png"/></li>
 </ul>
-</p>
 
-<p id="opam">
-<h3>Lablqt in OPAM</h3>
+<h3 id="opam">Lablqt in OPAM</h3>
+<p >
 <b>N.B.</b>You need Qt5(&gt;=5.2.0) to compile. Please, be sure that dev packages are installed too.
 
 <pre>
@@ -126,9 +142,8 @@ opam install qocamlbrowser # Demo application
 Development versions:
 <pre>
 opam remote add lablqt-dev http://kakadu.github.io/lablqt/opam-dev
-
 </pre>
-
 </p>
+
 </body>
 
