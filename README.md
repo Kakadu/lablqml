@@ -1,4 +1,4 @@
-There you can find my experienca about interfacing OCaml and Qt.
+There you can find my experience about interfacing OCaml and Qt.
 
 * Code generator for QtQuick 2.0 is in `src`.
 * Library for interfacing with QtQuick 2 is in `lablqml`.
