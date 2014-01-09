@@ -3,7 +3,7 @@ LABLQML=../../lablqml
 CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I$(LABLQML)/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g
-CLINKLIBS=`pkg-config --libs Qt5Quick`
+CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`
 OUT=main
 GEN_CMX=Controller.cmx IntModel.cmx DataItem.cmx
 MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )

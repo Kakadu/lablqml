@@ -1,5 +1,5 @@
 /*
- * Generated at 2013-11-06 23:46:53.840955+04:00
+ * Generated at 0-9 13:38:17
  */
 #ifndef IntModel_c_H
 #define IntModel_c_H
@@ -31,7 +31,7 @@ public:
 private:
   QHash<int, QByteArray> _roles;
 public:
-  QModelIndex makeIndex(int row,int column) {
+  QModelIndex makeIndex(int row,int column) const {
     if (row==-1 || column==-1)
       return QModelIndex();
     else
