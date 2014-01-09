@@ -55,7 +55,7 @@ Rectangle {
                 Text {
                     width: 50
                     height: 20
-                    text: cellX + " " + obj.text
+                    text: title + " " + obj.text
                     //text: obj.text
                     Component.onCompleted: console.log("text field created with text " + cellX)
                 }

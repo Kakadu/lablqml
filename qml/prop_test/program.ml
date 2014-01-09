@@ -17,6 +17,7 @@ end
 let main () =
   let cpp_model = IntModel.create_IntModel () in
   IntModel.add_role cpp_model 555 "cellX";
+  IntModel.add_role cpp_model 556 "title";
   IntModel.add_role cpp_model 666 "obj";
 
   let data = List.map (fun n ->
@@ -43,6 +44,8 @@ let main () =
  	| 0 
 	| 555 (* DisplayRole *) ->
             QVariant.of_int ((List.nth data n)#cellX ())
+	| 556 (* title *) ->
+            QVariant.of_string ((List.nth data n)#text ())
  	| 666 -> QVariant.of_object ((List.nth data n)#handler)
         | _ -> QVariant.empty
       end
@@ -73,3 +76,4 @@ let main () =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"intModel"   model#handler
 
 let () = Callback.register "doCaml" main
+
