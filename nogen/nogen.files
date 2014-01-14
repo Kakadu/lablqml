@@ -1,0 +1,9 @@
+main.cpp
+Makefile
+moc_TestQObject.cpp
+MyDynamicQObject.cpp
+MyDynamicQObject.h
+program.ml
+Root.qml
+TestQObject.cpp
+TestQObject.h
