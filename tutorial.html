@@ -901,6 +901,13 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
   $@</pre>
 </div></div>
 <div class="paragraph"><p>Value <span class="monospaced">$NOFB</span> disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value <span class="monospaced">$NOSSE</span> disables all special instruction sets.With that <span class="monospaced">./my-configure</span> QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.</p></div>
+<div class="paragraph"><p>If you want to compile Qt faster you can study next options of <span class="monospaced">./configure script</span>:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>    -no-feature-&lt;feature&gt; Do not compile in &lt;feature&gt;.
+    -feature-&lt;feature&gt; .. Compile in &lt;feature&gt;. The available features
+                          are described in src/corelib/global/qfeatures.txt</pre>
+</div></div>
 </div>
 </div>
 </div>
@@ -1197,7 +1204,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-01-16 10:14:08 UTC
+Last updated 2014-01-16 10:18:01 UTC
 </div>
 </div>
 </body>

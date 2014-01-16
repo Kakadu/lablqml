@@ -63,6 +63,13 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
 ----
 Value `$NOFB` disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value `$NOSSE` disables all special instruction sets.With that `./my-configure` QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.
 
+If you want to compile Qt faster you can study next options of `./configure script`:
+
+----
+    -no-feature-<feature> Do not compile in <feature>.
+    -feature-<feature> .. Compile in <feature>. The available features
+                          are described in src/corelib/global/qfeatures.txt
+----
 
 [[hello_world]]
 "Hello world!" in QtQuick
