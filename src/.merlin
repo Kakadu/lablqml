@@ -1,9 +1,7 @@
+S .
+S mocml
 S _build/mocml
-S _build/lib
-S _build/generator
-S xmltool
 B _build
 B _build/mocml
-PKG core
+PKG core_kernel
 PKG yojson
-PKG tyxml
