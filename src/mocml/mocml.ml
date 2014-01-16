@@ -8,7 +8,7 @@ let () = Printexc.record_backtrace true
 
 type options = {
   mutable filename : string;
-  mutable target : [ `Qml | `QtGui | `Qml_wrap ];
+  mutable target : [ `Qml | `QtGui | `Qml_wrap | `List ];
   mutable add_debug_calls: bool;
   mutable debug_critical_sections: bool;
   mutable default_extension : [ `C | `CPP ];   (* Which extension to use for generated files *)
@@ -24,25 +24,30 @@ let options =
   ; dest_dir = "."
   }
 
-let () = Core_arg.parse
-  [ ("-qml",        Arg.Unit (fun () -> options.target <- `Qml),   "use qml")
-  ; ("-qtgui",      Arg.Unit (fun () -> options.target <- `QtGui), "use QtGui")
-  ; ("-qml_wrap",   Arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
-  ; ("-with-debug", Arg.Unit (fun () -> options.add_debug_calls <- true),
-         "Add qDebug() calls in beginning of member functions")
-  ; ("-with-debug-criticals", Arg.Unit (fun () -> options.debug_critical_sections <- true),
-         "Add qDebug() when using critical setions")
-  ; ("-destdir",    Arg.String (fun s -> options.dest_dir <- s), "Where to put generated files")
-  ; ("-ext",        Arg.String (function | "c"   -> options.default_extension <- `C
-					 | "cpp" -> options.default_extension <- `CPP
-					 | ____  -> failwith "Unknown parameter of -ext"),
-     "set extension for generated files")
+let () =
+  let specs = ref
+    [ ("-qml",        Arg.Unit (fun () -> options.target <- `Qml),   "use qml")
+    ; ("-qtgui",      Arg.Unit (fun () -> options.target <- `QtGui), "use QtGui")
+    ; ("-qml_wrap",   Arg.Unit (fun () -> options.target <- `Qml_wrap), "use Qml_wrap")
+    ; ("-list",       Arg.Unit (fun () -> options.target <- `List),     "print names of declared classes")
+    ; ("-with-debug", Arg.Unit (fun () -> options.add_debug_calls <- true),
+       "Add qDebug() calls in beginning of member functions")
+    ; ("-with-debug-criticals", Arg.Unit (fun () -> options.debug_critical_sections <- true),
+       "Add qDebug() when using critical sections")
+    ; ("-destdir",    Arg.String (fun s -> options.dest_dir <- s), "Where to put generated files")
+    ; ("-ext",        Arg.String (function | "c"   -> options.default_extension <- `C
+					   | "cpp" -> options.default_extension <- `CPP
+	                                   | ____  -> failwith "Unknown parameter of -ext"),
+       "set extension for generated files")
 
-  ; ("-help",       Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
-  ; ("-h",          Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
-  ] (fun s -> options.filename <- s;
-    print_endline ("Setting filename " ^ s)
-) "usage_msg"
+    ; ("--help",      Arg.Unit (fun () -> ignore (Sys.command "man mocml")), "help")
+    ]
+  in
+  let usage_msg = "Usage:" in
+  specs := !specs @ [("-h", Arg.Unit (fun () -> Core_arg.usage !specs usage_msg; exit 0), "Display this list of options")];
+  Core_arg.parse !specs
+    (fun s -> options.filename <- s; print_endline ("Setting filename " ^ s))
+    usage_msg
 
 let () = match options.target with
   | `QtGui -> begin
@@ -72,7 +77,8 @@ let () = match options.target with
     let () = List.iter data ~f:Qml2.gen_ml in
     ()
   end
-  | `Qml_wrap -> begin
+  | `List
+  | `Qml_wrap as mode -> begin
     if not (Sys.file_exists options.filename) then (
       Printf.printf "File '%s' not found\n" options.filename;
       exit 1
@@ -95,10 +101,15 @@ let () = match options.target with
         Printexc.print_backtrace Out_channel.stdout;
         exit 1
     in
-    let config =
-      [`Ext options.default_extension] @
-      (if options.add_debug_calls then [`PrintMethCalls] else []) @
-      (if options.debug_critical_sections then [`DebugBlockingSections] else [])
-    in
-    List.iter data ~f:(Qml_wrap.generate ~directory:options.dest_dir ~config)
+    match mode with
+    | `Qml_wrap ->
+      let config =
+        [`Ext options.default_extension] @
+        (if options.add_debug_calls then [`PrintMethCalls] else []) @
+        (if options.debug_critical_sections then [`DebugBlockingSections] else [])
+      in
+      List.iter data ~f:(Qml_wrap.generate ~directory:options.dest_dir ~config)
+    | `List ->
+      let open Yaml2.Types in
+      data |> List.map ~f:(fun c -> c.classname) |> String.concat ~sep:" " |> print_endline
   end
