@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="AsciiDoc 8.6.9">
+<meta name="generator" content="AsciiDoc 8.6.7">
 <title>QtQuick approach for developing applications</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -602,8 +602,6 @@ div.exampleblock > div.content, div.sidebarblock > div.content, div.listingblock
 div.verseblock { border-left-width: 0; margin-left: 3em; }
 div.quoteblock { border-left-width: 3px; margin-left: 0; margin-right: 0;}
 div.admonitionblock td.content { border-left: 3px solid #E8E8E8; }
-
-
 @media screen {
   body {
     max-width: 50em; /* approximately 80 characters wide */
@@ -889,6 +887,20 @@ set -x
 normal.</p></div>
 <div class="paragraph"><p>Compilation time depends on your machine. I was told that with <span class="monospaced">-j8</span>
 we can succeed in 5 minutes.</p></div>
+<div class="paragraph"><div class="title">P.S.</div><p>I have discovered some issues with compilation my QOCamlBrowser app recently on Ubuntu 13.10 32bit on Intel Core 2 Duo CPU. My application was crashing in <span class="monospaced">qt_memfill32_sse2 (dest=0x8910e10, value=0, count=194)</span> at <span class="monospaced">painting/qdrawhelper_sse2.cpp:264</span>. So, I have decided to disable special instruction sets for Qt5 on this machine by improving <span class="monospaced">./my-configure</span> script. I put this stuff in <span class="monospaced">P.S.</span> section because I haven&#8217;t tested it on my Intel i3 machine.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>#!/bin/bash
+set -x
+NOFB="-no-directfb -no-linuxfb -no-eglfs -no-kms"
+SQL="-no-sql-mysql -no-sql-sqlite"
+NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
+./configure -developer-build -opensource -nomake examples -nomake tests -confirm-license \
+  -no-gtkstyle -no-glib -no-cups -no-nis \
+  $SQL $NOFB $NOSSE \
+  $@</pre>
+</div></div>
+<div class="paragraph"><p>Value <span class="monospaced">$NOFB</span> disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value <span class="monospaced">$NOSSE</span> disables all special instruction sets.With that <span class="monospaced">./my-configure</span> QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.</p></div>
 </div>
 </div>
 </div>
@@ -1185,7 +1197,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2013-12-16 01:05:11 MSK
+Last updated 2014-01-16 10:14:08 UTC
 </div>
 </div>
 </body>
