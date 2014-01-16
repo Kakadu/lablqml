@@ -1,8 +1,9 @@
+<html>
 <head>
 <title>Using OCaml and Qt together</title>
 <style type="text/css">
 body {
-font-family: Georgia, Consolas,Helvetica, arial, freesans, clean, sans-serif;
+font-family: Monospace, Ubuntu, Inconsolata;
 font-size:  18px;
 font-weight: 200;
 line-height: 31.5px;
@@ -117,9 +118,20 @@ library. Maybe you should pick some big GUI project and rewrite the
 GUI for it?
 </p>
 
+<h3>Limitations</h3>
+<ul>
+<li>Widgets which doesn't suit well into QML paradigm should be implemented in C++.
+  <a href="http://qt-project.org/doc/qt-5.1/qtquick/scenegraph-customgeometry.html">Example</a></li>
+<li>At the moment startup process is hardcoded. That's why some features are inavailable:
+  <a href="http://qt-project.org/doc/qt-5.1/qtqml/qqmlapplicationengine.html#details">connecting</a> <em>quit</em> signal to application <em>close</em> slot, adding <a href="http://qt-project.org/doc/qt-5/qquickimageprovider.html">image provider</a> and maybe something else.
+</li>
+<li>I have working demo with OCaml threads support but I'm not sure that everything will be OK when we construct more complex example.</li>
+</ul>
+
 <h3 id="todo">TODO</h3>
 (Not sorted yet)
 <ul>
+<li>Unhardcode startup process.</li>
 <li>Can we add opamdoc-generated documentation to QOCamlBrowser?</li>
 <li>Can we avoid codegeneration using <a href="http://doc.qt.digia.com/qq/qq16-dynamicqobject.html">this</a>? (As Fabrice Le Fessant recommended)</li>
 <li>Think about QtWidgets again.</li>
@@ -155,4 +167,5 @@ opam remote add lablqt-dev http://kakadu.github.io/lablqt/opam-dev
 </p>
 
 </body>
+</html>
 
