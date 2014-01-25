@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="AsciiDoc 8.6.7">
+<meta name="generator" content="AsciiDoc 8.6.9">
 <title>QtQuick approach for developing applications</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -602,6 +602,8 @@ div.exampleblock > div.content, div.sidebarblock > div.content, div.listingblock
 div.verseblock { border-left-width: 0; margin-left: 3em; }
 div.quoteblock { border-left-width: 3px; margin-left: 0; margin-right: 0;}
 div.admonitionblock td.content { border-left: 3px solid #E8E8E8; }
+
+
 @media screen {
   body {
     max-width: 50em; /* approximately 80 characters wide */
@@ -908,6 +910,7 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
     -feature-&lt;feature&gt; .. Compile in &lt;feature&gt;. The available features
                           are described in src/corelib/global/qfeatures.txt</pre>
 </div></div>
+<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>Mac users can consider invoking configure using <span class="monospaced">./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</span>. I can&#8217;t test that but some fellas <a href="https://github.com/Kakadu/lablqt/issues/16">can</a>.</p></div>
 </div>
 </div>
 </div>
@@ -1204,7 +1207,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-01-16 10:18:01 UTC
+Last updated 2014-01-25 20:43:22 MSK
 </div>
 </div>
 </body>
