@@ -45,8 +45,7 @@ set -x
 Qt compiles some code during `./configure` stage, don't worry, it's
 normal.
 
-Compilation time depends on your machine. I was told that with `-j8`
-we can succeed in 5 minutes.
+Compilation time depends on your machine. Some fellas have finished with `-j8` in 5 minutes. On my Intel Core i3 I can do it with `-j2` in 30 minutes.
 
 .P.S.
 I have discovered some issues with compilation my QOCamlBrowser app recently on Ubuntu 13.10 32bit on Intel Core 2 Duo CPU. My application was crashing in `qt_memfill32_sse2 (dest=0x8910e10, value=0, count=194)` at `painting/qdrawhelper_sse2.cpp:264`. So, I have decided to disable special instruction sets for Qt5 on this machine by improving `./my-configure` script. I put this stuff in `P.S.` section because I haven't tested it on my Intel i3 machine.
@@ -75,6 +74,19 @@ If you want to compile Qt faster you can study next options of `./configure scri
 .P.P.S. MacOS remark
 
 Mac users can consider invoking configure using `./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework`. I can't test that but some fellas https://github.com/Kakadu/lablqt/issues/16[can].
+
+.P.P.P.S.
+
+Next script will be useful (as a part of `~/.bashrc`) for setting local environment for your Qt5 build:
+
+----
+with_qt5() {
+  export PATH=~/mand/prog/qt/qt5/qtbase/bin:$PATH  # where Qt5 has been build
+  qmake -query QT_VERSION
+  export LD_LIBRARY_PATH=`qmake -query QT_INSTALL_LIBS`:$LD_LIBRARY_PATH
+  export PKG_CONFIG_PATH=`qmake -query QT_INSTALL_LIBS`/pkgconfig:$PKG_CONFIG_PATH
+}
+----
 
 [[hello_world]]
 "Hello world!" in QtQuick

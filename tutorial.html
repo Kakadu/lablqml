@@ -887,8 +887,7 @@ set -x
 </div></div>
 <div class="paragraph"><p>Qt compiles some code during <span class="monospaced">./configure</span> stage, don&#8217;t worry, it&#8217;s
 normal.</p></div>
-<div class="paragraph"><p>Compilation time depends on your machine. I was told that with <span class="monospaced">-j8</span>
-we can succeed in 5 minutes.</p></div>
+<div class="paragraph"><p>Compilation time depends on your machine. Some fellas have finished with <span class="monospaced">-j8</span> in 5 minutes. On my Intel Core i3 I can do it with <span class="monospaced">-j2</span> in 30 minutes.</p></div>
 <div class="paragraph"><div class="title">P.S.</div><p>I have discovered some issues with compilation my QOCamlBrowser app recently on Ubuntu 13.10 32bit on Intel Core 2 Duo CPU. My application was crashing in <span class="monospaced">qt_memfill32_sse2 (dest=0x8910e10, value=0, count=194)</span> at <span class="monospaced">painting/qdrawhelper_sse2.cpp:264</span>. So, I have decided to disable special instruction sets for Qt5 on this machine by improving <span class="monospaced">./my-configure</span> script. I put this stuff in <span class="monospaced">P.S.</span> section because I haven&#8217;t tested it on my Intel i3 machine.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
@@ -911,6 +910,16 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
                           are described in src/corelib/global/qfeatures.txt</pre>
 </div></div>
 <div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>Mac users can consider invoking configure using <span class="monospaced">./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</span>. I can&#8217;t test that but some fellas <a href="https://github.com/Kakadu/lablqt/issues/16">can</a>.</p></div>
+<div class="paragraph"><div class="title">P.P.P.S.</div><p>Next script will be useful (as a part of <span class="monospaced">~/.bashrc</span>) for setting local environment for your Qt5 build:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>with_qt5() {
+  export PATH=~/mand/prog/qt/qt5/qtbase/bin:$PATH  # where Qt5 has been build
+  qmake -query QT_VERSION
+  export LD_LIBRARY_PATH=`qmake -query QT_INSTALL_LIBS`:$LD_LIBRARY_PATH
+  export PKG_CONFIG_PATH=`qmake -query QT_INSTALL_LIBS`/pkgconfig:$PKG_CONFIG_PATH
+}</pre>
+</div></div>
 </div>
 </div>
 </div>
@@ -1207,7 +1216,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-01-25 20:43:22 MSK
+Last updated 2014-02-01 23:18:37 MSK
 </div>
 </div>
 </body>
