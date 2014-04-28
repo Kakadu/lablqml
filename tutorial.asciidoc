@@ -320,7 +320,7 @@ Now let's define out model and expose it to QtQuick engine in initialization blo
 
 ----
   let data =
-    [ ("Анна Керенина",           "Лев Толстой")
+    [ ("Анна Каренина",           "Лев Толстой")
     ; ("Война и Мир",             "Лев Толстой")
     ; ("Les Misérables",          "Victor Hugo")
     ; ("Les Trois Mousquetaires", "Alexandre Dumas, père")
