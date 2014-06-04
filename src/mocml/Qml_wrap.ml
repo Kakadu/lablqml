@@ -13,7 +13,9 @@ let with_file path f =
   f file;
   Out_channel.close file
 
+
 let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; signals} =
+  let (_: Config.MethOptions.t) = config in
   let debugBlockingSections = List.mem config `DebugBlockingSections in
   (*printf "debugBlockingSections = %b\n" debugBlockingSections;*)
   let b_h   = B.create 100 in
@@ -295,6 +297,11 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
   p_ml "%s\n" (B.contents clas_def_buf);
   p_ml "%s\n" (B.contents external_buf);
 
-  with_file (directory ^/ classname ^ "_c.cpp") (fun file -> output_string file (B.contents b_c));
-  with_file (directory ^/ classname ^ "_c.h")   (fun file -> output_string file (B.contents b_h));
-  with_file (directory ^/ classname ^ ".ml")    (fun file -> output_string file (B.contents b_ml))
+  let cpp_ext = match List.find_map config ~f:(function `Ext `CPP -> Some `CPP | `Ext `C -> Some `C | _ -> None) with
+    | Some `C  -> "c"
+    | Some `CPP -> "cpp"
+    | _________ -> "cpp"
+  in
+  with_file (directory ^/ classname ^ "_c." ^ cpp_ext) (fun file -> output_string file (B.contents b_c));
+  with_file (directory ^/ classname ^ "_c.h")          (fun file -> output_string file (B.contents b_h));
+  with_file (directory ^/ classname ^ ".ml")           (fun file -> output_string file (B.contents b_ml))

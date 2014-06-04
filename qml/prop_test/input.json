@@ -48,6 +48,11 @@
         , "notify": "cellXChanged"
         , "type": "int"
         }
+        , { "name": "text"
+        , "get":  "text"
+        , "notify": "textChanged"
+        , "type": "string"
+        }
   ]
 , "slots": []
 , "signals": []

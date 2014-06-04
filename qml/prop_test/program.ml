@@ -16,14 +16,20 @@ end
 
 let main () =
   let cpp_model = IntModel.create_IntModel () in
-  let myDefaultRoleMainModel = 555 in
-  IntModel.add_role cpp_model myDefaultRoleMainModel "cellX";
+  IntModel.add_role cpp_model 555 "cellX";
+  IntModel.add_role cpp_model 556 "title";
+  IntModel.add_role cpp_model 666 "obj";
 
   let data = List.map (fun n ->
     let cppObj = DataItem.create_DataItem () in
       object(self)
         inherit DataItem.base_DataItem cppObj as super
         method cellX () = n
+        val mutable text_ = sprintf "text %d" n
+ 	method text  () = text_
+        method setText s = 
+          if (s <> self#text ()) then ( text_ <- s; self#emit_textChanged s);
+
       end
   ) [1;2;3] in
 
@@ -34,9 +40,14 @@ let main () =
       let n = QModelIndex.row index in
       if (n<0 || n>= List.length data) then QVariant.empty
       else begin
-        if (role=0 || role=myDefaultRoleMainModel) (* DisplayRole *)
-        then QVariant.of_int ((List.nth data n)#cellX ())
-        else QVariant.empty
+        match role with
+ 	| 0 
+	| 555 (* DisplayRole *) ->
+            QVariant.of_int ((List.nth data n)#cellX ())
+	| 556 (* title *) ->
+            QVariant.of_string ((List.nth data n)#text ())
+ 	| 666 -> QVariant.of_object ((List.nth data n)#handler)
+        | _ -> QVariant.empty
       end
   end in
 
@@ -51,7 +62,9 @@ let main () =
     method x () = _x
     method state () = _state
     method setX v =
-      if v<>_x then ( _x<-v; self#emit_xChanged _x )
+      if v<>_x then ( _x<-v; self#emit_xChanged _x );
+      (List.hd data)#setText (sprintf "new %d" v)
+ 
     method setY v =
       if v<>_y then ( _y<-v; self#emit_yChanged _y )
     method setState v =
@@ -63,3 +76,4 @@ let main () =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"intModel"   model#handler
 
 let () = Callback.register "doCaml" main
+
