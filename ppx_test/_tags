@@ -1,0 +1,23 @@
+# OASIS_START
+# DO NOT EDIT (digest: 6d4f75fb85f85be02a847a6927eafe7b)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Executable ppx_getenv
+<lib/ppx_getenv.{native,byte}>: package(compiler-libs.common)
+# Executable ppx_qt
+"lib/ppx_qt.native": package(compiler-libs.common)
+<lib/*.ml{,i}>: package(compiler-libs.common)
+# OASIS_STOP
+<test_qt>: not_hygienic
+
