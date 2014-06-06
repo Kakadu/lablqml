@@ -5,6 +5,15 @@ open Parsetree
 open Longident
 open Location
 
+module Ref = struct
+  let append ~set x = set := x :: !set
+end
+
+let rec has_attr name: Parsetree.attributes -> bool = function
+  | [] -> false
+  | ({txt;loc},_) :: _ when txt = name  -> true
+  | _ :: xs -> false
+
 let getenv s = try Sys.getenv s with Not_found -> ""
 
 exception Error of Location.t
@@ -20,85 +29,70 @@ let () =
 
 let (_: Ast_mapper.mapper) = default_mapper
 
-let wrap_class_type_decl mapper (ct: Parsetree.class_type Parsetree.class_infos) =
-  print_endline "wrap_class_type_decl on class type markend with `qtclass`";
-  let clas_sig = match ct.pci_expr.pcty_desc with
-  | Pcty_signature s -> s
-  | Pcty_constr _    -> raise (Error2 ("???", ct.pci_loc))
-  | Pcty_extension _ -> raise (Error2 ("???", ct.pci_loc))
-  | Pcty_arrow _     -> raise (Error2 ("???", ct.pci_loc))
+let cppobj_coretyp loc =
+  Ast_helper.Typ.constr ~loc ({txt=Lident "cppobj"; loc}) []
+
+let make_store_func ~loc =
+  let pval_name = {txt="store"; loc} in
+  let pval_prim = ["name_of_external_func_there"] in
+  let pval_type = Ast_helper.Typ.(arrow ""
+                                        (cppobj_coretyp loc)
+                                        (arrow ""
+                                               (object_ ~loc [] Open)
+                                               (constr ~loc {txt=Lident "unit"; loc} [] ) ) )
   in
-  let fields: class_type_field list = clas_sig.pcsig_fields in
-  let wrap_meth ((name,_,_,typ) as m) = [Pctf_method m] in
-  let wrap_prop ((name,_,_,typ) as v) = [Pctf_val v] in
-  let wrap_field (f_desc: class_type_field) : class_type_field list =
-    let ans = match f_desc.pctf_desc with
-      | Pctf_val v    -> wrap_prop v
-      | Pctf_method m -> wrap_meth m
-      (* values become properties and methods become Q_INVOKABLE methods. Other values not changed *)
-      | Pctf_inherit _ -> []
-      | Pctf_constraint _ -> []
-      | Pctf_attribute _ -> []
-      | Pctf_extension _ -> []
+  let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                  pval_loc=loc } in
+  { pstr_desc; pstr_loc=loc }
+
+let wrap_class_decl mapper loc _ (ci: Parsetree.class_expr Parsetree.class_infos) =
+  (*print_endline "wrap_class_type_decl on class type markend with `qtclass`";*)
+
+  let clas_sig = match ci.pci_expr.pcl_desc with
+    | Pcl_structure s -> s
+    |  _    -> raise (Error2 ("???", ci.pci_loc))
+  in
+  let fields: class_field list = clas_sig.pcstr_fields in
+
+  let heading = ref [] in
+  Ref.append ~set:heading (make_store_func loc);
+  let wrap_meth ((name,_,typ) as m) = [Pcf_method m] in
+  let wrap_prop ((name,_,typ) as v) = [Pcf_method v] in
+
+  let wrap_field (f_desc: class_field) : class_field list =
+    let ans = match f_desc.pcf_desc with
+      | Pcf_method m  when has_attr "qtmeth" f_desc.pcf_attributes -> wrap_meth m
+      | Pcf_method m  when has_attr "qtprop" f_desc.pcf_attributes -> wrap_prop m
+      | _ -> []
     in
-    let ans' = List.map (fun ans -> { f_desc with pctf_desc=ans }) ans in
+    let ans' = List.map (fun ans -> { f_desc with pcf_desc=ans }) ans in
     ans'
   in
   let new_fields = List.map wrap_field fields |> List.concat in
-  let new_desc = Pcty_signature {clas_sig with pcsig_fields = new_fields} in
-  let new_expr = {ct.pci_expr with pcty_desc = new_desc } in
-  let ans = {ct with pci_expr=new_expr} in
-  ans
+  let new_desc = Pcl_structure {clas_sig with pcstr_fields = new_fields} in
+  let new_expr = {ci.pci_expr with pcl_desc = new_desc } in
+  let ans = { pstr_desc=Pstr_class [{ci with pci_expr=new_expr}]; pstr_loc=loc } in
+  !heading @ [ans]
+
 (*
-  default_mapper.class_type_declaration mapper ct
+let (_:int) = Ast_helper.with_default_loc
  *)
+
 let getenv_mapper argv =
   (* Our getenv_mapper only overrides the handling of expressions in the default mapper. *)
-  {{ default_mapper with
-    expr = fun mapper expr ->
-      match expr with
-      (* Is this an extension node? *)
-      | { pexp_desc =
-          (* Should have name "getenv". *)
-          Pexp_extension ({ txt = "getenv"; loc }, pstr) } ->
-        begin match pstr with
-        | (* Should have a single structure item, which is evaluation of a constant string. *)
-          PStr [{ pstr_desc =
-                  Pstr_eval ({ pexp_loc  = loc;
-                               pexp_desc =
-                               Pexp_constant (Const_string (sym, None))}, _)}] ->
-          (* Replace with a constant string with the value from the environment. *)
-          Exp.constant ~loc (Const_string (getenv sym, None))
-        | _ -> raise (Error loc)
-        end
-      (* Delegate to the default mapper. *)
-      | x -> default_mapper.expr mapper x;
-  } with class_type_declaration = fun mapper ct ->
-      print_endline "qtclass  is found";
-      match ct.pci_attributes with
-      | [({txt="qtclass"; loc},_)] -> wrap_class_type_decl mapper ct
-      | _ -> default_mapper.class_type_declaration mapper ct
-(*
-      match match ct.pci_expr.pcty_desc with
-  | Pcty_signature _ -> print_endline "sig"
-  | Pcty_constr _ -> print_endline "constr"
-  | Pcty_extension _ -> print_endline "ext"
-  | Pcty_arrow _ -> print_endline "arrow"
-  in
-      wrap_class_type_decl mapper ct
-(*
-      match ct with
-      | [
-(*
-      | {pcty_desc=Pcty_extension({txt="qtclass"; loc},_); pcty_attributes; _} ->
-         print_endline "qtclass  is found";
-         default_mapper.class_type mapper ct
- *)
-      | _ -> print_endline "DEFAULT MAPPER";
-             default_mapper.class_type_declaration mapper ct
- *)
- *)
+  { default_mapper with
+    structure = fun mapper items ->
+      let rec iter items =
+        match items with
+        | { pstr_desc=Pstr_class [cinfo]; pstr_loc } as item :: rest when
+               has_attr "qtclass" cinfo.pci_attributes ->
+           Ast_helper.with_default_loc pstr_loc (fun () ->
+             wrap_class_decl mapper pstr_loc item cinfo @ iter rest )
+        | { pstr_loc } as item :: rest ->
+          mapper.structure_item mapper item :: iter rest
+        | [] -> []
+      in
+      iter items
   }
-
 
 let () = run_main getenv_mapper

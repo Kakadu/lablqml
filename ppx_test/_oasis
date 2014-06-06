@@ -18,7 +18,7 @@ Executable ppx_qt
   Path:           lib
   BuildDepends:   compiler-libs.common
   MainIs:         ppx_qt.ml
-  CompiledObject: native
+  CompiledObject: best
 
 #Test test_ppx_protobuf
 #  Command:        ocamlbuild -I lib -package oUnit  \

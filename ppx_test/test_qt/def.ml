@@ -1,15 +1,12 @@
-
-class type controller = object
-  val hasData : bool
-  val name: string
-  method linkActivated : string -> unit
+(*
+external store: cppobj -> < .. > -> unit = "caml_store_value_in_Controller"
+ *)
+class virtual controller = object
+  method virtual hasData : bool[@@qtprop]
+  (*val name: string*)
+  method virtual linkActivated : string -> unit[@@qtmeth]
+        (*
   method backTo : string -> int -> unit
-  method getDefaultLibraryPath: unit -> string
+  method getDefaultLibraryPath: unit -> string *)
 end[@@qtclass]
 
-
-(*
-  val name : string
-  method redraw : unit -> unit
-end]
- *)
