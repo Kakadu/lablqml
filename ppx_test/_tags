@@ -20,4 +20,5 @@
 <lib/*.ml{,i}>: package(compiler-libs.common)
 # OASIS_STOP
 <test_qt>: not_hygienic
+#true: -warn_6
 
