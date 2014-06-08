@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: e08901e28134bd6712c341e20b3a36d2)
+# DO NOT EDIT (digest: 5f6967e3d74627d24aebdc660c213320)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -32,21 +32,9 @@
 <mocml/*.ml{,i}>: use_mocmllib
 # Executable ppx_qt
 "ppxext/ppx_qt.native": package(compiler-libs.common)
-"ppxext/ppx_qt.native": package(core_kernel)
-"ppxext/ppx_qt.native": package(sexplib)
-"ppxext/ppx_qt.native": package(sexplib.syntax)
-"ppxext/ppx_qt.native": package(str)
-"ppxext/ppx_qt.native": package(threads)
-"ppxext/ppx_qt.native": package(yojson)
-"ppxext/ppx_qt.native": use_mocmllib
+"ppxext/ppx_qt.native": package(unix)
 <ppxext/*.ml{,i}>: package(compiler-libs.common)
-<ppxext/*.ml{,i}>: package(core_kernel)
-<ppxext/*.ml{,i}>: package(sexplib)
-<ppxext/*.ml{,i}>: package(sexplib.syntax)
-<ppxext/*.ml{,i}>: package(str)
-<ppxext/*.ml{,i}>: package(threads)
-<ppxext/*.ml{,i}>: package(yojson)
-<ppxext/*.ml{,i}>: use_mocmllib
+<ppxext/*.ml{,i}>: package(unix)
 # OASIS_STOP
 "mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax
 "mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax

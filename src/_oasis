@@ -11,7 +11,7 @@ OCamlVersion: >= 4.02
 Library mocmllib
   Path: mocml
   Modules:          Qml,Qml2,TypAst,Qml_wrap,Qtgui,WrapAbstractItemModel,ParseYaml,TypLexer,TypParser
-  BuildDepends:     sexplib.syntax,sexplib,core_kernel,threads,str,yojson,mocmllib
+  BuildDepends:     sexplib.syntax,sexplib,core_kernel,threads,str,yojson
 
 Executable mocml
   Path:             mocml
@@ -21,7 +21,7 @@ Executable mocml
 
 Executable ppx_qt
   Path:           ppxext
-  BuildDepends:   compiler-libs.common,mocmllib
+  BuildDepends:   compiler-libs.common,unix
   MainIs:         ppx_qt.ml
   CompiledObject: native
 
