@@ -109,9 +109,52 @@ let close_files () =
   FilesMap.iter f !files;
   files := FilesMap.empty
 
+module Names = struct
+  let signal_of_prop s = s^"Changed"
+  let getter_of_prop s = s
+  let setter_of_prop s = "set"^s
+end
 
-let gen_prop ~classname ~propname typ =
+(* properties can have only simple types (except unit) *)
+type prop_typ = [ `bool | `int | `string | `list of prop_typ ]
+type meth_typ_item = [ `unit | prop_typ ]
+type meth_typ = meth_typ_item list
+
+let rec cpptyp_of_proptyp = function
+  | `bool -> "bool"
+  | `int  -> "int"
+  | `string -> "QString"
+  | `list x -> sprintf "QList<%s>" (cpptyp_of_proptyp x)
+
+(* stub implementation to call it from OCaml *)
+let gen_stub_cpp ~classname ~methname ch (types: meth_typ) =
+  fprintfn ch "// stub"
+
+(* method implementation from class header. Used for invacation OCaml from C++ *)
+let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
+  fprintfn ch "// meth"
+
+let gen_prop ~classname ~propname (typ: prop_typ) =
   printf "Generation prop '%s' of class '%s'.\n" propname classname;
+  let hndl = FilesMap.find (classname,FilesKey.CHDR) !files in
+  let println fmt = fprintfn hndl fmt in
+  let sgnl_name = Names.signal_of_prop propname in
+  let getter_name = Names.getter_of_prop propname in
+  let setter_name = Names.setter_of_prop propname in
+  let cpptyp_name = cpptyp_of_proptyp typ in
+
+  println "public:";
+  println "  Q_PROPERTY(%s %s READ %s NOTIFY %s)" cpptyp_name propname getter_name sgnl_name;
+  (* println "  void emit_%s(%s x) { emit %s(x); }" sgnl_name cpptyp_name sgnl_name;*)
+  println "signals:";
+  println "  void %s(%s %s);" sgnl_name cpptyp_name propname;
+  (* C++ part now *)
+  let println fmt =
+    let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
+    fprintfn hndl fmt
+  in
+  println "// Q_PROPERTY( %s )" propname;
+  gen_meth_cpp ~classname ~methname:getter_name hndl [(`unit :> meth_typ_item); (typ :>meth_typ_item)];
   ()
 
 let gen_meth ~classname ~methname typ =

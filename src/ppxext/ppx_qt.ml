@@ -24,21 +24,22 @@ let rec has_attr name: Parsetree.attributes -> bool = function
 let getenv s = try Sys.getenv s with Not_found -> ""
 
 exception Error of Location.t
-exception Error2 of string * Location.t
+exception ErrorMsg of string * Location.t
 
 let () =
   Location.register_error_of_exn (fun exn ->
     match exn with
     | Error loc ->
       Some (error ~loc " QWE [%getenv] accepts a string, e.g. [%getenv \"USER\"]")
-    | Error2 (msg,loc) -> Some (error ~loc msg)
+    | ErrorMsg (msg,loc) -> Some (error ~loc msg)
     | _ -> None)
 
 let (_: Ast_mapper.mapper) = default_mapper
 
 let type_suits_prop ty = match ty.ptyp_desc with
-  | Ptyp_constr ({txt=Lident "int"; _},[]) -> `Ok `Int
-  | Ptyp_constr ({txt=Lident "bool"; _},[]) -> `Ok `Bool
+  | Ptyp_constr ({txt=Lident "int";    _},[]) -> `Ok `int
+  | Ptyp_constr ({txt=Lident "bool";   _},[]) -> `Ok `bool
+  | Ptyp_constr ({txt=Lident "string"; _},[]) -> `Ok `string
   | Ptyp_constr ({txt=Lident "unit"; _},[]) -> `Error "property can't have type 'unit'"
   | Ptyp_constr ({txt=Lident x; _},[]) -> `Error (sprintf "Don't know what to do with '%s'" x)
   | _ -> `Error "Type is unknown"
@@ -75,22 +76,48 @@ let make_handler_meth ~loc : class_field =
   let e = Ast_helper.Exp.(poly (ident (mkloc (Lident "cppobj") loc) ) None) in
   Ast_helper.(Cf.method_ (mkloc "handler" loc) Public (Cfk_concrete (Fresh,e)  ) )
 
-let wrap_meth ~classname (({txt=name;_},_,kind) as m) =
+let eval_meth_typ t =
+  let rec parse_one t = match t.ptyp_desc with
+    | Ptyp_constr (({txt=Lident "list"  ;_}),[typarg]) -> `list (parse_one typarg)
+    | Ptyp_constr (({txt=Lident "string";_}),_) -> `string
+    | Ptyp_constr (({txt=Lident "unit"  ;_}),_) -> `unit
+    | Ptyp_constr (({txt=Lident "int"   ;_}),_) -> `int
+    | _ -> raise @@ ErrorMsg ("can't eval type", t.ptyp_loc)
+  in
+  let rec helper t =
+    match t.ptyp_desc with
+    | Ptyp_arrow (_,l,r) -> [parse_one l] @ (helper r)
+    | x -> [parse_one t] (*raise @@ ErrorMsg ("don't know what to do with this type", t.ptyp_loc)*)
+  in
+  helper t
 
-  [Pcf_method m]
+let check_meth_typ ~loc _xs =
+  (* TODO: some checks like unit type should be at the end of list *)
+  true
+
+let wrap_meth ~classname (({txt=methname; loc} ,_,kind) as m) =
+  match kind with
+  | Cfk_concrete _ -> raise (ErrorMsg ("Qt methods should be marked as virtual", !default_loc))
+  | Cfk_virtual typ -> begin
+     (* *)
+     let meth_typ = eval_meth_typ typ in
+     check_meth_typ ~loc meth_typ;
+     if options.gencpp then Gencpp.gen_meth ~classname ~methname meth_typ;
+     [Pcf_method m]
+  end
 
 let wrap_prop ~classname ((loc,_,kind) as v) =
   let propname = loc.txt in
   (*printf "wrap prop '%s' of class '%s'.\n" propname classname;*)
   match kind with
-  | Cfk_concrete _ -> raise (Error2 ("??", !default_loc))
+  | Cfk_concrete _ -> raise (ErrorMsg ("??", !default_loc))
   | Cfk_virtual typ -> begin
      match type_suits_prop typ with
      | `Ok typ ->
         if options.gencpp then Gencpp.gen_prop ~classname ~propname typ;
         [Pcf_method v]
      | `Error msg -> raise @@
-                       Error2 (sprintf "Can't wrap property '%s': %s" propname msg, !default_loc)
+                       ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, !default_loc)
   end
 
 let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
@@ -99,7 +126,7 @@ let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
   if options.gencpp then Gencpp.open_files ~destdir ~classname;
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s
-    |  _    -> raise (Error2 ("???", ci.pci_loc))
+    |  _    -> raise (ErrorMsg ("???", ci.pci_loc))
   in
   let fields: class_field list = clas_sig.pcstr_fields in
 
