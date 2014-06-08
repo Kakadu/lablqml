@@ -20,6 +20,7 @@ let getenv_mapper argv =
   (* Our getenv_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with
     expr = fun mapper expr ->
+      ignore (raise  (Error !default_loc));
       match expr with
       (* Is this an extension node? *)
       | { pexp_desc =

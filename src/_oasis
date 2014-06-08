@@ -1,15 +1,27 @@
-OASISFormat: 0.3
-Name:        mocml
-Version:     0.1
-Synopsis:    Codegeneration tool for lablqt
-Authors:     Kakadu
-License:     LGPL-3.0 with OCaml linking exception
-Plugins:     DevFiles (0.3)
+OASISFormat:  0.4
+Name:         mocml
+Version:      0.2
+Synopsis:     Codegeneration tool for lablqt
+Authors:      Kakadu
+License:      LGPL-3.0 with OCaml linking exception
+Plugins:      DevFiles (0.4)
+BuildTools:   ocamlbuild
+OCamlVersion: >= 4.02
+
+Library mocmllib
+  Path: mocml
+  Modules:          Qml,Qml2,TypAst,Qml_wrap,Qtgui,WrapAbstractItemModel,ParseYaml,TypLexer,TypParser
+  BuildDepends:     sexplib.syntax,sexplib,core_kernel,threads,str,yojson,mocmllib
 
 Executable mocml
   Path:             mocml
-  BuildTools:       ocamlbuild
-  BuildDepends:     sexplib.syntax,sexplib,core_kernel,threads,str,yojson
+  BuildDepends:     core_kernel,threads,str,yojson,mocmllib
   CompiledObject:   native
   MainIs:           mocml.ml
+
+Executable ppx_qt
+  Path:           ppxext
+  BuildDepends:   compiler-libs.common,mocmllib
+  MainIs:         ppx_qt.ml
+  CompiledObject: native
 

@@ -1,3 +1,4 @@
+type cppobj
 (*
 external store: cppobj -> < .. > -> unit = "caml_store_value_in_Controller"
  *)

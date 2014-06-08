@@ -5,10 +5,16 @@ open Parsetree
 open Longident
 open Location
 open Printf
+open Gencpp
 
-module Ref = struct
-  let append ~set x = set := x :: !set
-end
+type options = { mutable gencpp: bool }
+let options  = { gencpp=true }
+
+let () =
+  let specs = [ ("-nocpp", Arg.Unit (fun () -> options.gencpp <- false), "Don't generate C++")] in
+  Arg.parse specs (fun _ -> ())
+            "usage there"
+
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
@@ -29,6 +35,14 @@ let () =
     | _ -> None)
 
 let (_: Ast_mapper.mapper) = default_mapper
+
+let type_suits_prop ty = match ty.ptyp_desc with
+  | Ptyp_constr ({txt=Lident "int"; _},[]) -> `Ok `Int
+  | Ptyp_constr ({txt=Lident "bool"; _},[]) -> `Ok `Bool
+  | Ptyp_constr ({txt=Lident "unit"; _},[]) -> `Error "property can't have type 'unit'"
+  | Ptyp_constr ({txt=Lident x; _},[]) -> `Error (sprintf "Don't know what to do with '%s'" x)
+  | _ -> `Error "Type is unknown"
+
 
 let cppobj_coretyp loc =
   Ast_helper.Typ.constr ~loc ({txt=Lident "cppobj"; loc}) []
@@ -61,12 +75,28 @@ let make_handler_meth ~loc : class_field =
   let e = Ast_helper.Exp.(poly (ident (mkloc (Lident "cppobj") loc) ) None) in
   Ast_helper.(Cf.method_ (mkloc "handler" loc) Public (Cfk_concrete (Fresh,e)  ) )
 
-let wrap_meth ~classname (({txt=name;_},_,kind) as m) = [Pcf_method m]
-let wrap_prop ~classname (({txt=name;_},_,kind) as v) = [Pcf_method v]
+let wrap_meth ~classname (({txt=name;_},_,kind) as m) =
 
-let wrap_class_decl mapper loc _ (ci: Parsetree.class_expr Parsetree.class_infos) =
+  [Pcf_method m]
+
+let wrap_prop ~classname ((loc,_,kind) as v) =
+  let propname = loc.txt in
+  (*printf "wrap prop '%s' of class '%s'.\n" propname classname;*)
+  match kind with
+  | Cfk_concrete _ -> raise (Error2 ("??", !default_loc))
+  | Cfk_virtual typ -> begin
+     match type_suits_prop typ with
+     | `Ok typ ->
+        if options.gencpp then Gencpp.gen_prop ~classname ~propname typ;
+        [Pcf_method v]
+     | `Error msg -> raise @@
+                       Error2 (sprintf "Can't wrap property '%s': %s" propname msg, !default_loc)
+  end
+
+let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
   (*print_endline "wrap_class_type_decl on class type markend with `qtclass`";*)
   let classname = ci.pci_name.txt in
+  if options.gencpp then Gencpp.open_files ~destdir ~classname;
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s
     |  _    -> raise (Error2 ("???", ci.pci_loc))
@@ -78,14 +108,18 @@ let wrap_class_decl mapper loc _ (ci: Parsetree.class_expr Parsetree.class_infos
 
   let wrap_field (f_desc: class_field) : class_field list =
     let ans = match f_desc.pcf_desc with
-      | Pcf_method m  when has_attr "qtmeth" f_desc.pcf_attributes -> wrap_meth ~classname m
-      | Pcf_method m  when has_attr "qtprop" f_desc.pcf_attributes -> wrap_prop ~classname m
+      | Pcf_method m  when has_attr "qtmeth" f_desc.pcf_attributes ->
+         wrap_meth ~classname m
+      | Pcf_method m  when has_attr "qtprop" f_desc.pcf_attributes ->
+         wrap_prop ~classname m
       | _ -> []
     in
     let ans' = List.map (fun ans -> { f_desc with pcf_desc=ans }) ans in
     ans'
   in
   let new_fields = List.map wrap_field fields |> List.concat in
+  if options.gencpp then Gencpp.close_files ();
+
   let new_fields = (make_initializer loc) :: (make_handler_meth ~loc) :: new_fields in
   let new_desc = Pcl_structure { pcstr_fields = new_fields;
                                  pcstr_self = Ast_helper.Pat.var (mkloc "self" loc) } in
@@ -93,7 +127,8 @@ let wrap_class_decl mapper loc _ (ci: Parsetree.class_expr Parsetree.class_infos
   let new_desc2 = Pcl_fun ("", None, Ast_helper.Pat.var (mkloc "cppobj" loc), new_expr) in
   let new_expr2 = {new_expr with pcl_desc = new_desc2 } in
 
-  let ans = { pstr_desc=Pstr_class [{ci with pci_expr=new_expr2}]; pstr_loc=loc } in
+  let ans = { pstr_desc=Pstr_class [{{ci with pci_expr=new_expr2} with pci_attributes=[]}]
+            ; pstr_loc=loc } in
   !heading @ [ans]
 
 (*
