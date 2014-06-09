@@ -48,6 +48,9 @@ let type_suits_prop ty = match ty.ptyp_desc with
 let cppobj_coretyp loc =
   Ast_helper.Typ.constr ~loc ({txt=Lident "cppobj"; loc}) []
 
+let unit_coretyp loc =
+  Ast_helper.Typ.constr ~loc ({txt=Lident "unit"; loc}) []
+
 let make_store_func ~loc ~classname : structure_item =
   let pval_name = {txt="store"; loc} in
   let pval_prim = [sprintf "caml_store_value_in_%s" classname] in
@@ -60,6 +63,21 @@ let make_store_func ~loc ~classname : structure_item =
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
                                   pval_loc=loc } in
   { pstr_desc; pstr_loc=loc }
+
+
+let make_stub_for_signal ~classname ~loc ~typ name : structure_item =
+(*  let open Ast_helper in*)
+  let pval_name = {txt="stub_"^name; loc} in
+  let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname name] in
+  let pval_type = Ast_helper.Typ.(arrow ""
+                                        (cppobj_coretyp loc)
+                                        (arrow "" typ
+                                               (constr ~loc {txt=Lident "unit"; loc} [] ) ) )
+  in
+  let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                  pval_loc=loc } in
+  { pstr_desc; pstr_loc=loc }
+
 
 let make_initializer ~loc : class_field =
   let pexp_desc = Ast_helper.Exp.(
@@ -102,22 +120,8 @@ let wrap_meth ~classname (({txt=methname; loc} ,_,kind) as m) =
      (* *)
      let meth_typ = eval_meth_typ typ in
      check_meth_typ ~loc meth_typ;
-     if options.gencpp then Gencpp.gen_meth ~classname ~methname meth_typ;
+     if options.gencpp then Gencpp.gen_meth ~classname ~methname meth_typ; (* TODO: Warning? *)
      [Pcf_method m]
-  end
-
-let wrap_prop ~classname ((loc,_,kind) as v) =
-  let propname = loc.txt in
-  (*printf "wrap prop '%s' of class '%s'.\n" propname classname;*)
-  match kind with
-  | Cfk_concrete _ -> raise (ErrorMsg ("??", !default_loc))
-  | Cfk_virtual typ -> begin
-     match type_suits_prop typ with
-     | `Ok typ ->
-        if options.gencpp then Gencpp.gen_prop ~classname ~propname typ;
-        [Pcf_method v]
-     | `Error msg -> raise @@
-                       ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, !default_loc)
   end
 
 let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
@@ -133,6 +137,36 @@ let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
   let heading = ref [] in
   Ref.append ~set:heading (make_store_func   ~classname ~loc);
 
+  let wrap_prop ~classname ((loc,flag,kind) as v) =
+    let propname = loc.txt in
+    let l = loc.loc in
+    match kind with
+    | Cfk_concrete _ ->
+       raise @@ ErrorMsg ("We can generate prop methods for virtuals only", !default_loc)
+    | Cfk_virtual core_typ -> begin
+       match type_suits_prop core_typ with
+       | `Ok typ ->
+          if options.gencpp then Gencpp.gen_prop ~classname ~propname typ;
+          let signal_name = Names.signal_of_prop propname in
+          Ref.append ~set:heading (make_stub_for_signal ~classname ~loc:l ~typ:core_typ signal_name);
+          let open Ast_helper in
+          let e = Exp.(poly (apply
+                               (ident (mkloc (Lident ("stub_"^signal_name)) l) )
+                               ["",send (ident (mkloc (Lident "self") l)) "handler"
+                               ]
+                            )
+                            None) in
+
+          [ (Cf.method_ (mkloc ("emit_" ^ signal_name) l)
+                      Public (Cfk_concrete (Fresh,e)) ).pcf_desc
+          ; Pcf_method ({loc with txt=Names.signal_of_prop propname},
+                        flag,
+                      Cfk_virtual Ast_helper.Typ.(arrow "" (unit_coretyp l) core_typ) )
+          ]
+       | `Error msg ->
+          raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, l)
+    end
+  in
   let wrap_field (f_desc: class_field) : class_field list =
     let ans = match f_desc.pcf_desc with
       | Pcf_method m  when has_attr "qtmeth" f_desc.pcf_attributes ->
