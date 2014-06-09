@@ -285,7 +285,8 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
 
   let get_var,release_var = get_vars_queue locals in
   let call_closure_str = match List.length args with
-    | 0 -> sprintf "caml_callback2(_meth, _camlobj, Val_unit);"
+    | 0
+    | 1 when args=[`unit] -> sprintf "caml_callback2(_meth, _camlobj, Val_unit);"
     | n ->
        println "  _args[0] = _camlobj;";
        let f i arg =
@@ -293,6 +294,7 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
          let ocamlvar = make_cb_var i in
          let name = List.nth cb_locals i in
          fprintf ch "  ";
+         (*fprintfn stdout "call ocaml_value_of_cpp %s" (cpptyp_of_typ arg);*)
          ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar arg;
          println "  _args[%d] = %s;" (i+1) ocamlvar
        in
