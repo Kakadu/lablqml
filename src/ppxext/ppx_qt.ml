@@ -113,13 +113,13 @@ let check_meth_typ ~loc _xs =
   (* TODO: some checks like unit type should be at the end of list *)
   true
 
-let wrap_meth ~classname (({txt=methname; loc} ,_,kind) as m) =
+let wrap_meth ~classname (({txt=methname; loc},_,kind) as m) =
   match kind with
-  | Cfk_concrete _ -> raise (ErrorMsg ("Qt methods should be marked as virtual", !default_loc))
+  | Cfk_concrete _ -> raise @@ ErrorMsg ("Qt methods should be marked as virtual", loc)
   | Cfk_virtual typ -> begin
-     (* *)
      let meth_typ = eval_meth_typ typ in
-     check_meth_typ ~loc meth_typ;
+     if not (check_meth_typ ~loc meth_typ)
+     then raise @@ ErrorMsg (sprintf "Method '%s' has wrong type" methname, loc);
      if options.gencpp then Gencpp.gen_meth ~classname ~methname meth_typ; (* TODO: Warning? *)
      [Pcf_method m]
   end
@@ -130,14 +130,14 @@ let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
   if options.gencpp then Gencpp.open_files ~destdir ~classname;
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s
-    |  _    -> raise (ErrorMsg ("???", ci.pci_loc))
+    |  _    -> raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
   in
   let fields: class_field list = clas_sig.pcstr_fields in
 
   let heading = ref [] in
-  Ref.append ~set:heading (make_store_func   ~classname ~loc);
+  Ref.append ~set:heading (make_store_func ~classname ~loc);
 
-  let wrap_prop ~classname ((loc,flag,kind) as v) =
+  let wrap_prop ~classname (loc,flag,kind) =
     let propname = loc.txt in
     let l = loc.loc in
     match kind with
@@ -161,7 +161,7 @@ let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
                       Public (Cfk_concrete (Fresh,e)) ).pcf_desc
           ; Pcf_method ({loc with txt=Names.signal_of_prop propname},
                         flag,
-                      Cfk_virtual Ast_helper.Typ.(arrow "" (unit_coretyp l) core_typ) )
+                        Cfk_virtual Ast_helper.Typ.(arrow "" (unit_coretyp l) core_typ) )
           ]
        | `Error msg ->
           raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, l)
