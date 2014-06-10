@@ -124,7 +124,7 @@ let wrap_meth ~classname (({txt=methname; loc},_,kind) as m) =
      [Pcf_method m]
   end
 
-let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
+let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration) =
   (*print_endline "wrap_class_type_decl on class type markend with `qtclass`";*)
   let classname = ci.pci_name.txt in
   if options.gencpp then Gencpp.open_files ~destdir ~classname;
@@ -179,6 +179,9 @@ let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
     ans'
   in
   let new_fields = List.map wrap_field fields |> List.concat in
+  if has_attr "itemmodel" attributes then (
+
+  );
   if options.gencpp then Gencpp.close_files ();
 
   let new_fields = (make_initializer loc) :: (make_handler_meth ~loc) :: new_fields in
@@ -192,12 +195,8 @@ let wrap_class_decl ?(destdir=".") mapper loc _ (ci: class_declaration) =
             ; pstr_loc=loc } in
   !heading @ [ans]
 
-(*
-let (_:int) = Ast_helper.with_default_loc
- *)
 
 let getenv_mapper argv =
-  (* Our getenv_mapper only overrides the handling of expressions in the default mapper. *)
   { default_mapper with
     structure = fun mapper items ->
       let rec iter items =
@@ -205,7 +204,7 @@ let getenv_mapper argv =
         | { pstr_desc=Pstr_class [cinfo]; pstr_loc } as item :: rest when
                has_attr "qtclass" cinfo.pci_attributes ->
            Ast_helper.with_default_loc pstr_loc (fun () ->
-             wrap_class_decl mapper pstr_loc item cinfo @ iter rest )
+             wrap_class_decl ~attributes:cinfo.pci_attributes mapper pstr_loc cinfo @ iter rest )
         | { pstr_loc } as item :: rest ->
           mapper.structure_item mapper item :: iter rest
         | [] -> []

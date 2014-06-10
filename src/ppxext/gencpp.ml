@@ -152,10 +152,15 @@ let getter_of_cppvars  prefix =
     in
     f
 
+(* TODO: add addtitional info about methods *)
+(* We need this arginfo because void foo(QString) is not the same as void foo(const QString&) *)
+type arg_info = { ai_ref: bool; ai_const: bool }
 (* properties can have only simple types (except unit) *)
 type prop_typ = [ `bool | `int | `string | `list of prop_typ ]
 type meth_typ_item = [ `unit | `bool | `int | `string | `list of meth_typ_item ]
-type meth_typ = meth_typ_item list
+type meth_typ = (meth_typ_item*arg_info) list
+
+let wrap_typ_simple x = (x,{ai_ref=false;ai_const=false})
 
 let aux_variables_count (y: meth_typ_item) =
   let rec helper = function
@@ -164,29 +169,38 @@ let aux_variables_count (y: meth_typ_item) =
   in
   helper y
 
-let rec cpptyp_of_proptyp: prop_typ -> string = function
-  | `bool -> "bool"
-  | `int  -> "int"
-  | `string -> "QString"
-  | `list x -> sprintf "QList<%s>" (cpptyp_of_proptyp x)
+let rec cpptyp_of_proptyp: prop_typ*arg_info -> string = fun (typ,ai) ->
+  sprintf "%s%s%s" (if ai.ai_const then "const " else "")
+          (match typ with
+           | `bool -> "bool"
+           | `int  -> "int"
+           | `string -> "QString"
+           | `list x -> sprintf "QList<%s>" (cpptyp_of_proptyp @@ wrap_typ_simple x))
+          (if ai.ai_ref then "&" else "")
 
-let rec cpptyp_of_typ: meth_typ_item -> string = fun x -> match x with
-  | `bool  | `int  | `string as x -> cpptyp_of_proptyp x
+let rec cpptyp_of_typ: meth_typ_item*arg_info -> string = fun (x,ai) -> match x with
+  | `bool  | `int  | `string as x -> cpptyp_of_proptyp (x,ai)
   | `unit -> "void"
-  | `list x -> sprintf "QList<%s>" (cpptyp_of_typ x)
+  | `list x -> sprintf "%sQList<%s>%s" (if ai.ai_const then "const " else "")
+                       (cpptyp_of_typ (x,{ai_ref=false;ai_const=false}))
+                       (if ai.ai_ref then "&" else "")
 
-let print_local_declarations ch xs =
+let print_declarations ?(mode=`Local) ch xs =
+  let m = match mode with `Local -> "CAMLlocal" | `Param -> "CAMLparam" in
   let rec helper = function
   | a::b::c::d::e::xs ->
-     fprintf ch "  CAMLlocal5(%s);\n" (String.concat "," [a;b;c;d;e]);
+     fprintf ch "  %s5(%s);\n" m (String.concat "," [a;b;c;d;e]);
      helper xs
   | [] -> ()
   | xs ->
      let n = List.length xs in
      assert (n<5);
-     fprintf ch "  CAMLlocal%d(%s);\n" n (String.concat "," xs)
+     fprintf ch "  %s%d(%s);\n" m n (String.concat "," xs)
   in
   helper xs
+
+let print_local_declarations ch xs = print_declarations ~mode:`Local ch xs
+let print_param_declarations ch xs = print_declarations ~mode:`Param ch xs
 
 let cpp_value_of_ocaml ~cppvar ~ocamlvar ch (get_var,release_var,new_cpp_var) typ =
   let rec helper ~tab dest var typ =
@@ -198,7 +212,7 @@ let cpp_value_of_ocaml ~cppvar ~ocamlvar ch (get_var,release_var,new_cpp_var) ty
     | `string-> println "%s = QString(String_val(%s));" cppvar ocamlvar
     | `bool  -> println "%s = Bool_val(%s);" cppvar ocamlvar
     | `list t->
-       let cpp_typ_str = cpptyp_of_typ typ in
+       let cpp_typ_str = cpptyp_of_typ @@ wrap_typ_simple typ in
        println "// generating %s" cpp_typ_str;
        let temp_var = get_var () in
        let head_var = get_var () in
@@ -249,7 +263,20 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
 
 (* stub implementation to call it from OCaml *)
 let gen_stub_cpp ~classname ~methname ch (types: meth_typ) =
-  fprintfn ch "// stub"
+  let println fmt = fprintfn ch fmt in
+  let (args,res) = List.list_last types in
+  println "// stub";
+  let argnames = List.mapi ~f:(fun i _ -> sprintf "_x%d" i) args in
+  println "extern \"C\" value %s(%s) {"
+          methname
+          (match args with
+           | [(`unit,_)] -> ""
+           | _ -> List.to_string ~f:(fun i -> sprintf "value %s") argnames);
+  print_param_declarations ch argnames;
+  (* TODO: finish implementation *)
+  println "  CAMLreturn(Val_unit); // dummy value. NOT IMPLEMENTED";
+  println "}";
+  ()
 
 (* method implementation from class header. Used for invacation OCaml from C++ *)
 let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
@@ -257,16 +284,18 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
   let print   fmt = fprintf  ch fmt in
   fprintfn ch "// meth";
   let (args,res) = List.list_last types in
-  if res=`unit
+  if fst res=`unit
   then print "void "
   else print "%s " (cpptyp_of_typ res);
 
   println "%s::%s(%s) {" classname methname
-          (if args=[`unit] then ""
-           else List.to_string ~f:(fun i t -> sprintf "%s x%d" (cpptyp_of_typ t) i) args);
+          (match args with
+           | [(`unit,_)] -> ""
+           | _ -> List.to_string ~f:(fun i t -> sprintf "%s x%d" (cpptyp_of_typ t) i) args);
   println "  CAMLparam0();";
   let locals_count = 2 +
-    List.fold_left ~f:(fun acc x -> max acc (aux_variables_count x)) ~init:0 types in
+    List.fold_left ~f:(fun acc (x,_) -> max acc (aux_variables_count x)) ~init:0 types
+  in
   let locals = List.init (sprintf "_l%d") (locals_count-1) in
   print_local_declarations ch ("_ans" :: "_meth" :: locals);
   println "  // aux vars count = %d" locals_count;
@@ -286,22 +315,23 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
   let get_var,release_var = get_vars_queue locals in
   let call_closure_str = match List.length args with
     | 0
-    | 1 when args=[`unit] -> sprintf "caml_callback2(_meth, _camlobj, Val_unit);"
+    | 1 when (match args with [`unit,_] -> true | _ -> false) ->
+       sprintf "caml_callback2(_meth, _camlobj, Val_unit);"
     | n ->
        println "  _args[0] = _camlobj;";
-       let f i arg =
+       let f i (typ,_) =
          let cppvar = sprintf "x%d" i in
          let ocamlvar = make_cb_var i in
          let name = List.nth cb_locals i in
          fprintf ch "  ";
          (*fprintfn stdout "call ocaml_value_of_cpp %s" (cpptyp_of_typ arg);*)
-         ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar arg;
+         ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ;
          println "  _args[%d] = %s;" (i+1) ocamlvar
        in
        List.iteri ~f  args;
        sprintf "  caml_callbackN(_meth, %d, _args);" (n+1)
   in
-  if res = `unit then (
+  if fst res = `unit then (
     println "  %s" call_closure_str;
     enter_blocking_section ch;
     println "  CAMLreturn0;"
@@ -313,7 +343,7 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
     let cppvar = "cppans" in
     println "  %s %s;" cpp_res_typ cppvar;
     let new_cpp_var = getter_of_cppvars "xx" in
-    cpp_value_of_ocaml ~cppvar ~ocamlvar ch  (get_var,release_var, new_cpp_var) res;
+    cpp_value_of_ocaml ~cppvar ~ocamlvar ch (get_var,release_var, new_cpp_var) (fst res);
     println "  CAMLreturnT(%s,%s);" cpp_res_typ cppvar;
   );
   println "}";
@@ -328,19 +358,28 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
   let sgnl_name = Names.signal_of_prop propname in
   let getter_name = Names.getter_of_prop propname in
   let setter_name = Names.setter_of_prop propname in
-  let cpptyp_name = cpptyp_of_proptyp typ in
+  let cpptyp_name = cpptyp_of_proptyp @@ wrap_typ_simple typ in
 
   println "public:";
   println "  Q_PROPERTY(%s %s READ %s NOTIFY %s)" cpptyp_name propname getter_name sgnl_name;
   println "  %s %s();" cpptyp_name getter_name;
-  (* println "  void emit_%s(%s x) { emit %s(x); }" sgnl_name cpptyp_name sgnl_name;*)
   println "signals:";
   println "  void %s(%s %s);" sgnl_name cpptyp_name propname;
   (* C++ part now *)
   let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
   let println fmt = fprintfn hndl fmt in
   (*println "// Q_PROPERTY( %s )" propname;*)
-  gen_meth_cpp ~classname ~methname:getter_name hndl [(`unit :> meth_typ_item); (typ :>meth_typ_item)];
+  gen_meth_cpp ~classname ~methname:getter_name hndl
+               (* TODO: maybe we can use cosnt and & for setter argument *)
+               [ ((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})
+               ; ((typ   :> meth_typ_item), {ai_ref=false;ai_const=false})
+               ];
+  let methname: string  = sprintf "caml_%s_%s_cppmeth_wrapper" classname sgnl_name in
+  gen_stub_cpp ~classname ~methname
+               hndl
+               [ ((typ   :> meth_typ_item), {ai_ref=false;ai_const=false})
+               ; ((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})
+               ];
   ()
 
 let gen_meth ~classname ~methname typ =
