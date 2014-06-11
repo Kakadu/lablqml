@@ -178,7 +178,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
     let ans' = List.map (fun ans -> { f_desc with pcf_desc=ans }) ans in
     ans'
   in
-  let new_fields = List.map wrap_field fields |> List.concat in
+  let new_fields = fields |> List.map ~f:wrap_field  |> List.concat in
   if has_attr "itemmodel" attributes then (
 
   );

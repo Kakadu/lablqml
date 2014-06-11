@@ -23,7 +23,8 @@ module Time = struct
     if n>=0 && n<=12 then months.(n)
     else failwith "Wrong argument of str_of_month"
   let to_string {Unix.tm_sec; Unix.tm_mon; Unix.tm_min; Unix.tm_hour; Unix.tm_mday; Unix.tm_year } =
-    sprintf "%02d %s, %d %d:%d:%d" tm_mday (str_of_month tm_mon) (1900+tm_year) tm_hour tm_min tm_sec
+    sprintf "%02d %s, %d %02d:%02d:%02d"
+            tm_mday (str_of_month tm_mon) (1900+tm_year) tm_hour tm_min tm_sec
 end
 
 
@@ -208,11 +209,12 @@ let cpp_value_of_ocaml ~cppvar ~ocamlvar ch (get_var,release_var,new_cpp_var) ty
     let println fmt = fprintf ch "%s" prefix; fprintfn ch fmt in
     match typ with
     | `unit  -> ()
-    | `int   -> println "%s = Int_val(%s);" cppvar ocamlvar
-    | `string-> println "%s = QString(String_val(%s));" cppvar ocamlvar
-    | `bool  -> println "%s = Bool_val(%s);" cppvar ocamlvar
+    | `int   -> println "%s = Int_val(%s);" dest ocamlvar
+    | `string-> println "%s = QString(String_val(%s));" dest ocamlvar
+    | `bool  -> println "%s = Bool_val(%s);" dest ocamlvar
     | `list t->
        let cpp_typ_str = cpptyp_of_typ @@ wrap_typ_simple typ in
+       let cpp_argtyp_str = cpptyp_of_typ @@ wrap_typ_simple t in
        println "// generating %s" cpp_typ_str;
        let temp_var = get_var () in
        let head_var = get_var () in
@@ -220,7 +222,7 @@ let cpp_value_of_ocaml ~cppvar ~ocamlvar ch (get_var,release_var,new_cpp_var) ty
        println "%s = %s;\n" temp_var var;
        println "while (%s != Val_emptylist) {\n" temp_var;
        println "  %s = Field(%s,0); /* head */"  head_var temp_var;
-       println "  %s %s;" cpp_typ_str temp_cpp_var;
+       println "  %s %s;" cpp_argtyp_str temp_cpp_var;
        helper  ~tab:(tab+1) temp_cpp_var head_var t;
        println "  %s << %s;\n" dest temp_cpp_var;
        println "  %s = Field(%s,1);" temp_var temp_var;
@@ -237,7 +239,7 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
     | `unit -> failwith "Can't generate OCaml value from C++ void a.k.a. unit"
     | `int  -> println "%s = Val_int(%s);" dest var
     | `bool -> println "%s = Val_bool(%s);" dest var
-    | `string -> println "%s = caml_copy_string(%s.toLoca8Bit().data()));" dest var
+    | `string -> println "%s = caml_copy_string(%s.toLocal8Bit().data());" dest var
     | `list t ->
        let cons_helper = get_var () in
        let cons_arg_var = get_var () in
@@ -246,7 +248,7 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
        println "  auto it = (%s).end() - 1;" var;
        println "  for (;;) {";
        println "    %s = caml_alloc(2,0);" cons_helper;
-       helper ~tab:(tab+1) ~var:"(*it)" ~dest:cons_arg_var typ;
+       helper ~tab:(tab+1) ~var:"(*it)" ~dest:cons_arg_var t;
        println "    Store_field(%s, 0, %s);" cons_helper cons_arg_var;
        println "    Store_field(%s, 1, %s);" cons_helper dest;
        println "    %s = %s;" dest cons_helper;
@@ -282,7 +284,7 @@ let gen_stub_cpp ~classname ~methname ch (types: meth_typ) =
 let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
   let println fmt = fprintfn ch fmt in
   let print   fmt = fprintf  ch fmt in
-  fprintfn ch "// meth";
+  fprintfn ch "// %s::%s: %s" classname methname (List.to_string ~f:(fun _ -> cpptyp_of_typ) types);
   let (args,res) = List.list_last types in
   if fst res=`unit
   then print "void "
@@ -296,21 +298,20 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
   let locals_count = 2 +
     List.fold_left ~f:(fun acc (x,_) -> max acc (aux_variables_count x)) ~init:0 types
   in
-  let locals = List.init (sprintf "_l%d") (locals_count-1) in
+  let locals = List.init (sprintf "_x%d") (locals_count-1) in
   print_local_declarations ch ("_ans" :: "_meth" :: locals);
-  println "  // aux vars count = %d" locals_count;
+  (* array for invoking OCaml method *)
+  println "  CAMLlocalN(_args,%d);" (List.length args + 1);
+  (*println "  // aux vars count = %d" locals_count; *)
   let make_cb_var = sprintf "_cca%d" in (* generate name *)
   let cb_locals = List.mapi ~f:(fun i _ -> make_cb_var i) args in
   print_local_declarations ch cb_locals;
-  (* array for invocing OCaml method *)
-  println "  CAMLlocalN(_args, %d);" (List.length args + 1);
   leave_blocking_section ch;
 
   println "  value _camlobj = this->_camlobjHolder;";
   println "  Q_ASSERT(Is_block(_camlobj));";
   println "  Q_ASSERT(Tag_val(_camlobj) == Object_tag);";
   println "  _meth = caml_get_public_method(_camlobj, caml_hash_variant(\"%s\"));" methname;
-  println "";
 
   let get_var,release_var = get_vars_queue locals in
   let call_closure_str = match List.length args with
@@ -329,7 +330,7 @@ let gen_meth_cpp ~classname ~methname ch (types: meth_typ) =
          println "  _args[%d] = %s;" (i+1) ocamlvar
        in
        List.iteri ~f  args;
-       sprintf "  caml_callbackN(_meth, %d, _args);" (n+1)
+       sprintf "caml_callbackN(_meth, %d, _args);" (n+1)
   in
   if fst res = `unit then (
     println "  %s" call_closure_str;
@@ -384,5 +385,16 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
 
 let gen_meth ~classname ~methname typ =
   printf "Generation meth '%s' of class '%s'.\n" methname classname;
+  let typ' = typ |> List.map ~f:wrap_typ_simple in
+  let (args,res) = typ' |> List.list_last in
+  let hndl = FilesMap.find (classname, FilesKey.CHDR) !files in
+  fprintfn hndl "public:";
+  fprintfn hndl "  %s %s(%s);" (cpptyp_of_typ res) methname
+           (List.to_string ~f:(fun _ -> cpptyp_of_typ) args);
+  let types = List.map typ ~f:wrap_typ_simple in
+
+  let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
+
+  gen_meth_cpp ~classname ~methname hndl typ';
   ()
 
