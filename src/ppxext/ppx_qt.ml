@@ -7,11 +7,13 @@ open Location
 open Printf
 open Gencpp
 
-type options = { mutable gencpp: bool }
-let options  = { gencpp=true }
+(* Configuration of extension:
+ * Should we geneate C++ code, should we add debug printing, etc. *)
+type config = { mutable gencpp: bool }
+let config  = { gencpp=true }
 
 let () =
-  let specs = [ ("-nocpp", Arg.Unit (fun () -> options.gencpp <- false), "Don't generate C++")] in
+  let specs = [ ("-nocpp", Arg.Unit (fun () -> config.gencpp <- false), "Don't generate C++")] in
   Arg.parse specs (fun _ -> ())
             "usage there"
 
@@ -19,7 +21,7 @@ let () =
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
   | ({txt;loc},_) :: _ when txt = name  -> true
-  | _ :: xs -> false
+  | _ :: xs -> has_attr name xs
 
 let getenv s = try Sys.getenv s with Not_found -> ""
 
@@ -111,23 +113,30 @@ let eval_meth_typ t =
 
 let check_meth_typ ~loc _xs =
   (* TODO: some checks like unit type should be at the end of list *)
+  (* TODO: check that modelindexes are not used without QAbstractItemModel base *)
   true
 
-let wrap_meth ~classname (({txt=methname; loc},_,kind) as m) =
+let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
   match kind with
   | Cfk_concrete _ -> raise @@ ErrorMsg ("Qt methods should be marked as virtual", loc)
   | Cfk_virtual typ -> begin
      let meth_typ = eval_meth_typ typ in
      if not (check_meth_typ ~loc meth_typ)
      then raise @@ ErrorMsg (sprintf "Method '%s' has wrong type" methname, loc);
-     if options.gencpp then Gencpp.gen_meth ~classname ~methname meth_typ; (* TODO: Warning? *)
+     let () = if config.gencpp then (
+                  let options =
+                    if List.mem `ItemModel options then [`ItemModel] else []
+                  in
+                  Gencpp.gen_meth ~options ~classname ~methname meth_typ
+              ) in
      [Pcf_method m]
   end
 
 let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration) =
-  (*print_endline "wrap_class_type_decl on class type markend with `qtclass`";*)
+  print_endline "wrap_class_type_decl on class type markend with `qtclass`";
   let classname = ci.pci_name.txt in
-  if options.gencpp then Gencpp.open_files ~destdir ~classname;
+  let options =  if has_attr "itemmodel" attributes then [`ItemModel] else [] in
+  if config.gencpp then Gencpp.open_files ~options ~destdir ~classname;
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s
     |  _    -> raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
@@ -146,7 +155,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
     | Cfk_virtual core_typ -> begin
        match type_suits_prop core_typ with
        | `Ok typ ->
-          if options.gencpp then Gencpp.gen_prop ~classname ~propname typ;
+          if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
           let signal_name = Names.signal_of_prop propname in
           Ref.append ~set:heading (make_stub_for_signal ~classname ~loc:l ~typ:core_typ signal_name);
           let open Ast_helper in
@@ -170,7 +179,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let wrap_field (f_desc: class_field) : class_field list =
     let ans = match f_desc.pcf_desc with
       | Pcf_method m  when has_attr "qtmeth" f_desc.pcf_attributes ->
-         wrap_meth ~classname m
+         wrap_meth ~options ~classname m
       | Pcf_method m  when has_attr "qtprop" f_desc.pcf_attributes ->
          wrap_prop ~classname m
       | _ -> []
@@ -178,11 +187,26 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
     let ans' = List.map (fun ans -> { f_desc with pcf_desc=ans }) ans in
     ans'
   in
-  let new_fields = fields |> List.map ~f:wrap_field  |> List.concat in
   if has_attr "itemmodel" attributes then (
+    print_endline "HERE";
+    let f (methname, meth_typ, minfo) =
+      printf "Generating itemmodel-specific meth: '%s'\n" methname;
+      if config.gencpp
+      then Gencpp.gen_meth ~classname ~methname ~minfo meth_typ;
 
+      ()
+    in
+    let mi = {mi_virt=true;mi_const=true} in
+    List.iter ~f [ ("parent",     [`modelindex; `modelindex],                 mi)
+                 ; ("index",      [`int;`int;`modelindex;`modelindex], mi)
+                 ; ("columnCount",[`modelindex; `int], mi)
+                 ; ("rowCount",   [`modelindex; `int], mi)
+                 ; ("hasChildren",[`modelindex;`bool], mi)
+
+                 ];
   );
-  if options.gencpp then Gencpp.close_files ();
+  let new_fields = fields |> List.map ~f:wrap_field  |> List.concat in
+  if config.gencpp then Gencpp.close_files ();
 
   let new_fields = (make_initializer loc) :: (make_handler_meth ~loc) :: new_fields in
   let new_desc = Pcl_structure { pcstr_fields = new_fields;
@@ -201,7 +225,7 @@ let getenv_mapper argv =
     structure = fun mapper items ->
       let rec iter items =
         match items with
-        | { pstr_desc=Pstr_class [cinfo]; pstr_loc } as item :: rest when
+        | { pstr_desc=Pstr_class [cinfo]; pstr_loc } :: rest when
                has_attr "qtclass" cinfo.pci_attributes ->
            Ast_helper.with_default_loc pstr_loc (fun () ->
              wrap_class_decl ~attributes:cinfo.pci_attributes mapper pstr_loc cinfo @ iter rest )

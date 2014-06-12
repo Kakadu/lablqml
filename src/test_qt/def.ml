@@ -1,10 +1,5 @@
 type cppobj
 (*
-external store: cppobj -> < .. > -> unit = "caml_store_value_in_Controller"
- *)
-(*
-external stub_hasDataChanged: cppobj -> bool -> unit = "caml_Controller_hasDataChanged_cppmeth_wrapper"
-                                                       *)
 class virtual controller = object(self)
 
   method virtual onItemSelected: int -> int -> unit[@@qtmeth]
@@ -20,6 +15,9 @@ class virtual controller = object(self)
   method virtual descr   : string[@@qtprop]
   method virtual fullPath: string[@@qtprop]
 
+end[@@qtclass]
+                           *)
+class virtual historyModel = object
 
-end[@@qtclass][@@itemmodel]
+end[@@itemmodel][@@qtclass]
 
