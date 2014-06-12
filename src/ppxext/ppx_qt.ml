@@ -46,12 +46,11 @@ let type_suits_prop ty = match ty.ptyp_desc with
   | Ptyp_constr ({txt=Lident x; _},[]) -> `Error (sprintf "Don't know what to do with '%s'" x)
   | _ -> `Error "Type is unknown"
 
-
-let cppobj_coretyp loc =
-  Ast_helper.Typ.constr ~loc ({txt=Lident "cppobj"; loc}) []
-
-let unit_coretyp loc =
-  Ast_helper.Typ.constr ~loc ({txt=Lident "unit"; loc}) []
+let make_coretyp ~loc txt = Ast_helper.Typ.constr ~loc ({txt; loc}) []
+let cppobj_coretyp loc = make_coretyp ~loc (Lident "cppobj")
+let unit_coretyp loc = make_coretyp ~loc (Lident "unit")
+let int_coretyp loc = make_coretyp ~loc (Lident "int")
+let string_coretyp loc = make_coretyp ~loc (Lident "string")
 
 let make_store_func ~loc ~classname : structure_item =
   let pval_name = {txt="store"; loc} in
@@ -61,6 +60,32 @@ let make_store_func ~loc ~classname : structure_item =
                                         (arrow ""
                                                (object_ ~loc [] Open)
                                                (constr ~loc {txt=Lident "unit"; loc} [] ) ) )
+  in
+  let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                  pval_loc=loc } in
+  { pstr_desc; pstr_loc=loc }
+
+let make_stub_general ~loc ~typnames ~name ~stub_name =
+  let pval_prim = [stub_name] in
+  let pval_name = {txt=name; loc} in
+
+  let rec helper = function
+    | [] -> assert false
+    | [txt] ->   Ast_helper.Typ.constr ~loc {txt; loc} []
+    | txt::xs -> Ast_helper.Typ.(arrow "" (constr ~loc {txt; loc} []) (helper xs) )
+  in
+  let pval_type = helper typnames in
+  let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                  pval_loc=loc } in
+  { pstr_desc; pstr_loc=loc }
+
+let make_creator ~loc ~classname =
+  let pval_prim = [sprintf "caml_create_%s" classname] in
+  let pval_name = {txt=sprintf "create_%s" classname; loc} in
+
+  let pval_type =
+    Ast_helper.Typ.(arrow "" (constr ~loc {txt=Lident "unit"; loc} [])
+                          (var ~loc "a") )
   in
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
                                   pval_loc=loc } in
@@ -79,6 +104,17 @@ let make_stub_for_signal ~classname ~loc ~typ name : structure_item =
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
                                   pval_loc=loc } in
   { pstr_desc; pstr_loc=loc }
+
+let make_virt_meth ~loc ~name xs =
+  let open Ast_helper in
+  let rec helper = function
+    | [] -> assert false
+    | [txt] ->   Typ.constr ~loc {txt; loc} []
+    | txt::xs -> Typ.(arrow "" (constr ~loc {txt; loc} []) (helper xs) )
+  in
+  let typ = helper xs in
+  Cf.method_ (mkloc name loc) Public (Cfk_virtual typ)
+
 
 
 let make_initializer ~loc : class_field =
@@ -187,8 +223,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
     let ans' = List.map (fun ans -> { f_desc with pcf_desc=ans }) ans in
     ans'
   in
-  if has_attr "itemmodel" attributes then (
-    print_endline "HERE";
+  let itemmodel_meths =  if has_attr "itemmodel" attributes then (
     let f (methname, meth_typ, minfo) =
       printf "Generating itemmodel-specific meth: '%s'\n" methname;
       if config.gencpp
@@ -202,10 +237,64 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
                  ; ("columnCount",[`modelindex; `int], mi)
                  ; ("rowCount",   [`modelindex; `int], mi)
                  ; ("hasChildren",[`modelindex;`bool], mi)
-
+                 ; ("data",       [`modelindex; `int;`variant], mi)
                  ];
-  );
-  let new_fields = fields |> List.map ~f:wrap_field  |> List.concat in
+    (* now add some OCaml code *)
+    let externals =
+      [ ("stub_report_dataChanged", sprintf "caml_%s_dataChanged_cppmeth_wrapper" classname,
+         [ Lident "cppobj"; Ldot (Lident "QModelIndex","t"); Ldot(Lident "QModelIndex","t")
+         ; Lident "unit"  ])
+      ; ("stub_beginInsertRows", sprintf "caml_%s_beginInsertRows_cppmeth_wrapper" classname,
+         [ Lident "cppobj"; Ldot (Lident "QModelIndex","t"); Lident "int"; Lident "int"
+         ; Lident "unit"  ])
+      ; ("stub_endInsertRows", sprintf "caml_%s_endInsertRows_cppmeth_wrapper" classname,
+         [ Lident "cppobj"; Lident "unit"; Lident "unit"  ])
+      ; ("stub_beginRemoveRows", sprintf "caml_%s_beginRemoveRows_cppmeth_wrapper" classname,
+         [ Lident "cppobj"; Ldot (Lident "QModelIndex","t"); Lident "int"; Lident "int"
+         ; Lident "unit"  ])
+      ; ("stub_endRemoveRows", sprintf "caml_%s_endRemoveRows_cppmeth_wrapper" classname,
+         [ Lident "cppobj"; Lident "unit"; Lident "unit"  ])
+      ]
+    in
+
+    List.iter externals
+              ~f:(fun (name,stub_name,typnames) ->
+                  Ref.append ~set:heading @@ make_stub_general ~loc ~typnames ~name ~stub_name
+                 );
+    let f name =
+      let open Ast_helper in
+      let e = Exp.(poly (apply
+                           (ident (mkloc (Lident ("stub_"^name)) loc) )
+                           [("",ident (mkloc (Lident "cppobj") loc) )]
+                        ) None
+              )
+      in
+      (Cf.method_ (mkloc name loc) Public (Cfk_concrete (Fresh,e)) )
+    in
+    let emitters =
+      List.map ~f [ "report_dataChanged"; "beginInsertRows"; "endInsertRows"; "beginRemoveRows"
+                  ; "endRemoveRows" ]
+    in
+    let virtuals =
+      [ make_virt_meth [ Ldot (Lident "QModelIndex","t"); Ldot (Lident "QModelIndex","t") ]
+                       ~loc ~name:"parent"
+      ; make_virt_meth [ Lident "int"; Lident "int"
+                       ; Ldot (Lident "QModelIndex","t"); Ldot (Lident "QModelIndex","t") ]
+                       ~loc ~name:"index"
+      ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "int" ]
+                       ~loc ~name:"columnCount"
+      ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "int" ]
+                       ~loc ~name:"rowCount"
+      ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "bool" ]
+                       ~loc ~name:"hasChildren"
+      ; make_virt_meth [ Ldot(Lident "QModelIndex","t"); Lident "bool"; Ldot(Lident "QVariant","t") ]
+                       ~loc ~name:"data"
+      ]
+    in
+    emitters @ virtuals
+  ) else []
+  in
+  let new_fields = (fields |> List.map ~f:wrap_field  |> List.concat) @ itemmodel_meths in
   if config.gencpp then Gencpp.close_files ();
 
   let new_fields = (make_initializer loc) :: (make_handler_meth ~loc) :: new_fields in
@@ -217,7 +306,23 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
 
   let ans = { pstr_desc=Pstr_class [{{ci with pci_expr=new_expr2} with pci_attributes=[]}]
             ; pstr_loc=loc } in
-  !heading @ [ans]
+  let creator = make_creator ~loc ~classname in
+  let add_role_stub =
+    let pval_name = {txt="add_role"; loc} in
+    let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole"] in
+    let pval_type = Ast_helper.Typ.(arrow "" (var "a")
+                         (arrow "" (int_coretyp loc)
+                                (arrow "" (string_coretyp loc)
+                                       (unit_coretyp loc)
+                                )
+                         )
+              )
+    in
+    let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                  pval_loc=loc } in
+    { pstr_desc; pstr_loc=loc }
+  in
+  !heading @ [ans; add_role_stub; creator]
 
 
 let getenv_mapper argv =

@@ -1,4 +1,10 @@
+module QModelIndex = struct type t = int end
+module QVariant    = struct type t = int end
+
 type cppobj
+
+external create_Controller: unit -> 'a = "caml_create_Controller"
+
 (*
 class virtual controller = object(self)
 
@@ -19,5 +25,6 @@ end[@@qtclass]
                            *)
 class virtual historyModel = object
 
+ method virtual data: QModelIndex.t->int-> QVariant.t
 end[@@itemmodel][@@qtclass]
 

@@ -194,7 +194,7 @@ type arg_info = { ai_ref: bool; ai_const: bool }
 (* properties can have only simple types (except unit) *)
 type prop_typ = [ `bool | `int | `string | `list of prop_typ ]
 type meth_typ_item = [ `unit | `bool | `int  | `string | `list of meth_typ_item
-                       | `modelindex]
+                       | `modelindex | `variant ]
 type meth_typ = (meth_typ_item*arg_info) list
 type meth_info = { mi_virt: bool; mi_const: bool }
 
@@ -205,6 +205,7 @@ let unconst (x,{ai_ref;ai_const}) = (x, {ai_ref;ai_const=false})
 (* how many additional variables needed to convert C++ value to OCaml one *)
 let aux_variables_count (y: meth_typ_item) =
   let rec helper = function
+    | `variant
     | `bool | `int | `unit | `string | `modelindex -> 0
     | `list x -> helper x + 2
   in
@@ -213,6 +214,7 @@ let aux_variables_count (y: meth_typ_item) =
 (* how many additional variables needed to convert OCaml value to C++ one *)
 let aux_variables_count_to_cpp (y: meth_typ_item) =
   let rec helper = function
+    | `variant
     | `bool | `int | `unit | `string | `modelindex -> 0
     | `list x -> helper x + 2
   in
@@ -230,7 +232,8 @@ let rec cpptyp_of_proptyp: prop_typ*arg_info -> string = fun (typ,ai) ->
 
 let rec cpptyp_of_typ: meth_typ_item*arg_info -> string = fun (x,ai) -> match x with
   | `bool  | `int  | `string as x -> cpptyp_of_proptyp (x,ai)
-  | `unit -> "void"
+  | `unit    -> "void"
+  | `variant -> "QVariant"
   | `modelindex -> sprintf "%sQModelIndex%s" (if ai.ai_const then "const " else "")
                            (if ai.ai_ref then "&" else "")
   | `list x -> sprintf "%sQList<%s>%s" (if ai.ai_const then "const " else "")
@@ -276,8 +279,21 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
             println "%s = %s(Int_val(Field(%s,0)), Int_val(Field(%s,1)) );"
                     dest call ocamlvar ocamlvar
          | None -> failwith "QModelIndex is not available without QAbstractItemModel base"
-
        end
+    | `variant ->
+       println "if (Is_block(%s)) {" var;
+       println "  if (caml_hash_variant(\"string\") == Field(%s,0))" var;
+       println "    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));" dest var;
+       println "  else if(caml_hash_variant(\"int\") == Field(%s,0))" var;
+       println "    %s = QVariant::fromValue(Int_val(Field(%s,1)));" dest var;
+       println "  else if(caml_hash_variant(\"qobject\") == Field(%s,0))" var;
+       println "    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));" dest var;
+       println "  else Q_ASSERT_X(false,\"%s\",\"%s\");"
+                 "While converting OCaml value to QVariant"
+                 "Unknown variant tag";
+       println "} else { // empty QVariant";
+       println "    %s = QVariant();" dest;
+       println "}"
     | `list t->
        let cpp_typ_str = cpptyp_of_typ @@ wrap_typ_simple typ in
        let cpp_argtyp_str = cpptyp_of_typ @@ wrap_typ_simple t in
@@ -310,6 +326,19 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
        println "%s = caml_alloc(2,0);" dest;
        println "Store_field(%s,0,Val_int(%s.row()));" dest var;
        println "Store_field(%s,1,Val_int(%s.column()));" dest var
+    | `variant ->
+       println "if (!%s.isValid())\n" var;
+       println "  %s=hash_variant(\"empty\");" var;
+       println "else if(%s.type() == QMetaType::QString) {" var;
+       println "  %s = caml_alloc(2,0);" dest;
+       println "  Store_field(%s,0,%s);" dest "hash_variant(\"string\")";
+       println "  Store_field(%s,1,%s);" dest
+                 (sprintf "caml_copy_string(%s.value<QString>().toLocal8Bit().data()" var);
+       println "else if (%s.type() == QMetaType::User) {" var;
+       println "else {";
+       println "  Q_ASSERT_X(false,\"qVariant_of_cpp\",\"not all cases are supported\");";
+       println "}"
+
     | `list t ->
        let cons_helper = get_var () in
        let cons_arg_var = get_var () in
