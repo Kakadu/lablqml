@@ -66,10 +66,10 @@ ul.slimmenu {
 ul.slimmenu li {
     position: relative;
     display: inline-block;
-    background-color: #AAA;
+    background-color: white;
 }
-ul.slimmenu > li { margin-right: -5px; border-left: 1px solid #999 }
-ul.slimmenu > li:first-child { border-left: 0 }
+ul.slimmenu > li { margin-right: -5px; border: 1px solid #999 }
+#ul.slimmenu > li:first-child { border-left: 0 }
 ul.slimmenu > li:last-child { margin-right: 0 }
 ul.slimmenu li a {
     display: block;

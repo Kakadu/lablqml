@@ -30,6 +30,24 @@ color: rgb(0,0,0);
 		})
 	})
 </script> -->
+
+<script type="text/javascript">
+$(function() {
+  $('a[href*=#]:not([href=#])').click(function() {
+    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
+      var target = $(this.hash);
+      target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+      if (target.length) {
+        $('html,body').animate({
+          scrollTop: target.offset().top
+        }, 1000);
+        return false;
+      }
+    }
+  });
+});
+</script>
+
 </head>
 
 <body>
@@ -39,7 +57,10 @@ color: rgb(0,0,0);
     <a href="http://github.com/Kakadu/lablqt">Github Page</a>
   </li>
   <li>
-    <a href="tutorial.html">Tutorial</a>
+    <a href="tutorial2.html">Tutorial</a>
+  </li>
+  <li>
+    <a href="tutorial.html">Old tutorial</a>
   </li>
   <li>
     <a href="#status">Current status</a>

@@ -1,3 +1,4 @@
 all:
-		asciidoc -b html5 -a icons -a toc2 -a theme=flask tutorial.asciidoc
+	asciidoc -b html5 -a icons -a toc2 -a theme=flask tutorial.asciidoc
+	asciidoc -b html5 -a icons -a toc2 -a theme=flask tutorial2.asciidoc
 
