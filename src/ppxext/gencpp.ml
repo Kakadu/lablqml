@@ -125,11 +125,11 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
   ()
 
 let enter_blocking_section ch =
-  (*fprintfn ch "  caml_enter_blocking_section();";*)
+  fprintfn ch "  caml_release_runtime_system();";
   ()
 
 let leave_blocking_section ch =
-  (*fprintfn ch "  caml_leave_blocking_section();";*)
+  fprintfn ch "  caml_acquire_runtime_system();";
   ()
 
 let close_files () =
@@ -170,7 +170,7 @@ let close_files () =
 
 module Names = struct
   let signal_of_prop s = s^"Changed"
-  let getter_of_prop s = s
+  let getter_of_prop s = "get"^s
   let setter_of_prop s = "set"^s
 end
 

@@ -1,5 +1,5 @@
 controller.c*
-controller_.c*
+controller_c.c*
 controller.h
 historyModel.c*
 historyModel_c.c*

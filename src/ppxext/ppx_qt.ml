@@ -212,7 +212,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
 
           [ (Cf.method_ (mkloc ("emit_" ^ signal_name) l)
                       Public (Cfk_concrete (Fresh,e)) ).pcf_desc
-          ; Pcf_method ({loc with txt=propname},
+          ; Pcf_method ({loc with txt=Gencpp.Names.getter_of_prop propname},
                         flag,
                         Cfk_virtual Ast_helper.Typ.(arrow "" (unit_coretyp l) core_typ) )
           ]
