@@ -116,8 +116,8 @@ let make_virt_meth ~loc ~name xs =
   let open Ast_helper in
   let rec helper = function
     | [] -> assert false
-    | [txt] ->   Typ.constr ~loc {txt; loc} []
-    | txt::xs -> Typ.(arrow "" (constr ~loc {txt; loc} []) (helper xs) )
+    | [t] ->   Typ.constr ~loc {txt=Gencpp.ocaml_ast_of_typ t; loc} []
+    | t::xs -> Typ.(arrow "" (constr ~loc {txt=Gencpp.ocaml_ast_of_typ t; loc} []) (helper xs) )
   in
   let typ = helper xs in
   Cf.method_ (mkloc name loc) Public (Cfk_virtual typ)
@@ -180,6 +180,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let classname = ci.pci_name.txt in
   let options =  if has_attr "itemmodel" attributes then [`ItemModel] else [] in
   if config.gencpp then Gencpp.open_files ~options ~ext:config.ext ~destdir ~classname;
+
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s
     |  _    -> raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
@@ -232,41 +233,42 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let itemmodel_meths =  if has_attr "itemmodel" attributes then (
     let f (methname, meth_typ, minfo) =
       printf "Generating itemmodel-specific meth: '%s'\n" methname;
-      if config.gencpp
-      then Gencpp.gen_meth ~classname ~methname ~minfo meth_typ;
+      if config.gencpp then Gencpp.gen_meth ~classname ~methname ~minfo meth_typ
+    in
+    if config.gencpp then List.iter ~f Gencpp.itemmodel_members;
+    (* now add some OCaml code *)
 
+    let f = fun (name,stub_name,xs) ->
+      let typnames = List.map xs ~f:Gencpp.ocaml_ast_of_typ in
+      Ref.append ~set:heading @@ make_stub_general ~loc ~typnames ~name:("stub_"^name) ~stub_name;
+      (*let stubname: string  = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in*)
+      (*
+      gen_stub_cpp ~classname ~methname:name ~stubname
+                   hndl
+                   [ ((typ   :> meth_typ_item), {ai_ref=false;ai_const=false})
+                   ; ((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})
+                   ]; *)
       ()
     in
-    let mi = {mi_virt=true;mi_const=true} in
-    List.iter ~f [ ("parent",     [`modelindex; `modelindex],                 mi)
-                 ; ("index",      [`int;`int;`modelindex;`modelindex], mi)
-                 ; ("columnCount",[`modelindex; `int], mi)
-                 ; ("rowCount",   [`modelindex; `int], mi)
-                 ; ("hasChildren",[`modelindex;`bool], mi)
-                 ; ("data",       [`modelindex; `int;`variant], mi)
-                 ];
-    (* now add some OCaml code *)
-    let externals =
-      [ ("stub_report_dataChanged", sprintf "caml_%s_dataChanged_cppmeth_wrapper" classname,
-         [ Lident "cppobj"; Ldot (Lident "QModelIndex","t"); Ldot(Lident "QModelIndex","t")
-         ; Lident "unit"  ])
-      ; ("stub_beginInsertRows", sprintf "caml_%s_beginInsertRows_cppmeth_wrapper" classname,
-         [ Lident "cppobj"; Ldot (Lident "QModelIndex","t"); Lident "int"; Lident "int"
-         ; Lident "unit"  ])
-      ; ("stub_endInsertRows", sprintf "caml_%s_endInsertRows_cppmeth_wrapper" classname,
-         [ Lident "cppobj"; Lident "unit"; Lident "unit"  ])
-      ; ("stub_beginRemoveRows", sprintf "caml_%s_beginRemoveRows_cppmeth_wrapper" classname,
-         [ Lident "cppobj"; Ldot (Lident "QModelIndex","t"); Lident "int"; Lident "int"
-         ; Lident "unit"  ])
-      ; ("stub_endRemoveRows", sprintf "caml_%s_endRemoveRows_cppmeth_wrapper" classname,
-         [ Lident "cppobj"; Lident "unit"; Lident "unit"  ])
-      ]
-    in
+    List.iter (Gencpp.itemmodel_externals ~classname) ~f;
+    let () = if config.gencpp then Gencpp.gen_itemmodel_stuff ~classname in
 
-    List.iter externals
-              ~f:(fun (name,stub_name,typnames) ->
-                  Ref.append ~set:heading @@ make_stub_general ~loc ~typnames ~name ~stub_name
-                 );
+    let add_role_stub =
+      let pval_name = {txt="add_role"; loc} in
+      let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole"] in
+      let pval_type = Ast_helper.Typ.(arrow "" (var "a")
+                                            (arrow "" (int_coretyp loc)
+                                                   (arrow "" (string_coretyp loc)
+                                                          (unit_coretyp loc)
+                                                   )
+                                            )
+                      )
+      in
+      let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                      pval_loc=loc } in
+      { pstr_desc; pstr_loc=loc }
+    in
+    Ref.append add_role_stub ~set:heading;
     let f name =
       let open Ast_helper in
       let e = Exp.(poly (apply
@@ -278,30 +280,22 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
       (Cf.method_ (mkloc name loc) Public (Cfk_concrete (Fresh,e)) )
     in
     let emitters =
-      List.map ~f [ "report_dataChanged"; "beginInsertRows"; "endInsertRows"; "beginRemoveRows"
+      List.map ~f [ "dataChanged"; "beginInsertRows"; "endInsertRows"; "beginRemoveRows"
                   ; "endRemoveRows" ]
     in
     let virtuals =
-      [ make_virt_meth [ Ldot (Lident "QModelIndex","t"); Ldot (Lident "QModelIndex","t") ]
-                       ~loc ~name:"parent"
-      ; make_virt_meth [ Lident "int"; Lident "int"
-                       ; Ldot (Lident "QModelIndex","t"); Ldot (Lident "QModelIndex","t") ]
-                       ~loc ~name:"index"
-      ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "int" ]
-                       ~loc ~name:"columnCount"
-      ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "int" ]
-                       ~loc ~name:"rowCount"
-      ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "bool" ]
-                       ~loc ~name:"hasChildren"
-      ; make_virt_meth [ Ldot(Lident "QModelIndex","t"); Lident "int"; Ldot(Lident "QVariant","t") ]
-                       ~loc ~name:"data"
+      [ make_virt_meth [ `modelindex; `modelindex ] ~loc ~name:"parent"
+      ; make_virt_meth [ `int; `int; `modelindex; `modelindex ] ~loc ~name:"index"
+      ; make_virt_meth [ `modelindex; `int ] ~loc ~name:"columnCount"
+      ; make_virt_meth [ `modelindex; `int ] ~loc ~name:"rowCount"
+      ; make_virt_meth [ `modelindex; `bool ] ~loc ~name:"hasChildren"
+      ; make_virt_meth [ `modelindex; `int; `variant ] ~loc ~name:"data"
       ]
     in
     emitters @ virtuals
   ) else []
   in
   let new_fields = (fields |> List.map ~f:wrap_field  |> List.concat) @ itemmodel_meths in
-  if config.gencpp then Gencpp.close_files ();
 
   let new_fields = (make_initializer ~loc) :: (make_handler_meth ~loc) :: new_fields in
   let new_desc = Pcl_structure { pcstr_fields = new_fields;
@@ -313,22 +307,8 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let ans = { pstr_desc=Pstr_class [{{ci with pci_expr=new_expr2} with pci_attributes=[]}]
             ; pstr_loc=loc } in
   let creator = make_creator ~loc ~classname in
-  let add_role_stub =
-    let pval_name = {txt="add_role"; loc} in
-    let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole"] in
-    let pval_type = Ast_helper.Typ.(arrow "" (var "a")
-                         (arrow "" (int_coretyp loc)
-                                (arrow "" (string_coretyp loc)
-                                       (unit_coretyp loc)
-                                )
-                         )
-              )
-    in
-    let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
-                                  pval_loc=loc } in
-    { pstr_desc; pstr_loc=loc }
-  in
-  !heading @ [ans; add_role_stub; creator]
+  if config.gencpp then Gencpp.close_files ();
+  !heading @ [ans; creator]
 
 
 let getenv_mapper argv =

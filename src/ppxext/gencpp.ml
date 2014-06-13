@@ -58,6 +58,7 @@ module FilesMap = Map.Make(FilesKey)
 let files = ref FilesMap.empty
 
 let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
+  (*print_endline "Opening files....";*)
   let src = open_out (sprintf "%s/%s_c.%s" destdir classname ext) in
   let hdr = open_out (sprintf "%s/%s.h" destdir classname) in
   print_time hdr;
@@ -120,15 +121,19 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
   print_time src;
   fprintfn src "#include \"%s.h\"" classname;
   fprintfn src "";
-  files := FilesMap.(add (classname, FilesKey.CSRC) src !files)
+  files := FilesMap.(add (classname, FilesKey.CSRC) src !files);
+  ()
 
 let enter_blocking_section ch =
-  fprintfn ch "  enter_blocking_section();"
+  (*fprintfn ch "  caml_enter_blocking_section();";*)
+  ()
 
 let leave_blocking_section ch =
-  fprintfn ch "  leave_blocking_section();"
+  (*fprintfn ch "  caml_leave_blocking_section();";*)
+  ()
 
 let close_files () =
+  (*print_endline "Closing files";*)
   let f (classname,ext) hndl =
     let println fmt = fprintfn hndl fmt in
     match ext with
@@ -192,9 +197,11 @@ let getter_of_cppvars  prefix =
 (* We need this arginfo because void foo(QString) is not the same as void foo(const QString&) *)
 type arg_info = { ai_ref: bool; ai_const: bool }
 (* properties can have only simple types (except unit) *)
-type prop_typ = [ `bool | `int | `string | `list of prop_typ ]
-type meth_typ_item = [ `unit | `bool | `int  | `string | `list of meth_typ_item
-                       | `modelindex | `variant ]
+type prop_typ = [ `bytearray | `bool | `int | `string | `list of prop_typ ]
+type meth_typ_item =
+  [ `unit | `bool | `int  | `string | `list of meth_typ_item
+  | `modelindex | `variant | `bytearray
+  ]
 type meth_typ = (meth_typ_item*arg_info) list
 type meth_info = { mi_virt: bool; mi_const: bool }
 
@@ -202,10 +209,12 @@ let wrap_typ_simple x = (x,{ ai_ref=false; ai_const=false })
 let unref   (x,{ai_ref;ai_const}) = (x, {ai_ref=false;ai_const})
 let unconst (x,{ai_ref;ai_const}) = (x, {ai_ref;ai_const=false})
 
+
 (* how many additional variables needed to convert C++ value to OCaml one *)
 let aux_variables_count (y: meth_typ_item) =
   let rec helper = function
     | `variant
+    | `bytearray
     | `bool | `int | `unit | `string | `modelindex -> 0
     | `list x -> helper x + 2
   in
@@ -215,30 +224,59 @@ let aux_variables_count (y: meth_typ_item) =
 let aux_variables_count_to_cpp (y: meth_typ_item) =
   let rec helper = function
     | `variant
+    | `bytearray
     | `bool | `int | `unit | `string | `modelindex -> 0
     | `list x -> helper x + 2
   in
   helper y
 
+let rec ocaml_ast_of_typ x :  Longident.t =
+  let open Longident in
+  match x with
+  | `cppobj    -> Lident "cppobj"
+  | `variant   -> Ldot (Lident "QVariant",   "t")
+  | `modelindex-> Ldot (Lident "QModelIndex","t")
+  | `bool      -> Lident "bool"
+  | `unit      -> Lident "unit"
+  | `bytearray
+  | `string    -> Lident "string"
+  | `int       -> Lident "int"
+  | `list x    -> Lapply (Lident "list", ocaml_ast_of_typ x)
 
 let rec cpptyp_of_proptyp: prop_typ*arg_info -> string = fun (typ,ai) ->
   sprintf "%s%s%s" (if ai.ai_const then "const " else "")
           (match typ with
            | `bool -> "bool"
            | `int  -> "int"
-           | `string -> "QString"
+           | `bytearray -> "QByteArray"
+           | `string    -> "QString"
            | `list x -> sprintf "QList<%s>" (cpptyp_of_proptyp @@ wrap_typ_simple x))
           (if ai.ai_ref then "&" else "")
 
-let rec cpptyp_of_typ: meth_typ_item*arg_info -> string = fun (x,ai) -> match x with
-  | `bool  | `int  | `string as x -> cpptyp_of_proptyp (x,ai)
-  | `unit    -> "void"
-  | `variant -> "QVariant"
-  | `modelindex -> sprintf "%sQModelIndex%s" (if ai.ai_const then "const " else "")
-                           (if ai.ai_ref then "&" else "")
-  | `list x -> sprintf "%sQList<%s>%s" (if ai.ai_const then "const " else "")
-                       (cpptyp_of_typ (x,{ai_ref=false;ai_const=false}))
-                       (if ai.ai_ref then "&" else "")
+let cpptyp_of_typ: _*_ -> string = fun (x,ai) ->
+  let rec helper (x,ai) =
+    match x with
+    | `bytearray
+    | `bool  | `int  | `string as x -> cpptyp_of_proptyp (x,ai)
+    | `unit    -> "void"
+    | `variant -> "QVariant"
+    | `modelindex -> sprintf "%sQModelIndex%s" (if ai.ai_const then "const " else "")
+                             (if ai.ai_ref then "&" else "")
+    | `list x -> sprintf "%sQList<%s>%s" (if ai.ai_const then "const " else "")
+                         (helper (x,{ai_ref=false;ai_const=false}))
+                         (if ai.ai_ref then "&" else "")
+  in
+  let (_: meth_typ_item*_ ->_) = helper in
+  match x with
+  | `cppobj  -> failwith "Bug. cppobj can't appear in C++"
+  | `bool    -> helper (`bool,ai)
+  | `bytearray-> helper (`bytearray,ai)
+  | `int     -> helper (`int, ai)
+  | `unit    -> helper (`unit, ai)
+  | `variant -> helper (`variant, ai)
+  | `list a  -> helper (`list a,ai)
+  | `string  -> helper (`string,ai)
+  | `modelindex -> helper (`modelindex,ai)
 
 let print_declarations ?(mode=`Local) ch xs =
   let m = match mode with `Local -> "CAMLlocal" | `Param -> "CAMLparam" in
@@ -263,10 +301,11 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
     let prefix = String.make (2*tab) ' ' in
     let println fmt = fprintf ch "%s" prefix; fprintfn ch fmt in
     match typ with
-    | `unit  -> ()
-    | `int   -> println "%s = Int_val(%s);" dest ocamlvar
-    | `string-> println "%s = QString(String_val(%s));" dest ocamlvar
-    | `bool  -> println "%s = Bool_val(%s);" dest ocamlvar
+    | `unit      -> ()
+    | `int       -> println "%s = Int_val(%s);" dest ocamlvar
+    | `string    -> println "%s = QString(String_val(%s));" dest ocamlvar
+    | `bytearray -> println "%s = QByteArray(String_val(%s));" dest ocamlvar
+    | `bool      -> println "%s = Bool_val(%s);" dest ocamlvar
     | `modelindex ->
        begin
          match List.find options ~f:(function `ItemModel _ -> true) with
@@ -295,8 +334,14 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
        println "    %s = QVariant();" dest;
        println "}"
     | `list t->
-       let cpp_typ_str = cpptyp_of_typ @@ wrap_typ_simple typ in
-       let cpp_argtyp_str = cpptyp_of_typ @@ wrap_typ_simple t in
+       let cpp_typ_str =
+         let u : [`cppobj|meth_typ_item] * _ =
+           ((wrap_typ_simple typ) :> ([`cppobj|meth_typ_item]*arg_info)) in
+         cpptyp_of_typ u
+       in
+       let cpp_argtyp_str = cpptyp_of_typ @@
+                              ((wrap_typ_simple t) :> ([`cppobj|meth_typ_item]*arg_info) )
+       in
        println "// generating %s" cpp_typ_str;
        let temp_var = get_var () in
        let head_var = get_var () in
@@ -318,10 +363,11 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
   let rec helper ~tab ~var ~dest typ =
     let println fmt = fprintf ch "%s" (String.make (2*tab) ' '); fprintfn ch fmt in
     match typ with
-    | `unit -> failwith "Can't generate OCaml value from C++ void a.k.a. unit"
-    | `int  -> println "%s = Val_int(%s);" dest var
-    | `bool -> println "%s = Val_bool(%s);" dest var
-    | `string -> println "%s = caml_copy_string(%s.toLocal8Bit().data());" dest var
+    | `unit       -> failwith "Can't generate OCaml value from C++ void a.k.a. unit"
+    | `int        -> println "%s = Val_int(%s);" dest var
+    | `bool       -> println "%s = Val_bool(%s);" dest var
+    | `string     -> println "%s = caml_copy_string(%s.toLocal8Bit().data());" dest var
+    | `bytearray  -> println "%s = caml_copy_string(%s.toLocal8Bit().data());" dest var
     | `modelindex ->
        println "%s = caml_alloc(2,0);" dest;
        println "Store_field(%s,0,Val_int(%s.row()));" dest var;
@@ -363,21 +409,23 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
   helper ~tab:1 ~var:cppvar ~dest:ocamlvar typ
 
 (* stub implementation to call it from OCaml *)
-let gen_stub_cpp ?(options=[]) ~classname ~stubname ~methname ch (types: meth_typ) =
+let gen_stub_cpp ?(options=[]) ~classname ~stubname ~methname ch
+                 (types: (meth_typ_item * arg_info) list)=
   let println fmt = fprintfn ch fmt in
   let (args,res) = List.list_last types in
   let res = unref res in
   println "// stub: %s name(%s)" (cpptyp_of_typ res) (List.to_string ~f:(fun _ -> cpptyp_of_typ) args);
   let argnames = List.mapi ~f:(fun i _ -> sprintf "_x%d" i) args in
   let cppvars  = List.mapi ~f:(fun i _ -> sprintf "z%d" i) args in
-  println "extern \"C\" value %s(value _cppobj,%s) {"
+  println "extern \"C\" value %s(%s) {"
           stubname
           (match args with
-           | [(`unit,_)] -> ""
-           | _ -> List.to_string ~f:(fun i -> sprintf "value %s") argnames);
-  print_param_declarations ch argnames;
+           (*| [(`unit,_)] -> "value _cppobj"*)
+           | _ -> List.map ~f:(sprintf "value %s") ("_cppobj"::argnames) |> String.concat ",");
+  print_param_declarations ch ("_cppobj"::argnames);
   let aux_count =
-    List.fold_left ~f:(fun acc x -> max (aux_variables_count_to_cpp @@ fst x) acc) ~init:0 args in
+    List.fold_left ~f:(fun acc x -> max (aux_variables_count_to_cpp @@ fst x) acc) ~init:0 args
+  in
   let aux_count = max aux_count (aux_variables_count @@ fst res) in
   println "  // aux vars count = %d" aux_count;
   let local_names = List.init (sprintf "_x%d") aux_count in
@@ -488,7 +536,7 @@ let gen_meth_cpp ~minfo ?(options=[]) ~classname ~methname ch (types: meth_typ) 
   ()
 
 let gen_prop ~classname ~propname (typ: prop_typ) =
-  printf "Generation prop '%s' of class '%s'.\n" propname classname;
+  (*printf "Generation prop '%s' of class '%s'.\n" propname classname;*)
   let println fmt =
     let hndl = FilesMap.find (classname,FilesKey.CHDR) !files in
     fprintfn hndl fmt
@@ -500,7 +548,7 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
 
   println "public:";
   println "  Q_PROPERTY(%s %s READ %s NOTIFY %s)" cpptyp_name propname getter_name sgnl_name;
-  println "  %s %s();" cpptyp_name getter_name;
+  println "  Q_INVOKABLE %s %s();" cpptyp_name getter_name;
   println "signals:";
   println "  void %s(%s %s);" sgnl_name cpptyp_name propname;
   (* C++ part now *)
@@ -528,7 +576,9 @@ let gen_meth ?(minfo={mi_virt=false; mi_const=false}) ?(options=[]) ~classname ~
   let (args,res) = typ' |> List.list_last in
   let hndl = FilesMap.find (classname, FilesKey.CHDR) !files in
   fprintfn hndl "public:";
-  fprintfn hndl "  %s %s(%s)%s%s;" (cpptyp_of_typ @@ unconst @@ unref res) methname
+  fprintfn hndl "  Q_INVOKABLE %s %s(%s)%s%s;"
+           (cpptyp_of_typ @@ unconst @@ unref res)
+           methname
            (List.to_string ~f:(fun _ -> cpptyp_of_typ) args)
            (if minfo.mi_const then " const" else "")
            (if minfo.mi_virt then " override" else "");
@@ -538,3 +588,48 @@ let gen_meth ?(minfo={mi_virt=false; mi_const=false}) ?(options=[]) ~classname ~
   gen_meth_cpp ~minfo ~options ~classname ~methname hndl typ';
   ()
 
+let itemmodel_externals ~classname =
+  [ ("dataChanged", sprintf "caml_%s_dataChanged_cppmeth_wrapper" classname,
+     [ `cppobj; `modelindex; `modelindex; `unit])
+  ; ("beginInsertRows", sprintf "caml_%s_beginInsertRows_cppmeth_wrapper" classname,
+     [ `cppobj; `modelindex; `int; `int; `unit ])
+  ; ("endInsertRows", sprintf "caml_%s_endInsertRows_cppmeth_wrapper" classname,
+     [ `cppobj; `unit ])
+  ; ("beginRemoveRows", sprintf "caml_%s_beginRemoveRows_cppmeth_wrapper" classname,
+     [ `cppobj; `modelindex; `int; `int; `unit ])
+  ; ("endRemoveRows", sprintf "caml_%s_endRemoveRows_cppmeth_wrapper" classname,
+     [ `cppobj; `unit ])
+  ; ("addRole", sprintf "caml_%s_addRole_cppmeth_wrapper" classname,
+     [ `cppobj; `int; `bytearray; `unit ])
+  ]
+
+let itemmodel_members =
+  let mi = {mi_virt=true;mi_const=true} in
+  [ ("parent",     [`modelindex; `modelindex],                 mi)
+  ; ("index",      [`int;`int;`modelindex;`modelindex], mi)
+  ; ("columnCount",[`modelindex; `int], mi)
+  ; ("rowCount",   [`modelindex; `int], mi)
+  ; ("hasChildren",[`modelindex; `bool], mi)
+  ; ("data",       [`modelindex; `int;`variant], mi)
+  ; ("addRole",    [`string;`int;`unit], {mi_virt=false; mi_const=false} )
+  ]
+
+
+let gen_itemmodel_stuff ~classname =
+  let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
+  let rem_cppobj : _ -> meth_typ_item = function
+    | `cppobj -> assert false
+    | `unit -> `unit
+    | `int  -> `int
+    | `bytearray -> `bytearray
+    | `string -> `string
+    | `modelindex -> `modelindex
+    | `variant -> `variant
+    | `list x -> `list x
+  in
+  let f (methname, stubname, types) =
+    let types = List.tl types |> List.map ~f:(fun x -> wrap_typ_simple @@ rem_cppobj x) in
+    gen_stub_cpp ~options:[`ItemModel] ~classname ~stubname ~methname hndl types
+  in
+  List.iter ~f (itemmodel_externals ~classname);
+  ()
