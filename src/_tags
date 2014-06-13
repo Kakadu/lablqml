@@ -40,6 +40,6 @@
 "mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax
 "lib/parser.ml": syntax_camlp4o, package_sexplib.syntax
 "mocml/Parser.ml": syntax_camlp4o, package_sexplib.syntax
-true: debug
+true: debug, warn(@6)
 <test_qt>: not_hygienic
 

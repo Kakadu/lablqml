@@ -1,5 +1,7 @@
-controller.cpp
+controller.c*
+controller_.c*
 controller.h
-historyModel.cpp
+historyModel.c*
+historyModel_c.c*
 historyModel.h
 

@@ -57,8 +57,8 @@ module FilesMap = Map.Make(FilesKey)
 
 let files = ref FilesMap.empty
 
-let open_files ?(destdir=".") ~options ~classname =
-  let src = open_out (sprintf "%s/%s.cpp" destdir classname) in
+let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
+  let src = open_out (sprintf "%s/%s_c.%s" destdir classname ext) in
   let hdr = open_out (sprintf "%s/%s.h" destdir classname) in
   print_time hdr;
   let println fmt = fprintfn hdr fmt in
@@ -75,7 +75,7 @@ let open_files ?(destdir=".") ~options ~classname =
   fprintfn hdr "#include <caml/threads.h>";
   fprintfn hdr "";
   fprintfn hdr "class %s : public %s {" classname
-           (if List.mem `ItemModel options then "QAbstractItemModel" else "QObject");
+           (if List.mem `ItemModel ~set:options then "QAbstractItemModel" else "QObject");
   fprintfn hdr "  Q_OBJECT";
   fprintfn hdr "  value _camlobjHolder; // store reference to OCaml value there";
   fprintfn hdr "public:";
@@ -88,7 +88,7 @@ let open_files ?(destdir=".") ~options ~classname =
   fprintfn hdr "    register_global_root(&_camlobjHolder);";
   fprintfn hdr "  }\n";
   let () =
-    if List.mem `ItemModel options then (
+    if List.mem `ItemModel ~set:options then (
       println "private:";
       println "  QHash<int, QByteArray> _roles;";
       println "public:";
@@ -390,7 +390,7 @@ let gen_stub_cpp ?(options=[]) ~classname ~stubname ~methname ch (types: meth_ty
   let cpp_var_counter = ref 0 in
   let new_cpp_var () = incr cpp_var_counter; sprintf "zz%d" !cpp_var_counter in
 
-  let options = if List.mem `ItemModel options then [`ItemModel (Some "o")] else [] in
+  let options = if List.mem `ItemModel ~set:options then [`ItemModel (Some "o")] else [] in
   let f = fun i arg ->
     let cppvar = sprintf "z%d" i in
     let ocamlvar = sprintf "_x%d" i in
@@ -460,7 +460,6 @@ let gen_meth_cpp ~minfo ?(options=[]) ~classname ~methname ch (types: meth_typ) 
        let f i (typ,_) =
          let cppvar = sprintf "x%d" i in
          let ocamlvar = make_cb_var i in
-         let name = List.nth cb_locals i in
          fprintf ch "  ";
          (*fprintfn stdout "call ocaml_value_of_cpp %s" (cpptyp_of_typ arg);*)
          ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ;
@@ -496,7 +495,7 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
   in
   let sgnl_name = Names.signal_of_prop propname in
   let getter_name = Names.getter_of_prop propname in
-  let setter_name = Names.setter_of_prop propname in
+  (*let setter_name = Names.setter_of_prop propname in*)
   let cpptyp_name = cpptyp_of_proptyp @@ wrap_typ_simple typ in
 
   println "public:";
@@ -506,9 +505,8 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
   println "  void %s(%s %s);" sgnl_name cpptyp_name propname;
   (* C++ part now *)
   let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
-  let println fmt = fprintfn hndl fmt in
   (*println "// Q_PROPERTY( %s )" propname;*)
-  gen_meth_cpp ~classname ~methname:getter_name hndl
+  gen_meth_cpp ~classname ~methname:getter_name hndl ~minfo:{mi_const=false;mi_virt=false}
                (* TODO: maybe we can use cosnt and & for setter argument *)
                [ ((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})
                ; ((typ   :> meth_typ_item), {ai_ref=false;ai_const=false})
@@ -534,12 +532,9 @@ let gen_meth ?(minfo={mi_virt=false; mi_const=false}) ?(options=[]) ~classname ~
            (List.to_string ~f:(fun _ -> cpptyp_of_typ) args)
            (if minfo.mi_const then " const" else "")
            (if minfo.mi_virt then " override" else "");
-  let types = List.map typ ~f:wrap_typ_simple in
 
   let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
-  let options =
-    if List.mem `ItemModel options then [`ItemModel] else []
-  in
+  let options = if List.mem `ItemModel ~set:options then [`ItemModel] else [] in
   gen_meth_cpp ~minfo ~options ~classname ~methname hndl typ';
   ()
 

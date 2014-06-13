@@ -9,11 +9,18 @@ open Gencpp
 
 (* Configuration of extension:
  * Should we geneate C++ code, should we add debug printing, etc. *)
-type config = { mutable gencpp: bool }
-let config  = { gencpp=true }
+type config = { mutable gencpp: bool
+              ; mutable destdir: string
+              ; mutable ext: string
+              }
+let config  = { gencpp=true; destdir="."; ext="c" }
 
 let () =
-  let specs = [ ("-nocpp", Arg.Unit (fun () -> config.gencpp <- false), "Don't generate C++")] in
+  let specs = [ ("-nocpp",   Arg.Unit (fun () -> config.gencpp <- false), "Don't generate C++")
+              ; ("-destdir", Arg.String (fun s -> config.destdir <- s), "Where to put files")
+              ; ("-ext", Arg.String (fun s -> config.ext <- s), "File extension to use (.cpp or .c)")
+              (* TODO: implement -list choice which will print qtclasses declared in file *)
+              ] in
   Arg.parse specs (fun _ -> ())
             "usage there"
 
@@ -161,7 +168,7 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
      then raise @@ ErrorMsg (sprintf "Method '%s' has wrong type" methname, loc);
      let () = if config.gencpp then (
                   let options =
-                    if List.mem `ItemModel options then [`ItemModel] else []
+                    if List.mem `ItemModel ~set:options then [`ItemModel] else []
                   in
                   Gencpp.gen_meth ~options ~classname ~methname meth_typ
               ) in
@@ -172,7 +179,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   print_endline "wrap_class_type_decl on class type markend with `qtclass`";
   let classname = ci.pci_name.txt in
   let options =  if has_attr "itemmodel" attributes then [`ItemModel] else [] in
-  if config.gencpp then Gencpp.open_files ~options ~destdir ~classname;
+  if config.gencpp then Gencpp.open_files ~options ~ext:config.ext ~destdir ~classname;
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s
     |  _    -> raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
@@ -204,7 +211,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
 
           [ (Cf.method_ (mkloc ("emit_" ^ signal_name) l)
                       Public (Cfk_concrete (Fresh,e)) ).pcf_desc
-          ; Pcf_method ({loc with txt=Names.signal_of_prop propname},
+          ; Pcf_method ({loc with txt=propname},
                         flag,
                         Cfk_virtual Ast_helper.Typ.(arrow "" (unit_coretyp l) core_typ) )
           ]
@@ -220,8 +227,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
          wrap_prop ~classname m
       | _ -> []
     in
-    let ans' = List.map (fun ans -> { f_desc with pcf_desc=ans }) ans in
-    ans'
+    List.map ~f:(fun ans -> { f_desc with pcf_desc=ans }) ans
   in
   let itemmodel_meths =  if has_attr "itemmodel" attributes then (
     let f (methname, meth_typ, minfo) =
@@ -287,7 +293,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
                        ~loc ~name:"rowCount"
       ; make_virt_meth [ Ldot (Lident "QModelIndex","t"); Lident "bool" ]
                        ~loc ~name:"hasChildren"
-      ; make_virt_meth [ Ldot(Lident "QModelIndex","t"); Lident "bool"; Ldot(Lident "QVariant","t") ]
+      ; make_virt_meth [ Ldot(Lident "QModelIndex","t"); Lident "int"; Ldot(Lident "QVariant","t") ]
                        ~loc ~name:"data"
       ]
     in
@@ -297,7 +303,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let new_fields = (fields |> List.map ~f:wrap_field  |> List.concat) @ itemmodel_meths in
   if config.gencpp then Gencpp.close_files ();
 
-  let new_fields = (make_initializer loc) :: (make_handler_meth ~loc) :: new_fields in
+  let new_fields = (make_initializer ~loc) :: (make_handler_meth ~loc) :: new_fields in
   let new_desc = Pcl_structure { pcstr_fields = new_fields;
                                  pcstr_self = Ast_helper.Pat.var (mkloc "self" loc) } in
   let new_expr = {ci.pci_expr with pcl_desc = new_desc } in
@@ -333,7 +339,9 @@ let getenv_mapper argv =
         | { pstr_desc=Pstr_class [cinfo]; pstr_loc } :: rest when
                has_attr "qtclass" cinfo.pci_attributes ->
            Ast_helper.with_default_loc pstr_loc (fun () ->
-             wrap_class_decl ~attributes:cinfo.pci_attributes mapper pstr_loc cinfo @ iter rest )
+             wrap_class_decl ~destdir:config.destdir ~attributes:cinfo.pci_attributes
+                             mapper pstr_loc cinfo
+             @ iter rest )
         | { pstr_loc } as item :: rest ->
           mapper.structure_item mapper item :: iter rest
         | [] -> []

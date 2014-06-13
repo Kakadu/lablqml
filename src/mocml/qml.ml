@@ -57,7 +57,7 @@ let cpp_value_of_ocaml ?(options=[`AbstractItemModel None])
         | `QGMouseEvent
         | `QMouseEvent -> assert false
         | `QModelIndex -> begin
-            match List.find options (function `AbstractItemModel _ -> true) with
+            match List.find options ~f:(function `AbstractItemModel _ -> true) with
               | Some (`AbstractItemModel obj) ->
                   let call =
                     match obj with
