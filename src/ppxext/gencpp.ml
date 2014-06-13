@@ -69,12 +69,19 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
   fprintfn hdr "#include <QtCore/QDebug>";
   fprintfn hdr "#include <QtCore/QObject>";
   fprintfn hdr "#include <QtCore/QAbstractItemModel>";
+  println "";
+  println "#ifdef __cplusplus";
+  println "extern \"C\" {";
+  println "#endif";
   fprintfn hdr "#include <caml/alloc.h>";
   fprintfn hdr "#include <caml/mlvalues.h>";
   fprintfn hdr "#include <caml/callback.h>";
   fprintfn hdr "#include <caml/memory.h>";
   fprintfn hdr "#include <caml/threads.h>";
-  fprintfn hdr "";
+  println "#ifdef __cplusplus";
+  println "}";
+  println "#endif";
+  println "";
   fprintfn hdr "class %s : public %s {" classname
            (if List.mem `ItemModel ~set:options then "QAbstractItemModel" else "QObject");
   fprintfn hdr "  Q_OBJECT";
