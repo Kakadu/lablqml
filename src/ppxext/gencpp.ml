@@ -304,7 +304,7 @@ let print_param_declarations ch xs = print_declarations ~mode:`Param ch xs
 
 let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
                        ch (get_var,release_var,new_cpp_var) typ =
-  let rec helper ~tab dest var typ =
+  let rec helper ~tab dest ~ocamlvar typ =
     let prefix = String.make (2*tab) ' ' in
     let println fmt = fprintf ch "%s" prefix; fprintfn ch fmt in
     match typ with
@@ -327,13 +327,13 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
          | None -> failwith "QModelIndex is not available without QAbstractItemModel base"
        end
     | `variant ->
-       println "if (Is_block(%s)) {" var;
-       println "  if (caml_hash_variant(\"string\") == Field(%s,0))" var;
-       println "    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));" dest var;
-       println "  else if(caml_hash_variant(\"int\") == Field(%s,0))" var;
-       println "    %s = QVariant::fromValue(Int_val(Field(%s,1)));" dest var;
-       println "  else if(caml_hash_variant(\"qobject\") == Field(%s,0))" var;
-       println "    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));" dest var;
+       println "if (Is_block(%s)) {" ocamlvar;
+       println "  if (caml_hash_variant(\"string\") == Field(%s,0))" ocamlvar;
+       println "    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));" dest ocamlvar;
+       println "  else if(caml_hash_variant(\"int\") == Field(%s,0))" ocamlvar;
+       println "    %s = QVariant::fromValue(Int_val(Field(%s,1)));" dest ocamlvar;
+       println "  else if(caml_hash_variant(\"qobject\") == Field(%s,0))" ocamlvar;
+       println "    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));" dest ocamlvar;
        println "  else Q_ASSERT_X(false,\"%s\",\"%s\");"
                  "While converting OCaml value to QVariant"
                  "Unknown variant tag";
@@ -353,18 +353,18 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
        let temp_var = get_var () in
        let head_var = get_var () in
        let temp_cpp_var = new_cpp_var () in
-       println "%s = %s;\n" temp_var var;
+       println "%s = %s;\n" temp_var ocamlvar;
        println "while (%s != Val_emptylist) {\n" temp_var;
        println "  %s = Field(%s,0); /* head */"  head_var temp_var;
        println "  %s %s;" cpp_argtyp_str temp_cpp_var;
-       helper  ~tab:(tab+1) temp_cpp_var head_var t;
+       helper  ~tab:(tab+1) temp_cpp_var ~ocamlvar:head_var t;
        println "  %s << %s;\n" dest temp_cpp_var;
        println "  %s = Field(%s,1);" temp_var temp_var;
        println "}";
        release_var head_var;
        release_var temp_var
   in
-  helper ~tab:1 cppvar ocamlvar typ
+  helper ~tab:1 cppvar ~ocamlvar typ
 
 let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
   let rec helper ~tab ~var ~dest typ =
