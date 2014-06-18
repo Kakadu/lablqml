@@ -11,18 +11,26 @@ let files_in_dir path =
       End_of_file -> Unix.closedir d; !ans
 
 let modulename_of_file filename =
-  let ans = String.copy filename in
-  ans.[0] <- Char.uppercase ans.[0];
-  ans
+  let open Bytes in
+  let ans = of_string filename |> copy in
+  set ans 0 (Char.uppercase ans.[0]);
+  to_string ans
 
 let process_cmi_file filename : Types.signature =
   let ic = open_in_bin filename in
   let magic_len = String.length (Config.cmi_magic_number) in
-  let buffer = String.create magic_len in
+  let buffer = Bytes.create magic_len in
   really_input ic buffer 0 magic_len ;
   let (name, sign) = input_value ic in
   close_in ic;
   sign
+
+module Types_helpers = struct
+  let make_mod_struct ~name:name_ children =
+    Types.Sig_module (Ident.({name=name_; flags=0;stamp=0}),
+                      {md_type=Types.Mty_signature children; md_attributes=[]; md_loc=Location.none},
+                      Types.Trec_not)
+end
 
 let read_modules dirs : Types.signature_item list =
   let files =
@@ -31,17 +39,16 @@ let read_modules dirs : Types.signature_item list =
       |> List.filter ~f:(fun s -> Filename.check_suffix s ".cmi")
       |> List.map ~f:(fun name -> (path,name))
     ) |> List.flatten in
-  List.map (fun (path,filename) ->
+  List.map ~f:(fun (path,filename) ->
     let module_name = modulename_of_file (Filename.chop_extension filename) in
     let sign = process_cmi_file (path ^/ filename) in
-    Types.Sig_module (Ident.({name=module_name; flags=0;stamp=0}), Types.Mty_signature sign, Types.Trec_not)
+    Types_helpers.make_mod_struct ~name:module_name sign
   ) files
 
 
 let build_tree (xs : Types.signature) =
   let open Tree in
-  let name = Ident.({stamp=0; name="root"; flags=0}) in
-  let internal = Types.Sig_module(name,Types.Mty_signature xs, Types.Trec_not) in
+  let internal = Types_helpers.make_mod_struct ~name:"root" xs in
   (*let xs = if List.length xs > 10 then List.take ~n:10 xs else xs in*)
   let sons = List.map xs ~f:of_sig_item in
   {name="root"; internal; sons}
@@ -51,12 +58,12 @@ let compare a b =
   let helper = function
   | Types.Sig_type        _ -> 0
   | Types.Sig_modtype     _ -> 1
+  | Types.Sig_module (_,{md_type=Types.Mty_functor _; _},_) -> 3
   | Types.Sig_module      _ -> 2
-  | Types.Sig_module (_,Types.Mty_functor _,_) -> 3
   | Types.Sig_class       _ -> 6
   | Types.Sig_class_type  _ -> 7
   | Types.Sig_value       _ -> 8
-  | Types.Sig_exception   _ -> 9
+  | Types.Sig_typext      _ -> 9
   in
   let x = compare (helper a) (helper b) in
   if x<>0 then x
@@ -70,8 +77,8 @@ let rec sort_tree ({Tree.sons;_} as item) =
 let sort_of_sig_item = function
   | Types.Sig_value       _ -> "v"
   | Types.Sig_type        _ -> "t"
-  | Types.Sig_exception   _ -> "cn"
-  | Types.Sig_module (_,Types.Mty_functor _,_) -> "f"
+  | Types.Sig_typext      _ -> "ext"
+  | Types.Sig_module (_,{md_type=Types.Mty_functor _;_},_) -> "f"
   | Types.Sig_module      _ -> "m"
   | Types.Sig_modtype     _ -> "mt"
   | Types.Sig_class       _ -> "c"

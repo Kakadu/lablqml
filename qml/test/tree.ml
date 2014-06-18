@@ -8,10 +8,14 @@ type 'a tree = {
 }
 open Types
 
+let is_module = function
+  | Types.Sig_module (_,_,_) -> true
+  | ___ -> false
+
 let name_of_item = function
   | Types.Sig_value     ({Ident.name;_},_)   -> name
   | Types.Sig_type      ({Ident.name;_},_,_) -> name
-  | Types.Sig_exception ({Ident.name;_},_)   -> name
+  | Types.Sig_typext    ({Ident.name;_},_,_) -> name
   | Types.Sig_module    ({Ident.name;_},_,_) -> name
   | Types.Sig_modtype   ({Ident.name;_},_)   -> name
   | Types.Sig_class     ({Ident.name;_},_,_) -> name
@@ -21,8 +25,8 @@ let rec of_sig_item internal =
   match internal with
   | Types.Sig_value     ({Ident.name;_},_)  -> {name; internal; sons=[]}
   | Types.Sig_type      ({Ident.name;_},_,_)  -> {name; internal; sons=[]}
-  | Types.Sig_exception ({Ident.name;_},_)  -> {name; internal; sons=[]}
-  | Types.Sig_module    ({Ident.name;_},Types.Mty_signature sons,_) ->
+  | Types.Sig_typext    ({Ident.name;_},_,_)  -> {name; internal; sons=[]}
+  | Types.Sig_module    ({Ident.name;_},{md_type=Mty_signature sons},_) ->
       {name; internal; sons=List.map sons ~f:of_sig_item}
   | Types.Sig_module    ({Ident.name;_},_,_) -> {name; internal; sons=[]}
   | Types.Sig_modtype   ({Ident.name;_},_)   -> {name; internal; sons=[]}
@@ -33,7 +37,7 @@ let print_sig fmt v =
   match v with
   | Types.Sig_value     (id,desc)    -> Printtyp.value_description id fmt desc
   | Types.Sig_type      (id,desc,_)  -> Printtyp.type_declaration  id fmt desc
-  | Types.Sig_exception (id,desc)    -> Printtyp.exception_declaration  id fmt desc
+  | Types.Sig_typext    (id,desc,_)  -> Printtyp.extension_constructor  id fmt desc
   | Types.Sig_module    (id,desc,_)  -> Format.fprintf fmt "<no data>\n"
   | Types.Sig_modtype   (id,desc)    -> Printtyp.modtype_declaration  id fmt desc
   | Types.Sig_class     (id,desc,_) -> Printtyp.class_declaration   id fmt desc
@@ -68,7 +72,7 @@ let change_state (old_selected: int list) (x,y) root =
   (new_selected, redraw_start_from)
 
 let good_selected selected =
-  List.for_all selected ~f:((<=)0) || begin
+  List.for_all selected ~f:((<=)0) || (List.length selected = 0) || begin
     let xs = List.rev selected in
     let (h,tl) = List.(hd xs, tl xs) in
     (h= -1) && (List.for_all tl ~f:((<=)0) )

@@ -1,2 +1,5 @@
 *.pro.user
+/Makefile
+/ppx_qt
+
 

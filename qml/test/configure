@@ -1,23 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-if [ ! -e ./mocml ]
+if [ ! -e ../ppx_qt ]
 then
     echo "Building generator"
     cd ../../src
     ./configure
-    ocamlbuild mocml/mocml.native
+    ocamlbuild ppxext/ppx_qt.native
     if [ $? != 0 ]; then
       exit 0
     fi
     cd -
     echo "Adding symlink"
-    ln -s ../../src/mocml.native mocml
+    ln -s ../../src/ppx_qt.native ../ppx_qt
 fi
 echo "Executing generator"
-PARAMS=""
-#PARAMS="$PARAMS -with-debug"
-#PARAMS="$PARAMS -with-debug-criticals"
-./mocml -qml_wrap input.json $PARAMS
+OCAML_OPTS=
+set -xe
+ocamlfind c -dsource -package lablqml -c -ppx '../ppx_qt -destdir .' controller.ml
+ocamlfind c -dsource -package lablqml -c -ppx '../ppx_qt -destdir .' abstractModel.ml
+ocamlfind c -package lablqml -c -ppx '../ppx_qt -destdir .' dataItem.ml
+rm -f controller.cm[iox] abstractModel.cm[iox] dataItem.cm[iox]
+
 echo ""> .depend
 make depend
 

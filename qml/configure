@@ -13,7 +13,7 @@ function maybe_exit() {
 }
 ROOT_DIR=$PWD
 # checking ocaml version
-OCAML_VERSION_MIN="4.00.1"
+OCAML_VERSION_MIN="4.02.0"
 OCAML_VERSION=`ocamlc -version`
 maybe_exit $? "ocamlc executable not found"
 if ! verlte $OCAML_VERSION_MIN $OCAML_VERSION ; then
@@ -59,11 +59,6 @@ g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --lib
 compile_test
 if [ $? != 0 ]; then
   echo "Linking test C++ application failed"
-  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 for website there is \
-  a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
-    Libs: -L\${libdir} -lQt5Core\n\
-  for\n\
-    Libs: -Wl,-rpath,\${libdir} -L\${libdir} -lQt5Core\n"
   exit 1
 else
   echo "Test C++ aplication built successfully"
@@ -71,7 +66,7 @@ fi
 cd $ROOT_DIR
 
 
-OCAML_PACKAGES=(core yojson tyxml ocamlgraph) #required ocaml packages
+OCAML_PACKAGES=( ) #required ocaml packages
 res=0
 
 for item in ${OCAML_PACKAGES[*]}
@@ -105,11 +100,11 @@ echo -e "\
 all: generator lib test\n\
 	\n\
 generator:\n\
-	cd $ROOT_DIR/../src; ./configure && ocamlbuild mocml/mocml.native
-	rm -f $ROOT_DIR/test/mocml && ln -s $ROOT_DIR/../src/mocml.native $ROOT_DIR/test/mocml\n\
+	cd $ROOT_DIR/../src; ./configure && make
+	rm -f $ROOT_DIR/ppx_qt && ln -s $ROOT_DIR/../src/ppx_qt.native $ROOT_DIR/ppx_qt\n\
 lib:\n\
-	if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/lib && ./configure; fi\n\
-	make -C $ROOT_DIR/lib\n\
+	if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/../lablqml && ./configure; fi\n\
+	\n\
 test: lib\n\
 	rm -f $ROOT_DIR/test/.depend && touch $ROOT_DIR/test/.depend
 	cd $ROOT_DIR/test && ./configure && make\n\
@@ -118,8 +113,6 @@ clean:\n\
 	rm -f $ROOT_DIR/test/.depend && touch $ROOT_DIR/test/.depend && \$(MAKE) -C test clean\n\
 	\$(MAKE) -C lib clean\n\
 	\$(MAKE) -C $ROOT_DIR/../src clean\n\
-install: generator\n\
-	cp ../src/_build/mocml/mocml.native \$(PREFIX)/bin/mocml\
 \
 " > Makefile
 
