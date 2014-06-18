@@ -1,8 +1,5 @@
 open Printf
 open Helpers
-
-let () = Printexc.record_backtrace true
-
 open QmlContext
 
 type options = { mutable path: string list }
@@ -16,9 +13,11 @@ let () =
     usage_msg;
   if List.length options.path = 0
   then print_endline "Include paths are empty. Please specufy some via -I <path> option"
+;;
+open AbstractModel
 
 class virtual abstractListModel cppobj = object(self)
-  inherit AbstractModel.base_AbstractModel cppobj as super
+  inherit abstractModel cppobj as super
   method parent _ = QModelIndex.empty
   method index row column parent =
     if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
@@ -34,19 +33,19 @@ let update_paths xs =
 
 let root = ref (update_paths options.path)
 let selected = ref [-1]
-let cpp_data: (abstractListModel * DataItem.base_DataItem list) list ref  = ref []
+let cpp_data: (abstractListModel * DataItem.dataItem list) list ref  = ref []
 
 let cpp_data_helper ys =
   let f xs =
     let data = List.map xs ~f:(fun {Tree.name;Tree.internal;_} ->
-      let cppObj = DataItem.create_DataItem () in
+      let cppObj = DataItem.create_dataItem () in
       object(self)
-        inherit DataItem.base_DataItem cppObj as super
-        method name () = name
-        method sort () = internal |> S.sort_of_sig_item
+        inherit DataItem.dataItem cppObj as super
+        method getname () = name
+        method getsort () = internal |> S.sort_of_sig_item
       end) in
     (* creating miniModel for this list *)
-    let cppobj = AbstractModel.create_AbstractModel () in
+    let cppobj = AbstractModel.create_abstractModel () in
     AbstractModel.add_role cppobj 555 "qwe";
 
     let o =
@@ -67,7 +66,7 @@ let cpp_data_helper ys =
   in
   List.map ys ~f
 
-let initial_cpp_data () : (abstractListModel * DataItem.base_DataItem list) list =
+let initial_cpp_data () : (abstractListModel * DataItem.dataItem list) list =
   let xs = Tree.proj !root [-1] in
   assert (List.length xs = 1);
   cpp_data_helper xs
@@ -85,7 +84,7 @@ let item_selected controller mainModel x y : unit =
   if redraw_from <= last_row then begin
     mainModel#beginRemoveRows QModelIndex.empty redraw_from (List.length !cpp_data-1);
     cpp_data := cpp_data_head;
-    mainModel#endRemoveRows ();
+    mainModel#endRemoveRows;
   end else begin
     cpp_data := cpp_data_head;
   end;
@@ -108,7 +107,7 @@ let item_selected controller mainModel x y : unit =
       let last = from + List.length zs-1 in
       mainModel#beginInsertRows QModelIndex.empty from last;
       cpp_data := !cpp_data @ zs;
-      mainModel#endInsertRows ()
+      mainModel#endInsertRows
     end;
   end;
   assert (List.length !cpp_data = List.length new_selected)
@@ -118,14 +117,14 @@ let do_update_paths model xs =
     (* there we need to clear model ... *)
     model#beginRemoveRows QModelIndex.empty 0 (List.length !cpp_data-1);
     cpp_data := [];
-    model#endRemoveRows ();
+    model#endRemoveRows;
     root := update_paths xs;
     (* ... and repopuly it *)
     if !root.Tree.sons <> [] then begin
       model#beginInsertRows QModelIndex.empty 0 0;
       cpp_data := initial_cpp_data ();
       selected := [-1];
-      model#endInsertRows ()
+      model#endInsertRows
     end else
       selected := [];
   end
@@ -133,7 +132,7 @@ let do_update_paths model xs =
 let main () : unit =
   cpp_data := initial_cpp_data ();
 
-  let cpp_model = AbstractModel.create_AbstractModel () in
+  let cpp_model = AbstractModel.create_abstractModel () in
   AbstractModel.add_role cpp_model 555 "homm";
 
   let model = object(self)
@@ -149,9 +148,9 @@ let main () : unit =
       end
   end in
 
-  let controller_cppobj = Controller.create_Controller () in
+  let controller_cppobj = Controller.create_controller () in
   let controller = object(self)
-    inherit Controller.base_Controller controller_cppobj as super
+    inherit Controller.controller controller_cppobj as super
     method onItemSelected x y =
       try
         item_selected self model x y
@@ -162,14 +161,14 @@ let main () : unit =
     method paths () = options.path
     method setPaths xs = do_update_paths model xs
     val mutable desc = None
-    method isHasData () = match desc with Some _ -> true | _ -> false
-    method getDescr () =
+    method gethasData () = match desc with Some _ -> true | _ -> false
+    method getdescr () =
       match desc with
         | Some x -> x
         | None   ->
             eprintf "App have tried to access description which should not exist now";
             "<no description. Bug!>"
-    method getFullPath () =
+    method getfullPath () =
       let indexes = if List.last !selected = -1 then List.(!selected |> rev |> tl |> rev) else !selected in
       assert (List.for_all (fun  x -> x>=0 ) indexes);
       let proj = Tree.proj !root indexes |> List.take ~n:(List.length indexes) in
@@ -177,13 +176,13 @@ let main () : unit =
       List.map2 proj indexes ~f:(fun xs n -> let x = List.nth xs ~n in x.Tree.name) |> String.concat "."
 
     method updateDescription info =
-      if self#isHasData () then begin
+      if self#gethasData () then begin
         desc <- Some info;
       end else begin
         desc <- Some info;
         self#emit_hasDataChanged true;
       end;
-      self#emit_descChanged info
+      self#emit_descrChanged info
   end in
 
   let () =

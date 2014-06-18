@@ -50,6 +50,7 @@ Rectangle {
             width: 700
             height: parent.height
             clip: true
+
             ScrollBar {
                 flickable: parent
                 vertical: true

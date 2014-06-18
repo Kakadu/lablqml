@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: db1cad18531e1801821cf6e554604999)
+Qml
+Qml2
+TypAst
+Qml_wrap
+Qtgui
+WrapAbstractItemModel
+ParseYaml
+TypLexer
+TypParser
+# OASIS_STOP

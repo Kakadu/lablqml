@@ -11,6 +11,11 @@ Qt/
 folderlistmodel/libqmlfolderlistmodelplugin.prl
 folderlistmodel/libqmlfolderlistmodelplugin.so*
 
-AbstractModel*
-Controller*
-DataItem*
+abstractModel_c.c
+abstractModel.h
+controller.h
+controller_c.c
+dataItem_c.c
+dataItem.h
+ppx_qt
+moc_*.c

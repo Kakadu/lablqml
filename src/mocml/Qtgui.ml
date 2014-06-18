@@ -116,7 +116,7 @@ let gen_cpp lst =
     "#include <QtCore/QObject>\n\n";
     "class " ^ classname ^ ": public QObject {\nQ_OBJECT\n";
     "public slots:\n";
-  ] (output_string h_file);
+  ] ~f:(output_string h_file);
   let cpp_file = open_out (classname ^ ".cpp") in
   fprintf cpp_file "#include \"%s.h\"\n\n" classname;
   List.iter lst ~f:(gen_meth ~classname ~ocaml_methname:name_for_slot h_file cpp_file);

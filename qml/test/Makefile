@@ -6,19 +6,19 @@ CLINK=g++ -g
 CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib -lQt5Quick \
 	-cclib -lQt5Gui -cclib -lQt5Qml -cclib -lQt5Widgets -cclib -lQt5Network -cclib -lQt5Core
 OUT=main
-GEN_CMX=DataItem.cmx AbstractModel.cmx Controller.cmx
-MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
-GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.cpp=.o)
-GEN_MOC=$(GEN_CMX:.cmx=_c.cpp)
+GEN_CMX=dataItem.cmx abstractModel.cmx controller.cmx
+MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.c) )
+GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.c=.o)
+GEN_MOC=$(GEN_CMX:.cmx=_c.c)
 OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix,threads -thread -linkpkg -g
 
 CMX=helpers.cmx tree.cmx S.cmx Richify.cmx program.cmx
 CMX_TEST=Test.cmx
 
-.SUFFIXES: .cpp .h .o .ml .cmx .cmo .cmi
+.SUFFIXES: .c .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all depend clean
 
-all: $(GEN_CMX) $(CMX) $(GEN_MOC) $(GEN_CPP)
+all: $(GEN_CMX) $(CMX) $(GEN_MOC) $(MOC_CPP) $(GEN_CPP)
 	$(OCAMLOPT) -package str -linkpkg \
 	 $(GEN_CPP)  $(CLINKLIBS) \
 	-ccopt -L$(LABLQML)/_build/ $(LABLQML)/_build/lablqml.cmxa $(GEN_CMX) $(CMX) -o $(OUT)
@@ -30,11 +30,20 @@ library_code:
 	$(OCAMLOPT) -output-obj -dstartup -I $(LABLQML)/_build $(LABLQML)/_build/lablqml.cmxa str.cmxa \
 	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
 
-moc_%.cpp: %.h
+moc_%_c.c: %.h
 	$(MOC) $< > $@
 
-.cpp.o:
+.c.o:
 	$(CC) -c $< -I.
+
+controller.cmx: controller.ml
+	$(OCAMLOPT) -ppx ../ppx_qt -I $(LABLQML)/_build -c $<
+
+dataItem.cmx: dataItem.ml
+	$(OCAMLOPT) -ppx ../ppx_qt -I $(LABLQML)/_build -c $<
+
+abstractModel.cmx: abstractModel.ml
+	$(OCAMLOPT) -ppx ../ppx_qt -I $(LABLQML)/_build -c $<
 
 .ml.cmx:
 	$(OCAMLOPT) -I $(LABLQML)/_build -c $<

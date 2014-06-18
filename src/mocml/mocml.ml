@@ -4,8 +4,9 @@ open ParseYaml
 open Printf
 open Helpers
 
+(*
 let () = Printexc.record_backtrace true
-
+ *)
 type options = {
   mutable filename : string;
   mutable target : [ `Qml | `QtGui | `Qml_wrap | `List ];
@@ -113,3 +114,4 @@ let () = match options.target with
       let open Yaml2.Types in
       data |> List.map ~f:(fun c -> c.classname) |> String.concat ~sep:" " |> print_endline
   end
+

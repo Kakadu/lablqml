@@ -1,3 +1,6 @@
+N.B. This Demo doesn't work with new lablqt which uses PPX extension.
+===================
+
 This is very small "Hello World!"-like application using OCaml and QtQuick 2.0 from Qt5.
 
 It is a demo for lablqt (outdated) introduction from:

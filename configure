@@ -74,7 +74,7 @@ fi
 cd $ROOT_DIR
 
 
-OCAML_PACKAGES=(core_kernel yojson) #required ocaml packages
+OCAML_PACKAGES=() #required ocaml packages
 res=0
 
 for item in ${OCAML_PACKAGES[*]}
@@ -114,8 +114,8 @@ echo -e "\
 all: generator lib test\n\
 	\n\
 generator:\n\
-	cd $ROOT_DIR/src; ./configure && ocamlbuild mocml/mocml.native
-	rm -f $ROOT_DIR/qml/test/mocml && ln -s $ROOT_DIR/src/mocml.native $ROOT_DIR/qml/test/mocml\n\
+	cd $ROOT_DIR/src; ./configure && ocamlbuild ppxext/ppx_qt.native
+	rm -f $ROOT_DIR/qml/ppx_qt && ln -s $ROOT_DIR/src/ppx_qt.native $ROOT_DIR/qml/ppx_qt\n\
 lib:\n\
 	if [ ! -e $ROOT_DIR/lablqml/Makefile ]; then cd $ROOT_DIR/lablqml && ./configure; fi\n\
 	make -C $ROOT_DIR/lablqml\n\

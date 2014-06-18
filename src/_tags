@@ -1,7 +1,7 @@
 # OASIS_START
-# DO NOT EDIT (digest: 784c032ca0b24b88c3a25f5cd924ea80)
-# Ignore VCS directories, you can use the same kind of rule outside 
-# OASIS_START/STOP if you want to exclude directories that contains 
+# DO NOT EDIT (digest: 5f6967e3d74627d24aebdc660c213320)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
 <**/.svn>: -traverse
 <**/.svn>: not_hygienic
@@ -13,23 +13,33 @@
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
+# Library mocmllib
+"mocml/mocmllib.cmxs": use_mocmllib
 # Executable mocml
-"mocml/mocml.native": pkg_sexplib.syntax
-"mocml/mocml.native": pkg_sexplib
-"mocml/mocml.native": pkg_core_kernel
-"mocml/mocml.native": pkg_threads
-"mocml/mocml.native": pkg_str
-"mocml/mocml.native": pkg_yojson
-<mocml/*.ml{,i}>: pkg_sexplib.syntax
-<mocml/*.ml{,i}>: pkg_sexplib
-<mocml/*.ml{,i}>: pkg_core_kernel
-<mocml/*.ml{,i}>: pkg_threads
-<mocml/*.ml{,i}>: pkg_str
-<mocml/*.ml{,i}>: pkg_yojson
+"mocml/mocml.native": package(core_kernel)
+"mocml/mocml.native": package(sexplib)
+"mocml/mocml.native": package(sexplib.syntax)
+"mocml/mocml.native": package(str)
+"mocml/mocml.native": package(threads)
+"mocml/mocml.native": package(yojson)
+"mocml/mocml.native": use_mocmllib
+<mocml/*.ml{,i}>: package(core_kernel)
+<mocml/*.ml{,i}>: package(sexplib)
+<mocml/*.ml{,i}>: package(sexplib.syntax)
+<mocml/*.ml{,i}>: package(str)
+<mocml/*.ml{,i}>: package(threads)
+<mocml/*.ml{,i}>: package(yojson)
+<mocml/*.ml{,i}>: use_mocmllib
+# Executable ppx_qt
+"ppxext/ppx_qt.native": package(compiler-libs.common)
+"ppxext/ppx_qt.native": package(unix)
+<ppxext/*.ml{,i}>: package(compiler-libs.common)
+<ppxext/*.ml{,i}>: package(unix)
 # OASIS_STOP
-"mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
-"mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax, pkg_yojson
-"lib/generators.ml": syntax_camlp4o, package_sexplib.syntax
+"mocml/ParseYaml.ml": syntax_camlp4o, package_sexplib.syntax
+"mocml/TypAst.ml": syntax_camlp4o, package_sexplib.syntax
 "lib/parser.ml": syntax_camlp4o, package_sexplib.syntax
 "mocml/Parser.ml": syntax_camlp4o, package_sexplib.syntax
-true: debug
+true: debug, warn(@6)
+<test_qt>: not_hygienic
+
