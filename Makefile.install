@@ -1,6 +1,6 @@
 
 install.mocml:
-	cp src/_build/mocml/mocml.native  $(PREFIX)/bin/mocml
+	#cp src/_build/mocml/mocml.native  $(PREFIX)/bin/mocml
 	cp src/_build/ppxext/ppx_qt.native $(PREFIX)/bin/ppx_qt
 	cp doc/man/mocml.1 $(MAN)/man1/mocml.1
 
