@@ -139,7 +139,8 @@ let make_handler_meth ~loc : class_field =
   let e = Ast_helper.Exp.(poly (ident (mkloc (Lident "cppobj") loc) ) None) in
   Ast_helper.(Cf.method_ (mkloc "handler" loc) Public (Cfk_concrete (Fresh,e)  ) )
 
-let eval_meth_typ t =
+(* return list of pairs. 1st is argument label. 2nd is actual type *)
+let eval_meth_typ_gen t =
   let rec parse_one t = match t.ptyp_desc with
     | Ptyp_constr (({txt=Lident "list"  ;_}),[typarg]) -> `list (parse_one typarg)
     | Ptyp_constr (({txt=Lident "string";_}),_) -> `string
@@ -149,10 +150,13 @@ let eval_meth_typ t =
   in
   let rec helper t =
     match t.ptyp_desc with
-    | Ptyp_arrow (_,l,r) -> [parse_one l] @ (helper r)
-    | x -> [parse_one t] (*raise @@ ErrorMsg ("don't know what to do with this type", t.ptyp_loc)*)
+    | Ptyp_arrow (name,l,r) -> [name, parse_one l] @ (helper r)
+    | x -> ["", parse_one t]
   in
   helper t
+
+let eval_meth_typ t = List.map ~f:snd (eval_meth_typ_gen t)
+let eval_signal_typ = eval_meth_typ_gen
 
 let check_meth_typ ~loc _xs =
   (* TODO: some checks like unit type should be at the end of list *)
@@ -190,12 +194,57 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let heading = ref [] in
   Ref.append ~set:heading (make_store_func ~classname ~loc);
 
+  let wrap_signal ~options ~classname (({txt=signalname; loc},_,kind) as m) =
+    match kind with
+    | Cfk_concrete _ ->
+       raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
+    | Cfk_virtual core_typ ->
+       (* stub which will be called by OCaml meth*)
+       let external_stub =
+         let pval_name = {txt="stub_"^signalname; loc} in
+         let pval_prim = [sprintf "caml_%s_%s_emitter_wrapper" classname signalname] in
+         let pval_type = Ast_helper.Typ.(arrow ""
+                                               (cppobj_coretyp loc)
+                                               core_typ)
+         in
+         let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
+                                         pval_loc=loc } in
+         { pstr_desc; pstr_loc=loc }
+       in
+       Ref.append ~set:heading external_stub;
+
+       (* C++ stub *)
+       let types = eval_signal_typ core_typ in
+       let (args,res) = List.list_last types in
+       if snd res <> `unit
+       then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
+
+       assert (fst res = ""); (* last argument alsways will be without a label, isn't it? *)
+
+       if List.exists ~f:(fun (label,_) -> label="") args
+       then raise @@ ErrorMsg ("All arguments should have a label", loc);
+
+       if config.gencpp then Gencpp.gen_signal ~classname ~signalname args;
+       (* OCaml meth *)
+       let open Ast_helper in
+       let e = Exp.(poly (apply
+                            (ident (mkloc (Lident ("stub_"^signalname)) loc) )
+                            ["",send (ident (mkloc (Lident "self") loc)) "handler"
+                            ]
+                         )
+                         None) in
+
+       [ (Cf.method_ (mkloc ("emit_" ^ signalname) loc)
+                     Public (Cfk_concrete (Fresh,e)) ).pcf_desc
+       ]
+  in
+
   let wrap_prop ~classname (loc,flag,kind) =
     let propname = loc.txt in
     let l = loc.loc in
     match kind with
     | Cfk_concrete _ ->
-       raise @@ ErrorMsg ("We can generate prop methods for virtuals only", !default_loc)
+       raise @@ ErrorMsg ("We can generate prop methods for virtuals only", l)
     | Cfk_virtual core_typ -> begin
        match type_suits_prop core_typ with
        | `Ok typ ->
@@ -224,6 +273,8 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
     let ans = match f_desc.pcf_desc with
       | Pcf_method m  when has_attr "qtmeth" f_desc.pcf_attributes ->
          wrap_meth ~options ~classname m
+      | Pcf_method m  when has_attr "qtsignal" f_desc.pcf_attributes ->
+         wrap_signal ~options ~classname m
       | Pcf_method m  when has_attr "qtprop" f_desc.pcf_attributes ->
          wrap_prop ~classname m
       | _ -> []

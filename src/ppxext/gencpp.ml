@@ -8,6 +8,13 @@ module List = struct
     | x::xs -> list_last xs |> (fun (xs,last) -> (x::xs,last))
 
   let to_string ~f xs = String.concat "," (List.mapi f xs)
+  let to_string2 ~f xs ys =
+    let b = Buffer.create 20 in
+    let (_:int) =
+      fold_left2 ~init:0 ~f:(fun acc x y -> Buffer.add_string b (f x y); acc+1) xs ys
+    in
+    Buffer.contents b
+
   let init f n =
     let rec helper acc = function
       | x when x<0 -> acc
@@ -573,6 +580,29 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
                ; ((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})
                ];
   ()
+
+let gen_signal ~classname ~signalname types' =
+  (* args are sent without last unit *)
+  let hndl = FilesMap.find (classname, FilesKey.CHDR) !files in
+  let types = List.map types' ~f:snd in
+  let argnames = List.map types' ~f:fst in
+
+  (*let () = List.iter ~f:(fun x -> assert(x<>"")) argnames in *)
+  (*let () = List.iter ~f:(fun x -> print_endline x) argnames in*)
+
+  let println fmt = fprintfn hndl fmt in
+  println "signals:";
+  let types = List.map types ~f:wrap_typ_simple in
+  let f t name = sprintf "%s %s" (cpptyp_of_typ t) name in
+  println "  void %s(%s);" signalname (List.to_string2 ~f types argnames);
+
+  let stubname: string  = sprintf "caml_%s_%s_emitter_wrapper" classname signalname in
+  let hndl = FilesMap.find (classname, FilesKey.CSRC) !files in
+  gen_stub_cpp ~options:[] ~classname ~methname:signalname ~stubname
+               hndl
+               (types @ [((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})] );
+  ()
+
 
 let gen_meth ?(minfo={mi_virt=false; mi_const=false}) ?(options=[]) ~classname ~methname typ =
   (*printf "Generation meth '%s' of class '%s'.\n" methname classname;*)
