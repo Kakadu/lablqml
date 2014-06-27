@@ -5,20 +5,20 @@ let () = Printexc.record_backtrace true
 open QmlContext
 
 let main () =
-
-  let controller_cppobj = Controller.create_Controller () in
+  let controller_cppobj = Controller.create_controller () in
   let controller = object(self)
+    inherit Controller.controller controller_cppobj as super
     val mutable _x = 0
-    val mutable _y = 0
-    val mutable _state = "state1"
-    inherit Controller.base_Controller controller_cppobj as super
-    method onMouseClicked () = 
-      print_endline "Mouse Clicked!";
-      self#emit_ebanashka (sprintf "Hi %d times" (Random.int 100))
-
+    method onMouseClicked () =
+      print_endline "OCaml says: Mouse Clicked!";
+      _x <- _x+1;
+      self#emit_hiGotten (sprintf "Hi %d times" _x);
+      self#emit_clicksCountChanged _x
+    method getclicksCount () = _x
   end in
-
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
-let () = Callback.register "doCaml" main
+let () =
+  run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
+
 

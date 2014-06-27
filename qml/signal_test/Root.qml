@@ -1,14 +1,16 @@
-import QtQuick 2.0
+import QtQuick 2.1
+import QtQuick.Controls 1.2
 
-Rectangle {
+ApplicationWindow {
+    title: "User signal and property demo"
     property string backgroundColor: "#FFFFDF"
 
     Connections {
         target: controller
-        onEbanashka: console.log(message)
+        onHiGotten: console.log(message)
     }
     color: backgroundColor
-    width: 400 
+    width: 400
     height: 450
     Rectangle {
         id: rect1
@@ -36,8 +38,12 @@ Rectangle {
             right: parent.right
             top: rect1.bottom
         }
-        color: "lightblue"
+        color: "#b2ebbe"
         height: 150
+        Text {
+            text: "I will count how many times you clicked"
+            anchors.centerIn: parent
+        }
     }
     Rectangle {
         anchors {
@@ -46,7 +52,11 @@ Rectangle {
            bottom: parent.bottom
            top: rect2.bottom
         }
-        color: "yellow"
+        color: "#ebf097"
         height: 150
+        Text {
+            text: controller.clicksCount
+            anchors.centerIn: parent
+        }
     }
 }
