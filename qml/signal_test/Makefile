@@ -12,10 +12,10 @@ CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib 
 .SUFFIXES: .cmx .o .ml .cpp .c
 
 
-all: generate app
+all: generate $(OUT)
 
 define BOZO
-$(1).h: $(1).ml #$($(1):pp_/%=%)
+$(1).h: $(1).ml
 	ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
 
 $(1)_c.o: $(1)_c.cpp
@@ -29,10 +29,10 @@ $(foreach i,controller,$(eval $(call BOZO,$(i)) ) )
 
 generate: controller.h
 
-cppstubs:
-	ar cr  libcppstubs.a controller_c.o moc_controller.o
+libcppstubs.a:
+	ar cr $@ controller_c.o moc_controller.o
 
-app: controller.cmx program.cmx moc_controller.cpp controller_c.o  moc_controller.o cppstubs
+$(OUT): controller.cmx program.cmx moc_controller.cpp controller_c.o  moc_controller.o libcppstubs.a
 	$(OCAMLOPT) -linkpkg libcppstubs.a $(CLINKLIBS) controller.cmx program.cmx  \
 	    -o $(OUT)
 
