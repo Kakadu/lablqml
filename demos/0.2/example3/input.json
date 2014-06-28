@@ -1,0 +1,28 @@
+[
+{
+    "classname": "MainModel",
+    "basename":  "QAbstractItemModel",
+    "methods": [],
+    "properties": [],
+    "slots": [],
+    "signals": []
+},
+{
+    "classname": "DataItem",
+    "methods": [],
+    "properties":
+      [ { "name":      "author",
+          "get":       "author",
+          "set":       "setName",
+          "notify":    "nameChanged",
+          "type":      "string" }
+      , { "name":      "title",
+          "get":       "title",
+          "set":       "setTitle",
+          "notify":    "titleChanged",
+          "type":      "string" }
+      ],
+    "slots": [],
+    "signals": []
+}
+]
