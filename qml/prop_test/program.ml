@@ -5,7 +5,7 @@ let () = Printexc.record_backtrace true
 open QmlContext
 
 class virtual abstractListModel cppobj = object(self)
-  inherit IntModel.base_IntModel cppobj as super
+  inherit IntModel.intModel cppobj as super
   method parent _ = QModelIndex.empty
   method index row column parent =
     if (row>=0 && row<self#rowCount parent) then QModelIndex.make ~row ~column:0
@@ -15,20 +15,20 @@ class virtual abstractListModel cppobj = object(self)
 end
 
 let main () =
-  let cpp_model = IntModel.create_IntModel () in
+  let cpp_model = IntModel.create_intModel () in
   IntModel.add_role cpp_model 555 "cellX";
   IntModel.add_role cpp_model 556 "title";
   IntModel.add_role cpp_model 666 "obj";
 
   let data = List.map (fun n ->
-    let cppObj = DataItem.create_DataItem () in
+    let cppObj = DataItem.create_dataItem () in
       object(self)
-        inherit DataItem.base_DataItem cppObj as super
-        method cellX () = n
+        inherit DataItem.dataItem cppObj as super
+        method getcellX () = n
         val mutable text_ = sprintf "text %d" n
- 	method text  () = text_
-        method setText s = 
-          if (s <> self#text ()) then ( text_ <- s; self#emit_textChanged s);
+ 	method gettext  () = text_
+        method setText s =
+          if (s <> self#gettext ()) then ( text_ <- s; self#emit_textChanged s);
 
       end
   ) [1;2;3] in
@@ -41,30 +41,30 @@ let main () =
       if (n<0 || n>= List.length data) then QVariant.empty
       else begin
         match role with
- 	| 0 
+ 	| 0
 	| 555 (* DisplayRole *) ->
-            QVariant.of_int ((List.nth data n)#cellX ())
+            QVariant.of_int ((List.nth data n)#getcellX ())
 	| 556 (* title *) ->
-            QVariant.of_string ((List.nth data n)#text ())
+            QVariant.of_string ((List.nth data n)#gettext ())
  	| 666 -> QVariant.of_object ((List.nth data n)#handler)
         | _ -> QVariant.empty
       end
   end in
 
-  let controller_cppobj = Controller.create_Controller () in
+  let controller_cppobj = Controller.create_controller () in
   let controller = object(self)
     val mutable _x = 0
     val mutable _y = 0
     val mutable _state = "state1"
-    inherit Controller.base_Controller controller_cppobj as super
+    inherit Controller.controller controller_cppobj as super
     method onMouseClicked () = self#setX (_x+10); print_endline "Mouse Clicked!"
-    method y () = _y
-    method x () = _x
-    method state () = _state
+    method gety () = _y
+    method getx () = _x
+    method getstate () = _state
     method setX v =
       if v<>_x then ( _x<-v; self#emit_xChanged _x );
       (List.hd data)#setText (sprintf "new %d" v)
- 
+
     method setY v =
       if v<>_y then ( _y<-v; self#emit_yChanged _y )
     method setState v =

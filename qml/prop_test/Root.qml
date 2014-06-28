@@ -57,7 +57,7 @@ Rectangle {
                     height: 20
                     text: title + " " + obj.text
                     //text: obj.text
-                    Component.onCompleted: console.log("text field created with text " + cellX)
+                    //Component.onCompleted: console.log("text field created with text " + cellX)
                 }
 
         }
