@@ -70,7 +70,7 @@ SplitView {
                             onClicked: {
                                 lv1.currentIndex = index;
                                 controller.onItemSelected(mainIndex,index);
-                                currentPathHolder.text = controller.getFullPath()
+                                currentPathHolder.text = controller.fullPath
                             }
                         }
                     }
