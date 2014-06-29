@@ -104,7 +104,7 @@ fi
 LC=`ocamlfind list 2>/dev/null |grep lablqml | wc -l`
 if [ $LC != 0 ]; then
   echo "It seems that lablqml is already installed. Please remove it! Exit"
-  exit 1
+  #exit 1
 fi
 
 
