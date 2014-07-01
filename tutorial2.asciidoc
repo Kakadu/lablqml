@@ -152,7 +152,7 @@ include::demos/0.3/demo1/Root.qml[]
 Our applications can do startup from both OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2[demos] from previous tutorial to get examples of startup from C++.
 ****
 
-Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2[github].
+Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1[github].
 
 [[properties]]
 Qt object's metamodel
@@ -235,7 +235,7 @@ Syntax extension is expanded into method `emit_$(SIGNAL_NAME)`. We can use it in
 include::demos/0.3/demo3/program.ml[]
 ----
 
-Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3[github].
+Full code of this demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3[github].
 
 
 [[signals]]
