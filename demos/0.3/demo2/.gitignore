@@ -1,0 +1,16 @@
+camlcode.o.startup.s
+mocml
+main
+test
+# C++
+.moc
+.pch
+.obj
+#folderlistmodel stuff
+Qt/
+folderlistmodel/libqmlfolderlistmodelplugin.prl
+folderlistmodel/libqmlfolderlistmodelplugin.so*
+
+controller_c.cpp
+controller.h
+
