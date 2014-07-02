@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="AsciiDoc 8.6.9">
+<meta name="generator" content="AsciiDoc 8.6.7">
 <title>QtQuick approach for developing applications</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -602,8 +602,6 @@ div.exampleblock > div.content, div.sidebarblock > div.content, div.listingblock
 div.verseblock { border-left-width: 0; margin-left: 3em; }
 div.quoteblock { border-left-width: 3px; margin-left: 0; margin-right: 0;}
 div.admonitionblock td.content { border-left: 3px solid #E8E8E8; }
-
-
 @media screen {
   body {
     max-width: 50em; /* approximately 80 characters wide */
@@ -847,7 +845,7 @@ asciidoc.install(2);
 <div class="sect1">
 <h2 id="_n_b">N.B.</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This tutorial is 2nd tutorial about OCaml and QtQuick. You can get old one <a href="tutorial.html">here</a>.
+<div class="paragraph"><p>This tutorial is the second one about OCaml and QtQuick. You can get old one <a href="tutorial.html">here</a>.
 With <span class="monospaced">lablqt 0.3</span> we don&#8217;t need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, <span class="monospaced">lablqt 0.3</span> requires OCaml 4.02 or newer.</p></div>
 <div class="paragraph"><p>This tutorial is not finished yet, I&#8217;m working on it.</p></div>
 </div>
@@ -855,7 +853,7 @@ With <span class="monospaced">lablqt 0.3</span> we don&#8217;t need JSON file to
 <div class="sect1">
 <h2 id="_about">About</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more informations about programming in QtQuick you can visit <a href="https://qt-project.org/doc/qt-5/qtquick-index.html">official help</a> or <a href="http://qmlbook.org/">QML book</a>.</p></div>
+<div class="paragraph"><p>In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit <a href="https://qt-project.org/doc/qt-5/qtquick-index.html">official help</a> or <a href="http://qmlbook.org/">QML book</a>.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -867,7 +865,7 @@ With <span class="monospaced">lablqt 0.3</span> we don&#8217;t need JSON file to
 </div>
 <div class="sect2">
 <h3 id="_official_packages">Official packages</h3>
-<div class="paragraph"><p>are available on <a href="https://download.qt-project.org/official_releases/qt/5.3/5.3.0/">Qt Project</a>. I&#8217;m using this one.</p></div>
+<div class="paragraph"><p>are available on <a href="https://download.qt-project.org/official_releases/qt/5.3/5.3.0/">Qt Project</a>.</p></div>
 </div>
 <div class="sect2">
 <h3 id="_building_from_git">Building from Git</h3>
@@ -933,7 +931,7 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
 <div class="sect1">
 <h2 id="hello_world">"Hello world!" in QtQuick</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Demos described below and sources of this tutorial can be found in Github <a href="github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2">repository</a>.</p></div>
+<div class="paragraph"><p>Demos described below and sources of this tutorial can be found in Github <a href="http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3">repository</a>.</p></div>
 <div class="paragraph"><p>In piece of code below we create application&#8217;s window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using <a href="http://qmlbook.org/ch04/index.html#positioning-elements">anchors</a>.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
@@ -997,7 +995,7 @@ let init () =
 let () =
   run_with_QQmlApplicationEngine Sys.argv init "Root.qml"</pre>
 </div></div>
-<div class="paragraph"><p>We have created new object with method <span class="monospaced">onMouseClicked</span> which prints something to stdout. This object was exposed to QtQuick engine with name <span class="monospaced">controller</span>. After that application was started in function <span class="monospaced">run_with_QQmlApplicationEngine</span>, It takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
+<div class="paragraph"><p>We have created new object with method <span class="monospaced">onMouseClicked</span> which prints something to stdout. This object was exposed to QtQuick engine with name <span class="monospaced">controller</span> during <span class="monospaced">set_context_property</span> invocation. After that application was started in function <span class="monospaced">run_with_QQmlApplicationEngine</span>, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
 <div class="sidebarblock">
 <div class="content">
 <div class="title">QtQuick and QML</div>
@@ -1048,21 +1046,21 @@ ApplicationWindow {
 <div class="sect1">
 <h2 id="properties">Qt object&#8217;s metamodel</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>In Qt classes based on <span class="monospaced">QObject</span> can have <em>properties</em>, <em>signals</em>, <em>slots</em> and methods <em>invokable</em> from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.</p></div>
+<div class="paragraph"><p>Qt classes based on <span class="monospaced">QObject</span> can have <em>properties</em>, <em>signals</em>, <em>slots</em> and methods <em>invokable</em> from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.</p></div>
 <div class="paragraph"><p>For example, our method <span class="monospaced">onMouseClicked</span> declared above is invokable, that&#8217;s why we can use it from QML. In contrary we will get type error:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>Property 'onMouseClicked' of object controller(0x153cd00) is not a function</pre>
 </div></div>
-<div class="paragraph"><p>Properties always have name, type, method which can read value of property. They can have method to be set by (usually it is called <em>setter</em>), properties are read-only otherwise. When property changes it can send <em>signal</em> saying which new value of property is.</p></div>
-<div class="paragraph"><p><em>Signals</em> usually are <em>connected</em> with <em>slots</em>. For example:</p></div>
+<div class="paragraph"><p>Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called <em>setter</em>), properties are read-only otherwise. When property changes it can send <em>signal</em> with updated value.</p></div>
+<div class="paragraph"><p><em>Signals</em> usually are <em>connected</em> with <em>slots</em>. See this C++ code, for example:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>auto listener = new PortListener();
 auto parser = new MessageParser();
 connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByteArray)) );</pre>
 </div></div>
-<div class="paragraph"><p>As you can see relation between object is instantiated independently from them, i.e. object&#8217;s classes are independent: we don&#8217;t need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt&#8217;s way to avoid dependecy injection.</p></div>
+<div class="paragraph"><p>As you can see relation between objects is established independently from them, i.e. object&#8217;s classes are independent: we don&#8217;t need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt&#8217;s way to avoid dependecy injection.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -1401,7 +1399,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-07-02 01:43:03 MSK
+Last updated 2014-07-02 12:46:07 MSK
 </div>
 </div>
 </body>

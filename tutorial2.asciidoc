@@ -6,7 +6,7 @@ Dmitrii Kosarev aka Kakadu ("kakadu.hafanana" ^ "@" ^ "gmail.com")
 
 N.B.
 ---
-This tutorial is 2nd tutorial about OCaml and QtQuick. You can get old one link:tutorial.html[here].
+This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
 With `lablqt 0.3` we don't need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, `lablqt 0.3` requires OCaml 4.02 or newer.
 
 This tutorial is not finished yet, I'm working on it.
@@ -14,7 +14,7 @@ This tutorial is not finished yet, I'm working on it.
 
 About
 -----
-In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more informations about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
+In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
 
 Getting Qt5
 -----------
@@ -24,7 +24,7 @@ There is Qt 5.2.1 in Ubuntu Trusty and Qt5.3 in current Debian/testing (July 1, 
 
 Official packages
 ~~~~~~~~~~~~~~~~~
-are available on https://download.qt-project.org/official_releases/qt/5.3/5.3.0/[Qt Project]. I'm using this one.
+are available on https://download.qt-project.org/official_releases/qt/5.3/5.3.0/[Qt Project].
 
 Building from Git
 ~~~~~~~~~~~~~~~~~
@@ -100,7 +100,7 @@ with_qt5() {
 "Hello world!" in QtQuick
 -------------------------
 
-Demos described below and sources of this tutorial can be found in Github link:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2[repository].
+Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3[repository].
 
 In piece of code below we create application's window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using link:http://qmlbook.org/ch04/index.html#positioning-elements[anchors].
 
@@ -134,7 +134,7 @@ After preprocessing source file we will get a virtual class called `controller` 
 include::demos/0.3/demo1/program.ml[]
 ----
 
-We have created new object with method `onMouseClicked` which prints something to stdout. This object was exposed to QtQuick engine with name `controller`. After that application was started in function `run_with_QQmlApplicationEngine`, It takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
+We have created new object with method `onMouseClicked` which prints something to stdout. This object was exposed to QtQuick engine with name `controller` during `set_context_property` invocation. After that application was started in function `run_with_QQmlApplicationEngine`, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
 
 .QtQuick and QML
 ****
@@ -158,34 +158,35 @@ Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh
 Qt object's metamodel
 ---------------------
 
-In Qt classes based on `QObject` can have _properties_, _signals_, _slots_ and methods _invokable_ from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.
+Qt classes based on `QObject` can have _properties_, _signals_, _slots_ and methods _invokable_ from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.
 
 For example, our method `onMouseClicked` declared above is invokable, that's why we can use it from QML. In contrary we will get type error:
 ----
 Property 'onMouseClicked' of object controller(0x153cd00) is not a function
 ----
 
-Properties always have name, type, method which can read value of property. They can have method to be set by (usually it is called _setter_), properties are read-only otherwise. When property changes it can send _signal_ saying which new value of property is.
+Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called _setter_), properties are read-only otherwise. When property changes it can send _signal_ with updated value.
 
-_Signals_ usually are _connected_ with _slots_. For example:
+_Signals_ usually are _connected_ with _slots_. See this C++ code, for example:
 ----
 auto listener = new PortListener();
 auto parser = new MessageParser();
 connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByteArray)) );
 ----
 
-As you can see relation between object is instantiated independently from them, i.e. object's classes are independent: we don't need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt's way to avoid dependecy injection.
+//TODO: do something with word `independent`
+As you can see relation between objects is established independently from them, i.e. object's classes are independent: we don't need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt's way to avoid dependecy injection.
 
 [[properties]]
 Adding properties
 -----------------
 
-Let's extend first demo by counting how many times we have clicked on the window. We will do it by declaring a prperty of type `int`. To do this we need to improve our class definition in `controller.ml`:
+Let's extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type `int`. To do this we need to improve our class definition in `controller.ml`:
 
 ----
 include::demos/0.3/demo2/controller.ml[]
 ----
-To count how many times we clicked we need additional variable available in class. We will add it into `program.ml`:
+To count how many times we clicked we need additional variable available in an object. We will add it into `program.ml`:
 
 ----
 include::demos/0.3/demo2/program.ml[]
@@ -227,7 +228,7 @@ Connections {
 }
 ----
 
-The `on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the `message` in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal's arguments' names. That's why should declare signals using labeled arguments.
+The `on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the `message` in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal's arguments' names. That's why we declare signals using labeled arguments.
 
 Syntax extension is expanded into method `emit_$(SIGNAL_NAME)`. We can use it in `program.ml`.
 
