@@ -146,6 +146,9 @@ let eval_meth_typ_gen t =
     | Ptyp_constr (({txt=Lident "string";_}),_) -> `string
     | Ptyp_constr (({txt=Lident "unit"  ;_}),_) -> `unit
     | Ptyp_constr (({txt=Lident "int"   ;_}),_) -> `int
+    | Ptyp_constr (({txt=Lident "variant";_}),_) -> `variant
+    | Ptyp_constr (({txt=Ldot (Lident "Variant", "t");_}),_) -> `variant
+    | Ptyp_constr (({txt=Ldot (Lident "QVariant","t");_}),_) -> `variant
     | _ -> raise @@ ErrorMsg ("can't eval type", t.ptyp_loc)
   in
   let rec helper t =
@@ -194,7 +197,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let heading = ref [] in
   Ref.append ~set:heading (make_store_func ~classname ~loc);
 
-  let wrap_signal ~options ~classname (({txt=signalname; loc},_,kind) as m) =
+  let wrap_signal ~options ~classname (({txt=signalname; loc},_,kind) as _m) =
     match kind with
     | Cfk_concrete _ ->
        raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)

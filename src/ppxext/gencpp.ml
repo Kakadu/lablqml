@@ -211,7 +211,7 @@ let getter_of_cppvars  prefix =
 (* We need this arginfo because void foo(QString) is not the same as void foo(const QString&) *)
 type arg_info = { ai_ref: bool; ai_const: bool }
 (* properties can have only simple types (except unit) *)
-type prop_typ = [ `bytearray | `bool | `int | `string | `list of prop_typ ]
+type prop_typ = [ `variant | `bytearray | `bool | `int | `string | `list of prop_typ ]
 type meth_typ_item =
   [ `unit | `bool | `int  | `string | `list of meth_typ_item
   | `modelindex | `variant | `bytearray
@@ -227,7 +227,7 @@ let unconst (x,{ai_ref;ai_const}) = (x, {ai_ref;ai_const=false})
 (* how many additional variables needed to convert C++ value to OCaml one *)
 let aux_variables_count (y: meth_typ_item) =
   let rec helper = function
-    | `variant
+    | `variant -> 2
     | `bytearray
     | `bool | `int | `unit | `string | `modelindex -> 0
     | `list x -> helper x + 2
@@ -262,6 +262,7 @@ let rec cpptyp_of_proptyp: prop_typ*arg_info -> string = fun (typ,ai) ->
           (match typ with
            | `bool -> "bool"
            | `int  -> "int"
+           | `variant -> "QVariant"
            | `bytearray -> "QByteArray"
            | `string    -> "QString"
            | `list x -> sprintf "QList<%s>" (cpptyp_of_proptyp @@ wrap_typ_simple x))
@@ -387,16 +388,33 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
        println "Store_field(%s,0,Val_int(%s.row()));" dest var;
        println "Store_field(%s,1,Val_int(%s.column()));" dest var
     | `variant ->
-       println "if (!%s.isValid())\n" var;
-       println "  %s=hash_variant(\"empty\");" var;
-       println "else if(%s.type() == QMetaType::QString) {" var;
-       println "  %s = caml_alloc(2,0);" dest;
-       println "  Store_field(%s,0,%s);" dest "hash_variant(\"string\")";
-       println "  Store_field(%s,1,%s);" dest
-                 (sprintf "caml_copy_string(%s.value<QString>().toLocal8Bit().data()" var);
-       println "else if (%s.type() == QMetaType::User) {" var;
+       println "if (!%s.isValid())" var;
+       println "  %s=hash_variant(\"empty\");" dest;
        println "else {";
-       println "  Q_ASSERT_X(false,\"qVariant_of_cpp\",\"not all cases are supported\");";
+       println "  int ut = %s.userType();" var;
+       println "  if(ut == QMetaType::QString) {";
+       println "    %s = caml_alloc(2,0);" dest;
+       println "    Store_field(%s,0,%s);" dest "hash_variant(\"string\")";
+       println "    Store_field(%s,1,%s);" dest
+                 (sprintf "caml_copy_string(%s.value<QString>().toLocal8Bit().data())" var);
+       println "  } else if (ut == QMetaType::Int) { ";
+       println "    %s = caml_alloc(2,0);" dest;
+       println "    Store_field(%s, 0, %s);" dest "hash_variant(\"int\")";
+       println "    Store_field(%s, 1, Val_int(%s.value<int>()));" dest var;
+       println "  } else if((ut==QMetaType::User) ||";
+       println "            (ut==QMetaType::QObjectStar)) {"; (*custom QObject*)
+       println "    QObject *vvv = %s.value<QObject*>();" var;
+       let objvar = get_var() in
+       println "    %s = caml_alloc_small(1,Abstract_tag);" objvar;
+       println "    (*((QObject **) &Field(%s, 0))) = vvv;" objvar;
+       println "    %s = caml_alloc(2,0);" dest;
+       println "    Store_field(%s, 0, hash_variant(\"qobject\"));" dest;
+       println "    Store_field(%s, 1, %s);" dest objvar;
+       println "  } else {";
+       println "    QString msg(\"Type is not supported:\");";
+       println "    msg += QString(\"userType() == %%1\").arg(ut);";
+       println "    Q_ASSERT_X(false,\"qVariant_of_cpp\", msg.toLocal8Bit().data() );";
+       println "  }";
        println "}"
 
     | `list t ->
