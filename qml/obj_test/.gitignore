@@ -1,0 +1,14 @@
+camlcode.o.startup.s
+mocml
+main
+test
+# C++
+.moc
+.pch
+.obj
+
+controller_c.cpp
+controller.h
+item_c.cpp
+item.h
+
