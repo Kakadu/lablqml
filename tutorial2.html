@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="AsciiDoc 8.6.7">
+<meta name="generator" content="AsciiDoc 8.6.9">
 <title>QtQuick approach for developing applications</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -602,6 +602,8 @@ div.exampleblock > div.content, div.sidebarblock > div.content, div.listingblock
 div.verseblock { border-left-width: 0; margin-left: 3em; }
 div.quoteblock { border-left-width: 3px; margin-left: 0; margin-right: 0;}
 div.admonitionblock td.content { border-left: 3px solid #E8E8E8; }
+
+
 @media screen {
   body {
     max-width: 50em; /* approximately 80 characters wide */
@@ -1066,7 +1068,7 @@ connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByte
 <div class="sect1">
 <h2 id="properties">Adding properties</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Let&#8217;s extend first demo by counting how many times we have clicked on the window. We will do it by declaring a prperty of type <span class="monospaced">int</span>. To do this we need to improve our class definition in <span class="monospaced">controller.ml</span>:</p></div>
+<div class="paragraph"><p>Let&#8217;s extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type <span class="monospaced">int</span>. To do this we need to improve our class definition in <span class="monospaced">controller.ml</span>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1076,7 +1078,7 @@ class virtual controller = object(self)
   method virtual clicksCount: int[@@qtprop]
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>To count how many times we clicked we need additional variable available in class. We will add it into <span class="monospaced">program.ml</span>:</p></div>
+<div class="paragraph"><p>To count how many times we clicked we need additional variable available in an object. We will add it into <span class="monospaced">program.ml</span>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1172,7 +1174,7 @@ end[@@qtclass]</pre>
     onHiGotten: console.log(message)
 }</pre>
 </div></div>
-<div class="paragraph"><p>The &#8216;on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the <span class="monospaced">message</span> in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal&#8217;s arguments&#8217; names. That&#8217;s why should declare signals using labeled arguments.</p></div>
+<div class="paragraph"><p>The &#8216;on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the <span class="monospaced">message</span> in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal&#8217;s arguments&#8217; names. That&#8217;s why we declare signals using labeled arguments.</p></div>
 <div class="paragraph"><p>Syntax extension is expanded into method <span class="monospaced">emit_$(SIGNAL_NAME)</span>. We can use it in <span class="monospaced">program.ml</span>.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
@@ -1205,7 +1207,9 @@ let () =
 <div class="sect1">
 <h2 id="signals">Supported types</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>TODO:</p></div>
+<div class="paragraph"><p>TODO:
+<a href="https://qt-project.org/doc/qt-5/qvariant.html">QVariant</a>.</p></div>
+<div class="paragraph"><p><a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">basic types</a>.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -1399,7 +1403,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-07-02 12:46:07 MSK
+Last updated 2014-07-05 01:34:59 MSK
 </div>
 </div>
 </body>

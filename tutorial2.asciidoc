@@ -244,7 +244,9 @@ Supported types
 ---------------
 
 TODO:
+https://qt-project.org/doc/qt-5/qvariant.html[QVariant].
 
+https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types].
 
 
 
