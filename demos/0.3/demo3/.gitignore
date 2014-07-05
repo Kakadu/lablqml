@@ -13,4 +13,5 @@ folderlistmodel/libqmlfolderlistmodelplugin.so*
 
 controller_c.cpp
 controller.h
+*.a
 

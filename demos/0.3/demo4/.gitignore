@@ -1,0 +1,8 @@
+controller_c.cpp
+controller.h
+moc_controller.cpp
+item_c.cpp
+item.h
+moc_item.cpp
+main
+*.a
