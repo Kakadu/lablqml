@@ -49,6 +49,7 @@ let type_suits_prop ty = match ty.ptyp_desc with
   | Ptyp_constr ({txt=Lident "int";    _},[]) -> `Ok `int
   | Ptyp_constr ({txt=Lident "bool";   _},[]) -> `Ok `bool
   | Ptyp_constr ({txt=Lident "string"; _},[]) -> `Ok `string
+  | Ptyp_constr ({txt=Ldot(Lident "QVariant","t");_},[]) -> `Ok `variant
   | Ptyp_constr ({txt=Lident "unit"; _},[]) -> `Error "property can't have type 'unit'"
   | Ptyp_constr ({txt=Lident x; _},[]) -> `Error (sprintf "Don't know what to do with '%s'" x)
   | _ -> `Error "Type is unknown"

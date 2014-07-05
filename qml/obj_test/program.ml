@@ -17,6 +17,7 @@ let main () =
   let controller = object(self)
     inherit Controller.controller controller_cppobj as super
     method getobj () = QVariant.of_object item#handler
+    method getperson () = self#getobj ()
     method setobj  = function
       | `qobject o ->
          let item = new myitem o in

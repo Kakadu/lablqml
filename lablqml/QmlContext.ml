@@ -27,7 +27,7 @@ module QPoint = struct
 end
 
 module QVariant = struct
-  type t = [ `empty | `string of string | `qobject of cppobj | `int of int | `qpoint of QPoint.t ]
+  type t = [ `empty | `string of string | `qobject of cppobj | `int of int ]
   let empty = `empty
   let of_string s = `string s
   let of_object o = `qobject o

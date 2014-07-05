@@ -16,5 +16,10 @@ Rectangle {
       controller.setobj(o);
       controller.setobj("asdf");
       controller.setobj(15);
+
+      var p = controller.person;
+      console.log(p);
+      console.log(p.getname())
+      console.log(p.getage());
     }
 }

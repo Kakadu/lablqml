@@ -6,7 +6,7 @@ type cppobj
 val set_context_property: ctx:t -> name:string -> cppobj -> unit
 
 module QVariant : sig
-  type t
+  type t = [ `empty | `string of string | `qobject of cppobj | `int of int ]
   val empty: t
   val of_string: string -> t
   val of_object: cppobj -> t
