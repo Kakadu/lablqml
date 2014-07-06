@@ -239,14 +239,27 @@ include::demos/0.3/demo3/program.ml[]
 Full code of this demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3[github].
 
 
-[[signals]]
+[[types]]
 Supported types
 ---------------
 
-TODO:
-https://qt-project.org/doc/qt-5/qvariant.html[QVariant].
+QML has its own type system. It is not so strong or static as OCaml one but https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types] exist. When we pass values from C++ to QML we need to put them into https://qt-project.org/doc/qt-5/qvariant.html[QVariant] which is universal container (or https://blogs.janestreet.com/rethinking-univ/[universal type]). If our types are simple we will use QML basic types but If we need something complex (like structs with a number of fields inside) we will create QObject-derived class and put it into QVariant. At the moment supporting objects in lablqt is a little bit awkward but you can create applications without it, for example, my https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] application doesn't use this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.
 
-https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types].
+The demo envolving objects can be found https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` we declare some methods and properties which use type our universal type called `Varaint.t`.
+
+----
+include::demos/0.3/demo4/controller.ml[]
+----
+
+We will use them in our QML file when construction of root object will be completed (in `Component.completed` signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.
+
+----
+include::demos/0.3/demo4/Root.qml[]
+----
+
+----
+include::demos/0.3/demo4/program.ml[]
+----
 
 
 

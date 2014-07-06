@@ -2,12 +2,6 @@ import QtQuick 2.0
 import QtQuick.Controls 1.0
 
 ApplicationWindow {
-    property string backgroundColor: "#FFFFDF"
-
-    color: backgroundColor
-    width: 400 + controller.x
-    height: 600 + controller.y
-
     Component.onCompleted: {
       var o = controller.getobj();
       console.log(o);

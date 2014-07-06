@@ -1205,11 +1205,81 @@ let () =
 </div>
 </div>
 <div class="sect1">
-<h2 id="signals">Supported types</h2>
+<h2 id="types">Supported types</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>TODO:
-<a href="https://qt-project.org/doc/qt-5/qvariant.html">QVariant</a>.</p></div>
-<div class="paragraph"><p><a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">basic types</a>.</p></div>
+<div class="paragraph"><p>QML has its own type system. It is not so strong or static as OCaml one but <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">basic types</a> exist. When we pass values from C++ to QML we need to put them into <a href="https://qt-project.org/doc/qt-5/qvariant.html">QVariant</a> which is universal container (or <a href="https://blogs.janestreet.com/rethinking-univ/">universal type</a>). If our types are simple we will use QML basic types but If we need something complex (like structs with a number of fields inside) we will create QObject-derived class and put it into QVariant. At the moment supporting objects in lablqt is a little bit awkward but you can create applications without it, for example, my <a href="https://github.com/Kakadu/QOcamlBrowser_quick/">QOcamlBrowser</a> application doesn&#8217;t use this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.</p></div>
+<div class="paragraph"><p>The demo envolving objects can be found <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4">there</a>. In <span class="monospaced">controller.ml</span> we declare some methods and properties which use type our universal type called <span class="monospaced">Varaint.t</span>.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>open QmlContext
+
+class virtual controller = object(self)
+  method virtual getobj: unit -&gt; QVariant.t[@@qtmeth]
+  method virtual setobj: QVariant.t -&gt; unit[@@qtmeth]
+
+  method virtual person: QVariant.t[@@qtprop]
+
+end[@@qtclass]</pre>
+</div></div>
+<div class="paragraph"><p>We will use them in our QML file when construction of root object will be completed (in <span class="monospaced">Component.completed</span> signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which return object.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>import QtQuick 2.0
+import QtQuick.Controls 1.0
+
+ApplicationWindow {
+    Component.onCompleted: {
+      var o = controller.getobj();
+      console.log(o);
+      console.log(o.getname());
+      console.log(o.getage() );
+
+      controller.setobj(o);
+      controller.setobj("asdf");
+      controller.setobj(15);
+
+      var p = controller.person;
+      console.log(p);
+      console.log(p.getname())
+      console.log(p.getage());
+    }
+}</pre>
+</div></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>open Printf
+open QmlContext
+
+let () = Printexc.record_backtrace true
+
+class myitem cppObj = object(self)
+  inherit Item.item cppObj as super
+  method getname () = "Vasya"
+  method getage () = 11
+end
+
+let main () =
+  let cppObj = Item.create_item () in
+  let item = new myitem cppObj in
+
+  let controller_cppobj = Controller.create_controller () in
+  let controller = object(self)
+    inherit Controller.controller controller_cppobj as super
+    method getobj () = QVariant.of_object item#handler
+    method getperson () = self#getobj ()
+    method setobj  = function
+      | `qobject o -&gt;
+         let item = new myitem o in
+         printf "qobject: %s %d\n%!" (item#getname ()) (item#getage())
+      | `string s -&gt; printf "String: '%s'\n%!" s
+      | `int  x -&gt; printf "int %d\n%!" x
+      | `empty -&gt; print_endline "empty"
+  end in
+  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
+
+let () =
+  run_with_QQmlApplicationEngine Sys.argv main "Root.qml"</pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
@@ -1403,7 +1473,7 @@ automatically.</p></div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-07-05 01:34:59 MSK
+Last updated 2014-07-06 15:14:17 MSK
 </div>
 </div>
 </body>
