@@ -845,11 +845,10 @@ asciidoc.install(2);
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_n_b">N.B.</h2>
+<h2 id="_changelog">Changelog</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>This tutorial is the second one about OCaml and QtQuick. You can get old one <a href="tutorial.html">here</a>.
 With <span class="monospaced">lablqt 0.3</span> we don&#8217;t need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, <span class="monospaced">lablqt 0.3</span> requires OCaml 4.02 or newer.</p></div>
-<div class="paragraph"><p>This tutorial is not finished yet, I&#8217;m working on it.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -976,7 +975,7 @@ class virtual controller = object(self)
   method virtual onMouseClicked: unit -&gt; unit[@@qtmeth]
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>Module <span class="monospaced">QmlContext</span> can be found in ocamlfind package named <span class="monospaced">lablqml</span>. This package and PPX extension named <span class="monospaced">ppx_qt</span> are located in OPAM&#8217;s package <span class="monospaced">lablqt</span> with version 0.3. To apply syntax extension on this file you need to execute following commmand:</p></div>
+<div class="paragraph"><p>Module <span class="monospaced">QmlContext</span> can be found in ocamlfind package named <span class="monospaced">lablqml</span>. This package and PPX extension named <span class="monospaced">ppx_qt</span> are located in OPAM&#8217;s package <span class="monospaced">lablqt</span> with version <span class="monospaced">0.3</span>. To apply syntax extension on this file you need to execute following commmand:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml</pre>
@@ -1001,9 +1000,9 @@ let () =
 <div class="sidebarblock">
 <div class="content">
 <div class="title">QtQuick and QML</div>
-<div class="paragraph"><p>QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with <span class="monospaced">qml</span> extension. QtQuick is a number of classes from which GUI can built.</p></div>
+<div class="paragraph"><p>QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with <span class="monospaced">qml</span> extension. QtQuick is a number of classes from which GUI can be built.</p></div>
 </div></div>
-<div class="paragraph"><p>Our QtQuick file doesn&#8217;t know anything about exposed object yet. So, let&#8217;s create some area which will receive mouse events and call OCaml if is was clicked.</p></div>
+<div class="paragraph"><p>Our QtQuick file doesn&#8217;t know anything about exposed object yet. So, let&#8217;s create some area which will receive mouse events and call OCaml if it was clicked.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>import QtQuick 2.0
@@ -1078,7 +1077,7 @@ class virtual controller = object(self)
   method virtual clicksCount: int[@@qtprop]
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>To count how many times we clicked we need additional variable available in an object. We will add it into <span class="monospaced">program.ml</span>:</p></div>
+<div class="paragraph"><p>To count how many times we clicked we need additional variable available in an object. We will add it in <span class="monospaced">program.ml</span>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1221,7 +1220,7 @@ class virtual controller = object(self)
 
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>We will use them in our QML file when construction of root object will be completed (in <span class="monospaced">Component.completed</span> signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which return object.</p></div>
+<div class="paragraph"><p>We will use them in our QML file when construction of root object will be completed (in <span class="monospaced">Component.completed</span> signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>import QtQuick 2.0
@@ -1245,28 +1244,28 @@ ApplicationWindow {
     }
 }</pre>
 </div></div>
+<div class="paragraph"><p>In OCaml side we will match value of variant and write specific code. Constructor <em>qobject</em> contains value of type <span class="monospaced">cppobj</span> which is raw pointer to C++ QObject. That&#8217;s why we need to construct OCaml object from this value. We will name class for this object as <span class="monospaced">Item</span>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
-<pre>open Printf
-open QmlContext
+<pre>open QmlContext
 
-let () = Printexc.record_backtrace true
+class virtual item = object(self)
+  method virtual name: string[@@qtprop]
+  method virtual age : int[@@qtprop]
 
-class myitem cppObj = object(self)
+end[@@qtclass]</pre>
+</div></div>
+<div class="paragraph"><p>In setter method implementation we will match inner value of <span class="monospaced">QVariant.t</span> and apply variant-specific logic</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>class myitem cppObj = object(self)
   inherit Item.item cppObj as super
   method getname () = "Vasya"
   method getage () = 11
 end
 
-let main () =
-  let cppObj = Item.create_item () in
-  let item = new myitem cppObj in
+...
 
-  let controller_cppobj = Controller.create_controller () in
-  let controller = object(self)
-    inherit Controller.controller controller_cppobj as super
-    method getobj () = QVariant.of_object item#handler
-    method getperson () = self#getobj ()
     method setobj  = function
       | `qobject o -&gt;
          let item = new myitem o in
@@ -1274,206 +1273,30 @@ let main () =
       | `string s -&gt; printf "String: '%s'\n%!" s
       | `int  x -&gt; printf "int %d\n%!" x
       | `empty -&gt; print_endline "empty"
-  end in
-  set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
-
-let () =
-  run_with_QQmlApplicationEngine Sys.argv main "Root.qml"</pre>
+...</pre>
 </div></div>
+<div class="paragraph"><p>To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don&#8217;t know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.</p></div>
+<div class="paragraph"><p>At the moment not many types are available to be used in methods' signatures but you can implement any complex type using <span class="monospaced">variant</span> type. It should not be a problem to support <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">QML basic types</a> in syntax extension if needed. I&#8217;m not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)</p></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="views">Not described stuff</h2>
+<h2 id="building">Compiling applications using lablqt</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>TODO:</p></div>
-<div class="paragraph"><p>Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found <a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html">there</a> and <a href="http://doc-snapshot.qt-project.org/qt5-stable/qtquicklayouts/qtquicklayouts-index.html">there</a>.</p></div>
-<div class="listingblock">
-<div class="title">Menus with QtQuick Controls</div>
-<div class="content monospaced">
-<pre>ApplicationWindow {
-    width: 1366
-    height: 768
-    menuBar: MenuBar {
-        Menu {
-            title: "Edit"
-
-            MenuItem {
-                text: "Cut";    shortcut: "Ctrl+X";
-                onTriggered: console.log("")
-            }
-            MenuItem {
-                text: "Copy";   shortcut: "Ctrl+C"
-                onTriggered: console.log("")
-            }
-            MenuItem {
-                text: "Paste";  shortcut: "Ctrl+V"
-                onTriggered: console.log("")
-            }
-        }
-    }
-    ....
-}</pre>
-</div></div>
-<div class="listingblock">
-<div class="title">ToolBars are supported too</div>
-<div class="content monospaced">
-<pre>    toolBar: ToolBar {
-        RowLayout {
-            anchors.margins: 8
-            anchors.fill: parent
-            ToolButton {
-                text: "Press me"
-                onClicked: console.log("Press me clicked")
-            }
-        }
-    }</pre>
-</div></div>
-<div class="paragraph"><p>QtQuick uses Model/View pattern for creating views. I.e. when you
-                create a view you should provide an object with data
-                (model) and a way to render it. Models can be created
-                both in QML file and in C++. Let&#8217;s create a model with
-                QML:</p></div>
-<div class="listingblock">
-<div class="title">Simple model for TableView</div>
-<div class="content monospaced">
-<pre>    ListModel {
-        id: libraryModel
-        ListElement{ title: "A Masterpiece" ; author: "Gabriel" }
-        ListElement{ title: "Brilliance"    ; author: "Jens" }
-        ListElement{ title: "Outstanding"   ; author: "Frederik" }
-    }</pre>
-</div></div>
-<div class="paragraph"><p>It is a ListModel with three elements. Each element has two properties of type string: title and author. We will use them while declaring view for this model:</p></div>
-<div class="listingblock">
-<div class="title">Simple TableView example</div>
-<div class="content monospaced">
-<pre>    TableView {
-        model: libraryModel
-        anchors.fill: parent
-
-        TableViewColumn { title: "Title";  role: "title"  }
-        TableViewColumn { title: "Author"; role: "author" }
-    }</pre>
-</div></div>
-<div class="paragraph"><p>You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly. Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed).
-Screenshot there: <span class="image">
-<img src="./images/tutorial2/images/QtQuickControls1.png" alt="title">
-</span></p></div>
+<div class="paragraph"><p>As I said before your applications can start up both from C++ and OCaml. You can find examples if you will visit links for demos entioned above. Also you can visit <a href="https://github.com/Kakadu/lablqt/tree/master/qml">demos directory</a> in lablqt&#8217;s repository. If don&#8217;t like Makefiles you can look at <a href="https://github.com/Kakadu/QOcamlBrowser_quick">QOCamlBrowser</a> app which uses ocamlbuild as build system.</p></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="datamodels">Defining model in OCaml</h2>
+<h2 id="conclusion">Conclusion</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of <span class="monospaced">QAbstractItemModel</span>. More information in this topic you can get at Qt Project.
-We also have special option in JSON which subclasses generated object from
-<a href="http://qt-project.org/doc/qt-5.0/qtcore/qabstractitemmodel.html">QAbstractItemModel</a>
-automatically.</p></div>
-<div class="listingblock">
-<div class="title">Input file mocml with model class defined</div>
-<div class="content monospaced">
-<pre>{
-    "classname": "MainModel",
-    "basename":  "QAbstractItemModel",
-    "methods": [],
-    "properties": [],
-    "slots": [],
-    "signals": []
-}</pre>
-</div></div>
-<div class="paragraph"><p>Our model will provide access to objects which have two properties:
-    author and title. We will call it DataItem and put into input.json
-    too.</p></div>
-<div class="listingblock">
-<div class="title">Input file for mocml with data object definition</div>
-<div class="content monospaced">
-<pre>{
-    "classname": "DataItem",
-    "methods": [],
-    "properties":
-      [ { "name":      "author",
-          "get":       "author",
-          "set":       "setName",
-          "notify":    "nameChanged",
-          "type":      "string" }
-      , { "name":      "title",
-          "get":       "title",
-          "set":       "setTitle",
-          "notify":    "titleChanged",
-          "type":      "string" }
-      ],
-    "slots": [],
-    "signals": []
-}</pre>
-</div></div>
-<div class="paragraph"><p>Now let&#8217;s define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:</p></div>
-<div class="listingblock">
-<div class="content monospaced">
-<pre>  let data =
-    [ ("Анна Каренина",           "Лев Толстой")
-    ; ("Война и Мир",             "Лев Толстой")
-    ; ("Les Misérables",          "Victor Hugo")
-    ; ("Les Trois Mousquetaires", "Alexandre Dumas, père")
-    ] in</pre>
-</div></div>
-<div class="paragraph"><p>Using it we need to construct DataItems:</p></div>
-<div class="listingblock">
-<div class="content monospaced">
-<pre>  let dataItems = List.map (fun (title,author) -&gt;
-    let cppobj = DataItem.create_DataItem () in
-    object
-      inherit DataItem.base_DataItem cppobj as super
-      method author () = author
-      method title () = title
-    end
-  ) data in</pre>
-</div></div>
-<div class="paragraph"><p>Generated MainModel class has many virtual methods. We need only
-    1-dimensional model, that&#8217;s why some methods has very simple
-    implementation</p></div>
-<div class="listingblock">
-<div class="content monospaced">
-<pre>  let model_cppobj = MainModel.create_MainModel () in
-  MainModel.add_role model_cppobj 555 "someRoleName";
-
-  let model = object(self)
-    inherit MainModel.base_MainModel model_cppobj as super
-    method parent _ = QModelIndex.empty
-    method columnCount _ = 1
-    method index row column parent =
-      if (row&gt;=0 &amp;&amp; row self#rowCount parent) then QModelIndex.make ~row ~column:0
-      else QModelIndex.empty
-    method rowCount _ = List.length dataItems
-    ...</pre>
-</div></div>
-<div class="paragraph"><p>In method data we will return dataItem from our list if role of
-    element is OK. Magic number 555 appears because we are defining
-    user role for model.</p></div>
-<div class="listingblock">
-<div class="content monospaced">
-<pre>    ...
-    method data index role =
-      let r = QModelIndex.row index in
-      if (r&lt;0 || r&gt;= List.length data) then QVariant.empty
-      else begin
-        match role with
-          | 0 | 555 -&gt; QVariant.of_object (List.nth dataItems r)#handler
-          | _ -&gt; QVariant.empty
-      end
-  end in
-  set_context_property ~ctx:(get_view_exn ~name:"rootContext")
-    ~name:"mainModel" model#handler</pre>
-</div></div>
-<div class="paragraph"><p>And if model of our TableView is mainModel we will get something like
-    this: <span class="image">
-<img src="./images/tutorial2/images/QtQuickControls2.png" alt="title">
-</span></p></div>
+<div class="paragraph"><p>There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in <a href="tutorial.html">previous tutorial</a> you can read about classes for desktop applications which live in harmony with your platform&#8217;s style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.</p></div>
+<div class="paragraph"><p>I can&#8217;t say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, <em>torkve</em> :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-07-06 15:14:17 MSK
+Last updated 2014-07-07 23:26:38 MSK
 </div>
 </div>
 </body>

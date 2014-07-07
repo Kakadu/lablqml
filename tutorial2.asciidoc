@@ -4,12 +4,10 @@ QtQuick approach for developing applications
 ============================================
 Dmitrii Kosarev aka Kakadu ("kakadu.hafanana" ^ "@" ^ "gmail.com")
 
-N.B.
----
+Changelog
+---------
 This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
 With `lablqt 0.3` we don't need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, `lablqt 0.3` requires OCaml 4.02 or newer.
-
-This tutorial is not finished yet, I'm working on it.
 
 
 About
@@ -120,7 +118,7 @@ include::demos/0.3/controller1.ml[]
 
 ----
 
-Module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version 0.3. To apply syntax extension on this file you need to execute following commmand:
+Module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version `0.3`. To apply syntax extension on this file you need to execute following commmand:
 
 ----
 ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml
@@ -138,10 +136,10 @@ We have created new object with method `onMouseClicked` which prints something t
 
 .QtQuick and QML
 ****
-QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with `qml` extension. QtQuick is a number of classes from which GUI can built.
+QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with `qml` extension. QtQuick is a number of classes from which GUI can be built.
 ****
 
-Our QtQuick file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if is was clicked.
+Our QtQuick file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if it was clicked.
 
 ----
 include::demos/0.3/demo1/Root.qml[]
@@ -186,7 +184,7 @@ Let's extend first demo by counting how many times we have clicked on the window
 ----
 include::demos/0.3/demo2/controller.ml[]
 ----
-To count how many times we clicked we need additional variable available in an object. We will add it into `program.ml`:
+To count how many times we clicked we need additional variable available in an object. We will add it in `program.ml`:
 
 ----
 include::demos/0.3/demo2/program.ml[]
@@ -257,219 +255,51 @@ We will use them in our QML file when construction of root object will be comple
 include::demos/0.3/demo4/Root.qml[]
 ----
 
-----
-include::demos/0.3/demo4/program.ml[]
-----
-
-
-
-
-[[views]]
-Not described stuff
--------------------
-
-TODO:
-
-Since Qt version 5.1 it easy to create desktop applications which look like native. API documentaion can be found http://doc-snapshot.qt-project.org/qt5-stable/qtquickcontrols/qtquickcontrols-index.html[there] and http://doc-snapshot.qt-project.org/qt5-stable/qtquicklayouts/qtquicklayouts-index.html[there].
-
-.Menus with QtQuick Controls
-----
-ApplicationWindow {
-    width: 1366
-    height: 768
-    menuBar: MenuBar {
-        Menu {
-            title: "Edit"
-
-            MenuItem {
-                text: "Cut";    shortcut: "Ctrl+X";
-                onTriggered: console.log("")
-            }
-            MenuItem {
-                text: "Copy";   shortcut: "Ctrl+C"
-                onTriggered: console.log("")
-            }
-            MenuItem {
-                text: "Paste";  shortcut: "Ctrl+V"
-                onTriggered: console.log("")
-            }
-        }
-    }
-    ....
-}
-----
-.ToolBars are supported too
-----
-    toolBar: ToolBar {
-        RowLayout {
-            anchors.margins: 8
-            anchors.fill: parent
-            ToolButton {
-                text: "Press me"
-                onClicked: console.log("Press me clicked")
-            }
-        }
-    }
-----
-QtQuick uses Model/View pattern for creating views. I.e. when you
-                create a view you should provide an object with data
-                (model) and a way to render it. Models can be created
-                both in QML file and in C++. Let's create a model with
-                QML:
-
-.Simple model for TableView
-----
-    ListModel {
-        id: libraryModel
-        ListElement{ title: "A Masterpiece" ; author: "Gabriel" }
-        ListElement{ title: "Brilliance"    ; author: "Jens" }
-        ListElement{ title: "Outstanding"   ; author: "Frederik" }
-    }
-----
-It is a ListModel with three elements. Each element has two properties of type string: title and author. We will use them while declaring view for this model:
-
-.Simple TableView example
-----
-    TableView {
-        model: libraryModel
-        anchors.fill: parent
-
-        TableViewColumn { title: "Title";  role: "title"  }
-        TableViewColumn { title: "Author"; role: "author" }
-    }
-----
-You can see there a table view with two columns. Each column have header title: "Title" and "Author" respectivly. Elements of this table will be constructed according to its model object (if the model is a list of three elements the three item in view will be constructed).
-Screenshot there: image:images/QtQuickControls1.png[title]
-
-[[datamodels]]
-Defining model in OCaml
------------------------
-Often we want dynamic models which will report to view about newly added rows, columns and data changes. In Qt world it is achieved by defining model in C++ as a sublclass of `QAbstractItemModel`. More information in this topic you can get at Qt Project.
-We also have special option in JSON which subclasses generated object from
-http://qt-project.org/doc/qt-5.0/qtcore/qabstractitemmodel.html[QAbstractItemModel]
-automatically.
-
-.Input file mocml with model class defined
-----
-{
-    "classname": "MainModel",
-    "basename":  "QAbstractItemModel",
-    "methods": [],
-    "properties": [],
-    "slots": [],
-    "signals": []
-}
-----
-Our model will provide access to objects which have two properties:
-    author and title. We will call it DataItem and put into input.json
-    too.
-
-.Input file for mocml with data object definition
-----
-{
-    "classname": "DataItem",
-    "methods": [],
-    "properties":
-      [ { "name":      "author",
-          "get":       "author",
-          "set":       "setName",
-          "notify":    "nameChanged",
-          "type":      "string" }
-      , { "name":      "title",
-          "get":       "title",
-          "set":       "setTitle",
-          "notify":    "titleChanged",
-          "type":      "string" }
-      ],
-    "slots": [],
-    "signals": []
-}
-----
-
-Now let's define out model and expose it to QtQuick engine in initialization block of program.ml. Initial data will be a list of pairs title/author:
+In OCaml side we will match value of variant and write specific code. Constructor _qobject_ contains value of type `cppobj` which is raw pointer to C++ QObject. That's why we need to construct OCaml object from this value. We will name class for this object as `Item`:
 
 ----
-  let data =
-    [ ("Анна Каренина",           "Лев Толстой")
-    ; ("Война и Мир",             "Лев Толстой")
-    ; ("Les Misérables",          "Victor Hugo")
-    ; ("Les Trois Mousquetaires", "Alexandre Dumas, père")
-    ] in
+include::demos/0.3/demo4/item.ml[]
 ----
 
-Using it we need to construct DataItems:
+In setter method implementation we will match inner value of `QVariant.t` and apply variant-specific logic
 
 ----
-  let dataItems = List.map (fun (title,author) ->
-    let cppobj = DataItem.create_DataItem () in
-    object
-      inherit DataItem.base_DataItem cppobj as super
-      method author () = author
-      method title () = title
-    end
-  ) data in
+class myitem cppObj = object(self)
+  inherit Item.item cppObj as super
+  method getname () = "Vasya"
+  method getage () = 11
+end
+
+...
+
+    method setobj  = function
+      | `qobject o ->
+         let item = new myitem o in
+         printf "qobject: %s %d\n%!" (item#getname ()) (item#getage())
+      | `string s -> printf "String: '%s'\n%!" s
+      | `int  x -> printf "int %d\n%!" x
+      | `empty -> print_endline "empty"
+...
 ----
+To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don't know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.
 
-Generated MainModel class has many virtual methods. We need only
-    1-dimensional model, that's why some methods has very simple
-    implementation
+At the moment not many types are available to be used in methods' signatures but you can implement any complex type using `variant` type. It should not be a problem to support https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[QML basic types] in syntax extension if needed. I'm not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)
 
-----
-  let model_cppobj = MainModel.create_MainModel () in
-  MainModel.add_role model_cppobj 555 "someRoleName";
+[[building]]
+Compiling applications using lablqt
+-----------------------------------
 
-  let model = object(self)
-    inherit MainModel.base_MainModel model_cppobj as super
-    method parent _ = QModelIndex.empty
-    method columnCount _ = 1
-    method index row column parent =
-      if (row>=0 && row self#rowCount parent) then QModelIndex.make ~row ~column:0
-      else QModelIndex.empty
-    method rowCount _ = List.length dataItems
-    ...
-----
-
-In method data we will return dataItem from our list if role of
-    element is OK. Magic number 555 appears because we are defining
-    user role for model.
-
-----
-    ...
-    method data index role =
-      let r = QModelIndex.row index in
-      if (r<0 || r>= List.length data) then QVariant.empty
-      else begin
-        match role with
-          | 0 | 555 -> QVariant.of_object (List.nth dataItems r)#handler
-          | _ -> QVariant.empty
-      end
-  end in
-  set_context_property ~ctx:(get_view_exn ~name:"rootContext")
-    ~name:"mainModel" model#handler
-----
-And if model of our TableView is mainModel we will get something like
-    this: image:images/QtQuickControls2.png[title]
+As I said before your applications can start up both from C++ and OCaml. You can find examples if you will visit links for demos entioned above. Also you can visit https://github.com/Kakadu/lablqt/tree/master/qml[demos directory] in lablqt's repository. If don't like Makefiles you can look at https://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] app which uses ocamlbuild as build system.
 
 
-////
-The First Section
------------------
-Article sections start at level 1 and can be nested up to four levels
-deep.
-footnote:[An example footnote.]
-indexterm:[Example index entry]
+[[conclusion]]
+Conclusion
+----------
 
-And now for something completely different: ((monkeys)), lions and
-tigers (Bengal and Siberian) using the alternative syntax index
-entries.
-(((Big cats,Lions)))
-(((Big cats,Tigers,Bengal Tiger)))
-(((Big cats,Tigers,Siberian Tiger)))
-Note that multi-entry terms generate separate index entries.
+There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.
 
-Here are a couple of image examples: an image:images/smallnew.png[]
-example inline image followed by an example block image:
-////
+I can't say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, _torkve_ :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.
+
 
 ////
 [glossary]
