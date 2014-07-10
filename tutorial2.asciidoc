@@ -1,34 +1,279 @@
 :source-highlighter: pygments
 :pygments-style: monokai
-:imagesdir: ./images/tutorial2
+:local-css-style: pastie
 
-QtQuick approach for developing applications
+Creating applications with QtQuick and OCaml
 ============================================
-Dmitrii Kosarev aka Kakadu
+:Author: Dmitrii Kosarev aka Kakadu
+:email:  kakadu.hafanana@gmail.com
 
-
-[role="col-md-3"]
+[role="col-md-4"]
 ====
 [panel,primary]
 .{toc-title}
 --
 * xref:about[About]
-* xref:qt5[Installing Qt5]
 * xref:hello_world[Hello world!]
+* xref:metamodel[Qt objects' metamodel]
+* xref:properties[Adding properties]
+* xref:signals[Adding signals]
+* xref:types[Supported types]
+* xref:building[Build system]
+* xref:conclusion[Conclusion]
+* xref:qt5[P.S. Installing Qt5]
 --
 ====
 
-
+[[about]]
+About
+-----
+In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
 
 Changelog
 ---------
 This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
 With `lablqt 0.3` we don't need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, `lablqt 0.3` requires OCaml 4.02 or newer.
 
-[[about]]
-About
------
-In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
+[[hello_world]]
+"Hello world!" in QtQuick
+-------------------------
+
+Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3[repository].
+
+In piece of code below we create application's window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using link:http://qmlbook.org/ch04/index.html#positioning-elements[anchors].
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,qml]
+----
+include::demos/0.3/demo1.qml[]
+----
+
+This QML file is already correct application. If you execute it using command `qmlscene Root.qml` you will get a window like this:
+
+image::images/tutorial2/img1.png[options="responsive"]
+
+Normal way to interact between QtQuick and C++ is exposing some objects into QtQuick engine. We will do the same but we will describe this object's class in OCaml using PPX extension. Build system will help us to compile all into final executable. Let's describe class `controller` in `controller.ml`:
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/controller1.ml[]
+----
+
+Module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version `0.3`. To apply syntax extension on this file you need to execute following commmand:
+
+----
+ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml
+----
+
+In `controller.ml` you can see class `controller` with attribute `qtclass` and its method `onMouseClicked` with attribute `qtmeth`. Without this attributes class and method will not be available in QtQuick.
+
+After preprocessing source file we will get a virtual class called `controller` with virtual method `onMouseClicked` which should be implemented. Let's do this in `program.ml`
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/demo1/program.ml[]
+----
+
+We have created new object with method `onMouseClicked` which prints something to stdout. This object was exposed to QtQuick engine with name `controller` during `set_context_property` invocation. After that application was started in function `run_with_QQmlApplicationEngine`, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
+
+
+[NOTE]
+QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with `qml` extension. QtQuick is a number of classes from which GUI can be built.
+
+Our QtQuick file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if it was clicked.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,qml]
+----
+include::demos/0.3/demo1/Root.qml[]
+----
+
+[NOTE]
+.Where should we start-up from?
+========
+Our applications can do startup from both OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2[demos] from previous tutorial to get examples of startup from C++.
+========
+
+Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1[github].
+
+[[properties]]
+Qt object's metamodel
+---------------------
+
+Qt classes based on `QObject` can have _properties_, _signals_, _slots_ and methods _invokable_ from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.
+
+For example, our method `onMouseClicked` declared above is invokable, that's why we can use it from QML. In contrary we will get type error:
+----
+Property 'onMouseClicked' of object controller(0x153cd00) is not a function
+----
+
+Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called _setter_), properties are read-only otherwise. When property changes it can send _signal_ with updated value.
+
+_Signals_ usually are _connected_ with _slots_. See this C++ code, for example:
+[args="-O style={local-css-style},noclasses=True"]
+[source,cpp]
+----
+auto listener = new PortListener();
+auto parser = new MessageParser();
+connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByteArray)) );
+----
+
+//TODO: do something with word `independent`
+As you can see relation between objects is established independently from them, i.e. object's classes are independent: we don't need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt's way to avoid dependecy injection.
+
+[[properties]]
+Adding properties
+-----------------
+
+Let's extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type `int`. To do this we need to improve our class definition in `controller.ml`:
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/demo2/controller.ml[]
+----
+To count how many times we clicked we need additional variable available in an object. We will add it in `program.ml`:
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/demo2/program.ml[]
+----
+
+If user clicks by mouse we will increment counter and emit signal with new counter value using method `emit_$(PROPERTY_NAME)Changed`. Without emitting a signal QtQuick will not know that value has been changed and will use old one. How exactly QtQuick will use it we declare in `Root.qml`. We add new rectangle with text in it which show how many times we clicked. In this demo we also use QtQuick https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html[layout] to place rectangles vertically. We will not use anchors to implement it.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,qml]
+----
+include::demos/0.3/demo2/Root.qml[]
+----
+
+Our property is used in line
+[args="-O style={local-css-style},noclasses=True"]
+[source,qml]
+----
+text: "You have clicked " + controller.clicksCount + " times"
+----
+
+Right side (after colon character) should be valid ECMAScript expression which is evaluted into property value. It can be multiline, call some functions and methods and use many properties inside. When one of properties is changed all expression is evaluated and `text` property gets new value.
+
+Sources of this demo can be found on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2[github]. Final window should be like on this picture:
+
+image::images/tutorial2/img2.png[options="responsive"]
+
+[[signals]]
+Adding signals
+--------------
+
+When we declare a property signal for notification about changes is added automatically. We can also declare a signal manually using the same PPX syntax extension.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/demo3/controller.ml[]
+----
+
+And we need to connect signal `hiGotten` with some handler in QtQuick:
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,qml]
+----
+Connections {
+    target: controller
+    onHiGotten: console.log(message)
+}
+----
+
+The `on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the `message` in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal's arguments' names. That's why we declare signals using labeled arguments.
+
+Syntax extension is expanded into method `emit_$(SIGNAL_NAME)`. We can use it in `program.ml`.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/demo3/program.ml[]
+----
+
+Full code of this demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3[github].
+
+
+[[types]]
+Supported types
+---------------
+
+QML has its own type system. It is not so strong or static as OCaml one but https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types] exist. When we pass values from C++ to QML we need to put them into https://qt-project.org/doc/qt-5/qvariant.html[QVariant] which is universal container (or https://blogs.janestreet.com/rethinking-univ/[universal type]). If our types are simple we will use QML basic types but If we need something complex (like structs with a number of fields inside) we will create QObject-derived class and put it into QVariant. At the moment supporting objects in lablqt is a little bit awkward but you can create applications without it, for example, my https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] application doesn't use this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.
+
+The demo envolving objects can be found https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` we declare some methods and properties which use type our universal type called `Varaint.t`.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+.`controller.ml`
+----
+include::demos/0.3/demo4/controller.ml[]
+----
+
+We will use them in our QML file when construction of root object will be completed (in `Component.completed` signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,qml]
+.`Root.ml`
+----
+include::demos/0.3/demo4/Root.qml[]
+----
+
+In OCaml side we will match value of variant and write specific code. Constructor _qobject_ contains value of type `cppobj` which is raw pointer to C++ QObject. That's why we need to construct OCaml object from this value. We will name class for this object as `Item`:
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+.`item.ml`
+----
+include::demos/0.3/demo4/item.ml[]
+----
+
+In setter method implementation we will match inner value of `QVariant.t` and apply variant-specific logic
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+.Somewhere in `program.ml`
+----
+class myitem cppObj = object(self)
+  inherit Item.item cppObj as super
+  method getname () = "Vasya"
+  method getage () = 11
+end
+
+...
+
+    method setobj  = function
+      | `qobject o ->
+         let item = new myitem o in
+         printf "qobject: %s %d\n%!" (item#getname ()) (item#getage())
+      | `string s -> printf "String: '%s'\n%!" s
+      | `int  x -> printf "int %d\n%!" x
+      | `empty -> print_endline "empty"
+...
+----
+
+To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don't know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.
+
+At the moment not many types are available to be used in methods' signatures but you can implement any complex type using `variant` type. It should not be a problem to support https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[QML basic types] in syntax extension if needed. I'm not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)
+
+[[building]]
+Compiling applications using lablqt
+-----------------------------------
+
+As I said before your applications can start up both from C++ and OCaml. You can find examples if you will visit links for demos entioned above. Also you can visit https://github.com/Kakadu/lablqt/tree/master/qml[demos directory] in lablqt's repository. If don't like Makefiles you can look at https://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] app which uses ocamlbuild as build system.
+
+
+[[conclusion]]
+Conclusion
+----------
+
+There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.
+
+I can't say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, _torkve_ :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.
 
 [[qt5]]
 Getting Qt5
@@ -48,17 +293,19 @@ http://qt-project.org/wiki/Building_Qt_5_from_Git[there]. Below you
 can see `my-init` and `configure` scripts which configure
 Qt5 to build only modules needed by lablqt.
 
+[args="-O style={local-css-style},noclasses=True"]
+[source,bash]
 .My init-repository script
 ----
-$ cat my-init
 #!/usr/bin/env bash
 MODULES=qtbase,qtdeclarative,qtjsbackend,qtactiveqt,qtquickcontrols
 perl ./init-repository --module-subset=$MODULES -f $@
 ----
 
+[args="-O style={local-css-style},noclasses=True"]
+[source,bash]
 .My configure script
 ----
-$ cat my-configure
 #!/bin/bin/env bash
 set -x
 ./configure -developer-build -opensource -nomake examples -nomake tests -confirm-license \
@@ -72,6 +319,9 @@ Compilation time depends on your machine. Some fellas have finished with `-j8` i
 
 .P.S.
 I have discovered some issues with compilation my QOCamlBrowser app recently on Ubuntu 13.10 32bit on Intel Core 2 Duo CPU. My application was crashing in `qt_memfill32_sse2 (dest=0x8910e10, value=0, count=194)` at `painting/qdrawhelper_sse2.cpp:264`. So, I have decided to disable special instruction sets for Qt5 on this machine by improving `./my-configure` script. I put this stuff in `P.S.` section because I haven't tested it on my Intel i3 machine.
+
+[args="-O style={local-css-style},noclasses=True"]
+[source,bash]
 ----
 #!/usr/bin/env bash
 set -x
@@ -102,6 +352,8 @@ Mac users can consider invoking configure using `./configure -prefix /opt/Qt/5.2
 
 Next script will be useful (as a part of `~/.bashrc`) for setting local environment for your Qt5 build:
 
+[args="-O style={local-css-style},noclasses=True"]
+[source,bash]
 ----
 with_qt5() {
   export PATH=~/mand/prog/qt/qt5/qtbase/bin:$PATH  # where Qt5 has been build
@@ -110,223 +362,6 @@ with_qt5() {
   export PKG_CONFIG_PATH=`qmake -query QT_INSTALL_LIBS`/pkgconfig:$PKG_CONFIG_PATH
 }
 ----
-
-[[hello_world]]
-"Hello world!" in QtQuick
--------------------------
-
-Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3[repository].
-
-In piece of code below we create application's window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using link:http://qmlbook.org/ch04/index.html#positioning-elements[anchors].
-
-----
-include::demos/0.3/demo1.qml[]
-
-----
-
-This QML file is already correct application. If you execute it using command `qmlscene Root.qml` you will get a window like this:
-
-image:img1.png[]
-
-Normal way to interact between QtQuick and C++ is exposing some objects into QtQuick engine. We will do the same but we will describe this object's class in OCaml using PPX extension. Build system will help us to compile all into final executable. Let's describe class `controller` in `controller.ml`:
-
-----
-include::demos/0.3/controller1.ml[]
-
-----
-
-Module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version `0.3`. To apply syntax extension on this file you need to execute following commmand:
-
-----
-ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml
-----
-
-In `controller.ml` you can see class `controller` with attribute `qtclass` and its method `onMouseClicked` with attribute `qtmeth`. Without this attributes class and method will not be available in QtQuick.
-
-After preprocessing source file we will get a virtual class called `controller` with virtual method `onMouseClicked` which should be implemented. Let's do this in `program.ml`
-
-----
-include::demos/0.3/demo1/program.ml[]
-----
-
-We have created new object with method `onMouseClicked` which prints something to stdout. This object was exposed to QtQuick engine with name `controller` during `set_context_property` invocation. After that application was started in function `run_with_QQmlApplicationEngine`, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
-
-
-NOTE: This is an example note.
-
-.QtQuick and QML
-****
-QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with `qml` extension. QtQuick is a number of classes from which GUI can be built.
-****
-
-Our QtQuick file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if it was clicked.
-
-----
-include::demos/0.3/demo1/Root.qml[]
-----
-
-.Where should we start-up from?
-****
-Our applications can do startup from both OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2[demos] from previous tutorial to get examples of startup from C++.
-****
-
-Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1[github].
-
-[[properties]]
-Qt object's metamodel
----------------------
-
-Qt classes based on `QObject` can have _properties_, _signals_, _slots_ and methods _invokable_ from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.
-
-For example, our method `onMouseClicked` declared above is invokable, that's why we can use it from QML. In contrary we will get type error:
-----
-Property 'onMouseClicked' of object controller(0x153cd00) is not a function
-----
-
-Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called _setter_), properties are read-only otherwise. When property changes it can send _signal_ with updated value.
-
-_Signals_ usually are _connected_ with _slots_. See this C++ code, for example:
-----
-auto listener = new PortListener();
-auto parser = new MessageParser();
-connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByteArray)) );
-----
-
-//TODO: do something with word `independent`
-As you can see relation between objects is established independently from them, i.e. object's classes are independent: we don't need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt's way to avoid dependecy injection.
-
-[[properties]]
-Adding properties
------------------
-
-Let's extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type `int`. To do this we need to improve our class definition in `controller.ml`:
-
-----
-include::demos/0.3/demo2/controller.ml[]
-----
-To count how many times we clicked we need additional variable available in an object. We will add it in `program.ml`:
-
-----
-include::demos/0.3/demo2/program.ml[]
-----
-
-If user clicks by mouse we will increment counter and emit signal with new counter value using method `emit_$(PROPERTY_NAME)Changed`. Without emitting a signal QtQuick will not know that value has been changed and will use old one. How exactly QtQuick will use it we declare in `Root.qml`. We add new rectangle with text in it which show how many times we clicked. In this demo we also use QtQuick https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html[layout] to place rectangles vertically. We will not use anchors to implement it.
-
-----
-include::demos/0.3/demo2/Root.qml[]
-----
-
-Our property is used in line
-----
-text: "You have clicked " + controller.clicksCount + " times"
-----
-
-Right side (after colon character) should be valid ECMAScript expression which is evaluted into property value. It can be multiline, call some functions and methods and use many properties inside. When one of properties is changed all expression is evaluated and `text` property gets new value.
-
-Sources of this demo can be found on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2[github]. Final window should be like on this picture:
-
-image:img2.png[title]
-
-[[signals]]
-Adding signals
---------------
-
-When we declare a property signal for notification about changes is added automatically. We can also declare a signal manually using the same PPX syntax extension.
-
-----
-include::demos/0.3/demo3/controller.ml[]
-----
-
-And we need to connect signal `hiGotten` with some handler in QtQuick:
-
-----
-Connections {
-    target: controller
-    onHiGotten: console.log(message)
-}
-----
-
-The `on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the `message` in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal's arguments' names. That's why we declare signals using labeled arguments.
-
-Syntax extension is expanded into method `emit_$(SIGNAL_NAME)`. We can use it in `program.ml`.
-
-----
-include::demos/0.3/demo3/program.ml[]
-----
-
-Full code of this demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3[github].
-
-
-[[types]]
-Supported types
----------------
-
-QML has its own type system. It is not so strong or static as OCaml one but https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types] exist. When we pass values from C++ to QML we need to put them into https://qt-project.org/doc/qt-5/qvariant.html[QVariant] which is universal container (or https://blogs.janestreet.com/rethinking-univ/[universal type]). If our types are simple we will use QML basic types but If we need something complex (like structs with a number of fields inside) we will create QObject-derived class and put it into QVariant. At the moment supporting objects in lablqt is a little bit awkward but you can create applications without it, for example, my https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] application doesn't use this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.
-
-The demo envolving objects can be found https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` we declare some methods and properties which use type our universal type called `Varaint.t`.
-
-----
-include::demos/0.3/demo4/controller.ml[]
-----
-
-We will use them in our QML file when construction of root object will be completed (in `Component.completed` signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.
-
-----
-include::demos/0.3/demo4/Root.qml[]
-----
-
-In OCaml side we will match value of variant and write specific code. Constructor _qobject_ contains value of type `cppobj` which is raw pointer to C++ QObject. That's why we need to construct OCaml object from this value. We will name class for this object as `Item`:
-
-----
-include::demos/0.3/demo4/item.ml[]
-----
-
-In setter method implementation we will match inner value of `QVariant.t` and apply variant-specific logic
-
-:local-css-style: pastie
-[args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
-.Somewhere in `program.ml`
-----
-class myitem cppObj = object(self)
-  inherit Item.item cppObj as super
-  method getname () = "Vasya"
-  method getage () = 11
-end
-
-...
-
-    method setobj  = function
-      | `qobject o ->
-         let item = new myitem o in
-         printf "qobject: %s %d\n%!" (item#getname ()) (item#getage())
-      | `string s -> printf "String: '%s'\n%!" s
-      | `int  x -> printf "int %d\n%!" x
-      | `empty -> print_endline "empty"
-...
-----
-
-----
-----
-To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don't know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.
-
-At the moment not many types are available to be used in methods' signatures but you can implement any complex type using `variant` type. It should not be a problem to support https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[QML basic types] in syntax extension if needed. I'm not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)
-
-[[building]]
-Compiling applications using lablqt
------------------------------------
-
-As I said before your applications can start up both from C++ and OCaml. You can find examples if you will visit links for demos entioned above. Also you can visit https://github.com/Kakadu/lablqt/tree/master/qml[demos directory] in lablqt's repository. If don't like Makefiles you can look at https://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] app which uses ocamlbuild as build system.
-
-
-[[conclusion]]
-Conclusion
-----------
-
-There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.
-
-I can't say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, _torkve_ :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.
-
 
 ////
 [glossary]

@@ -11,14 +11,17 @@ TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo4/,controller.ml Root.qml program.ml)
 
 OPTS= theme=readable  totop=ui linkcss sidebar=left iconsfont=font-awesome # iconsfont=glyphicon
 
-all: tutorial.html tutorial2.html
+all: tutorial.html tutorial2.html #tutorial3.html
 
 tutorial2.html: $(TUTORIAL2_DEMOS)
 
 tutorial2.html: tutorial2.asciidoc
 	asciidoc -b bootstrap $(addprefix -a ,$(OPTS)) $<
 
-tutorial.html: tutorial.asciidoc
+#tutorial3.html: tutorial3.asciidoc
+#	asciidoc -b bootstrap $(addprefix -a ,$(OPTS)) $<
+
+.asciidoc.html:
 	asciidoc -b html5 -a icons -a toc2 -a theme=flask $<
 
 clean:
