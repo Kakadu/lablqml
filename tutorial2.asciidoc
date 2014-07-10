@@ -1,19 +1,36 @@
+:source-highlighter: pygments
+:pygments-style: monokai
 :imagesdir: ./images/tutorial2
 
 QtQuick approach for developing applications
 ============================================
-Dmitrii Kosarev aka Kakadu ("kakadu.hafanana" ^ "@" ^ "gmail.com")
+Dmitrii Kosarev aka Kakadu
+
+
+[role="col-md-3"]
+====
+[panel,primary]
+.{toc-title}
+--
+* xref:about[About]
+* xref:qt5[Installing Qt5]
+* xref:hello_world[Hello world!]
+--
+====
+
+
 
 Changelog
 ---------
 This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
 With `lablqt 0.3` we don't need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, `lablqt 0.3` requires OCaml 4.02 or newer.
 
-
+[[about]]
 About
 -----
 In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
 
+[[qt5]]
 Getting Qt5
 -----------
 Using package repository
@@ -133,6 +150,9 @@ include::demos/0.3/demo1/program.ml[]
 ----
 
 We have created new object with method `onMouseClicked` which prints something to stdout. This object was exposed to QtQuick engine with name `controller` during `set_context_property` invocation. After that application was started in function `run_with_QQmlApplicationEngine`, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
+
+
+NOTE: This is an example note.
 
 .QtQuick and QML
 ****
@@ -263,6 +283,10 @@ include::demos/0.3/demo4/item.ml[]
 
 In setter method implementation we will match inner value of `QVariant.t` and apply variant-specific logic
 
+:local-css-style: pastie
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+.Somewhere in `program.ml`
 ----
 class myitem cppObj = object(self)
   inherit Item.item cppObj as super
@@ -280,6 +304,9 @@ end
       | `int  x -> printf "int %d\n%!" x
       | `empty -> print_endline "empty"
 ...
+----
+
+----
 ----
 To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don't know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.
 

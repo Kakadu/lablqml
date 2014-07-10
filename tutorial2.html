@@ -1,878 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="AsciiDoc 8.6.9">
-<title>QtQuick approach for developing applications</title>
-<style type="text/css">
-/* Shared CSS for AsciiDoc xhtml11 and html5 backends */
-
-/* Default font. */
-body {
-  font-family: Georgia,serif;
-}
-
-/* Title font. */
-h1, h2, h3, h4, h5, h6,
-div.title, caption.title,
-thead, p.table.header,
-#toctitle,
-#author, #revnumber, #revdate, #revremark,
-#footer {
-  font-family: Arial,Helvetica,sans-serif;
-}
-
-body {
-  margin: 1em 5% 1em 5%;
-}
-
-a {
-  color: blue;
-  text-decoration: underline;
-}
-a:visited {
-  color: fuchsia;
-}
-
-em {
-  font-style: italic;
-  color: navy;
-}
-
-strong {
-  font-weight: bold;
-  color: #083194;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: #527bbd;
-  margin-top: 1.2em;
-  margin-bottom: 0.5em;
-  line-height: 1.3;
-}
-
-h1, h2, h3 {
-  border-bottom: 2px solid silver;
-}
-h2 {
-  padding-top: 0.5em;
-}
-h3 {
-  float: left;
-}
-h3 + * {
-  clear: left;
-}
-h5 {
-  font-size: 1.0em;
-}
-
-div.sectionbody {
-  margin-left: 0;
-}
-
-hr {
-  border: 1px solid silver;
-}
-
-p {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-}
-
-ul, ol, li > p {
-  margin-top: 0;
-}
-ul > li     { color: #aaa; }
-ul > li > * { color: black; }
-
-pre {
-  padding: 0;
-  margin: 0;
-}
-
-#author {
-  color: #527bbd;
-  font-weight: bold;
-  font-size: 1.1em;
-}
-#email {
-}
-#revnumber, #revdate, #revremark {
-}
-
-#footer {
-  font-size: small;
-  border-top: 2px solid silver;
-  padding-top: 0.5em;
-  margin-top: 4.0em;
-}
-#footer-text {
-  float: left;
-  padding-bottom: 0.5em;
-}
-#footer-badges {
-  float: right;
-  padding-bottom: 0.5em;
-}
-
-#preamble {
-  margin-top: 1.5em;
-  margin-bottom: 1.5em;
-}
-div.imageblock, div.exampleblock, div.verseblock,
-div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
-div.admonitionblock {
-  margin-top: 1.0em;
-  margin-bottom: 1.5em;
-}
-div.admonitionblock {
-  margin-top: 2.0em;
-  margin-bottom: 2.0em;
-  margin-right: 10%;
-  color: #606060;
-}
-
-div.content { /* Block element content. */
-  padding: 0;
-}
-
-/* Block element titles. */
-div.title, caption.title {
-  color: #527bbd;
-  font-weight: bold;
-  text-align: left;
-  margin-top: 1.0em;
-  margin-bottom: 0.5em;
-}
-div.title + * {
-  margin-top: 0;
-}
-
-td div.title:first-child {
-  margin-top: 0.0em;
-}
-div.content div.title:first-child {
-  margin-top: 0.0em;
-}
-div.content + div.title {
-  margin-top: 0.0em;
-}
-
-div.sidebarblock > div.content {
-  background: #ffffee;
-  border: 1px solid #dddddd;
-  border-left: 4px solid #f0f0f0;
-  padding: 0.5em;
-}
-
-div.listingblock > div.content {
-  border: 1px solid #dddddd;
-  border-left: 5px solid #f0f0f0;
-  background: #f8f8f8;
-  padding: 0.5em;
-}
-
-div.quoteblock, div.verseblock {
-  padding-left: 1.0em;
-  margin-left: 1.0em;
-  margin-right: 10%;
-  border-left: 5px solid #f0f0f0;
-  color: #777777;
-}
-
-div.quoteblock > div.attribution {
-  padding-top: 0.5em;
-  text-align: right;
-}
-
-div.verseblock > pre.content {
-  font-family: inherit;
-  font-size: inherit;
-}
-div.verseblock > div.attribution {
-  padding-top: 0.75em;
-  text-align: left;
-}
-/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
-div.verseblock + div.attribution {
-  text-align: left;
-}
-
-div.admonitionblock .icon {
-  vertical-align: top;
-  font-size: 1.1em;
-  font-weight: bold;
-  text-decoration: underline;
-  color: #527bbd;
-  padding-right: 0.5em;
-}
-div.admonitionblock td.content {
-  padding-left: 0.5em;
-  border-left: 3px solid #dddddd;
-}
-
-div.exampleblock > div.content {
-  border-left: 3px solid #dddddd;
-  padding-left: 0.5em;
-}
-
-div.imageblock div.content { padding-left: 0; }
-span.image img { border-style: none; }
-a.image:visited { color: white; }
-
-dl {
-  margin-top: 0.8em;
-  margin-bottom: 0.8em;
-}
-dt {
-  margin-top: 0.5em;
-  margin-bottom: 0;
-  font-style: normal;
-  color: navy;
-}
-dd > *:first-child {
-  margin-top: 0.1em;
-}
-
-ul, ol {
-    list-style-position: outside;
-}
-ol.arabic {
-  list-style-type: decimal;
-}
-ol.loweralpha {
-  list-style-type: lower-alpha;
-}
-ol.upperalpha {
-  list-style-type: upper-alpha;
-}
-ol.lowerroman {
-  list-style-type: lower-roman;
-}
-ol.upperroman {
-  list-style-type: upper-roman;
-}
-
-div.compact ul, div.compact ol,
-div.compact p, div.compact p,
-div.compact div, div.compact div {
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
-}
-
-tfoot {
-  font-weight: bold;
-}
-td > div.verse {
-  white-space: pre;
-}
-
-div.hdlist {
-  margin-top: 0.8em;
-  margin-bottom: 0.8em;
-}
-div.hdlist tr {
-  padding-bottom: 15px;
-}
-dt.hdlist1.strong, td.hdlist1.strong {
-  font-weight: bold;
-}
-td.hdlist1 {
-  vertical-align: top;
-  font-style: normal;
-  padding-right: 0.8em;
-  color: navy;
-}
-td.hdlist2 {
-  vertical-align: top;
-}
-div.hdlist.compact tr {
-  margin: 0;
-  padding-bottom: 0;
-}
-
-.comment {
-  background: yellow;
-}
-
-.footnote, .footnoteref {
-  font-size: 0.8em;
-}
-
-span.footnote, span.footnoteref {
-  vertical-align: super;
-}
-
-#footnotes {
-  margin: 20px 0 20px 0;
-  padding: 7px 0 0 0;
-}
-
-#footnotes div.footnote {
-  margin: 0 0 5px 0;
-}
-
-#footnotes hr {
-  border: none;
-  border-top: 1px solid silver;
-  height: 1px;
-  text-align: left;
-  margin-left: 0;
-  width: 20%;
-  min-width: 100px;
-}
-
-div.colist td {
-  padding-right: 0.5em;
-  padding-bottom: 0.3em;
-  vertical-align: top;
-}
-div.colist td img {
-  margin-top: 0.3em;
-}
-
-@media print {
-  #footer-badges { display: none; }
-}
-
-#toc {
-  margin-bottom: 2.5em;
-}
-
-#toctitle {
-  color: #527bbd;
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-top: 1.0em;
-  margin-bottom: 0.1em;
-}
-
-div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-div.toclevel2 {
-  margin-left: 2em;
-  font-size: 0.9em;
-}
-div.toclevel3 {
-  margin-left: 4em;
-  font-size: 0.9em;
-}
-div.toclevel4 {
-  margin-left: 6em;
-  font-size: 0.9em;
-}
-
-span.aqua { color: aqua; }
-span.black { color: black; }
-span.blue { color: blue; }
-span.fuchsia { color: fuchsia; }
-span.gray { color: gray; }
-span.green { color: green; }
-span.lime { color: lime; }
-span.maroon { color: maroon; }
-span.navy { color: navy; }
-span.olive { color: olive; }
-span.purple { color: purple; }
-span.red { color: red; }
-span.silver { color: silver; }
-span.teal { color: teal; }
-span.white { color: white; }
-span.yellow { color: yellow; }
-
-span.aqua-background { background: aqua; }
-span.black-background { background: black; }
-span.blue-background { background: blue; }
-span.fuchsia-background { background: fuchsia; }
-span.gray-background { background: gray; }
-span.green-background { background: green; }
-span.lime-background { background: lime; }
-span.maroon-background { background: maroon; }
-span.navy-background { background: navy; }
-span.olive-background { background: olive; }
-span.purple-background { background: purple; }
-span.red-background { background: red; }
-span.silver-background { background: silver; }
-span.teal-background { background: teal; }
-span.white-background { background: white; }
-span.yellow-background { background: yellow; }
-
-span.big { font-size: 2em; }
-span.small { font-size: 0.6em; }
-
-span.underline { text-decoration: underline; }
-span.overline { text-decoration: overline; }
-span.line-through { text-decoration: line-through; }
-
-
-/*
- * xhtml11 specific
- *
- * */
-
-tt {
-  font-family: monospace;
-  font-size: inherit;
-  color: navy;
-}
-
-div.tableblock {
-  margin-top: 1.0em;
-  margin-bottom: 1.5em;
-}
-div.tableblock > table {
-  border: 3px solid #527bbd;
-}
-thead, p.table.header {
-  font-weight: bold;
-  color: #527bbd;
-}
-p.table {
-  margin-top: 0;
-}
-/* Because the table frame attribute is overriden by CSS in most browsers. */
-div.tableblock > table[frame="void"] {
-  border-style: none;
-}
-div.tableblock > table[frame="hsides"] {
-  border-left-style: none;
-  border-right-style: none;
-}
-div.tableblock > table[frame="vsides"] {
-  border-top-style: none;
-  border-bottom-style: none;
-}
-
-
-/*
- * html5 specific
- *
- * */
-
-.monospaced {
-  font-family: monospace;
-  font-size: inherit;
-  color: navy;
-}
-
-table.tableblock {
-  margin-top: 1.0em;
-  margin-bottom: 1.5em;
-}
-thead, p.tableblock.header {
-  font-weight: bold;
-  color: #527bbd;
-}
-p.tableblock {
-  margin-top: 0;
-}
-table.tableblock {
-  border-width: 3px;
-  border-spacing: 0px;
-  border-style: solid;
-  border-color: #527bbd;
-  border-collapse: collapse;
-}
-th.tableblock, td.tableblock {
-  border-width: 1px;
-  padding: 4px;
-  border-style: solid;
-  border-color: #527bbd;
-}
-
-table.tableblock.frame-topbot {
-  border-left-style: hidden;
-  border-right-style: hidden;
-}
-table.tableblock.frame-sides {
-  border-top-style: hidden;
-  border-bottom-style: hidden;
-}
-table.tableblock.frame-none {
-  border-style: hidden;
-}
-
-th.tableblock.halign-left, td.tableblock.halign-left {
-  text-align: left;
-}
-th.tableblock.halign-center, td.tableblock.halign-center {
-  text-align: center;
-}
-th.tableblock.halign-right, td.tableblock.halign-right {
-  text-align: right;
-}
-
-th.tableblock.valign-top, td.tableblock.valign-top {
-  vertical-align: top;
-}
-th.tableblock.valign-middle, td.tableblock.valign-middle {
-  vertical-align: middle;
-}
-th.tableblock.valign-bottom, td.tableblock.valign-bottom {
-  vertical-align: bottom;
-}
-
-
-/*
- * manpage specific
- *
- * */
-
-body.manpage h1 {
-  padding-top: 0.5em;
-  padding-bottom: 0.5em;
-  border-top: 2px solid silver;
-  border-bottom: 2px solid silver;
-}
-body.manpage h2 {
-  border-style: none;
-}
-body.manpage div.sectionbody {
-  margin-left: 3em;
-}
-
-@media print {
-  body.manpage div#toc { display: none; }
-}
-
-
-/*
- * Theme specific overrides of the preceding (asciidoc.css) CSS.
- *
- */
-body {
-  font-family: Garamond, Georgia, serif;
-  font-size: 17px;
-  color: #3E4349;
-  line-height: 1.3em;
-}
-h1, h2, h3, h4, h5, h6,
-div.title, caption.title,
-thead, p.table.header,
-#toctitle,
-#author, #revnumber, #revdate, #revremark,
-#footer {
-  font-family: Garmond, Georgia, serif;
-  font-weight: normal;
-  border-bottom-width: 0;
-  color: #3E4349;
-}
-div.title, caption.title { color: #596673; font-weight: bold; }
-h1 { font-size: 240%; }
-h2 { font-size: 180%; }
-h3 { font-size: 150%; }
-h4 { font-size: 130%; }
-h5 { font-size: 115%; }
-h6 { font-size: 100%; }
-#header h1 { margin-top: 0; }
-#toc {
-  color: #444444;
-  line-height: 1.5;
-  padding-top: 1.5em;
-}
-#toctitle {
-  font-size: 20px;
-}
-#toc a {
-    border-bottom: 1px dotted #999999;
-    color: #444444 !important;
-    text-decoration: none !important;
-}
-#toc a:hover {
-    border-bottom: 1px solid #6D4100;
-    color: #6D4100 !important;
-    text-decoration: none !important;
-}
-div.toclevel1 { margin-top: 0.2em; font-size: 16px; }
-div.toclevel2 { margin-top: 0.15em; font-size: 14px; }
-em, dt, td.hdlist1 { color: black; }
-strong { color: #3E4349; }
-a { color: #004B6B; text-decoration: none; border-bottom: 1px dotted #004B6B; }
-a:visited { color: #615FA0; border-bottom: 1px dotted #615FA0; }
-a:hover { color: #6D4100; border-bottom: 1px solid #6D4100; }
-div.tableblock > table, table.tableblock { border: 3px solid #E8E8E8; }
-th.tableblock, td.tableblock { border: 1px solid #E8E8E8; }
-ul > li > * { color: #3E4349; }
-pre, tt, .monospaced { font-family: Consolas,Menlo,'Deja Vu Sans Mono','Bitstream Vera Sans Mono',monospace; }
-tt, .monospaced { font-size: 0.9em; color: black;
-}
-div.exampleblock > div.content, div.sidebarblock > div.content, div.listingblock > div.content { border-width: 0 0 0 3px; border-color: #E8E8E8; }
-div.verseblock { border-left-width: 0; margin-left: 3em; }
-div.quoteblock { border-left-width: 3px; margin-left: 0; margin-right: 0;}
-div.admonitionblock td.content { border-left: 3px solid #E8E8E8; }
-
-
-@media screen {
-  body {
-    max-width: 50em; /* approximately 80 characters wide */
-    margin-left: 16em;
-  }
-
-  #toc {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 13em;
-    padding: 0.5em;
-    padding-bottom: 1.5em;
-    margin: 0;
-    overflow: auto;
-    border-right: 3px solid #f8f8f8;
-    background-color: white;
-  }
-
-  #toc .toclevel1 {
-    margin-top: 0.5em;
-  }
-
-  #toc .toclevel2 {
-    margin-top: 0.25em;
-    display: list-item;
-    color: #aaaaaa;
-  }
-
-  #toctitle {
-    margin-top: 0.5em;
-  }
-}
-</style>
-<script type="text/javascript">
-/*<![CDATA[*/
-var asciidoc = {  // Namespace.
-
-/////////////////////////////////////////////////////////////////////
-// Table Of Contents generator
-/////////////////////////////////////////////////////////////////////
-
-/* Author: Mihai Bazon, September 2002
- * http://students.infoiasi.ro/~mishoo
- *
- * Table Of Content generator
- * Version: 0.4
- *
- * Feel free to use this script under the terms of the GNU General Public
- * License, as long as you do not remove or alter this notice.
- */
-
- /* modified by Troy D. Hanson, September 2006. License: GPL */
- /* modified by Stuart Rackham, 2006, 2009. License: GPL */
-
-// toclevels = 1..4.
-toc: function (toclevels) {
-
-  function getText(el) {
-    var text = "";
-    for (var i = el.firstChild; i != null; i = i.nextSibling) {
-      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
-        text += i.data;
-      else if (i.firstChild != null)
-        text += getText(i);
-    }
-    return text;
-  }
-
-  function TocEntry(el, text, toclevel) {
-    this.element = el;
-    this.text = text;
-    this.toclevel = toclevel;
-  }
-
-  function tocEntries(el, toclevels) {
-    var result = new Array;
-    var re = new RegExp('[hH]([1-'+(toclevels+1)+'])');
-    // Function that scans the DOM tree for header elements (the DOM2
-    // nodeIterator API would be a better technique but not supported by all
-    // browsers).
-    var iterate = function (el) {
-      for (var i = el.firstChild; i != null; i = i.nextSibling) {
-        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
-          var mo = re.exec(i.tagName);
-          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
-            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
-          }
-          iterate(i);
-        }
-      }
-    }
-    iterate(el);
-    return result;
-  }
-
-  var toc = document.getElementById("toc");
-  if (!toc) {
-    return;
-  }
-
-  // Delete existing TOC entries in case we're reloading the TOC.
-  var tocEntriesToRemove = [];
-  var i;
-  for (i = 0; i < toc.childNodes.length; i++) {
-    var entry = toc.childNodes[i];
-    if (entry.nodeName.toLowerCase() == 'div'
-     && entry.getAttribute("class")
-     && entry.getAttribute("class").match(/^toclevel/))
-      tocEntriesToRemove.push(entry);
-  }
-  for (i = 0; i < tocEntriesToRemove.length; i++) {
-    toc.removeChild(tocEntriesToRemove[i]);
-  }
-
-  // Rebuild TOC entries.
-  var entries = tocEntries(document.getElementById("content"), toclevels);
-  for (var i = 0; i < entries.length; ++i) {
-    var entry = entries[i];
-    if (entry.element.id == "")
-      entry.element.id = "_toc_" + i;
-    var a = document.createElement("a");
-    a.href = "#" + entry.element.id;
-    a.appendChild(document.createTextNode(entry.text));
-    var div = document.createElement("div");
-    div.appendChild(a);
-    div.className = "toclevel" + entry.toclevel;
-    toc.appendChild(div);
-  }
-  if (entries.length == 0)
-    toc.parentNode.removeChild(toc);
-},
-
-
-/////////////////////////////////////////////////////////////////////
-// Footnotes generator
-/////////////////////////////////////////////////////////////////////
-
-/* Based on footnote generation code from:
- * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
- */
-
-footnotes: function () {
-  // Delete existing footnote entries in case we're reloading the footnodes.
-  var i;
-  var noteholder = document.getElementById("footnotes");
-  if (!noteholder) {
-    return;
-  }
-  var entriesToRemove = [];
-  for (i = 0; i < noteholder.childNodes.length; i++) {
-    var entry = noteholder.childNodes[i];
-    if (entry.nodeName.toLowerCase() == 'div' && entry.getAttribute("class") == "footnote")
-      entriesToRemove.push(entry);
-  }
-  for (i = 0; i < entriesToRemove.length; i++) {
-    noteholder.removeChild(entriesToRemove[i]);
-  }
-
-  // Rebuild footnote entries.
-  var cont = document.getElementById("content");
-  var spans = cont.getElementsByTagName("span");
-  var refs = {};
-  var n = 0;
-  for (i=0; i<spans.length; i++) {
-    if (spans[i].className == "footnote") {
-      n++;
-      var note = spans[i].getAttribute("data-note");
-      if (!note) {
-        // Use [\s\S] in place of . so multi-line matches work.
-        // Because JavaScript has no s (dotall) regex flag.
-        note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
-        spans[i].innerHTML =
-          "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
-          "' title='View footnote' class='footnote'>" + n + "</a>]";
-        spans[i].setAttribute("data-note", note);
-      }
-      noteholder.innerHTML +=
-        "<div class='footnote' id='_footnote_" + n + "'>" +
-        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
-        n + "</a>. " + note + "</div>";
-      var id =spans[i].getAttribute("id");
-      if (id != null) refs["#"+id] = n;
-    }
-  }
-  if (n == 0)
-    noteholder.parentNode.removeChild(noteholder);
-  else {
-    // Process footnoterefs.
-    for (i=0; i<spans.length; i++) {
-      if (spans[i].className == "footnoteref") {
-        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
-        href = href.match(/#.*/)[0];  // Because IE return full URL.
-        n = refs[href];
-        spans[i].innerHTML =
-          "[<a href='#_footnote_" + n +
-          "' title='View footnote' class='footnote'>" + n + "</a>]";
-      }
-    }
-  }
-},
-
-install: function(toclevels) {
-  var timerId;
-
-  function reinstall() {
-    asciidoc.footnotes();
-    if (toclevels) {
-      asciidoc.toc(toclevels);
-    }
-  }
-
-  function reinstallAndRemoveTimer() {
-    clearInterval(timerId);
-    reinstall();
-  }
-
-  timerId = setInterval(reinstall, 500);
-  if (document.addEventListener)
-    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
-  else
-    window.onload = reinstallAndRemoveTimer;
-}
-
-}
-asciidoc.install(2);
-/*]]>*/
-</script>
-</head>
-<body class="article">
-<div id="header">
-<h1>QtQuick approach for developing applications</h1>
-<span id="author">Dmitrii Kosarev aka Kakadu ("kakadu.hafanana" ^ "@" ^ "gmail.com")</span><br>
-<div id="toc">
-  <div id="toctitle">Table of Contents</div>
-  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="generator" content="AsciiDoc 8.6.9, bootstrap backend 4.0.0">
+    <title>QtQuick approach for developing applications</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Dmitrii Kosarev aka Kakadu">
+    <!-- AsciiDoc Bootstrap styles -->
+    <link rel="stylesheet" type="text/css" href="./stylesheets/asciidoc-bootstrap.readable.min.css">
+    <!-- source highlighter -->
+    <link rel="stylesheet" type="text/css" href="./stylesheets/pygments.monokai.css">
+    <!-- Back to top (jquery plugin) -->
+    <link rel="stylesheet" type="text/css" href="./stylesheets/ui.totop.css">
+
+    <!--[if (lt IE 9) & (!IEMobile)]>
+        <script src="./javascripts/html5shiv.min.js"></script>
+        <script src="./javascripts/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+  <body>
+
+
+
+  <div class="container">
+
+    <div class="row">
+
+        <div class="col-md-12" role="main">
+<div class="exampleblock col-md-3">
+<div class="content">
+<div class="panel panel-primary">
+<div class="panel-heading"><h3 class="panel-title">Table of Contents</h3></div>
+<div class="panel-body">
+<div class="ulist"><ul>
+<li>
+<p>
+<a href="#about">About</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#qt5">Installing Qt5</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#hello_world">Hello world!</a>
+</p>
+</li>
+</ul></div>
 </div>
 </div>
-<div id="content">
-<div class="sect1">
-<h2 id="_changelog">Changelog</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>This tutorial is the second one about OCaml and QtQuick. You can get old one <a href="tutorial.html">here</a>.
-With <span class="monospaced">lablqt 0.3</span> we don&#8217;t need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, <span class="monospaced">lablqt 0.3</span> requires OCaml 4.02 or newer.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_about">About</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit <a href="https://qt-project.org/doc/qt-5/qtquick-index.html">official help</a> or <a href="http://qmlbook.org/">QML book</a>.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_getting_qt5">Getting Qt5</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_using_package_repository">Using package repository</h3>
+</div></div>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="changelog">
+        <h1>Changelog</h1>
+      </div>
+<div class="paragraph"><p>This tutorial is the second one about OCaml and QtQuick. You can get old one 
+<a href="tutorial.html">here</a>.
+With <code>lablqt 0.3</code> we don&#8217;t need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, <code>lablqt 0.3</code> requires OCaml 4.02 or newer.</p></div>
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="about">
+        <h1>About</h1>
+      </div>
+<div class="paragraph"><p>In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit 
+<a href="https://qt-project.org/doc/qt-5/qtquick-index.html">official help</a> or 
+<a href="http://qmlbook.org/">QML book</a>.</p></div>
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="qt5">
+        <h1>Getting Qt5</h1>
+      </div>
+<div class="clearfix">
+<h2 id="using_package_repository">Using package repository</h2>
 <div class="paragraph"><p>There is Qt 5.2.1 in Ubuntu Trusty and Qt5.3 in current Debian/testing (July 1, 2014). I have got Qt 5.3 using official installer but all code should work with Qt 5.2 too. If it doesn&#8217;t, please report me somehow.</p></div>
 </div>
-<div class="sect2">
-<h3 id="_official_packages">Official packages</h3>
+<div class="clearfix">
+<h2 id="official_packages">Official packages</h2>
 <div class="paragraph"><p>are available on <a href="https://download.qt-project.org/official_releases/qt/5.3/5.3.0/">Qt Project</a>.</p></div>
 </div>
-<div class="sect2">
-<h3 id="_building_from_git">Building from Git</h3>
+<div class="clearfix">
+<h2 id="building_from_git">Building from Git</h2>
 <div class="paragraph"><p>Official Qt Project wiki is
 <a href="http://qt-project.org/wiki/Building_Qt_5_from_Git">there</a>. Below you
-can see <span class="monospaced">my-init</span> and <span class="monospaced">configure</span> scripts which configure
+can see <code>my-init</code> and <code>configure</code> scripts which configure
 Qt5 to build only modules needed by lablqt.</p></div>
 <div class="listingblock">
 <div class="title">My init-repository script</div>
@@ -891,10 +109,10 @@ set -x
 ./configure -developer-build -opensource -nomake examples -nomake tests -confirm-license \
   -no-gtkstyle -no-glib -no-cups  $@</pre>
 </div></div>
-<div class="paragraph"><p>Qt compiles some code during <span class="monospaced">./configure</span> stage, don&#8217;t worry, it&#8217;s
+<div class="paragraph"><p>Qt compiles some code during <code>./configure</code> stage, don&#8217;t worry, it&#8217;s
 normal.</p></div>
-<div class="paragraph"><p>Compilation time depends on your machine. Some fellas have finished with <span class="monospaced">-j8</span> in 5 minutes. On my Intel Core i3 I can do it with <span class="monospaced">-j2</span> in 30 minutes.</p></div>
-<div class="paragraph"><div class="title">P.S.</div><p>I have discovered some issues with compilation my QOCamlBrowser app recently on Ubuntu 13.10 32bit on Intel Core 2 Duo CPU. My application was crashing in <span class="monospaced">qt_memfill32_sse2 (dest=0x8910e10, value=0, count=194)</span> at <span class="monospaced">painting/qdrawhelper_sse2.cpp:264</span>. So, I have decided to disable special instruction sets for Qt5 on this machine by improving <span class="monospaced">./my-configure</span> script. I put this stuff in <span class="monospaced">P.S.</span> section because I haven&#8217;t tested it on my Intel i3 machine.</p></div>
+<div class="paragraph"><p>Compilation time depends on your machine. Some fellas have finished with <code>-j8</code> in 5 minutes. On my Intel Core i3 I can do it with <code>-j2</code> in 30 minutes.</p></div>
+<div class="paragraph"><div class="title">P.S.</div><p>I have discovered some issues with compilation my QOCamlBrowser app recently on Ubuntu 13.10 32bit on Intel Core 2 Duo CPU. My application was crashing in <code>qt_memfill32_sse2 (dest=0x8910e10, value=0, count=194)</code> at <code>painting/qdrawhelper_sse2.cpp:264</code>. So, I have decided to disable special instruction sets for Qt5 on this machine by improving <code>./my-configure</code> script. I put this stuff in <code>P.S.</code> section because I haven&#8217;t tested it on my Intel i3 machine.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>#!/usr/bin/env bash
@@ -907,16 +125,16 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
   $SQL $NOFB $NOSSE \
   $@</pre>
 </div></div>
-<div class="paragraph"><p>Value <span class="monospaced">$NOFB</span> disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value <span class="monospaced">$NOSSE</span> disables all special instruction sets.With that <span class="monospaced">./my-configure</span> QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.</p></div>
-<div class="paragraph"><p>If you want to compile Qt faster you can study next options of <span class="monospaced">./configure script</span>:</p></div>
+<div class="paragraph"><p>Value <code>$NOFB</code> disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value <code>$NOSSE</code> disables all special instruction sets.With that <code>./my-configure</code> QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.</p></div>
+<div class="paragraph"><p>If you want to compile Qt faster you can study next options of <code>./configure script</code>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>    -no-feature-&lt;feature&gt; Do not compile in &lt;feature&gt;.
     -feature-&lt;feature&gt; .. Compile in &lt;feature&gt;. The available features
                           are described in src/corelib/global/qfeatures.txt</pre>
 </div></div>
-<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>Mac users can consider invoking configure using <span class="monospaced">./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</span>. I can&#8217;t test that but some fellas <a href="https://github.com/Kakadu/lablqt/issues/16">can</a>.</p></div>
-<div class="paragraph"><div class="title">P.P.P.S.</div><p>Next script will be useful (as a part of <span class="monospaced">~/.bashrc</span>) for setting local environment for your Qt5 build:</p></div>
+<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>Mac users can consider invoking configure using <code>./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</code>. I can&#8217;t test that but some fellas <a href="https://github.com/Kakadu/lablqt/issues/16">can</a>.</p></div>
+<div class="paragraph"><div class="title">P.P.P.S.</div><p>Next script will be useful (as a part of <code>~/.bashrc</code>) for setting local environment for your Qt5 build:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>with_qt5() {
@@ -927,13 +145,16 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
 }</pre>
 </div></div>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="hello_world">"Hello world!" in QtQuick</h2>
-<div class="sectionbody">
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="hello_world">
+        <h1>"Hello world!" in QtQuick</h1>
+      </div>
 <div class="paragraph"><p>Demos described below and sources of this tutorial can be found in Github <a href="http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3">repository</a>.</p></div>
-<div class="paragraph"><p>In piece of code below we create application&#8217;s window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using <a href="http://qmlbook.org/ch04/index.html#positioning-elements">anchors</a>.</p></div>
+<div class="paragraph"><p>In piece of code below we create application&#8217;s window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using 
+<a href="http://qmlbook.org/ch04/index.html#positioning-elements">anchors</a>.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>import QtQuick 2.0
@@ -962,11 +183,9 @@ ApplicationWindow {
     }
 }</pre>
 </div></div>
-<div class="paragraph"><p>This QML file is already correct application. If you execute it using command <span class="monospaced">qmlscene Root.qml</span> you will get a window like this:</p></div>
-<div class="paragraph"><p><span class="image">
-<img src="./images/tutorial2/img1.png" alt="img1.png">
-</span></p></div>
-<div class="paragraph"><p>Normal way to interact between QtQuick and C++ is exposing some objects into QtQuick engine. We will do the same but we will describe this object&#8217;s class in OCaml using PPX extension. Build system will help us to compile all into final executable. Let&#8217;s describe class <span class="monospaced">controller</span> in <span class="monospaced">controller.ml</span>:</p></div>
+<div class="paragraph"><p>This QML file is already correct application. If you execute it using command <code>qmlscene Root.qml</code> you will get a window like this:</p></div>
+<div class="paragraph"><p></p></div>
+<div class="paragraph"><p>Normal way to interact between QtQuick and C++ is exposing some objects into QtQuick engine. We will do the same but we will describe this object&#8217;s class in OCaml using PPX extension. Build system will help us to compile all into final executable. Let&#8217;s describe class <code>controller</code> in <code>controller.ml</code>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -975,13 +194,13 @@ class virtual controller = object(self)
   method virtual onMouseClicked: unit -&gt; unit[@@qtmeth]
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>Module <span class="monospaced">QmlContext</span> can be found in ocamlfind package named <span class="monospaced">lablqml</span>. This package and PPX extension named <span class="monospaced">ppx_qt</span> are located in OPAM&#8217;s package <span class="monospaced">lablqt</span> with version <span class="monospaced">0.3</span>. To apply syntax extension on this file you need to execute following commmand:</p></div>
+<div class="paragraph"><p>Module <code>QmlContext</code> can be found in ocamlfind package named <code>lablqml</code>. This package and PPX extension named <code>ppx_qt</code> are located in OPAM&#8217;s package <code>lablqt</code> with version <code>0.3</code>. To apply syntax extension on this file you need to execute following commmand:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml</pre>
 </div></div>
-<div class="paragraph"><p>In <span class="monospaced">controller.ml</span> you can see class <span class="monospaced">controller</span> with attribute <span class="monospaced">qtclass</span> and its method <span class="monospaced">onMouseClicked</span> with attribute <span class="monospaced">qtmeth</span>. Without this attributes class and method will not be available in QtQuick.</p></div>
-<div class="paragraph"><p>After preprocessing source file we will get a virtual class called <span class="monospaced">controller</span> with virtual method <span class="monospaced">onMouseClicked</span> which should be implemented. Let&#8217;s do this in <span class="monospaced">program.ml</span></p></div>
+<div class="paragraph"><p>In <code>controller.ml</code> you can see class <code>controller</code> with attribute <code>qtclass</code> and its method <code>onMouseClicked</code> with attribute <code>qtmeth</code>. Without this attributes class and method will not be available in QtQuick.</p></div>
+<div class="paragraph"><p>After preprocessing source file we will get a virtual class called <code>controller</code> with virtual method <code>onMouseClicked</code> which should be implemented. Let&#8217;s do this in <code>program.ml</code></p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -996,11 +215,17 @@ let init () =
 let () =
   run_with_QQmlApplicationEngine Sys.argv init "Root.qml"</pre>
 </div></div>
-<div class="paragraph"><p>We have created new object with method <span class="monospaced">onMouseClicked</span> which prints something to stdout. This object was exposed to QtQuick engine with name <span class="monospaced">controller</span> during <span class="monospaced">set_context_property</span> invocation. After that application was started in function <span class="monospaced">run_with_QQmlApplicationEngine</span>, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
-<div class="sidebarblock">
+<div class="paragraph"><p>We have created new object with method <code>onMouseClicked</code> which prints something to stdout. This object was exposed to QtQuick engine with name <code>controller</code> during <code>set_context_property</code> invocation. After that application was started in function <code>run_with_QQmlApplicationEngine</code>, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
+<div class="admonition note">
+<div class="icon">
+<span class="fa"></span>
+</div>
+<div class="content">This is an example note.</div>
+</div>
+<div class="sidebarblock well">
 <div class="content">
 <div class="title">QtQuick and QML</div>
-<div class="paragraph"><p>QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with <span class="monospaced">qml</span> extension. QtQuick is a number of classes from which GUI can be built.</p></div>
+<div class="paragraph"><p>QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with <code>qml</code> extension. QtQuick is a number of classes from which GUI can be built.</p></div>
 </div></div>
 <div class="paragraph"><p>Our QtQuick file doesn&#8217;t know anything about exposed object yet. So, let&#8217;s create some area which will receive mouse events and call OCaml if it was clicked.</p></div>
 <div class="listingblock">
@@ -1036,25 +261,27 @@ ApplicationWindow {
 
 }</pre>
 </div></div>
-<div class="sidebarblock">
+<div class="sidebarblock well">
 <div class="content">
 <div class="title">Where should we start-up from?</div>
 <div class="paragraph"><p>Our applications can do startup from both OCaml and C++. Example above starts up from OCaml. See <a href="http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2">demos</a> from previous tutorial to get examples of startup from C++.</p></div>
 </div></div>
 <div class="paragraph"><p>Full code of first demo is available on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1">github</a>.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="properties">Qt object&#8217;s metamodel</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>Qt classes based on <span class="monospaced">QObject</span> can have <em>properties</em>, <em>signals</em>, <em>slots</em> and methods <em>invokable</em> from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.</p></div>
-<div class="paragraph"><p>For example, our method <span class="monospaced">onMouseClicked</span> declared above is invokable, that&#8217;s why we can use it from QML. In contrary we will get type error:</p></div>
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="properties">
+        <h1>Qt object&#8217;s metamodel</h1>
+      </div>
+<div class="paragraph"><p>Qt classes based on <code>QObject</code> can have <small>properties</small>, <small>signals</small>, <small>slots</small> and methods <small>invokable</small> from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.</p></div>
+<div class="paragraph"><p>For example, our method <code>onMouseClicked</code> declared above is invokable, that&#8217;s why we can use it from QML. In contrary we will get type error:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>Property 'onMouseClicked' of object controller(0x153cd00) is not a function</pre>
 </div></div>
-<div class="paragraph"><p>Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called <em>setter</em>), properties are read-only otherwise. When property changes it can send <em>signal</em> with updated value.</p></div>
-<div class="paragraph"><p><em>Signals</em> usually are <em>connected</em> with <em>slots</em>. See this C++ code, for example:</p></div>
+<div class="paragraph"><p>Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called <small>setter</small>), properties are read-only otherwise. When property changes it can send <small>signal</small> with updated value.</p></div>
+<div class="paragraph"><p><small>Signals</small> usually are <small>connected</small> with <small>slots</small>. See this C++ code, for example:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>auto listener = new PortListener();
@@ -1062,12 +289,14 @@ auto parser = new MessageParser();
 connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByteArray)) );</pre>
 </div></div>
 <div class="paragraph"><p>As you can see relation between objects is established independently from them, i.e. object&#8217;s classes are independent: we don&#8217;t need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt&#8217;s way to avoid dependecy injection.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="properties">Adding properties</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>Let&#8217;s extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type <span class="monospaced">int</span>. To do this we need to improve our class definition in <span class="monospaced">controller.ml</span>:</p></div>
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="properties">
+        <h1>Adding properties</h1>
+      </div>
+<div class="paragraph"><p>Let&#8217;s extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type <code>int</code>. To do this we need to improve our class definition in <code>controller.ml</code>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1077,7 +306,7 @@ class virtual controller = object(self)
   method virtual clicksCount: int[@@qtprop]
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>To count how many times we clicked we need additional variable available in an object. We will add it in <span class="monospaced">program.ml</span>:</p></div>
+<div class="paragraph"><p>To count how many times we clicked we need additional variable available in an object. We will add it in <code>program.ml</code>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1097,7 +326,7 @@ let init () =
 let () =
   run_with_QQmlApplicationEngine Sys.argv init "Root.qml"</pre>
 </div></div>
-<div class="paragraph"><p>If user clicks by mouse we will increment counter and emit signal with new counter value using method <span class="monospaced">emit_$(PROPERTY_NAME)Changed</span>. Without emitting a signal QtQuick will not know that value has been changed and will use old one. How exactly QtQuick will use it we declare in <span class="monospaced">Root.qml</span>. We add new rectangle with text in it which show how many times we clicked. In this demo we also use QtQuick <a href="https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html">layout</a> to place rectangles vertically. We will not use anchors to implement it.</p></div>
+<div class="paragraph"><p>If user clicks by mouse we will increment counter and emit signal with new counter value using method <code>emit_$(PROPERTY_NAME)Changed</code>. Without emitting a signal QtQuick will not know that value has been changed and will use old one. How exactly QtQuick will use it we declare in <code>Root.qml</code>. We add new rectangle with text in it which show how many times we clicked. In this demo we also use QtQuick <a href="https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html">layout</a> to place rectangles vertically. We will not use anchors to implement it.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>import QtQuick 2.0
@@ -1143,16 +372,16 @@ ApplicationWindow {
 <div class="content monospaced">
 <pre>text: "You have clicked " + controller.clicksCount + " times"</pre>
 </div></div>
-<div class="paragraph"><p>Right side (after colon character) should be valid ECMAScript expression which is evaluted into property value. It can be multiline, call some functions and methods and use many properties inside. When one of properties is changed all expression is evaluated and <span class="monospaced">text</span> property gets new value.</p></div>
+<div class="paragraph"><p>Right side (after colon character) should be valid ECMAScript expression which is evaluted into property value. It can be multiline, call some functions and methods and use many properties inside. When one of properties is changed all expression is evaluated and <code>text</code> property gets new value.</p></div>
 <div class="paragraph"><p>Sources of this demo can be found on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2">github</a>. Final window should be like on this picture:</p></div>
-<div class="paragraph"><p><span class="image">
-<img src="./images/tutorial2/img2.png" alt="title">
-</span></p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="signals">Adding signals</h2>
-<div class="sectionbody">
+<div class="paragraph"><p></p></div>
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="signals">
+        <h1>Adding signals</h1>
+      </div>
 <div class="paragraph"><p>When we declare a property signal for notification about changes is added automatically. We can also declare a signal manually using the same PPX syntax extension.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
@@ -1165,7 +394,7 @@ class virtual controller = object(self)
 
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>And we need to connect signal <span class="monospaced">hiGotten</span> with some handler in QtQuick:</p></div>
+<div class="paragraph"><p>And we need to connect signal <code>hiGotten</code> with some handler in QtQuick:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>Connections {
@@ -1173,8 +402,8 @@ end[@@qtclass]</pre>
     onHiGotten: console.log(message)
 }</pre>
 </div></div>
-<div class="paragraph"><p>The &#8216;on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the <span class="monospaced">message</span> in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal&#8217;s arguments&#8217; names. That&#8217;s why we declare signals using labeled arguments.</p></div>
-<div class="paragraph"><p>Syntax extension is expanded into method <span class="monospaced">emit_$(SIGNAL_NAME)</span>. We can use it in <span class="monospaced">program.ml</span>.</p></div>
+<div class="paragraph"><p>The &#8216;on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the <code>message</code> in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal&#8217;s arguments&#8217; names. That&#8217;s why we declare signals using labeled arguments.</p></div>
+<div class="paragraph"><p>Syntax extension is expanded into method <code>emit_$(SIGNAL_NAME)</code>. We can use it in <code>program.ml</code>.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open Printf
@@ -1201,13 +430,15 @@ let () =
   run_with_QQmlApplicationEngine Sys.argv main "Root.qml"</pre>
 </div></div>
 <div class="paragraph"><p>Full code of this demo is available on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3">github</a>.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="types">Supported types</h2>
-<div class="sectionbody">
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="types">
+        <h1>Supported types</h1>
+      </div>
 <div class="paragraph"><p>QML has its own type system. It is not so strong or static as OCaml one but <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">basic types</a> exist. When we pass values from C++ to QML we need to put them into <a href="https://qt-project.org/doc/qt-5/qvariant.html">QVariant</a> which is universal container (or <a href="https://blogs.janestreet.com/rethinking-univ/">universal type</a>). If our types are simple we will use QML basic types but If we need something complex (like structs with a number of fields inside) we will create QObject-derived class and put it into QVariant. At the moment supporting objects in lablqt is a little bit awkward but you can create applications without it, for example, my <a href="https://github.com/Kakadu/QOcamlBrowser_quick/">QOcamlBrowser</a> application doesn&#8217;t use this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.</p></div>
-<div class="paragraph"><p>The demo envolving objects can be found <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4">there</a>. In <span class="monospaced">controller.ml</span> we declare some methods and properties which use type our universal type called <span class="monospaced">Varaint.t</span>.</p></div>
+<div class="paragraph"><p>The demo envolving objects can be found <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4">there</a>. In <code>controller.ml</code> we declare some methods and properties which use type our universal type called <code>Varaint.t</code>.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1220,7 +451,7 @@ class virtual controller = object(self)
 
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>We will use them in our QML file when construction of root object will be completed (in <span class="monospaced">Component.completed</span> signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.</p></div>
+<div class="paragraph"><p>We will use them in our QML file when construction of root object will be completed (in <code>Component.completed</code> signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>import QtQuick 2.0
@@ -1244,7 +475,7 @@ ApplicationWindow {
     }
 }</pre>
 </div></div>
-<div class="paragraph"><p>In OCaml side we will match value of variant and write specific code. Constructor <em>qobject</em> contains value of type <span class="monospaced">cppobj</span> which is raw pointer to C++ QObject. That&#8217;s why we need to construct OCaml object from this value. We will name class for this object as <span class="monospaced">Item</span>:</p></div>
+<div class="paragraph"><p>In OCaml side we will match value of variant and write specific code. Constructor <small>qobject</small> contains value of type <code>cppobj</code> which is raw pointer to C++ QObject. That&#8217;s why we need to construct OCaml object from this value. We will name class for this object as <code>Item</code>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>open QmlContext
@@ -1255,49 +486,83 @@ class virtual item = object(self)
 
 end[@@qtclass]</pre>
 </div></div>
-<div class="paragraph"><p>In setter method implementation we will match inner value of <span class="monospaced">QVariant.t</span> and apply variant-specific logic</p></div>
+<div class="paragraph"><p>In setter method implementation we will match inner value of <code>QVariant.t</code> and apply variant-specific logic</p></div>
 <div class="listingblock">
-<div class="content monospaced">
-<pre>class myitem cppObj = object(self)
-  inherit Item.item cppObj as super
-  method getname () = "Vasya"
-  method getage () = 11
-end
+<div class="title">Somewhere in <code>program.ml</code></div>
+<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">class</span> myitem cppObj = <span style="color: #008800; font-weight: bold">object</span>(self)
+  <span style="color: #008800; font-weight: bold">inherit</span> <span style="color: #bb0066; font-weight: bold">Item</span>.item cppObj <span style="color: #008800; font-weight: bold">as</span> super
+  <span style="color: #008800; font-weight: bold">method</span> getname <span style="color: #003388">()</span> = <span style="color: #dd2200; background-color: #fff0f0">&quot;Vasya&quot;</span>
+  <span style="color: #008800; font-weight: bold">method</span> getage <span style="color: #003388">()</span> = <span style="color: #0000DD; font-weight: bold">11</span>
+<span style="color: #008800; font-weight: bold">end</span>
 
 ...
 
-    method setobj  = function
+    <span style="color: #008800; font-weight: bold">method</span> setobj  = <span style="color: #008800; font-weight: bold">function</span>
       | `qobject o -&gt;
-         let item = new myitem o in
-         printf "qobject: %s %d\n%!" (item#getname ()) (item#getage())
-      | `string s -&gt; printf "String: '%s'\n%!" s
-      | `int  x -&gt; printf "int %d\n%!" x
-      | `empty -&gt; print_endline "empty"
-...</pre>
+         <span style="color: #008800; font-weight: bold">let</span> item = <span style="color: #008800; font-weight: bold">new</span> myitem o <span style="color: #008800; font-weight: bold">in</span>
+         printf <span style="color: #dd2200; background-color: #fff0f0">&quot;qobject: %s %d</span><span style="color: #0044dd; background-color: #fff0f0">\n</span><span style="color: #dd2200; background-color: #fff0f0">%!&quot;</span> (item#getname <span style="color: #003388">()</span>) (item#getage<span style="color: #003388">()</span>)
+      | `<span style="color: #888888; font-weight: bold">string</span> s -&gt; printf <span style="color: #dd2200; background-color: #fff0f0">&quot;String: &#39;%s&#39;</span><span style="color: #0044dd; background-color: #fff0f0">\n</span><span style="color: #dd2200; background-color: #fff0f0">%!&quot;</span> s
+      | `<span style="color: #888888; font-weight: bold">int</span>  x -&gt; printf <span style="color: #dd2200; background-color: #fff0f0">&quot;int %d</span><span style="color: #0044dd; background-color: #fff0f0">\n</span><span style="color: #dd2200; background-color: #fff0f0">%!&quot;</span> x
+      | `empty -&gt; print_endline <span style="color: #dd2200; background-color: #fff0f0">&quot;empty&quot;</span>
+...
+</pre></div></div></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre></pre>
 </div></div>
 <div class="paragraph"><p>To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don&#8217;t know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.</p></div>
-<div class="paragraph"><p>At the moment not many types are available to be used in methods' signatures but you can implement any complex type using <span class="monospaced">variant</span> type. It should not be a problem to support <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">QML basic types</a> in syntax extension if needed. I&#8217;m not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="building">Compiling applications using lablqt</h2>
-<div class="sectionbody">
+<div class="paragraph"><p>At the moment not many types are available to be used in methods' signatures but you can implement any complex type using <code>variant</code> type. It should not be a problem to support <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">QML basic types</a> in syntax extension if needed. I&#8217;m not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)</p></div>
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="building">
+        <h1>Compiling applications using lablqt</h1>
+      </div>
 <div class="paragraph"><p>As I said before your applications can start up both from C++ and OCaml. You can find examples if you will visit links for demos entioned above. Also you can visit <a href="https://github.com/Kakadu/lablqt/tree/master/qml">demos directory</a> in lablqt&#8217;s repository. If don&#8217;t like Makefiles you can look at <a href="https://github.com/Kakadu/QOcamlBrowser_quick">QOCamlBrowser</a> app which uses ocamlbuild as build system.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="conclusion">Conclusion</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in <a href="tutorial.html">previous tutorial</a> you can read about classes for desktop applications which live in harmony with your platform&#8217;s style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.</p></div>
-<div class="paragraph"><p>I can&#8217;t say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, <em>torkve</em> :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.</p></div>
-</div>
-</div>
-</div>
-<div id="footnotes"><hr></div>
-<div id="footer">
+    </div>
+</section>
+<section>
+    <div class="clearfix">
+      <div class="page-header" id="conclusion">
+        <h1>Conclusion</h1>
+      </div>
+<div class="paragraph"><p>There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in 
+<a href="tutorial.html">previous tutorial</a> you can read about classes for desktop applications which live in harmony with your platform&#8217;s style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.</p></div>
+<div class="paragraph"><p>I can&#8217;t say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, <small>torkve</small> :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.</p></div>
+    </div>
+</section>
+        </div>  <!-- /.col-md-12 -->
+    </div>  <!-- /.row -->
+
+  </div>  <!-- /.container -->
+
+<div class="container">
+    <footer id="footer" role="contentinfo">
+        <div class="container">
+<div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-07 23:26:38 MSK
+Last updated 2014-07-10 23:08:40 MSK
+<br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
+        </div>
+    </footer>
 </div>
-</body>
+
+    <script src="./javascripts/jquery.min.js"></script>
+    <script src="./bootstrap/js/bootstrap.min.js"></script>
+    <script src="./javascripts/asciidoc.js"></script>
+    <!-- Install TOC and/or footnotes (if necessary) -->
+    <script type="text/javascript">asciidoc.install(2);</script>
+
+    <script src="./javascripts/jquery.ui.totop.min.js"></script>
+
+    <!-- Remove footnotes if empty block -->
+    <script type="text/javascript">$(function(){ if ($("#footnotes").length == 0) $("#footnotes").remove(); });</script>
+
+    <script type="text/javascript">$(function(){ if ($("#dropdown-menu-versions")) $("#dropdown-menu-versions").parent().parent().remove(); });</script>
+
+    <script type="text/javascript">$(function(){ $().UItoTop(); });</script>
+
+  </body>
 </html>
