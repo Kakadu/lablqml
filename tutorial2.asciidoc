@@ -27,37 +27,69 @@ Creating applications with QtQuick and OCaml
 [[about]]
 About
 -----
-In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. If you want to get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
+In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. To get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
+
+
+Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3[repository].
 
 Changelog
 ---------
 This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
-With `lablqt 0.3` we don't need JSON file to describe interface between QtQuick and OCaml, this approach was replaced by PPX extension. So, `lablqt 0.3` requires OCaml 4.02 or newer.
+In `lablqt` starting from version `0.3` external JSON file is not longer needed for specifing API, PPX extension should be used. That's why, `lablqt 0.3` requires OCaml 4.02 or newer.
 
 [[hello_world]]
 "Hello world!" in QtQuick
 -------------------------
 
-Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3[repository].
+In this chapter very simple QtQuick application is described. It interacts with OCaml only one-way: by calling handler on mouse click.
 
-In piece of code below we create application's window, a colored area at the top and some text centered in it. Some properties of root window are set. Position of inner rectangle is described using link:http://qmlbook.org/ch04/index.html#positioning-elements[anchors].
+In piece of code below application's window is created, with colored area at the top and some text centered in it. Some properties of application's window are set. Position of inner rectangle is described using link:http://qmlbook.org/ch04/index.html#positioning-elements[anchors].
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml]
 ----
-include::demos/0.3/demo1.qml[]
+import QtQuick 2.0
+import QtQuick.Controls 1.0
+
+ApplicationWindow {
+    title: "Hello world!"
+    color: "#FFFFDF"
+    width: 400
+    height: 450
+
+    Rectangle {
+        color:  "lightgreen"
+        height: 150
+        anchors {
+            left:  parent.left
+            right: parent.right
+            top:   parent.top
+        }
+        Text {
+            text: "Click me!"
+            anchors.centerIn: parent
+        }
+    }
+}
 ----
 
-This QML file is already correct application. If you execute it using command `qmlscene Root.qml` you will get a window like this:
+[NOTE]
+QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with `qml` extension. QtQuick is a number of classes from which GUI can be built.
+
+This QML file is already correct application. It can be executed without any compilation by command `qmlscene Root.qml`. Running application should look like as on this picture:
 
 image::images/tutorial2/img1.png[options="responsive"]
 
-Normal way to interact between QtQuick and C++ is exposing some objects into QtQuick engine. We will do the same but we will describe this object's class in OCaml using PPX extension. Build system will help us to compile all into final executable. Let's describe class `controller` in `controller.ml`:
+Normal way to interact between QtQuick and C\++ is by exposing some objects into QtQuick engine. `Lablqt` has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let's describe class `controller` in `controller.ml`:
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
 ----
-include::demos/0.3/controller1.ml[]
+open QmlContext
+
+class virtual controller = object(self)
+  method virtual onMouseClicked: unit -> unit[@@qtmeth]
+end[@@qtclass]
 ----
 
 Module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version `0.3`. To apply syntax extension on this file you need to execute following commmand:
@@ -68,7 +100,7 @@ ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ex
 
 In `controller.ml` you can see class `controller` with attribute `qtclass` and its method `onMouseClicked` with attribute `qtmeth`. Without this attributes class and method will not be available in QtQuick.
 
-After preprocessing source file we will get a virtual class called `controller` with virtual method `onMouseClicked` which should be implemented. Let's do this in `program.ml`
+After preprocessing source file a virtual class called `controller` will is generated. Let's implement virtual method `onMouseClicked` in `program.ml`
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
@@ -76,13 +108,10 @@ After preprocessing source file we will get a virtual class called `controller` 
 include::demos/0.3/demo1/program.ml[]
 ----
 
-We have created new object with method `onMouseClicked` which prints something to stdout. This object was exposed to QtQuick engine with name `controller` during `set_context_property` invocation. After that application was started in function `run_with_QQmlApplicationEngine`, it takes initialization callback and QML file to be opened as main QML file. Path to QML file is relative but you can embed QMLs into executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
+In piece of code above path to QML file is relative. QML files can be embedded into final executable using http://qt-project.org/doc/qt-5.0/qtcore/resources.html[Qt Resource System].
 
 
-[NOTE]
-QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with `qml` extension. QtQuick is a number of classes from which GUI can be built.
-
-Our QtQuick file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if it was clicked.
+QML file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if it was clicked.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml]
@@ -92,9 +121,7 @@ include::demos/0.3/demo1/Root.qml[]
 
 [NOTE]
 .Where should we start-up from?
-========
-Our applications can do startup from both OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2[demos] from previous tutorial to get examples of startup from C++.
-========
+Our applications can do startup from both OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2/demo3[demos] from previous tutorial to get examples of startup from C++.
 
 Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1[github].
 

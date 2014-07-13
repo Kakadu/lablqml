@@ -9,7 +9,7 @@ TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo4/,controller.ml Root.qml program.ml)
 
 #$(warning $(TUTORIAL2_DEMOS))
 
-OPTS= theme=readable  totop=ui linkcss sidebar=left iconsfont=font-awesome # iconsfont=glyphicon
+OPTS=theme=readable totop=ui linkcss sidebar=left icons iconsfont=font-awesome # iconsfont=glyphicon
 
 all: tutorial.html tutorial2.html #tutorial3.html
 
@@ -23,6 +23,8 @@ tutorial2.html: tutorial2.asciidoc
 
 .asciidoc.html:
 	asciidoc -b html5 -a icons -a toc2 -a theme=flask $<
+
+celan: clean
 
 clean:
 	rm -f tutorial.html tutorial2.html

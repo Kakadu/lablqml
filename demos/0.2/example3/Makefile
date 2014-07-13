@@ -1,5 +1,6 @@
+LABLQT=../../../../lablqt/
 MOC=`qmake -query QT_INSTALL_BINS`/moc
-CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I${LABLQT}/qml/lib/_build -I`ocamlc -where` \
+CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I${LABLQT}/lablqml/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g
 CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`
@@ -17,16 +18,18 @@ CMX_TEST=
 .PHONY: all depend clean
 
 all: $(GEN_CMX) $(CMX) $(CMX_TEST) library_code $(GEN_MOC) $(GEN_CPP) main.o
-	$(CLINK) -L`ocamlc -where` \
-	${LABLQT}/qml/lib/_build/stubs.o $(GEN_CPP) camlcode.o main.o -lasmrun \
-	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
+	$(CLINK) \
+	${LABLQT}/lablqml/_build/startup_stubs.o \
+	${LABLQT}/lablqml/_build/stubs.o $(GEN_CPP) camlcode.o main.o \
+	-lasmrun -lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS) -L`ocamlc -where` \
+	-o $(OUT)
 
 depend:
 	ocamlfind dep *.ml *.ml > .depend
 
 library_code:
 	$(OCAMLOPT) -output-obj -dstartup \
-	-I ${LABLQT}/qml/lib/_build ${LABLQT}/qml/lib/_build/qml_wrap.cmxa str.cmxa \
+	-I ${LABLQT}/lablqml/_build ${LABLQT}/lablqml/_build/lablqml.cmxa str.cmxa \
 	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
 
 moc_%.cpp: %.h
@@ -36,7 +39,7 @@ moc_%.cpp: %.h
 	$(CC) -c $< -I.
 
 .ml.cmx:
-	$(OCAMLOPT) -I ${LABLQT}/qml/lib/_build -c $<
+	$(OCAMLOPT) -I ${LABLQT}/lablqml/_build -c $<
 
 clean:
 	rm *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) -f

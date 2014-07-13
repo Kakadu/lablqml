@@ -1,4 +1,5 @@
 camlcode.o.startup.s
+*.a
 mocml
 main
 test
