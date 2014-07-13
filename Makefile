@@ -5,7 +5,7 @@ TUTORIAL_DEMOS=
 TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo1/,controller.ml Root.qml program.ml)
 TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo2/,controller.ml Root.qml program.ml)
 TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo3/,controller.ml Root.qml program.ml)
-TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo4/,controller.ml Root.qml program.ml)
+TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo4/,controller.ml Root.qml program.ml item.ml)
 
 #$(warning $(TUTORIAL2_DEMOS))
 

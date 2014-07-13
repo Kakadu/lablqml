@@ -28,9 +28,9 @@ ApplicationWindow {
         color: "#ebf097"
         Layout.preferredHeight: 150
         Layout.preferredWidth:  400
-        Text {
-          text: "You have clicked " + controller.clicksCount + " times"
+        Text{
           anchors.centerIn: parent
+          text: "You have clicked " + controller.clicksCount + " times"
         }
       }
     }

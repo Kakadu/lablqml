@@ -161,7 +161,7 @@ Let's extend first demo by counting how many times we have clicked on the window
 ----
 include::demos/0.3/demo2/controller.ml[]
 ----
-To count how many times we clicked we need additional variable available in an object. We will add it in `program.ml`:
+Let's exntend object implementation by clicks counter:
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
@@ -169,12 +169,50 @@ To count how many times we clicked we need additional variable available in an o
 include::demos/0.3/demo2/program.ml[]
 ----
 
-If user clicks by mouse we will increment counter and emit signal with new counter value using method `emit_$(PROPERTY_NAME)Changed`. Without emitting a signal QtQuick will not know that value has been changed and will use old one. How exactly QtQuick will use it we declare in `Root.qml`. We add new rectangle with text in it which show how many times we clicked. In this demo we also use QtQuick https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html[layout] to place rectangles vertically. We will not use anchors to implement it.
+When user hits mouse button the counter is incremented and signal with new counter value  is emitted by OCaml method `emit_$(PROPERTY_NAME)Changed`. If Qt properties doesn't notify GUI about changes old values will be used and not changes will be applied.
+
+How exactly QtQuick will use it we declare in `Root.qml`. We add new rectangle with text in it which show how many times we clicked. In this demo we also use QtQuick https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html[layout] to place rectangles vertically. We will not use anchors to implement it.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml]
 ----
-include::demos/0.3/demo2/Root.qml[]
+import QtQuick 2.0
+import QtQuick.Controls 1.0
+import QtQuick.Layouts 1.0
+
+ApplicationWindow {
+    title: "OCaml&QtQuick demo 2"
+    property string backgroundColor: "#FFFFDF"
+
+    color: backgroundColor
+    width: 400
+    height: 450
+
+    ColumnLayout {
+      Rectangle {
+        color: "lightgreen"
+        Layout.preferredHeight: 150
+        Layout.preferredWidth: 400
+        Text {
+          text: "Click me!"
+          anchors.centerIn: parent
+        }
+        MouseArea {
+          anchors.fill: parent
+          onClicked: controller.onMouseClicked()
+        }
+      }
+      Rectangle {
+        color: "#ebf097"
+        Layout.preferredHeight: 150
+        Layout.preferredWidth:  400
+        Text{
+          anchors.centerIn: parent
+          text: "You have clicked " + controller.clicksCount + " times"
+        }
+      }
+    }
+}
 ----
 
 Our property is used in line
@@ -184,9 +222,9 @@ Our property is used in line
 text: "You have clicked " + controller.clicksCount + " times"
 ----
 
-Right side (after colon character) should be valid ECMAScript expression which is evaluted into property value. It can be multiline, call some functions and methods and use many properties inside. When one of properties is changed all expression is evaluated and `text` property gets new value.
+Right side (after colon character) should be a valid ECMAScript expression which is evaluted into property value at runtime. It can be multiline, call some functions and methods and use many properties inside. When one of properties used inside it is changed all expression is reevaluated and `text` property gets new value.
 
-Sources of this demo can be found on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2[github]. Final window should be like on this picture:
+Sources of this demo can be found on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2[github]. Final window should be similar the one on this picture:
 
 image::images/tutorial2/img2.png[options="responsive"]
 
@@ -194,7 +232,7 @@ image::images/tutorial2/img2.png[options="responsive"]
 Adding signals
 --------------
 
-When we declare a property signal for notification about changes is added automatically. We can also declare a signal manually using the same PPX syntax extension.
+When a property  is declared signal for notification about changes is created automatically. Signals can be declared separately using the same PPX syntax extension.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
@@ -202,20 +240,22 @@ When we declare a property signal for notification about changes is added automa
 include::demos/0.3/demo3/controller.ml[]
 ----
 
-And we need to connect signal `hiGotten` with some handler in QtQuick:
+Now signal `hiGotten` can be connnected to a handler in QtQuick:
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml]
 ----
+...
 Connections {
     target: controller
     onHiGotten: console.log(message)
 }
+...
 ----
 
-The `on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the `message` in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal's arguments' names. That's why we declare signals using labeled arguments.
+The `on` prefix is a syntax convention to declare signal handlers. Arguments of signal (the `message` in our example) are available without any use code. It means that Qt infer them from signal declaration. If we will declare signal in OCaml side without labels Qt will not be able to get signal's arguments' names. That's why signals should be declared using labeled arguments.
 
-Syntax extension is expanded into method `emit_$(SIGNAL_NAME)`. We can use it in `program.ml`.
+Syntax extension is expanded into method `emit_$(SIGNAL_NAME)` which can be used in main OCaml file.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
@@ -230,40 +270,38 @@ Full code of this demo is available on https://github.com/Kakadu/lablqt/tree/gh-
 Supported types
 ---------------
 
-QML has its own type system. It is not so strong or static as OCaml one but https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types] exist. When we pass values from C++ to QML we need to put them into https://qt-project.org/doc/qt-5/qvariant.html[QVariant] which is universal container (or https://blogs.janestreet.com/rethinking-univ/[universal type]). If our types are simple we will use QML basic types but If we need something complex (like structs with a number of fields inside) we will create QObject-derived class and put it into QVariant. At the moment supporting objects in lablqt is a little bit awkward but you can create applications without it, for example, my https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] application doesn't use this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.
+QML has its own type system. It is not so strong or static as OCaml one but https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types] exist. When values are passed from C++ to QML they are wrapped into https://qt-project.org/doc/qt-5/qvariant.html[QVariant] which is universal container (or https://blogs.janestreet.com/rethinking-univ/[universal type]).
+If types are simple we QML basic types suits will enough. But if something complex is need (like structs with a number of fields inside) then right approach is to create QObject-derived class and put these field inside it.
+At the moment objects support in `lablqt` is a little bit awkward but you applications like https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] (screehshot below) can be created without this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.
 
-The demo envolving objects can be found https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` we declare some methods and properties which use type our universal type called `Varaint.t`.
+image::images/tutorial2/img3.png[options="responsive"]
+
+The demo envolving objects can be found http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` some methods and properties which use universal type called `Varaint.t` are decalred.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
-.`controller.ml`
 ----
 include::demos/0.3/demo4/controller.ml[]
 ----
 
-We will use them in our QML file when construction of root object will be completed (in `Component.completed` signal handler). We get object from OCaml and using it. We pass it back to OCaml and also we pass string and int to the same function which accepts object. Also we use property which returns object.
+The class for object which will be used by this methods is needed.
+[args="-O style={local-css-style},noclasses=True"]
+[source,ocaml]
+----
+include::demos/0.3/demo4/item.ml[]
+----
+Methods and property of `controller` will be used in main QML file when construction of root object will be completed (in `Component.completed` signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function `setobj`. Also we use property which returns object.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml]
-.`Root.ml`
 ----
 include::demos/0.3/demo4/Root.qml[]
 ----
 
-In OCaml side we will match value of variant and write specific code. Constructor _qobject_ contains value of type `cppobj` which is raw pointer to C++ QObject. That's why we need to construct OCaml object from this value. We will name class for this object as `Item`:
+In OCaml side value of unversal variant is matched and specific string is printed. Constructor ++`qobject++ contains value of type ++cppobj++ which is a raw pointer to C++ QObject. That's why OCaml object is constructed from this value in the first clause.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
-.`item.ml`
-----
-include::demos/0.3/demo4/item.ml[]
-----
-
-In setter method implementation we will match inner value of `QVariant.t` and apply variant-specific logic
-
-[args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
-.Somewhere in `program.ml`
 ----
 class myitem cppObj = object(self)
   inherit Item.item cppObj as super
@@ -283,28 +321,30 @@ end
 ...
 ----
 
-To avoid pattern matching we can invent specific type which will represent raw C++ pointer to QObject but I don't know how useful it will be. Current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read emails from you.
+To avoid pattern matching we can allow to use in properties and methods specific type which will represent raw C++ pointer to QObject. It's not obvious at them moment how good it will be because current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to read e-mails from you.
 
-At the moment not many types are available to be used in methods' signatures but you can implement any complex type using `variant` type. It should not be a problem to support https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[QML basic types] in syntax extension if needed. I'm not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)
+At the moment not many types are available to be used in methods' signatures but any complex type can be implemented using `variant` type. It should not be a problem to support https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[QML basic types] in syntax extension if needed.
+// I'm not ashamed that suppoted types are so poor because (I think) I have wrote already many text and nobody will reach there. :)
 
 [[building]]
 Compiling applications using lablqt
 -----------------------------------
 
-As I said before your applications can start up both from C++ and OCaml. You can find examples if you will visit links for demos entioned above. Also you can visit https://github.com/Kakadu/lablqt/tree/master/qml[demos directory] in lablqt's repository. If don't like Makefiles you can look at https://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] app which uses ocamlbuild as build system.
+OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt's http://github.com/Kakadu/lablqt/tree/master/qml[repository]. Also http://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] is availalble, it uses ocamlbuild as build system.
 
 
 [[conclusion]]
 Conclusion
 ----------
 
-There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and lablqt which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.
+There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and `lablqt` which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.
+QtQuick renders itself with OpenGL, so http://qmlbook.org/ch08/index.html[particle simulations] and http://qmlbook.org/ch09/index.html[shader effects] are built in.
 
-I can't say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects (sorry, _torkve_ :D ). But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.
+I can't say that lalbqt is mature enough for big industrial application because it was not used in something bigger than toy projects. But I hope that after reading this tutorial somebody will try it and send me some notes about its experience.
 
 [[qt5]]
-Getting Qt5
------------
+P.S. Getting and installing Qt5
+-------------------------------
 Using package repository
 ~~~~~~~~~~~~~~~~~~~~~~~~
 There is Qt 5.2.1 in Ubuntu Trusty and Qt5.3 in current Debian/testing (July 1, 2014). I have got Qt 5.3 using official installer but all code should work with Qt 5.2 too. If it doesn't, please report me somehow.
