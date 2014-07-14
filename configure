@@ -114,7 +114,7 @@ echo -e "\
 all: generator lib test\n\
 	\n\
 generator:\n\
-	cd $ROOT_DIR/src; ./configure && ocamlbuild ppxext/ppx_qt.native
+	cd $ROOT_DIR/src &&  ocamlbuild -use-ocamlfind ppxext/ppx_qt.native
 	rm -f $ROOT_DIR/qml/ppx_qt && ln -s $ROOT_DIR/src/ppx_qt.native $ROOT_DIR/qml/ppx_qt\n\
 lib:\n\
 	if [ ! -e $ROOT_DIR/lablqml/Makefile ]; then cd $ROOT_DIR/lablqml && ./configure; fi\n\
