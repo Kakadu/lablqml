@@ -1,4 +1,4 @@
-packages/qocamlbrowser.0.2.7/url\ 18d9ea78e8d0faf89e4b7627b5c13960\ 0o644
+packages/qocamlbrowser.0.2.7/url\ 1a21b5a5f8f28988262afb2ed40a9585\ 0o644
 packages/qocamlbrowser.0.2.7/opam\ 3bd2ad2b8532ab289d765fa13878ace9\ 0o644
 packages/qocamlbrowser.0.2.7/descr\ 8f1a0d87580cdcc5312421e5ee860bb0\ 0o644
 packages/qocamlbrowser.0.2.6/url\ 7eb4b04642a846b60c9abbb6e5d2f890\ 0o644
@@ -12,7 +12,7 @@ packages/lablqt.0.2/opam\ b9730dc4dcbcb866e8c70abeff652ac3\ 0o644
 packages/lablqt.0.2/descr\ 5d428b8c93fc8a662905abd118fd8900\ 0o644
 packages/conf-qt.5.2/opam\ 4ffc4792cc6c6c7289403a52ead8e608\ 0o644
 packages/conf-qt.5.2/descr\ 5fe5f68f7852f6dab4015c12fa5b93a7\ 0o644
-archives/qocamlbrowser.0.2.7+opam.tar.gz\ 75756bd054a448d0736088dbe40d04ca\ 0o644
+archives/qocamlbrowser.0.2.7+opam.tar.gz\ 30cccec7bb85d17e186bf6bc2827fceb\ 0o644
 archives/qocamlbrowser.0.2.6+opam.tar.gz\ a423271e8525668344482e62c6cd72a1\ 0o644
 archives/lablqt.0.3+opam.tar.gz\ 31d869b43df1d1ea362994c622ccf030\ 0o644
 archives/lablqt.0.2+opam.tar.gz\ fdc8856ff56b1dbae4ae695d748dd7bd\ 0o644
