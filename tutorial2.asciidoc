@@ -95,7 +95,7 @@ end[@@qtclass]
 Module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version `0.3`. To apply syntax extension on this file you need to execute following commmand:
 
 ----
-ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml
+ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "ppx_qt -destdir . -ext cpp" controller.ml
 ----
 
 In `controller.ml` you can see class `controller` with attribute `qtclass` and its method `onMouseClicked` with attribute `qtmeth`. Without this attributes class and method will not be available in QtQuick.

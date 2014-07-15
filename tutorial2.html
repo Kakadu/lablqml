@@ -160,7 +160,7 @@ ApplicationWindow {
 <div class="paragraph"><p>Module <code>QmlContext</code> can be found in ocamlfind package named <code>lablqml</code>. This package and PPX extension named <code>ppx_qt</code> are located in OPAM&#8217;s package <code>lablqt</code> with version <code>0.3</code>. To apply syntax extension on this file you need to execute following commmand:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
-<pre>ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "../ppx_qt -destdir . -ext cpp" controller.ml</pre>
+<pre>ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "ppx_qt -destdir . -ext cpp" controller.ml</pre>
 </div></div>
 <div class="paragraph"><p>In <code>controller.ml</code> you can see class <code>controller</code> with attribute <code>qtclass</code> and its method <code>onMouseClicked</code> with attribute <code>qtmeth</code>. Without this attributes class and method will not be available in QtQuick.</p></div>
 <div class="paragraph"><p>After preprocessing source file a virtual class called <code>controller</code> will is generated. Let&#8217;s implement virtual method <code>onMouseClicked</code> in <code>program.ml</code></p></div>
@@ -589,7 +589,7 @@ normal.</p></div>
         <div class="container">
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-15 23:04:29 MSK
+Last updated 2014-07-15 23:44:19 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
         </div>
