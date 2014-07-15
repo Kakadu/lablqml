@@ -1,17 +1,11 @@
 camlcode.o.startup.s
 *.a
-mocml
-main
-test
+demo1
 # C++
 .moc
 .pch
 .obj
-#folderlistmodel stuff
-Qt/
-folderlistmodel/libqmlfolderlistmodelplugin.prl
-folderlistmodel/libqmlfolderlistmodelplugin.so*
-
+moc_*.cpp
 controller_c.cpp
 controller.h
 

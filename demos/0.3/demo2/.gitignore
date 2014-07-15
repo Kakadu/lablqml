@@ -2,15 +2,12 @@ camlcode.o.startup.s
 *.a
 mocml
 main
+demo2
 test
 # C++
 .moc
 .pch
 .obj
-#folderlistmodel stuff
-Qt/
-folderlistmodel/libqmlfolderlistmodelplugin.prl
-folderlistmodel/libqmlfolderlistmodelplugin.so*
 
 controller_c.cpp
 controller.h
