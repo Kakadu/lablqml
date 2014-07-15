@@ -4,5 +4,6 @@ moc_controller.cpp
 item_c.cpp
 item.h
 moc_item.cpp
-main
+demo4
 *.a
+

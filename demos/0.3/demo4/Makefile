@@ -3,9 +3,13 @@ OCAMLOPT=ocamlfind opt -package lablqml
 PPX_QT=ppx_qt
 CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC
 CC=g++
-OUT=main
-CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib -lQt5Quick \
-        -cclib -lQt5Gui -cclib -lQt5Qml -cclib -lQt5Widgets -cclib -lQt5Network -cclib -lQt5Core
+OUT=demo4
+QT_MODULES=Qt5Quick Qt5Widgets
+CLINKLIBS = -cclib -lstdc++
+CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-L     $(QT_MODULES) ) )
+CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-other $(QT_MODULES) ) )
+CLINKLIBS+= $(addprefix -cclib , $(shell pkg-config --libs-only-l     $(QT_MODULES) ) )
+GENERATED_FILES=
 
 .PHONY: clean all generate app
 .SUFFIXES: .cmx .o .ml .cpp .c
@@ -14,7 +18,7 @@ GENERATED_H=
 
 all: generate $(OUT)
 
-define BOZO
+define MAKE_RULES
 GENERATED_H += $(1).h
 GENERATED_CPP += $(1)_c.o
 GENERATED_MOC += moc_$(1).o
@@ -32,16 +36,12 @@ moc_$(1).cpp: $(1).h
 	moc $(1).h -o moc_$(1).cpp
 
 endef
-$(foreach i,controller item,$(eval $(call BOZO,$(i)) ) )
+$(foreach i,controller item,$(eval $(call MAKE_RULES,$(i)) ) )
 
 generate: $(GENERATED_H)
 
-libcppstubs.a:
-	ar cr $@ $(GENERATED_CPP) $(GENERATED_MOC)
-
-$(OUT): $(GENERATED_CMX) program.cmx $(GENERATED_CPP) $(GENERATED_MOC) libcppstubs.a
-	$(OCAMLOPT) -linkpkg libcppstubs.a $(CLINKLIBS) $(GENERATED_CMX) program.cmx  \
-	    -o $(OUT)
+$(OUT): $(GENERATED_CMX) program.cmx $(GENERATED_CPP) $(GENERATED_MOC)
+	$(OCAMLOPT) -linkpkg $(CLINKLIBS) $^ -o $(OUT)
 
 clean_gen:
 	rm -f $(GENERATED_H) controller_c.cpp moc_controller_c.cpp item_c.cpp moc_item.cpp
