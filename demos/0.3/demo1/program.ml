@@ -1,7 +1,7 @@
 open QmlContext
 
-(* Helper function for exposing object into QtQuick engine.
- * Argument 'name' means a name for this object in QtQuick
+(* Helper function to expose the object 'obj' into QtQuick engine.
+ * Argument 'name' means the name for this object in QtQuick
  *
  * It is not interesting function. You can simply copy and paste it.
  *)
@@ -10,7 +10,7 @@ let expose ~name obj =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name obj#handler
 
 (* This function is called once before constructing window. It exposes some
- * object from OCaml to QtQuick engine
+ * objects from OCaml to QtQuick engine
  *)
 let init: unit -> unit = fun () ->
   let controller = object(self)

@@ -3,7 +3,7 @@ import QtQuick.Controls 1.0
 
 ApplicationWindow {
     Component.onCompleted: {
-      // get object from OCaml as method result
+      // get object from OCaml as method's result
       var o = controller.getobj();
       console.log(o);
       // use some methods
