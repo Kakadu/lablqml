@@ -113,7 +113,29 @@ In <code>lablqt</code> starting from version <code>0.3</code> external JSON file
 <div class="paragraph"><p>In piece of code below application&#8217;s window is created, with colored area at the top and some text centered in it. Some properties of application&#8217;s window are set. Position of inner rectangle is described using 
 <a href="http://qmlbook.org/ch04/index.html#positioning-elements">anchors</a>.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
 <span style="color: #008800; font-weight: bold">import</span> QtQuick.Controls <span style="color: #0000DD; font-weight: bold">1.0</span>
 
 ApplicationWindow {
@@ -136,7 +158,8 @@ ApplicationWindow {
         }
     }
 }
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="admonition note">
 <div class="icon">
 <img src="./images/icons/note.png" alt="Note">
@@ -165,7 +188,35 @@ ApplicationWindow {
 <div class="paragraph"><p>In <code>controller.ml</code> you can see class <code>controller</code> with attribute <code>qtclass</code> and its method <code>onMouseClicked</code> with attribute <code>qtmeth</code>. Without this attributes class and method will not be available in QtQuick.</p></div>
 <div class="paragraph"><p>After preprocessing source file a virtual class called <code>controller</code> will is generated. Let&#8217;s implement virtual method <code>onMouseClicked</code> in <code>program.ml</code></p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
 <span style="color: #888888">(* Helper function to expose the object &#39;obj&#39; into QtQuick engine.</span>
 <span style="color: #888888"> * Argument &#39;name&#39; means the name for this object in QtQuick</span>
@@ -194,11 +245,41 @@ ApplicationWindow {
   <span style="color: #008800; font-weight: bold">let</span> qmlfile = <span style="color: #dd2200; background-color: #fff0f0">&quot;Root.qml&quot;</span> <span style="color: #008800; font-weight: bold">in</span>
   <span style="color: #888888">(* We start application and pass initialization function and main QML file *)</span>
   run_with_QQmlApplicationEngine <span style="color: #bb0066; font-weight: bold">Sys</span>.argv init qmlfile
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>In piece of code above path to QML file is relative. QML files can be embedded into final executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
 <div class="paragraph"><p>QML file doesn&#8217;t know anything about exposed object yet. So, let&#8217;s create some area which will receive mouse events and call OCaml if it was clicked.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
 <span style="color: #008800; font-weight: bold">import</span> QtQuick.Controls <span style="color: #0000DD; font-weight: bold">1.0</span>
 
 ApplicationWindow {
@@ -228,7 +309,8 @@ ApplicationWindow {
         }
     }
 }
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="admonition note">
 <div class="icon">
 <img src="./images/icons/note.png" alt="Note">
@@ -276,7 +358,28 @@ connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByte
 </pre></div></div></div>
 <div class="paragraph"><p>Let&#8217;s extend object implementation by clicks counter:</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
 <span style="color: #008800; font-weight: bold">let</span> expose ~name obj =
   set_context_property ~ctx:(get_view_exn ~name:<span style="color: #dd2200; background-color: #fff0f0">&quot;rootContext&quot;</span>) ~name obj#handler
@@ -298,11 +401,48 @@ connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByte
 
 <span style="color: #008800; font-weight: bold">let</span> <span style="color: #003388">()</span> =
   run_with_QQmlApplicationEngine <span style="color: #bb0066; font-weight: bold">Sys</span>.argv init <span style="color: #dd2200; background-color: #fff0f0">&quot;Root.qml&quot;</span>
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>When user hits mouse button the counter is incremented and signal with new counter value  is emitted by OCaml method <code>emit_$(PROPERTY_NAME)Changed</code>. If Qt properties doesn&#8217;t notify GUI about changes old values will be used and no changes will be applied.</p></div>
 <div class="paragraph"><p>How exactly QtQuick will use it we declare in <code>Root.qml</code>. The new rectangle with text inside will show how many times user have clicked. In this demo QtQuick <a href="https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html">layouts</a> are used to place rectangles vertically. Anchors are not used to implement it.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
 <span style="color: #008800; font-weight: bold">import</span> QtQuick.Controls <span style="color: #0000DD; font-weight: bold">1.0</span>
 <span style="color: #008800; font-weight: bold">import</span> QtQuick.Layouts <span style="color: #0000DD; font-weight: bold">1.0</span>
 
@@ -339,7 +479,8 @@ ApplicationWindow {
       }
     }
 }
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>Our property is used in line</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">text:</span> <span style="color: #dd2200; background-color: #fff0f0">&quot;You have clicked &quot;</span> + controller.clicksCount + <span style="color: #dd2200; background-color: #fff0f0">&quot; times&quot;</span>
@@ -360,7 +501,14 @@ ApplicationWindow {
       </div>
 <div class="paragraph"><p>When a property  is declared signal for notification about changes is created automatically. Signals can be declared separately using the same PPX syntax extension.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%">1
+2
+3
+4
+5
+6
+7
+8</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
 <span style="color: #008800; font-weight: bold">class</span> <span style="color: #008800; font-weight: bold">virtual</span> controller = <span style="color: #008800; font-weight: bold">object</span>(self)
   <span style="color: #008800; font-weight: bold">method</span> <span style="color: #008800; font-weight: bold">virtual</span> hiGotten: message:<span style="color: #888888; font-weight: bold">string</span> -&gt; <span style="color: #888888; font-weight: bold">unit</span>[@@qtsignal]
@@ -368,7 +516,8 @@ ApplicationWindow {
   <span style="color: #008800; font-weight: bold">method</span> <span style="color: #008800; font-weight: bold">virtual</span> clicksCount: <span style="color: #888888; font-weight: bold">int</span>[@@qtprop]
 
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>Now signal <code>hiGotten</code> can be connnected to a handler in QtQuick:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">...
@@ -381,7 +530,27 @@ Connections {
 <div class="paragraph"><p>The &#8216;on` prefix is a syntax convention to declare signal handlers (behind the scene they are slots which were mentioned above). Arguments of the signal (the <code>message</code> in our example) are made available in the context by QtQuick engine. I.e. Qt infers its&#8217; names from signal&#8217;s declaration. If signal is declared in OCaml side without labels Qt will not be able to get signal&#8217;s arguments' names. That&#8217;s why signals should be declared using labeled arguments.</p></div>
 <div class="paragraph"><p>Syntax extension is expanded into method <code>emit_$(SIGNAL_NAME)</code> which can be used in main OCaml file.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
 <span style="color: #008800; font-weight: bold">let</span> main <span style="color: #003388">()</span> =
   <span style="color: #008800; font-weight: bold">let</span> controller_cppobj = <span style="color: #bb0066; font-weight: bold">Controller</span>.create_controller <span style="color: #003388">()</span> <span style="color: #008800; font-weight: bold">in</span>
@@ -402,7 +571,8 @@ Connections {
 
 <span style="color: #008800; font-weight: bold">let</span> <span style="color: #003388">()</span> =
   run_with_QQmlApplicationEngine <span style="color: #bb0066; font-weight: bold">Sys</span>.argv main <span style="color: #dd2200; background-color: #fff0f0">&quot;Root.qml&quot;</span>
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>Full code of this demo is available on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3">github</a>.</p></div>
     </div>
 </section>
@@ -442,7 +612,32 @@ At the moment objects support in <code>lablqt</code> is a little bit awkward but
 </pre></div></div></div>
 <div class="paragraph"><p>Methods and the property of <code>controller</code> will be used in main QML file when construction of root object will be completed (in <code>Component.completed</code> signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function <code>setobj</code>. Also we use property which returns object.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
 <span style="color: #008800; font-weight: bold">import</span> QtQuick.Controls <span style="color: #0000DD; font-weight: bold">1.0</span>
 
 ApplicationWindow {
@@ -468,10 +663,26 @@ ApplicationWindow {
       console.log(p.getage());
     }
 }
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>In OCaml side value of universal variant is matched and specific string is printed. Constructor <code>\`qobject</code> contains value of type <code>cppobj</code> which is a raw pointer to instance of C++ <code>QObject</code> class. That&#8217;s why OCaml object is constructed from this value in the first clause.</p></div>
 <div class="listingblock">
-<div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">class</span> myitem cppObj = <span style="color: #008800; font-weight: bold">object</span>(self)
+<div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">class</span> myitem cppObj = <span style="color: #008800; font-weight: bold">object</span>(self)
   <span style="color: #008800; font-weight: bold">inherit</span> <span style="color: #bb0066; font-weight: bold">Item</span>.item cppObj <span style="color: #008800; font-weight: bold">as</span> super
   <span style="color: #008800; font-weight: bold">method</span> getname <span style="color: #003388">()</span> = <span style="color: #dd2200; background-color: #fff0f0">&quot;Vasya&quot;</span>
   <span style="color: #008800; font-weight: bold">method</span> getage <span style="color: #003388">()</span> = <span style="color: #0000DD; font-weight: bold">11</span>
@@ -487,7 +698,8 @@ ApplicationWindow {
       | `<span style="color: #888888; font-weight: bold">int</span>  x -&gt; printf <span style="color: #dd2200; background-color: #fff0f0">&quot;int %d</span><span style="color: #0044dd; background-color: #fff0f0">\n</span><span style="color: #dd2200; background-color: #fff0f0">%!&quot;</span> x
       | `empty -&gt; print_endline <span style="color: #dd2200; background-color: #fff0f0">&quot;empty&quot;</span>
 ...
-</pre></div></div></div>
+</pre></div>
+</td></tr></table></div></div>
 <div class="paragraph"><p>To avoid pattern matching we can allow to use in properties and methods specific type which will represent raw C++ pointer to QObject. It&#8217;s not obvious at the moment how good it will be because current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to <a href="mailto:kakadu.hafanana@gmail.com">read</a> e-mails from you.</p></div>
 <div class="paragraph"><p>At the moment not many types can be used in methods' signatures but any complex type can be implemented using <code>variant</code> type. It should not be a problem to support <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">QML basic types</a> in syntax extension if needed.</p></div>
     </div>
@@ -589,7 +801,7 @@ normal.</p></div>
         <div class="container">
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-15 23:44:19 MSK
+Last updated 2014-07-16 00:22:36 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
         </div>

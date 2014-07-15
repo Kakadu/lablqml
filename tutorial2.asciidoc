@@ -46,7 +46,7 @@ In this chapter very simple QtQuick application is described. It interacts with 
 In piece of code below application's window is created, with colored area at the top and some text centered in it. Some properties of application's window are set. Position of inner rectangle is described using link:http://qmlbook.org/ch04/index.html#positioning-elements[anchors].
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,qml]
+[source,qml,numbered]
 ----
 import QtQuick 2.0
 import QtQuick.Controls 1.0
@@ -103,7 +103,7 @@ In `controller.ml` you can see class `controller` with attribute `qtclass` and i
 After preprocessing source file a virtual class called `controller` will is generated. Let's implement virtual method `onMouseClicked` in `program.ml`
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
+[source,ocaml,numbered]
 ----
 include::demos/0.3/demo1/program.ml[]
 ----
@@ -114,7 +114,7 @@ In piece of code above path to QML file is relative. QML files can be embedded i
 QML file doesn't know anything about exposed object yet. So, let's create some area which will receive mouse events and call OCaml if it was clicked.
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,qml]
+[source,qml,numbered]
 ----
 include::demos/0.3/demo1/Root.qml[]
 ----
@@ -164,7 +164,7 @@ include::demos/0.3/demo2/controller.ml[]
 Let's extend object implementation by clicks counter:
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
+[source,ocaml,numbered]
 ----
 include::demos/0.3/demo2/program.ml[]
 ----
@@ -174,7 +174,7 @@ When user hits mouse button the counter is incremented and signal with new count
 How exactly QtQuick will use it we declare in `Root.qml`. The new rectangle with text inside will show how many times user have clicked. In this demo QtQuick https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html[layouts] are used to place rectangles vertically. Anchors are not used to implement it.
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,qml]
+[source,qml,numbered]
 ----
 import QtQuick 2.0
 import QtQuick.Controls 1.0
@@ -235,7 +235,7 @@ Adding signals
 When a property  is declared signal for notification about changes is created automatically. Signals can be declared separately using the same PPX syntax extension.
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
+[source,ocaml,numbered]
 ----
 include::demos/0.3/demo3/controller.ml[]
 ----
@@ -258,7 +258,7 @@ The `on` prefix is a syntax convention to declare signal handlers (behind the sc
 Syntax extension is expanded into method `emit_$(SIGNAL_NAME)` which can be used in main OCaml file.
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
+[source,ocaml,numbered]
 ----
 include::demos/0.3/demo3/program.ml[]
 ----
@@ -294,7 +294,7 @@ include::demos/0.3/demo4/item.ml[]
 Methods and the property of `controller` will be used in main QML file when construction of root object will be completed (in `Component.completed` signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function `setobj`. Also we use property which returns object.
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,qml]
+[source,qml,numbered]
 ----
 include::demos/0.3/demo4/Root.qml[]
 ----
@@ -302,7 +302,7 @@ include::demos/0.3/demo4/Root.qml[]
 In OCaml side value of universal variant is matched and specific string is printed. Constructor ++\`qobject++ contains value of type ++cppobj++ which is a raw pointer to instance of C\++ ++QObject++ class. That's why OCaml object is constructed from this value in the first clause.
 
 [args="-O style={local-css-style},noclasses=True"]
-[source,ocaml]
+[source,ocaml,numbered]
 ----
 class myitem cppObj = object(self)
   inherit Item.item cppObj as super
