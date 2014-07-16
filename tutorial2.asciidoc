@@ -332,6 +332,46 @@ Compiling applications using lablqt
 
 OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt's http://github.com/Kakadu/lablqt/tree/master/qml[repository]. Also http://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] is available, it uses ocamlbuild as the build system.
 
+To compile sources manually we need to exectute following commands. Let's suppose that PPX syntax extension was used at files `module1.ml` and `module2.ml`. To compile them we need to execute:
+
+----
+ocamlopt -I `ocamlfind query lablqml` -c -ppx "ppx_qt -destdir . -ext cpp" module1.ml
+ocamlopt -I `ocamlfind query lablqml` -c -ppx "ppx_qt -destdir . -ext cpp" module2.ml
+----
+
+Let's suppose that files `module1.ml` and `module2.ml` declare classes called `class1` and `class2` respectively. After executing of two commands above four files should be created: `class1.h`, `class1_c.cpp`, `class2.h` and `class2_c.cpp`. These C++ files should be compiled as they are:
+
+----
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c class2_c.cpp -o class2_c.o
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c class1_c.cpp -o class1_c.o
+----
+
+Header files contain meta-information about types. So, we need to apply Qt Metaobject compiler and compile generated C++ files:
+
+----
+moc class1.h -o moc_class1.cpp
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c moc_class1.cpp -o moc_class1.o
+moc class2.h -o moc_class2.cpp
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c moc_class2.cpp -o moc_class2.o
+----
+
+Also we need main `.ml` file which uses classes `Module1.class1` and `Module2.class2`:
+
+----
+ocamlfind opt -package lablqml -c program.ml
+----
+
+And now we can link everything into final executable:
+
+----
+ocamlfind opt -package lablqml -linkpkg \
+  -cclib -lstdc++ -ccopt -L`qmake -query QT_INSTALL_LIBS` \
+  -cclib -lQt5Quick -cclib -lQt5Qml -cclib -lQt5Network \
+  -cclib -lQt5Widgets -cclib -lQt5Gui -cclib -lQt5Core \
+  module1.cmx module1.cmx program.cmx \
+  class2_c.o class2_c.o moc_class1.o moc_class2.o \
+  -o a.out
+----
 
 [[conclusion]]
 Conclusion

@@ -710,6 +710,42 @@ ApplicationWindow {
         <h1>Compiling applications using lablqt</h1>
       </div>
 <div class="paragraph"><p>OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt&#8217;s <a href="http://github.com/Kakadu/lablqt/tree/master/qml">repository</a>. Also <a href="http://github.com/Kakadu/QOcamlBrowser_quick">QOCamlBrowser</a> is available, it uses ocamlbuild as the build system.</p></div>
+<div class="paragraph"><p>To compile sources manually we need to exectute following commands. Let&#8217;s suppose that PPX syntax extension was used at files <code>module1.ml</code> and <code>module2.ml</code>. To compile them we need to execute:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>ocamlopt -I `ocamlfind query lablqml` -c -ppx "ppx_qt -destdir . -ext cpp" module1.ml
+ocamlopt -I `ocamlfind query lablqml` -c -ppx "ppx_qt -destdir . -ext cpp" module2.ml</pre>
+</div></div>
+<div class="paragraph"><p>Let&#8217;s suppose that files <code>module1.ml</code> and <code>module2.ml</code> declare classes called <code>class1</code> and <code>class2</code> respectively. After executing of two commands above four files should be created: <code>class1.h</code>, <code>class1_c.cpp</code>, <code>class2.h</code> and <code>class2_c.cpp</code>. These C++ files should be compiled as they are:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>g++ `pkg-config --cflags Qt5Quick` -fPIC -c class2_c.cpp -o class2_c.o
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c class1_c.cpp -o class1_c.o</pre>
+</div></div>
+<div class="paragraph"><p>Header files contain meta-information about types. So, we need to apply Qt Metaobject compiler and compile generated C++ files:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>moc class1.h -o moc_class1.cpp
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c moc_class1.cpp -o moc_class1.o
+moc class2.h -o moc_class2.cpp
+g++ `pkg-config --cflags Qt5Quick` -fPIC -c moc_class2.cpp -o moc_class2.o</pre>
+</div></div>
+<div class="paragraph"><p>Also we need main <code>.ml</code> file which uses classes <code>Module1.class1</code> and <code>Module2.class2</code>:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>ocamlfind opt -package lablqml -c program.ml</pre>
+</div></div>
+<div class="paragraph"><p>And now we can link everything into final executable:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>ocamlfind opt -package lablqml -linkpkg \
+  -cclib -lstdc++ -ccopt -L`qmake -query QT_INSTALL_LIBS` \
+  -cclib -lQt5Quick -cclib -lQt5Qml -cclib -lQt5Network \
+  -cclib -lQt5Widgets -cclib -lQt5Gui -cclib -lQt5Core \
+  module1.cmx module1.cmx program.cmx \
+  class2_c.o class2_c.o moc_class1.o moc_class2.o \
+  -o a.out</pre>
+</div></div>
     </div>
 </section>
 <section>
@@ -801,7 +837,7 @@ normal.</p></div>
         <div class="container">
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-17 00:56:46 MSK
+Last updated 2014-07-17 01:27:39 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
         </div>
