@@ -135,7 +135,7 @@ For example, our method `onMouseClicked` declared above is invokable, that's why
 Property 'onMouseClicked' of object controller(0x153cd00) is not a function
 ----
 
-Properties always have name, type and methods that return its values. They can have method to be set by (usually it is called _setter_), properties are read-only otherwise. When property changes it can send _signal_ with the updated value.
+Properties always have name, type and methods that return its values. They can also have methods that set values. When a property changes it can send a _signal_ with the updated value.
 
 _Signals_ usually are _connected_ with _slots_. See this C++ code, for example:
 [args="-O style={local-css-style},noclasses=True"]
@@ -231,7 +231,7 @@ image::images/tutorial2/img2.png[options="responsive"]
 Adding signals
 --------------
 
-When a property  is declared signal for notification about changes is created automatically. Signals can be declared separately using the same PPX syntax extension.
+When a property is declared a signal is automatically created. Signals can be declared separately using the same PPX syntax extension.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml,numbered]
@@ -290,7 +290,7 @@ We also need to create a class for the object that will be manipulated by these 
 ----
 include::demos/0.3/demo4/item.ml[]
 ----
-The methods and properties (declared with attributes) of the `controller` will be used in the main QML file when the construction of root object is completed (in `Component.completed` signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function `setobj`. Also we use property which returns object.
+The methods and properties (declared with attributes) of the `controller` will be used in the main QML file when the construction of root object is completed (in `Component.completed` signal handler).
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml,numbered]

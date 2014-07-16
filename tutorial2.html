@@ -332,7 +332,7 @@ ApplicationWindow {
 <div class="content monospaced">
 <pre>Property 'onMouseClicked' of object controller(0x153cd00) is not a function</pre>
 </div></div>
-<div class="paragraph"><p>Properties always have name, type and methods that return its values. They can have method to be set by (usually it is called <small>setter</small>), properties are read-only otherwise. When property changes it can send <small>signal</small> with the updated value.</p></div>
+<div class="paragraph"><p>Properties always have name, type and methods that return its values. They can also have methods that set values. When a property changes it can send a <small>signal</small> with the updated value.</p></div>
 <div class="paragraph"><p><small>Signals</small> usually are <small>connected</small> with <small>slots</small>. See this C++ code, for example:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">auto</span> listener = <span style="color: #008800; font-weight: bold">new</span> PortListener();
@@ -499,7 +499,7 @@ ApplicationWindow {
       <div class="page-header" id="signals">
         <h1>Adding signals</h1>
       </div>
-<div class="paragraph"><p>When a property  is declared signal for notification about changes is created automatically. Signals can be declared separately using the same PPX syntax extension.</p></div>
+<div class="paragraph"><p>When a property is declared a signal is automatically created. Signals can be declared separately using the same PPX syntax extension.</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%">1
 2
@@ -610,7 +610,7 @@ At the moment objects support in <code>lablqt</code> is a little bit awkward but
   <span style="color: #008800; font-weight: bold">method</span> <span style="color: #008800; font-weight: bold">virtual</span> age : <span style="color: #888888; font-weight: bold">int</span>[@@qtprop]
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
 </pre></div></div></div>
-<div class="paragraph"><p>The methods and properties (declared with attributes) of the <code>controller</code> will be used in the main QML file when the construction of root object is completed (in <code>Component.completed</code> signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function <code>setobj</code>. Also we use property which returns object.</p></div>
+<div class="paragraph"><p>The methods and properties (declared with attributes) of the <code>controller</code> will be used in the main QML file when the construction of root object is completed (in <code>Component.completed</code> signal handler).</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -801,7 +801,7 @@ normal.</p></div>
         <div class="container">
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-16 23:40:48 MSK
+Last updated 2014-07-17 00:56:46 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
         </div>
