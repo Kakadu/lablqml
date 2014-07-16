@@ -101,7 +101,7 @@
       </div>
 <div class="paragraph"><p>This tutorial is the second one about OCaml and QtQuick. You can get old one 
 <a href="tutorial.html">here</a>.
-In <code>lablqt</code> starting from version <code>0.3</code> external JSON file is not longer needed for specifing API, PPX extension should be used. That&#8217;s why, <code>lablqt 0.3</code> requires OCaml 4.02 or newer.</p></div>
+In <code>lablqt</code> starting from version <code>0.3</code> external JSON file for specifying API is deprecated, PPX extension is required. That&#8217;s why, <code>lablqt 0.3</code> requires OCaml 4.02 or newer.</p></div>
     </div>
 </section>
 <section>
@@ -109,7 +109,7 @@ In <code>lablqt</code> starting from version <code>0.3</code> external JSON file
       <div class="page-header" id="hello_world">
         <h1>"Hello world!" in QtQuick</h1>
       </div>
-<div class="paragraph"><p>In this chapter very simple QtQuick application is described. It interacts with OCaml only one-way: by calling handler on mouse click.</p></div>
+<div class="paragraph"><p>In this chapter a very simple QtQuick application is described. It interacts with OCaml only one-way: by calling handler on mouse click.</p></div>
 <div class="paragraph"><p>In piece of code below application&#8217;s window is created, with colored area at the top and some text centered in it. Some properties of application&#8217;s window are set. Position of inner rectangle is described using 
 <a href="http://qmlbook.org/ch04/index.html#positioning-elements">anchors</a>.</p></div>
 <div class="listingblock">
@@ -164,15 +164,15 @@ ApplicationWindow {
 <div class="icon">
 <img src="./images/icons/note.png" alt="Note">
 </div>
-<div class="content">QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe user interface and store it in files with <code>qml</code> extension. QtQuick is a number of classes from which GUI can be built.</div>
+<div class="content">QtQuick and QML are very similar concepts and can replace each other. In Qt Modeling Language (QML) we describe the user interface and store it in files with <code>qml</code> extension. QtQuick is a collection of classes from which GUI can be built.</div>
 </div>
-<div class="paragraph"><p>This QML file is already correct application. It can be executed without any compilation by command <code>qmlscene Root.qml</code>. Running application should look like as on this picture:</p></div>
+<div class="paragraph"><p>This QML file is already a valid application. It can be executed without any compilation by command <code>qmlscene Root.qml</code>. Running the application should look like as on this picture:</p></div>
 <div class="imageblock">
 <div class="content">
 <img class="img-responsive" src="images/tutorial2/img1.png" alt="images/tutorial2/img1.png">
 </div>
 </div>
-<div class="paragraph"><p>Normal way to interact between QtQuick and C++ is by exposing some objects into QtQuick engine. <code>Lablqt</code> has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let&#8217;s describe class <code>controller</code> in <code>controller.ml</code>:</p></div>
+<div class="paragraph"><p>The normal way to interact between QtQuick and C++ is by exposing some objects into QtQuick engine. <code>Lablqt</code> has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let&#8217;s describe class <code>controller</code> in <code>controller.ml</code>:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
@@ -180,13 +180,13 @@ ApplicationWindow {
   <span style="color: #008800; font-weight: bold">method</span> <span style="color: #008800; font-weight: bold">virtual</span> onMouseClicked: <span style="color: #888888; font-weight: bold">unit</span> -&gt; <span style="color: #888888; font-weight: bold">unit</span>[@@qtmeth]
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
 </pre></div></div></div>
-<div class="paragraph"><p>Module <code>QmlContext</code> can be found in ocamlfind package named <code>lablqml</code>. This package and PPX extension named <code>ppx_qt</code> are located in OPAM&#8217;s package <code>lablqt</code> with version <code>0.3</code>. To apply syntax extension on this file you need to execute following commmand:</p></div>
+<div class="paragraph"><p>The module <code>QmlContext</code> can be found in ocamlfind package named <code>lablqml</code>. This package and PPX extension named <code>ppx_qt</code> are located in OPAM&#8217;s package <code>lablqt</code> with version <code>0.3</code>. To apply syntax extension on this file you need to execute the following command:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "ppx_qt -destdir . -ext cpp" controller.ml</pre>
 </div></div>
-<div class="paragraph"><p>In <code>controller.ml</code> you can see class <code>controller</code> with attribute <code>qtclass</code> and its method <code>onMouseClicked</code> with attribute <code>qtmeth</code>. Without this attributes class and method will not be available in QtQuick.</p></div>
-<div class="paragraph"><p>After preprocessing source file a virtual class called <code>controller</code> will is generated. Let&#8217;s implement virtual method <code>onMouseClicked</code> in <code>program.ml</code></p></div>
+<div class="paragraph"><p>In <code>controller.ml</code> you can see the class <code>controller</code> with attribute <code>qtclass</code> and its method <code>onMouseClicked</code> with attribute <code>qtmeth</code>. Without this attributes the class and its method will not be available in QtQuick.</p></div>
+<div class="paragraph"><p>After preprocessing the source file a virtual class called <code>controller</code> will be generated. Let&#8217;s implement a virtual method <code>onMouseClicked</code> in <code>program.ml</code></p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -247,8 +247,8 @@ ApplicationWindow {
   run_with_QQmlApplicationEngine <span style="color: #bb0066; font-weight: bold">Sys</span>.argv init qmlfile
 </pre></div>
 </td></tr></table></div></div>
-<div class="paragraph"><p>In piece of code above path to QML file is relative. QML files can be embedded into final executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
-<div class="paragraph"><p>QML file doesn&#8217;t know anything about exposed object yet. So, let&#8217;s create some area which will receive mouse events and call OCaml if it was clicked.</p></div>
+<div class="paragraph"><p>In the snippet of code above, the path to the QML file is relative. QML files can be embedded into final executable using <a href="http://qt-project.org/doc/qt-5.0/qtcore/resources.html">Qt Resource System</a>.</p></div>
+<div class="paragraph"><p>The QML file doesn&#8217;t know anything about the exposed object yet. So, let&#8217;s create some area which will receive mouse events and call OCaml if it is clicked.</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -316,7 +316,7 @@ ApplicationWindow {
 <img src="./images/icons/note.png" alt="Note">
 </div>
 <div class="content">
-<div class="title">Where should we start-up from?</div>Our applications can do startup from both OCaml and C++. Example above starts up from OCaml. See <a href="http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2/demo3">demos</a> from previous tutorial to get examples of startup from C++.</div>
+<div class="title">Where is the entry point?</div>Our applications can start either from OCaml and C++. Example above starts up from OCaml. See <a href="http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2/demo3">demos</a> from previous tutorial to get examples of startup from C++.</div>
 </div>
 <div class="paragraph"><p>Full code of first demo is available on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1">github</a>.</p></div>
     </div>
@@ -327,19 +327,19 @@ ApplicationWindow {
         <h1>Qt object&#8217;s metamodel</h1>
       </div>
 <div class="paragraph"><p>Qt classes based on <code>QObject</code> can have <small>properties</small>, <small>signals</small>, <small>slots</small> and methods <small>invokable</small> from QtQuick. All information about this stuff is generated from C++ header files during compilation phase.</p></div>
-<div class="paragraph"><p>For example, our method <code>onMouseClicked</code> declared above is invokable, that&#8217;s why we can use it from QML. In contrary we will get type error:</p></div>
+<div class="paragraph"><p>For example, our method <code>onMouseClicked</code> declared above is invokable, that&#8217;s why we can use it from QML. If it was not, we would get the following type error:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>Property 'onMouseClicked' of object controller(0x153cd00) is not a function</pre>
 </div></div>
-<div class="paragraph"><p>Properties always have name, type and method which reads value of property. They can have method to be set by (usually it is called <small>setter</small>), properties are read-only otherwise. When property changes it can send <small>signal</small> with updated value.</p></div>
+<div class="paragraph"><p>Properties always have name, type and methods that return its values. They can have method to be set by (usually it is called <small>setter</small>), properties are read-only otherwise. When property changes it can send <small>signal</small> with the updated value.</p></div>
 <div class="paragraph"><p><small>Signals</small> usually are <small>connected</small> with <small>slots</small>. See this C++ code, for example:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">auto</span> listener = <span style="color: #008800; font-weight: bold">new</span> PortListener();
 <span style="color: #008800; font-weight: bold">auto</span> parser = <span style="color: #008800; font-weight: bold">new</span> MessageParser();
 connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByteArray)) );
 </pre></div></div></div>
-<div class="paragraph"><p>As you can see relation between objects is established independently from them, i.e. object&#8217;s classes are independent: we don&#8217;t need to think about passing callbacks or creating some heavy-weight design patterns. These is Qt&#8217;s way to avoid dependecy injection.</p></div>
+<div class="paragraph"><p>As you can see the relation between objects is established independently from them, i.e. object&#8217;s classes are independent: we don&#8217;t need to think about passing callbacks or creating some heavy-weight design patterns. That&#8217;s the Qt way of avoiding dependency injection.</p></div>
     </div>
 </section>
 <section>
@@ -347,7 +347,7 @@ connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByte
       <div class="page-header" id="properties">
         <h1>Adding properties</h1>
       </div>
-<div class="paragraph"><p>Let&#8217;s extend first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type <code>int</code>. To do this we need to improve our class definition in <code>controller.ml</code>:</p></div>
+<div class="paragraph"><p>Let&#8217;s extend the first demo by counting how many times we have clicked on the window. We will do it by declaring a property of type <code>int</code>. To do this we need to improve our class definition in <code>controller.ml</code>:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
@@ -356,7 +356,7 @@ connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByte
   <span style="color: #008800; font-weight: bold">method</span> <span style="color: #008800; font-weight: bold">virtual</span> clicksCount: <span style="color: #888888; font-weight: bold">int</span>[@@qtprop]
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
 </pre></div></div></div>
-<div class="paragraph"><p>Let&#8217;s extend object implementation by clicks counter:</p></div>
+<div class="paragraph"><p>Let&#8217;s extend the object implementation by adding a click counter:</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -403,8 +403,8 @@ connect(listener, SIGNAL(gotData(QByteArray)), parser, SLOT(onDataReceived(QByte
   run_with_QQmlApplicationEngine <span style="color: #bb0066; font-weight: bold">Sys</span>.argv init <span style="color: #dd2200; background-color: #fff0f0">&quot;Root.qml&quot;</span>
 </pre></div>
 </td></tr></table></div></div>
-<div class="paragraph"><p>When user hits mouse button the counter is incremented and signal with new counter value  is emitted by OCaml method <code>emit_$(PROPERTY_NAME)Changed</code>. If Qt properties doesn&#8217;t notify GUI about changes old values will be used and no changes will be applied.</p></div>
-<div class="paragraph"><p>How exactly QtQuick will use it we declare in <code>Root.qml</code>. The new rectangle with text inside will show how many times user have clicked. In this demo QtQuick <a href="https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html">layouts</a> are used to place rectangles vertically. Anchors are not used to implement it.</p></div>
+<div class="paragraph"><p>When the user hits the mouse button the counter is incremented and a signal with the updated counter value  is emitted by OCaml method <code>emit_$(PROPERTY_NAME)Changed</code>. If Qt properties don&#8217;t notify GUI about these changes old values will be used and no changes will be applied.</p></div>
+<div class="paragraph"><p>How QtQuick will react to these changes will be defined in <code>Root.qml</code>. The new rectangle with text inside will show how many times user have clicked. In this demo QtQuick <a href="https://qt-project.org/doc/qt-5/qtquicklayouts-overview.html">layouts</a> are used to place rectangles vertically. Anchors are not used to implement it.</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -485,8 +485,8 @@ ApplicationWindow {
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">text:</span> <span style="color: #dd2200; background-color: #fff0f0">&quot;You have clicked &quot;</span> + controller.clicksCount + <span style="color: #dd2200; background-color: #fff0f0">&quot; times&quot;</span>
 </pre></div></div></div>
-<div class="paragraph"><p>Right side (after colon character) should be a valid ECMAScript expression which is evaluted into property value at runtime. It can be multiline, call some functions and methods and use many properties inside. When one of properties used inside is changed all expression is reevaluated and <code>text</code> property gets new value.</p></div>
-<div class="paragraph"><p>Sources of this demo can be found on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2">github</a>. Final window should be similar the one on this picture:</p></div>
+<div class="paragraph"><p>At the right of the colon character should be a valid ECMAScript expression which is evaluted into a property value at runtime. It can be multiline, call some functions and methods and use many properties inside. When one of properties used inside changes the whole expression is reevaluated and the <code>text</code> property gets updated with a new value.</p></div>
+<div class="paragraph"><p>Sources of this demo can be found on <a href="https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2">github</a>. Final window should be similar to the one on this picture:</p></div>
 <div class="imageblock">
 <div class="content">
 <img class="img-responsive" src="images/tutorial2/img2.png" alt="images/tutorial2/img2.png">
@@ -527,7 +527,7 @@ Connections {
 }
 ...
 </pre></div></div></div>
-<div class="paragraph"><p>The &#8216;on` prefix is a syntax convention to declare signal handlers (behind the scene they are slots which were mentioned above). Arguments of the signal (the <code>message</code> in our example) are made available in the context by QtQuick engine. I.e. Qt infers its&#8217; names from signal&#8217;s declaration. If signal is declared in OCaml side without labels Qt will not be able to get signal&#8217;s arguments' names. That&#8217;s why signals should be declared using labeled arguments.</p></div>
+<div class="paragraph"><p>The <code>on</code> prefix is a syntax convention to declare signal handlers (behind the scene they are slots which were mentioned above). Arguments of the signal (the <code>message</code> in our example) are made available in the context by QtQuick engine. I.e. Qt infers these names from signal&#8217;s declaration. If a signal is declared in the OCaml side without labels Qt will not be able to get the  signal argument names. That&#8217;s why signals should be declared using labeled arguments.</p></div>
 <div class="paragraph"><p>Syntax extension is expanded into method <code>emit_$(SIGNAL_NAME)</code> which can be used in main OCaml file.</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
@@ -581,15 +581,15 @@ Connections {
       <div class="page-header" id="types">
         <h1>Supported types</h1>
       </div>
-<div class="paragraph"><p>QML has its own type system. It is not so strong or static as OCaml one but <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">basic types</a> exist. When values are passed from C++ to QML they are wrapped into <a href="https://qt-project.org/doc/qt-5/qvariant.html">QVariant</a> which is universal container (or <a href="https://blogs.janestreet.com/rethinking-univ/">universal type</a>).
-If types are simple QML basic types suits well enough. But if something complex is need (like structures with a number of fields inside) then right approach is to create QObject-derived class and put these field inside it.
-At the moment objects support in <code>lablqt</code> is a little bit awkward but your applications like <a href="https://github.com/Kakadu/QOcamlBrowser_quick/">QOcamlBrowser</a> (screehshot below) can be created without this feature. If you have any ideas how to implement it in better manner I will be glad to hear it.</p></div>
+<div class="paragraph"><p>QML has its own type system. It is not as strong or static as the OCaml one but <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">basic types</a> exist. When values are passed from C++ to QML they are wrapped into <a href="https://qt-project.org/doc/qt-5/qvariant.html">QVariant</a>, which is a universal container (or <a href="https://blogs.janestreet.com/rethinking-univ/">universal type</a>).
+For simple types QML basic types suit well enough. But for more elaborated types (like structures with a number of fields inside) then the right approach is to create a QObject-derived class and put these field inside.
+At the moment objects support in <code>lablqt</code> is a little bit awkward but an application like <a href="https://github.com/Kakadu/QOcamlBrowser_quick/">QOcamlBrowser</a> (screenshot below) can be created without this feature. If you have a better way to implement it, I would be glad to hear it.</p></div>
 <div class="imageblock">
 <div class="content">
 <img class="img-responsive" src="images/tutorial2/img3.png" alt="images/tutorial2/img3.png">
 </div>
 </div>
-<div class="paragraph"><p>The demo envolving objects can be found <a href="http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4">there</a>. In <code>controller.ml</code> some methods and properties which use universal type called <code>Variant.t</code> are decalred.</p></div>
+<div class="paragraph"><p>The demo can be found <a href="http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4">there</a>. In <code>controller.ml</code> some methods and properties, which use the universal type <code>Variant.t</code>, are declared.</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
@@ -601,7 +601,7 @@ At the moment objects support in <code>lablqt</code> is a little bit awkward but
 
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
 </pre></div></div></div>
-<div class="paragraph"><p>A class for object which will be used by this methods is needed.</p></div>
+<div class="paragraph"><p>We also need to create a class for the object that will be manipulated by these methods.</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
@@ -610,7 +610,7 @@ At the moment objects support in <code>lablqt</code> is a little bit awkward but
   <span style="color: #008800; font-weight: bold">method</span> <span style="color: #008800; font-weight: bold">virtual</span> age : <span style="color: #888888; font-weight: bold">int</span>[@@qtprop]
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
 </pre></div></div></div>
-<div class="paragraph"><p>Methods and the property of <code>controller</code> will be used in main QML file when construction of root object will be completed (in <code>Component.completed</code> signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function <code>setobj</code>. Also we use property which returns object.</p></div>
+<div class="paragraph"><p>The methods and properties (declared with attributes) of the <code>controller</code> will be used in the main QML file when the construction of root object is completed (in <code>Component.completed</code> signal handler). An object is gotten from OCaml and some its methods are invoked. This object, a string and integer are passed to OCaml using the same function <code>setobj</code>. Also we use property which returns object.</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -665,7 +665,7 @@ ApplicationWindow {
 }
 </pre></div>
 </td></tr></table></div></div>
-<div class="paragraph"><p>In OCaml side value of universal variant is matched and specific string is printed. Constructor <code>\`qobject</code> contains value of type <code>cppobj</code> which is a raw pointer to instance of C++ <code>QObject</code> class. That&#8217;s why OCaml object is constructed from this value in the first clause.</p></div>
+<div class="paragraph"><p>In the OCaml side, the value of universal variant is matched and a specific string is printed. The constructor <code>`qobject</code> contains a value of type <code>cppobj</code> which is a raw pointer to an instance of a C++ <code>QObject</code> class. That&#8217;s why an OCaml object is constructed from this value in the first clause.</p></div>
 <div class="listingblock">
 <div class="content"><table class="highlighttable"><tr><td><div class="linenodiv" style="background-color: #f0f0f0; padding-right: 10px"><pre style="line-height: 125%"> 1
  2
@@ -700,7 +700,7 @@ ApplicationWindow {
 ...
 </pre></div>
 </td></tr></table></div></div>
-<div class="paragraph"><p>To avoid pattern matching we can allow to use in properties and methods specific type which will represent raw C++ pointer to QObject. It&#8217;s not obvious at the moment how good it will be because current approach is more powerful but more verbose. If you have any ideas about this topic I will be glad to <a href="mailto:kakadu.hafanana@gmail.com">read</a> e-mails from you.</p></div>
+<div class="paragraph"><p>To avoid pattern matching we can allow the use of a specific type in properties and methods which will represent a raw C++ pointer to QObject. It&#8217;s not obvious at the moment how good it will be because the current approach is more powerful but more verbose. If you have any ideas on this topic I will be glad to <a href="mailto:kakadu.hafanana@gmail.com">read</a> e-mails from you.</p></div>
 <div class="paragraph"><p>At the moment not many types can be used in methods' signatures but any complex type can be implemented using <code>variant</code> type. It should not be a problem to support <a href="https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html">QML basic types</a> in syntax extension if needed.</p></div>
     </div>
 </section>
@@ -709,7 +709,7 @@ ApplicationWindow {
       <div class="page-header" id="building">
         <h1>Compiling applications using lablqt</h1>
       </div>
-<div class="paragraph"><p>OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt&#8217;s <a href="http://github.com/Kakadu/lablqt/tree/master/qml">repository</a>. Also <a href="http://github.com/Kakadu/QOcamlBrowser_quick">QOCamlBrowser</a> is available, it uses ocamlbuild as build system.</p></div>
+<div class="paragraph"><p>OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt&#8217;s <a href="http://github.com/Kakadu/lablqt/tree/master/qml">repository</a>. Also <a href="http://github.com/Kakadu/QOcamlBrowser_quick">QOCamlBrowser</a> is available, it uses ocamlbuild as the build system.</p></div>
     </div>
 </section>
 <section>
@@ -717,10 +717,10 @@ ApplicationWindow {
       <div class="page-header" id="conclusion">
         <h1>Conclusion</h1>
       </div>
-<div class="paragraph"><p>There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in 
-<a href="tutorial.html">previous tutorial</a> you can read about classes for desktop applications which live in harmony with your platform&#8217;s style. There is Model-View framework available both in Qt and <code>lablqt</code> which is used rather much in QOcamlBrowser. QtQuick has embedded ECMAScript engine in it and you can compile OCaml code using js_of_ocaml and run it as a crossplatform application.
+<div class="paragraph"><p>There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in the 
+<a href="tutorial.html">previous tutorial</a> you can read about classes for desktop applications which live in harmony with your platform&#8217;s style. There is Model-View framework available both in Qt and <code>lablqt</code> which is used rather much in QOcamlBrowser. QtQuick has an embedded ECMAScript engine in it and you can compile OCaml code using <code>js_of_ocaml</code> and run it as a crossplatform application.
 QtQuick renders itself with OpenGL, so <a href="http://qmlbook.org/ch08/index.html">particle simulations</a> and <a href="http://qmlbook.org/ch09/index.html">shader effects</a> are built in.</p></div>
-<div class="paragraph"><p>My experience says that I <strong>should</strong> say that <code>lablqt</code> is mature enough for big industrial applications to get some feedback. I hope that after reading this tutorial somebody will try it and send me some notes about the experience.</p></div>
+<div class="paragraph"><p>In my experience I <strong>should</strong> say that <code>lablqt</code> is mature enough for big industrial applications to get some feedback. I hope that after reading this tutorial somebody will try it and send me some notes about the experience.</p></div>
     </div>
 </section>
 <section>
@@ -801,7 +801,7 @@ normal.</p></div>
         <div class="container">
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-16 00:22:36 MSK
+Last updated 2014-07-16 23:40:48 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
         </div>
