@@ -814,7 +814,8 @@ normal.</p></div>
     -feature-&lt;feature&gt; .. Compile in &lt;feature&gt;. The available features
                           are described in src/corelib/global/qfeatures.txt</pre>
 </div></div>
-<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>Mac users can consider invoking configure using <code>./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</code>. I can&#8217;t test that but some fellas <a href="https://github.com/Kakadu/lablqt/issues/16">can</a>.</p></div>
+<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>There are some issues <a href="https://bugreports.qt-project.org/browse/QTBUG-35256">on Qt bugtracker</a> about using <code>pkg-config</code> on MacOS. It seems that they handle <code>-F</code> option wrong. The solution is mentioned <a href="https://github.com/Kakadu/lablqt/issues/17">here</a>.</p></div>
+<div class="paragraph"><p>If you should compile Qt from source you will be able to avoid this issue by passing special options to <code>./configure</code> script: <code>-prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</code>.</p></div>
 <div class="paragraph"><div class="title">P.P.P.S.</div><p>Next script will be useful (as a part of <code>~/.bashrc</code>) for setting local environment for your Qt5 build:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%">with_qt5() {
@@ -837,7 +838,7 @@ normal.</p></div>
         <div class="container">
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
-Last updated 2014-07-17 01:27:39 MSK
+Last updated 2014-07-24 00:26:37 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.0.0
 </div>
         </div>

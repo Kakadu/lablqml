@@ -453,7 +453,9 @@ If you want to compile Qt faster you can study next options of `./configure scri
 
 .P.P.S. MacOS remark
 
-Mac users can consider invoking configure using `./configure -prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework`. I can't test that but some fellas https://github.com/Kakadu/lablqt/issues/16[can].
+There are some issues https://bugreports.qt-project.org/browse/QTBUG-35256[on Qt bugtracker] about using `pkg-config` on MacOS. It seems that they handle `-F` option wrong. The solution is mentioned https://github.com/Kakadu/lablqt/issues/17[here].
+
+If you should compile Qt from source you will be able to avoid this issue by passing special options to `./configure` script: `-prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework`. 
 
 .P.P.P.S.
 
