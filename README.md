@@ -1,13 +1,13 @@
-In this repo you can find my work about integrating OCaml and Qt. Initially. I 
+In this repo you can find my work about integrating OCaml and Qt. Initially, I 
 was planning to generate binding code for OCaml and Qt Widgets but I found it 
-hard to implement mostly because Qt relies on onheritance very much (we can't 
-add onClick handler for Button without inheritance). Later I decided to 
+hard to implement mostly because Qt relies on inheritance very much (we can't 
+add onClick handler for button without inheritance). Later I decided to 
 generate binding code for OCaml and [QtQuick](http://www.qt.io/qt-quick/).
 
-So this repository should be called as lablqtquick or lablqml but I keep 
+So this repository should be called as `lablqtquick` or `lablqml` but I kept 
 `lablqt` for historical reasons.
 
-Directory mapping:
+Directories mapping:
 
 * Code generator for QtQuick 2.0 is in `src`.
 * Library for interfacing with QtQuick 2 is in `lablqml`.
