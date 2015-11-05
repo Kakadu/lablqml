@@ -1,8 +1,8 @@
-packages/qocamlbrowser.9999/url 60cc9a70bff2554540294ccc5af050b9 0o644
-packages/qocamlbrowser.9999/opam d07ead07ea3a8031f254c6cacef982e3 0o644
-packages/qocamlbrowser.9999/descr 022c57de438a9d08b4dd688ac4331648 0o644
-packages/lablqt.9999/url 9593c222726c7067fd5aceda4c8ed6b0 0o644
-packages/lablqt.9999/opam f15248ccef1a9c8dd2230b7be12c6aa7 0o644
-packages/lablqt.9999/descr 5d428b8c93fc8a662905abd118fd8900 0o644
-packages/conf-qt.5.2/opam fc991fc48b75e08eb3a3402b27d34c01 0o644
-packages/conf-qt.5.2/descr 5fe5f68f7852f6dab4015c12fa5b93a7 0o644
+packages/qocamlbrowser.9999/url 60cc9a70bff2554540294ccc5af050b9 0o664
+packages/qocamlbrowser.9999/opam d07ead07ea3a8031f254c6cacef982e3 0o664
+packages/qocamlbrowser.9999/descr 022c57de438a9d08b4dd688ac4331648 0o664
+packages/lablqt.9999/url b8880732a9ad25d8ee6c4aaaaac31b5d 0o664
+packages/lablqt.9999/opam f15248ccef1a9c8dd2230b7be12c6aa7 0o664
+packages/lablqt.9999/descr 5d428b8c93fc8a662905abd118fd8900 0o664
+packages/conf-qt.5.2/opam fc991fc48b75e08eb3a3402b27d34c01 0o664
+packages/conf-qt.5.2/descr 5fe5f68f7852f6dab4015c12fa5b93a7 0o664
