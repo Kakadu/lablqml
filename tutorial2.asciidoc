@@ -330,9 +330,9 @@ At the moment not many types can be used in methods' signatures but any complex 
 Compiling applications using lablqt
 -----------------------------------
 
-OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt's http://github.com/Kakadu/lablqt/tree/master/qml[repository]. Also http://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] is available, it uses ocamlbuild as the build system.
+OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt's http://github.com/Kakadu/lablqt/tree/master/qml[repository] (https://github.com/Kakadu/lablqt/blob/1d0c51792b113308d53d1ff48209a437b7ce5ab1/qml/tutorial_examples/example3/Makefile[This one] seems to be full enough). Also http://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] is available, it uses ocamlbuild as the build system (but is has some issues at the moment: we need to generate some code on `./configure` stage).
 
-To compile sources manually we need to exectute following commands. Let's suppose that PPX syntax extension was used at files `module1.ml` and `module2.ml`. To compile them we need to execute:
+To compile sources manually we need to execute following commands. Let's suppose that PPX syntax extension was used at files `module1.ml` and `module2.ml`. To compile them we need to execute:
 
 ----
 ocamlopt -I `ocamlfind query lablqml` -c -ppx "ppx_qt -destdir . -ext cpp" module1.ml
@@ -346,7 +346,7 @@ g++ `pkg-config --cflags Qt5Quick` -fPIC -c class2_c.cpp -o class2_c.o
 g++ `pkg-config --cflags Qt5Quick` -fPIC -c class1_c.cpp -o class1_c.o
 ----
 
-Header files contain meta-information about types. So, we need to apply Qt Metaobject compiler and compile generated C++ files:
+Header files contain meta-information about types. So, we need to apply Qt MetaObject compiler (a.k.a. `moc`) and compile generated C++ files:
 
 ----
 moc class1.h -o moc_class1.cpp
