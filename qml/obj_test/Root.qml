@@ -1,9 +1,6 @@
 import QtQuick 2.0
 
-Rectangle {
-    property string backgroundColor: "#FFFFDF"
-
-    color: backgroundColor
+Item {
     width: 400 + controller.x
     height: 600 + controller.y
 
