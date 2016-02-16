@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+OB="ocamlbuild -use-ocamlfind -classic-display -j 2"
+
+$OB  \
+    src/moc_controller.c  \
+    src/qrc_resources.c \
+    src/libcppstubs.a \
+    src/program.native
