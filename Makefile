@@ -1,6 +1,10 @@
 .PHONY: all
 .SUFFIXES: .html .asciidoc .ml
 
+# asciidoc bootstrap backed we get from https://github.com/llaville/asciidoc-bootstrap-backend
+# unpack archive to get ~/.asciidoc/backends/asciidoc/bootstrap/bootstrap.conf
+
+
 TUTORIAL_DEMOS=
 TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo1/,controller.ml Root.qml program.ml)
 TUTORIAL2_DEMOS+=$(addprefix demos/0.3/demo2/,controller.ml Root.qml program.ml)
