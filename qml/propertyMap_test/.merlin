@@ -1,0 +1,4 @@
+PKG lablqml
+SRC src/
+B   _build
+B   _build/src
