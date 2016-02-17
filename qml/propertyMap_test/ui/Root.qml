@@ -17,6 +17,10 @@ ApplicationWindow {
           if ((event.key == Qt.Key_Q) && (event.modifiers & Qt.ControlModifier))
             Qt.quit();
         }
+        Timer {
+          interval: 1000; running: true; repeat: true
+          onTriggered: propMap1.timerMsg = Date().toString()
+        }
 
 
         RowLayout {
