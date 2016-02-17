@@ -47,16 +47,19 @@ let rec loop s =
   Format.printf "Hello %s@." s;
   loop s
  *)
-let (_: Thread.t) =
-  let counter = ref 0 in
-  let rec f () =
-    let _ = Thread.delay 1.0 in
-    incr counter;
-    options.ctrl#updateDescription (Printf.sprintf "ticked %d times" !counter);
-    f ()
-  in
 
-  Thread.create f ()
+let create_threads () =
+  let (_: Thread.t) =
+    let counter = ref 0 in
+    let rec f () =
+      let _ = Thread.delay 1.0 in
+      incr counter;
+      options.ctrl#updateDescription (Printf.sprintf "ticked %d times" !counter);
+      f ()
+    in
+    Thread.create f ()
+  in
+  ()
 
 
 let _ =
@@ -65,4 +68,4 @@ let _ =
   (*   ; main_thread () *)
   (*   (\* ; thread2() *\) *)
   (*   ] *)
-  run_with_QQmlApplicationEngine Sys.argv main "qrc:///ui/Root.qml"
+  run_with_QQmlApplicationEngine Sys.argv (fun() -> main (); create_threads ()) "qrc:///ui/Root.qml"
