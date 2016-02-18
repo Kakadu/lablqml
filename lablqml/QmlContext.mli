@@ -59,3 +59,11 @@ class virtual ['valtyp] qvariant_prop :
     method virtual set : 'valtyp -> unit
     method virtual wrap_in_qvariant : 'valtyp -> QVariant.t
   end
+
+module PropMap: sig
+  type t
+  val handler: t -> cppobj
+
+  val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
+  val insert: t -> name:string -> QVariant.t -> unit
+end

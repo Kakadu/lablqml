@@ -9,6 +9,7 @@ extern "C" {
 #include <caml/memory.h>
 #include <caml/callback.h>
 #include <caml/signals.h>
+#include <caml/threads.h>
 }
 #define CAMLOBJ_PROPERTY "_camlobj"
 

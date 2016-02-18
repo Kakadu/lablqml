@@ -1,6 +1,7 @@
 # OASIS_START
-# DO NOT EDIT (digest: a3bdcc7a2aad7d947de078d5f6f3ac00)
+# DO NOT EDIT (digest: cd173a19344078cc02921a4ef2d4902e)
 stubs.o
 modelindex.o
 startup_stubs.o
+propMap_stubs.o
 # OASIS_STOP
