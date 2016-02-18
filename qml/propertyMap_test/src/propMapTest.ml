@@ -2,27 +2,6 @@ open QmlContext
 
 let () = Printexc.record_backtrace true
 
-module PropMap: sig
-  type t
-  val handler: t -> QmlContext.cppobj
-
-  val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
-  val insert: t -> name:string -> QVariant.t -> unit
-end = struct
-  type t = QmlContext.cppobj
-
-  let handler: t -> QmlContext.cppobj = fun x -> x
-
-  external create_stub: (string -> QVariant.t -> unit) -> unit -> QmlContext.cppobj = "caml_create_QQmlPropertyMap"
-  external insert_stub: t -> string -> QVariant.t -> unit = "caml_QQmlPropertyMap_insert"
-
-  let create ?(callback=fun _ _ -> ()) () =
-    let (_:string -> QVariant.t -> unit) = callback in
-    create_stub callback ()
-  let insert map ~name variant = insert_stub map name variant
-
-end
-
 let main () =
   let callback name _ =
     Printf.printf "property '%s' has been changed\n%!" name;
