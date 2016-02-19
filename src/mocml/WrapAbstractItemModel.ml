@@ -1,11 +1,10 @@
 open Core_kernel
 open Core_kernel.Std
-open Parser
+open ParserTypes
 open Qml
 open Helpers
 
 let qabstractItemView_members =
-  let open Parser in
   let unref_model = unreference qmodelindex_type in
   let model = {qmodelindex_type with t_is_const=true} in
   [ ("parent",      [model],  unref_model, [`Const])
@@ -71,7 +70,7 @@ let gen_cppmeth_wrapper ~classname ?(config=[]) (cbuf: Bigbuffer.t) meth =
   cpp_stub_name
 
 
-let wrap ~classname ~(config: Config.MethOptions.t) do_meth do_meth_caml b_h b_c
+let wrap ~classname ~(config: GConfig.MethOptions.t) do_meth do_meth_caml b_h b_c
     external_buf top_externals_buf clas_def_buf =
   let open Bigbuffer.Printf in
   let p_h   fmt = bprintf b_h fmt in
@@ -104,7 +103,7 @@ let wrap ~classname ~(config: Config.MethOptions.t) do_meth do_meth_caml b_h b_c
 
       (* next methods declared in C++ and are not overridable in OCaml *)
       let cpp_wrap_stubs =
-        [ (("dataChanged",[Parser.qmodelindex_type;Parser.qmodelindex_type],Parser.void_type,[]),
+        [ (("dataChanged",[qmodelindex_type; qmodelindex_type], void_type, []),
            "stub_report_dataChanged", "report_dataChanged")
         ; (("beginInsertRows",[qmodelindex_type;int_type;int_type],void_type,[]),
            "stub_beginInsertRows", "beginInsertRows")

@@ -4,9 +4,9 @@ module B=Bigbuffer
 open Helpers
 open B.Printf
 open ParseYaml.Yaml2.Types
-open Parser
+open ParserTypes
 open Qml
-open Config
+open GConfig
 
 let with_file path f =
   let file = open_out path in
@@ -15,7 +15,7 @@ let with_file path f =
 
 
 let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots; props; signals} =
-  let (_: Config.MethOptions.t) = config in
+  let (_: GConfig.MethOptions.t) = config in
   let debugBlockingSections = List.mem config `DebugBlockingSections in
   (*printf "debugBlockingSections = %b\n" debugBlockingSections;*)
   let b_h   = B.create 100 in
@@ -68,12 +68,12 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
 
   (* method: We generate C++ method and call OCaml in it *)
   let do_meth ~classname ~config (name,args,res,modif) =
-    let (_:Config.MethOptions.t) = config in
-    let (_:Parser.cpptype list) = args in
-    let (_:Parser.cpptype) = res in
-    let args = if args = [Parser.void_type] then [] else args in
-    p_h "  Q_INVOKABLE %s %s(%s)%s;\n" (Parser.string_of_type res) name
-      (List.map args ~f:Parser.string_of_type |> String.concat ~sep:",")
+    let (_: GConfig.MethOptions.t) = config in
+    let (_: cpptype list) = args in
+    let (_: cpptype) = res in
+    let args = if args = [void_type] then [] else args in
+    p_h "  Q_INVOKABLE %s %s(%s)%s;\n" (string_of_type res) name
+      (List.map args ~f:string_of_type |> String.concat ~sep:",")
       (if List.mem modif `Const then " const" else "");
     (* now source *)
     let locals_count = 1 + (* for _ans *)
@@ -86,8 +86,8 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
       (List.map (args@[res]) ~f:(fun x -> x |> TypAst.of_verbose_typ_exn |> TypAst.to_ocaml_type)
           |> String.concat ~sep:"->"
       );
-    p_c "%s %s::%s(%s) %s{\n" (Parser.string_of_type res) classname name
-      (let types = List.map args ~f:Parser.string_of_type in
+    p_c "%s %s::%s(%s) %s{\n" (string_of_type res) classname name
+      (let types = List.map args ~f:string_of_type in
        List.map2_exn ~f:(sprintf "%s %s") types argnames_cpp |> String.concat ~sep:",")
       (if List.mem modif `Const then "const " else "");
     p_c "  CAMLparam0();\n";
@@ -127,7 +127,7 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
         sprintf "caml_callbackN(_meth, %d, _args)" (n+1)
       end
     in
-    if res = Parser.void_type then begin
+    if res = void_type then begin
       p_c "  %s;\n" call_closure_str;
       enter_blocking_section ~debug:debugBlockingSections b_c;
       p_c "  CAMLreturn0;\n"
@@ -136,8 +136,8 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
       enter_blocking_section ~debug:debugBlockingSections b_c;
       let cpp_ans_var = "cppans" in
       let new_cpp_var = Qml.getter_of_cppvars "xx" in
-      p_c "  %s %s;\n" (Parser.string_of_type res) cpp_ans_var;
-      let options = Config.TypeOptions.of_meth_options config in
+      p_c "  %s %s;\n" (string_of_type res) cpp_ans_var;
+      let options = GConfig.TypeOptions.of_meth_options config in
       Qml.cpp_value_of_ocaml ~options ~cpp_var:cpp_ans_var ~ocaml_var:"_ans"
         b_c (get_var,release_var, new_cpp_var) res;
       p_c "  CAMLreturnT(%s,%s);\n" (string_of_type res) cpp_ans_var;
@@ -199,9 +199,9 @@ let generate ?(directory=".") ?(config=[]) {classname; basename; members; slots;
     let () = match setter with
       | Some setter ->
           let (tt,convt) =
-            if typ = Parser.int_type then "int","of_int"
-            else if typ = Parser.qpoint_type then "QPoint","of_qpoint"
-            else if typ = Parser.string_type then "string","of_string"
+            if typ = int_type then "int","of_int"
+            else if typ = qpoint_type then "QPoint","of_qpoint"
+            else if typ = string_type then "string","of_string"
             else failwith "only QVariant-compatible types can be in properties"
           in
           p_ml "  method prop_%s = object\n" name;

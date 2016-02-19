@@ -3,6 +3,7 @@ open Core_kernel.Std
 open ParseYaml
 open Printf
 open Helpers
+open ParserTypes
 
 open ParseYaml.Yaml2
 open Types
@@ -103,7 +104,7 @@ let gen_cpp {classname; members; slots; props; _ } =
       | Some s -> (true,s)
       | None   -> (false,"")
     in
-    let cpp_typ = Parser.string_of_type  typ in
+    let cpp_typ = string_of_type  typ in
     bprintf publics "  Q_PROPERTY(%s %s%s READ %s NOTIFY %s)\n" cpp_typ
       name (if declare_setter then " WRITE "^setter else "") getter notifier;
 
@@ -125,10 +126,10 @@ let gen_cpp {classname; members; slots; props; _ } =
       bprintf publics "  } }\n"
     in
 
-    bprintf signals "  void %s(%s);\n" notifier (Parser.string_of_type typ);
+    bprintf signals "  void %s(%s);\n" notifier (string_of_type typ);
     gen_signal_stub ~classname ~signal:notifier
       ~typ:(TypAst.of_verbose_typ_exn typ) cpp_buf (stubname_for_signal_emit name notifier);
-    bprintf publics "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
+    bprintf publics "  void emit_%s(%s arg1) {\n" notifier (string_of_type typ);
     bprintf publics "    qDebug() << \"emitted %s\";\n" notifier;
     bprintf publics "    emit %s(arg1);\n" notifier;
     bprintf publics "  }\n\n";

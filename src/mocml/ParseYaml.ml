@@ -32,18 +32,18 @@ let parse filename : (string * (string list)) list =
 module Yaml2 = struct
   open Core_kernel
   open Sexplib.Conv
-  open Parser
+  open ParserTypes
 
   module Types = struct
-    type typ = Parser.cpptype with sexp
-    type meth = string * typ list * typ * [`Const] list with sexp
-    type sgnl = string * typ list * string list option with sexp
-    type prop = {name:string; getter:string; setter: string option; notifier: string; typ:typ} with sexp
+    type typ = cpptype [@@deriving sexp]
+    type meth = string * typ list * typ * [`Const] list [@@deriving sexp]
+    type sgnl = string * typ list * string list option [@@deriving sexp]
+    type prop = {name:string; getter:string; setter: string option; notifier: string; typ:typ} [@@deriving sexp]
     type clas =
         {classname:string; slots: meth list; signals: sgnl list; members: meth list;
-         basename: string option; props: prop list}
-    with sexp
-    type data = clas list with sexp
+         basename: string option; props: prop list} [@@deriving sexp]
+
+    type data = clas list [@@deriving sexp]
   end
 end
 

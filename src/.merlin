@@ -1,7 +1,11 @@
 S .
 S mocml
+S ppxext
 S _build/mocml
+
 B _build
 B _build/mocml
+B _build/ppxext
+
 PKG core_kernel
 PKG yojson

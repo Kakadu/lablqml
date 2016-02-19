@@ -7,6 +7,7 @@ module B=Bigbuffer
 open B.Printf
 open ParseYaml.Yaml2
 open Types
+open ParserTypes
 
 let ocaml_name_of_prop ~classname sort ({name;typ;_}) : string =
   sprintf "prop_%s_%s_%s_%s" classname name
@@ -264,10 +265,10 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
   let arg' = List.map2_exn lst argnames ~f:(sprintf "%s %s") in
   let () =
     print_h  "  %s%s %s(%s);\n"
-    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (Parser.string_of_type res)
+    (if List.mem options `Invokable then "Q_INVOKABLE " else "") (string_of_type res)
     name (String.concat ~sep:"," arg') in
   let () =
-    print_cpp "%s %s::%s(%s) {\n" (Parser.string_of_type res) classname
+    print_cpp "%s %s::%s(%s) {\n" (string_of_type res) classname
     name (String.concat ~sep:"," arg') in
   print_cpp "  CAMLparam0();\n";
   let locals_count = 1 + (* for _ans *)
@@ -316,12 +317,12 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
     end
   in
   let (hasSetter,res) =
-    if Parser.is_void_type res then begin
+    if is_void_type res then begin
       match List.find options ~f:(function `Setter _ -> true | _ -> false) with
         | Some (`Setter signal) ->
             print_cpp "  _ans = %s;\n" call_closure_str;
             (Some signal,
-             Parser.({t_name="bool";t_params=[];t_indirections=0;t_is_const=false;t_is_ref=false})
+             ({t_name="bool";t_params=[];t_indirections=0;t_is_const=false;t_is_ref=false})
             )
         | None ->
             print_cpp "  %s;\n" call_closure_str;
@@ -336,17 +337,17 @@ let gen_meth ~classname ~ocaml_methname ?(options=[])
   (* Now we should convert OCaml result value to C++*)
   let new_cpp_var = getter_of_cppvars "xx" in
   let () =
-    if Parser.is_void_type res then begin
+    if is_void_type res then begin
           assert (hasSetter = None);
           ()
     end else begin
           let cpp_ans_var = "cppans" in
-          print_cpp "  %s %s;\n" (Parser.string_of_type  res) cpp_ans_var;
+          print_cpp "  %s %s;\n" (string_of_type  res) cpp_ans_var;
           cpp_value_of_ocaml file_cpp
             (get_var,release_var, new_cpp_var) ~cpp_var:cpp_ans_var ~ocaml_var:"_ans" res;
           match hasSetter with
             | Some signal ->
-                assert (Parser.is_bool_type res);
+                assert (is_bool_type res);
                 print_cpp "  if (cppans) emit %s(%s);\n" signal (List.hd_exn argnames)
             | None  ->
                 print_cpp "  return %s;\n" cpp_ans_var
@@ -392,23 +393,23 @@ let do_prop hbuf cbuf ({name;getter;setter;notifier;typ} as prop) =
   (*let p_c fmt = bprintf cbuf fmt in*)
   p_h "public:\n";
   p_h "  Q_PROPERTY(%s %s %s READ %s NOTIFY %s)\n"
-    (Parser.string_of_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
+    (string_of_type typ) name (match setter with Some x -> "WRITE "^x | None -> "") getter notifier;
   let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Getter prop in
-  gen_meth ~classname ~ocaml_methname ~options:[] hbuf cbuf (getter,[Parser.void_type],typ,[]);
+  gen_meth ~classname ~ocaml_methname ~options:[] hbuf cbuf (getter,[void_type],typ,[]);
   let () =
     match setter with
       | Some setter ->
           let ocaml_methname (x,y,_,_) = ocaml_name_of_prop ~classname `Setter prop in
           gen_meth ~classname ~ocaml_methname
-            ~options:[`Setter notifier] hbuf cbuf (setter,[typ],Parser.void_type,[]);
+            ~options:[`Setter notifier] hbuf cbuf (setter,[typ],void_type,[]);
       | None -> ()
   in
   p_h "signals:\n";
-  p_h "  void %s(%s);\n" notifier (Parser.string_of_type typ);
+  p_h "  void %s(%s);\n" notifier (string_of_type typ);
   gen_signal_stub ~classname ~signal:notifier ~typ:(TypAst.of_verbose_typ_exn typ)
       cbuf (stubname_for_signal_emit name notifier);
   p_h "public:\n";
-  p_h "  void emit_%s(%s arg1) {\n" notifier (Parser.string_of_type typ);
+  p_h "  void emit_%s(%s arg1) {\n" notifier (string_of_type typ);
   p_h "    emit %s(arg1);\n" notifier;
   p_h "  }\n\n"
 

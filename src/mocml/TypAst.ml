@@ -10,7 +10,7 @@ type t =
   | `QGMouseEvent    (* QGraphicsSceneMouseEvent *)
   | `QByteArray
   | `QVariant
-  ] with sexp
+  ] [@@deriving sexp]
 
 let aux_variables_count (x : t) =
   let rec h = function
@@ -82,7 +82,7 @@ let to_ocaml_type (typ: t) =
   helper typ
 
 let to_verbose_typ =
-  let open Parser in
+  let open ParserTypes in
   let rec helper = function
     | `Float     -> {t_name="float";   t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
     | `Int       -> {t_name="int";     t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
@@ -110,9 +110,10 @@ let to_verbose_typ =
   in
   helper
 
-exception Cant_convert_cpptype of Parser.cpptype
+exception Cant_convert_cpptype of ParserTypes.cpptype
+
 let of_verbose_typ_exn typ: t =
-  let open Parser in
+  let open ParserTypes in
   let rec helper = function
     | {t_name="float";  t_indirections=0;_} -> `Float
     | {t_name="int";    t_indirections=0;_} -> `Int

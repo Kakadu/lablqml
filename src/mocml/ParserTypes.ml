@@ -12,7 +12,7 @@ and meth = {
   m_access:[`Public | `Protected| `Private];
   m_modif :[`Static | `Abstract | `Const | `Virtual | `Explicit | `Inline ] list
 }
-with sexp
+[@@deriving sexp]
 
 let void_type = {t_name="void"; t_is_const=false; t_indirections=0; t_is_ref=false; t_params=[] }
 let qmodelindex_type =
