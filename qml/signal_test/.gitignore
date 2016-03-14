@@ -1,3 +1,4 @@
+*.native
 camlcode.o.startup.s
 mocml
 main
@@ -13,4 +14,3 @@ folderlistmodel/libqmlfolderlistmodelplugin.so*
 
 controller_c.cpp
 controller.h
-

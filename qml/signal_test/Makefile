@@ -2,9 +2,9 @@ OCAMLC=ocamlc
 OCAMLOPT=ocamlfind opt -package lablqml
 #PPX_QT=ppx_qt
 PPX_QT=../ppx_qt
-CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC
+CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC -I`ocamlc -where`
 CC=g++
-OUT=main
+OUT=signal_test.native
 CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib -lQt5Quick \
         -cclib -lQt5Gui -cclib -lQt5Qml -cclib -lQt5Widgets -cclib -lQt5Network -cclib -lQt5Core
 

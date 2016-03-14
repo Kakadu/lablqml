@@ -1,6 +1,7 @@
 open Printf
 
 let () = Printexc.record_backtrace true
+let root_qml_file = "Root.qml"
 
 open QmlContext
 
@@ -19,6 +20,12 @@ let main () =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
 let () =
-  run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
-
-
+  let app,eng = create_qapplication Sys.argv in
+  QQmlEngine.register_context "rootContext" eng;
+  QQmlEngine.add_import_path "somedir" eng;
+  main ();
+  match loadQml root_qml_file eng with
+  | None -> failwith "can't load QML"
+  | Some w ->
+      QQuickWindow.showMaximized w;
+      QGuiApplication.exec app

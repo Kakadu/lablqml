@@ -1,5 +1,6 @@
 import QtQuick 2.1
 import QtQuick.Controls 1.2
+import mycomponents 1.0
 
 ApplicationWindow {
     title: "User signal and property demo"
