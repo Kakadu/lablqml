@@ -1,6 +1,6 @@
 OASISFormat: 0.3
 Name:        lablqml
-Version:     0.1
+Version:     0.4
 Synopsis:    wrappers for QML objects
 Authors:     Kakadu
 License:     LGPL-3.0 with OCaml linking exception
@@ -14,5 +14,21 @@ Library lablqml
   CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c,startup_stubs.c,propMap_stubs.c
   CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Widgets Qt5Quick` -O2 -Dprivate=public
 
-#Test test1
-#  Command: test1
+Executable "test1"
+  BuildTools:   ocamlbuild
+  Path: src_tests
+  MainIs: test1.ml
+  Build$: flag(tests)
+  CompiledObject: best
+  Install: false
+  BuildDepends: oUnit
+
+Test "test1"
+  #Run$: flag(tests)
+  TestTools: test1
+  Command: $test1
+  WorkingDirectory: test
+
+SourceRepository master
+  Type: git
+  Location: https://github.com/Kakadu/lablqt.git
