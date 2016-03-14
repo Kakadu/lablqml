@@ -26,7 +26,11 @@ module QGuiApplication : sig
   type t
   val exec : t -> unit
 end
-module QQmlEngine : sig type t end
+module QQmlEngine : sig
+  type t
+  val register_context: name:string -> t -> unit
+  val add_import_path: string -> t -> unit
+end
 
 module QQuickWindow : sig
   type t

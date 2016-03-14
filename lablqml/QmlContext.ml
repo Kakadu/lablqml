@@ -48,7 +48,11 @@ module QGuiApplication = struct
   type t
   external exec: t -> unit = "caml_QGuiApplication_exec"
 end
-module QQmlEngine = struct type t end
+module QQmlEngine = struct
+  type t
+  external register_context: name:string -> t -> unit = "caml_QQmlEngine_registerContext"
+  external add_import_path: string -> t -> unit = "caml_QQmlEngine_addImportPath"
+end
 module QQuickWindow = struct
   type t
   external showMaximized: t -> unit = "caml_QQuickWindow_showMaximized"

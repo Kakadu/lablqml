@@ -31,6 +31,31 @@ extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj)
   //qDebug() << "setted property " << name << " to " << o;
   CAMLreturn(Val_unit);
 }
+
+// string -> QQmlEngine.t -> unit
+extern "C" value caml_QQmlEngine_registerContext(value _name, value _engine) {
+  CAMLparam2(_name,_engine);
+
+  Q_ASSERT( true );
+  QQmlEngine  *engine = ((QQmlEngine*) Field(_engine,0));
+  Q_ASSERT(engine != nullptr);
+  QQmlContext *ctx = engine->rootContext();
+  const QString &name = QString::fromLocal8Bit(String_val(_name));
+  registerContext(name, ctx);
+  CAMLreturn(Val_unit);
+}
+
+// string -> QQmlEngine.t -> unit
+extern "C" value caml_QQmlEngine_addImportPath(value _path, value _engine) {
+  CAMLparam2(_path,_engine);
+
+  QQmlEngine  *engine = ((QQmlEngine*) Field(_engine,0));
+  Q_ASSERT(engine != nullptr);
+  const QString &path = QString::fromLocal8Bit(String_val(_path));
+  engine->addImportPath(path);
+  CAMLreturn(Val_unit);
+}
+
 /*
 extern "C" value caml_set_caml_object(value _cppobj,value _camlobj) {
   CAMLparam2(_cppobj, _camlobj);
