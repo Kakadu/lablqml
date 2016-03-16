@@ -6,11 +6,14 @@ type cppobj
 val set_context_property: ctx:t -> name:string -> cppobj -> unit
 
 module QVariant : sig
-  type t = [ `empty | `string of string | `qobject of cppobj | `int of int ]
+  type t = [ `empty | `string of string | `qobject of cppobj | `int of int | `bool of bool
+           | `float of float ]
   val empty: t
   val of_string: string -> t
   val of_object: cppobj -> t
-  val of_int   : int  -> t
+  val of_int   : int -> t
+  val of_bool  : bool -> t
+  val of_float : float -> t
 end
 
 module QModelIndex : sig

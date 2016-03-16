@@ -340,6 +340,10 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
        println "    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));" dest ocamlvar;
        println "  else if(caml_hash_variant(\"int\") == Field(%s,0))" ocamlvar;
        println "    %s = QVariant::fromValue(Int_val(Field(%s,1)));" dest ocamlvar;
+       println "  else if(caml_hash_variant(\"bool\") == Field(%s,0))" ocamlvar;
+       println "    %s = QVariant::fromValue(Bool_val(Field(%s,1)));" dest ocamlvar;
+       println "  else if(caml_hash_variant(\"float\") == Field(%s,0))" ocamlvar;
+       println "    %s = QVariant::fromValue(Double_val(Field(%s,1)));" dest ocamlvar;
        println "  else if(caml_hash_variant(\"qobject\") == Field(%s,0))" ocamlvar;
        println "    %s = QVariant::fromValue((QObject*) (Field(Field(%s,1),0)));" dest ocamlvar;
        println "  else Q_ASSERT_X(false,\"%s\",\"%s\");"
@@ -401,6 +405,14 @@ let ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ =
        println "    %s = caml_alloc(2,0);" dest;
        println "    Store_field(%s, 0, %s);" dest "hash_variant(\"int\")";
        println "    Store_field(%s, 1, Val_int(%s.value<int>()));" dest var;
+       println "  } else if (ut == QMetaType::Double) { ";
+       println "    %s = caml_alloc(2,0);" dest;
+       println "    Store_field(%s, 0, %s);" dest "hash_variant(\"float\")";
+       println "    Store_field(%s, 1, caml_copy_double(%s.value<double>()) );" dest var;
+       println "  } else if (ut == QMetaType::Bool) { ";
+       println "    %s = caml_alloc(2,0);" dest;
+       println "    Store_field(%s, 0, %s);" dest "hash_variant(\"bool\")";
+       println "    Store_field(%s, 1, Val_bool(%s.value<bool>()));" dest var;
        println "  } else if((ut==QMetaType::User) ||";
        println "            (ut==QMetaType::QObjectStar)) {"; (*custom QObject*)
        println "    QObject *vvv = %s.value<QObject*>();" var;

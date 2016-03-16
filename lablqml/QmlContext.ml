@@ -27,11 +27,14 @@ module QPoint = struct
 end
 
 module QVariant = struct
-  type t = [ `empty | `string of string | `qobject of cppobj | `int of int ]
+  type t = [ `empty | `string of string | `qobject of cppobj | `int of int | `bool of bool
+           | `float of float ]
   let empty = `empty
   let of_string s = `string s
   let of_object o = `qobject o
   let of_int    x = `int x
+  let of_bool   b = `bool b
+  let of_float  f = `float f
   (*let of_qpoint p = `qpoint p*)
 end
 
