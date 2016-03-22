@@ -16,30 +16,39 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
         _dest = hash_variant("empty");
     } else {
         int ut = var.userType();
-        if(ut == QMetaType::Bool) {
+        switch (ut) {
+        case QMetaType::Bool:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("bool"));
             Store_field(_dest, 1, Val_bool(var.toBool()));
-        } else if(ut == QMetaType::QString) {
+            break;
+        case QMetaType::QString:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("string"));
             Store_field(_dest, 1, caml_copy_string(var.value<QString>().toLocal8Bit().data()));
-        } else if (ut == QMetaType::Int) {
+            break;
+        case QMetaType::Int:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("int"));
             Store_field(_dest, 1, Val_int(var.value<int>()));
-        } else if (ut == QMetaType::Float) {
+            break;
+        case QMetaType::Float:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("float"));
             Store_field(_dest, 1, caml_copy_double(var.toFloat()));
-        } else if ((ut==QMetaType::User) ||  (ut==QMetaType::QObjectStar)) {
-            QObject *vvv = var.value<QObject*>();
-            _var = caml_alloc_small(1,Abstract_tag);
-            (*((QObject **) &Field(_var, 0))) = vvv;
-            _dest = caml_alloc(2,0);
-            Store_field(_dest, 0, hash_variant("qobject"));
-            Store_field(_dest, 1, _var);
-        } else {
+            break;
+        case QMetaType::User:
+        case QMetaType::QObjectStar:
+            {
+              QObject *vvv = var.value<QObject*>();
+              _var = caml_alloc_small(1,Abstract_tag);
+              (*((QObject **) &Field(_var, 0))) = vvv;
+              _dest = caml_alloc(2,0);
+              Store_field(_dest, 0, hash_variant("qobject"));
+              Store_field(_dest, 1, _var);
+            }
+            break;
+        default:
             QString msg("Type is not supported:");
             msg += QString("userType() == %1").arg(ut);
             Q_ASSERT_X(false, __func__, msg.toLocal8Bit().data() );
