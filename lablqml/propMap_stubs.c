@@ -16,14 +16,22 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
         _dest = hash_variant("empty");
     } else {
         int ut = var.userType();
-        if(ut == QMetaType::QString) {
-            _dest = caml_alloc(2,0);
-            Store_field(_dest,0,hash_variant("string"));
-            Store_field(_dest,1,caml_copy_string(var.value<QString>().toLocal8Bit().data()));
+        if(ut == QMetaType::Bool) {
+            _dest = caml_alloc(2, 0);
+            Store_field(_dest, 0, hash_variant("bool"));
+            Store_field(_dest, 1, Val_bool(var.toBool()));
+        } else if(ut == QMetaType::QString) {
+            _dest = caml_alloc(2, 0);
+            Store_field(_dest, 0, hash_variant("string"));
+            Store_field(_dest, 1, caml_copy_string(var.value<QString>().toLocal8Bit().data()));
         } else if (ut == QMetaType::Int) {
-            _dest = caml_alloc(2,0);
+            _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("int"));
             Store_field(_dest, 1, Val_int(var.value<int>()));
+        } else if (ut == QMetaType::Float) {
+            _dest = caml_alloc(2, 0);
+            Store_field(_dest, 0, hash_variant("float"));
+            Store_field(_dest, 1, Val_int(var.toFloat()));
         } else if ((ut==QMetaType::User) ||  (ut==QMetaType::QObjectStar)) {
             QObject *vvv = var.value<QObject*>();
             _var = caml_alloc_small(1,Abstract_tag);
