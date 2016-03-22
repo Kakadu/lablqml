@@ -83,10 +83,14 @@ extern "C" value caml_QQmlPropertyMap_insert(value _map, value _propName, value 
     // TODO: move this conversion to the lablqml
     QVariant newval;
     if (Is_block(_variant)) {
-        if (caml_hash_variant("string") == Field(_variant,0) )
+        if (caml_hash_variant("bool") == Field(_variant,0) )
+            newval = QVariant::fromValue(Bool_val(Field(_variant,1)));
+        else if (caml_hash_variant("string") == Field(_variant,0) )
             newval = QVariant::fromValue(QString(String_val(Field(_variant,1))));
         else if (caml_hash_variant("int") == Field(_variant,0) )
             newval = QVariant::fromValue(Int_val(Field(_variant,1)));
+        else if (caml_hash_variant("float") == Field(_variant,0) )
+            newval = QVariant::fromValue(Double_val(Field(_variant,1)));
         else if (caml_hash_variant("qobject") == Field(_variant,0) )
             newval = QVariant::fromValue((QObject*) (Field(Field(_variant,1),0)));
         else Q_ASSERT_X(false,"While converting OCaml value to QVariant","Unknown variant tag");
