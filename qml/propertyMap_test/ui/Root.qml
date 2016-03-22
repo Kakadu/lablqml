@@ -53,4 +53,13 @@ ApplicationWindow {
           }
         }
     }
+
+    Item {
+        id: dummyItem
+        property int someName: propMap1.count
+        onSomeNameChanged: {
+            if (someName%2==0) controller.foo1();
+            else controller.foo2();
+       }
+    }
 }

@@ -3,4 +3,5 @@ OB="ocamlbuild -use-ocamlfind -classic-display -j 2"
 
 $OB  \
     src/qrc_resources.c \
+    src/libcppstubs.a \
     src/propMapTest.native
