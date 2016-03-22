@@ -5,12 +5,14 @@ let qml_mapper () =
   let o_channel = Unix.out_channel_of_descr socket in *)
 
   let value_changed name value = match value with
-    | `int i -> Printf.printf "%d" i; flush Pervasives.stdout;
+    | `int i -> Printf.printf "%s %d; " name i; flush Pervasives.stdout;
     | _ -> ()
   in
   let alpha = PropMap.create ~callback:value_changed () in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"alpha" (PropMap.handler alpha);
   PropMap.insert alpha ~name:"count" (QVariant.of_int 0);
+  PropMap.insert alpha ~name:"c0" (QVariant.of_int 0);
+  PropMap.insert alpha ~name:"c1" (QVariant.of_int 0);
 
   let callback _ _ = () in
   let beta = PropMap.create ~callback () in
