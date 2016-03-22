@@ -31,7 +31,7 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
         } else if (ut == QMetaType::Float) {
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("float"));
-            Store_field(_dest, 1, Val_int(var.toFloat()));
+            Store_field(_dest, 1, caml_copy_double(var.toFloat()));
         } else if ((ut==QMetaType::User) ||  (ut==QMetaType::QObjectStar)) {
             QObject *vvv = var.value<QObject*>();
             _var = caml_alloc_small(1,Abstract_tag);
