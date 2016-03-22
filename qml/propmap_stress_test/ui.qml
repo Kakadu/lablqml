@@ -10,7 +10,7 @@ ApplicationWindow {
     onCountChanged: alpha.count = beta.count
     Text { text: "Alpha count: "+ alpha.count; font.pixelSize: 20 }
     Text { text: "Beta count: " + beta.count ; font.pixelSize: 20 }
-
+    Button { text: "Fire"; onClicked: alpha.count = beta.count + 1 }
   }
 
 }
