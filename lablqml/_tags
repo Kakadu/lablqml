@@ -1,8 +1,3 @@
-# OASIS_START
-# DO NOT EDIT (digest: 83db9415e59d83e1fe961a9fa3d061fe)
-# Ignore VCS directories, you can use the same kind of rule outside
-# OASIS_START/STOP if you want to exclude directories that contains
-# useless stuff for the build process
 true: annot, bin_annot
 <**/.svn>: -traverse
 <**/.svn>: not_hygienic
@@ -14,14 +9,14 @@ true: annot, bin_annot
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
+
 # Library lablqml
-"lablqml.cmxs": use_lablqml
+# "lablqml.cmxs": use_lablqml
 <*.ml{,i,y}>: oasis_library_lablqml_ccopt
 "stubs.c": oasis_library_lablqml_ccopt
-"modelindex.c": oasis_library_lablqml_ccopt
+"modelindex.c": oasis_library_lablqml_ccopt, d_private_public
 "startup_stubs.c": oasis_library_lablqml_ccopt
 "propMap_stubs.c": oasis_library_lablqml_ccopt
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 # OASIS_STOP
 "test": not_hygienic, -traverse
-
