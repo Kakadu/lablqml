@@ -8,6 +8,7 @@ let qml_mapper () =
     | `int i -> Printf.printf "%s %d;\t\t" name i; flush Pervasives.stdout;
     | _ -> ()
   in
+  let _ = Callback.register "test cb" value_changed in
   let alpha = PropMap.create ~callback:value_changed () in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"alpha" (PropMap.handler alpha);
   PropMap.insert alpha ~name:"count" (QVariant.of_int 0);

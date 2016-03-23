@@ -61,19 +61,19 @@ extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
     CAMLparam2(_func, _unit);
     CAMLlocal1(_ans);
     //caml_enter_blocking_section();
-    caml_register_global_root(&_func);
+    //caml_register_global_root(&_func);
 
     QQmlPropertyMap *propMap = new QQmlPropertyMap();
     _ans = caml_alloc_small(1, Abstract_tag);
     (*((QQmlPropertyMap **) &Field(_ans, 0))) = propMap;
 
     QObject::connect(propMap, &QQmlPropertyMap::valueChanged,
-                     [=](const QString& propName, const QVariant& var) {
+                     [](const QString& propName, const QVariant& var) {
                          CAMLparam0();
                          CAMLlocal2(_nameArg,_variantArg);
                          caml_acquire_runtime_system();
                          _nameArg = caml_copy_string( propName.toLocal8Bit().data() );
-                         caml_callback2(_func, _nameArg, Val_QVariant(_variantArg, var) );
+                         caml_callback2(*caml_named_value("test cb"), _nameArg, Val_QVariant(_variantArg, var) );
                          caml_release_runtime_system();
                          CAMLreturn0;
                      } );
