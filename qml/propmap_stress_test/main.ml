@@ -5,7 +5,7 @@ let qml_mapper () =
   let o_channel = Unix.out_channel_of_descr socket in *)
 
   let value_changed name value = match value with
-    | `int i -> Printf.printf "%s %d; " name i; flush Pervasives.stdout;
+    | `int i -> Printf.printf "%s %d;\t\t" name i; flush Pervasives.stdout;
     | _ -> ()
   in
   let alpha = PropMap.create ~callback:value_changed () in
