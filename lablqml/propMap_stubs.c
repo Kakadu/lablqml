@@ -71,10 +71,10 @@ extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
                      [=](const QString& propName, const QVariant& var) {
                          CAMLparam0();
                          CAMLlocal2(_nameArg,_variantArg);
-                         caml_leave_blocking_section();
+                         caml_acquire_runtime_system();
                          _nameArg = caml_copy_string( propName.toLocal8Bit().data() );
                          caml_callback2(_func, _nameArg, Val_QVariant(_variantArg, var) );
-                         caml_enter_blocking_section();
+                         caml_release_runtime_system();
                          CAMLreturn0;
                      } );
 
