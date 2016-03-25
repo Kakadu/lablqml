@@ -20,3 +20,8 @@ true: annot, bin_annot
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 # OASIS_STOP
 "test": not_hygienic, -traverse
+
+
+#tests
+<src_tests/*.*>: package(oUnit)
+<src_tests/*.native>: use_lablqml, use_qt5

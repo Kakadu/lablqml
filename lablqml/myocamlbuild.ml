@@ -90,6 +90,15 @@ let () =
     (*                      ; "src/controller.h" *)
     (*                      ; "src/historyModel.h" *)
     (*                      ; "src/abstractModel.h"]; *)
+
+
+    (* Some stuff for tests *)
+    flag ["link"; "ocaml"; "native";   "use_lablqml" ]
+      (S[A"-g"
+        (* ;A"lablqml.cma" *)
+        (* ;A"-cclib"; A"-llablqml_stubs" *)
+        ;A"liblablqml_stubs.a"
+        ]);
     ()
   | _ -> ()
   end
