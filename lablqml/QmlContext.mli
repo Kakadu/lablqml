@@ -16,6 +16,11 @@ module QVariant : sig
   val of_float : float -> t
 end
 
+class test_object : t -> object
+  method handler : t
+  method property: string -> QVariant.t
+end
+
 module QModelIndex : sig
   type t
   val empty: t
@@ -38,6 +43,7 @@ end
 module QQuickWindow : sig
   type t
   val showMaximized : t -> unit
+  val as_test_object: t -> test_object
 end
 
 (** Creates QGuiApplication. No platform-dependent styling applied. *)

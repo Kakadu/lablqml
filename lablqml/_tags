@@ -10,6 +10,7 @@ true: annot, bin_annot
 "_darcs": -traverse
 "_darcs": not_hygienic
 
+true: debug
 # Library lablqml
 # "lablqml.cmxs": use_lablqml
 <*.ml{,i,y}>: oasis_library_lablqml_ccopt
@@ -17,6 +18,7 @@ true: annot, bin_annot
 "modelindex.c": oasis_library_lablqml_ccopt, d_private_public
 "startup_stubs.c": oasis_library_lablqml_ccopt
 "propMap_stubs.c": oasis_library_lablqml_ccopt
+"test_stubs.c": oasis_library_lablqml_ccopt
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 # OASIS_STOP
 "test": not_hygienic, -traverse

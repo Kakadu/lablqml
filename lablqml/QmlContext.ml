@@ -47,6 +47,12 @@ module QModelIndex = struct
   let to_string (row,column) = Printf.sprintf "(%d,%d)" row column
 end
 
+external qobject_property: t -> string -> QVariant.t = "caml_QObject_property"
+class test_object ptr = object
+  method handler = ptr
+  method property (name: string) : QVariant.t = qobject_property ptr name
+end
+
 module QGuiApplication = struct
   type t
   external exec: t -> unit = "caml_QGuiApplication_exec"
@@ -57,8 +63,11 @@ module QQmlEngine = struct
   external add_import_path: string -> t -> unit = "caml_QQmlEngine_addImportPath"
 end
 module QQuickWindow = struct
+  type base_t = t
   type t
   external showMaximized: t -> unit = "caml_QQuickWindow_showMaximized"
+  external as_test_object_stub: t -> base_t = "caml_QQuickWindow_as_qobject"
+  let as_test_object win = new test_object (as_test_object_stub win)
 end
 
 external create_qguiapplication_stub : string array -> QGuiApplication.t * QQmlEngine.t
