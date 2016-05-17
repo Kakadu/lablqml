@@ -15,6 +15,10 @@ let pkg_config flags package =
   in
   with_temp_file "pkgconfig" "pkg-config" cmd
 
+let make_opt o arg = S [ A o; arg ]
+let make_ccopts xs =
+  List.concat (List.map (fun x -> [A"-ccopt";A x]) xs)
+
 let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   let cflags = (*(A has_lib) :: *) pkg_config "cflags" lib in (*
   let stub_l = [A (Printf.sprintf "-l%s" stublib)] in *)
@@ -24,7 +28,6 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   | "Linux\n" -> [A "-Wl,-no-as-needed"]
   | _ -> []
   in
-  let make_opt o arg = S [ A o; arg ] in
   let mklib_flags = (List.map (make_opt "-ldopt") linker) @ libs_l @ libs_L in
   let compile_flags = List.map (make_opt "-ccopt") cflags in
   let lib_flags = List.map (make_opt "-cclib") libs_l in
@@ -35,9 +38,14 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
 
   List.iter (fun tag ->
     flag ["c"; "compile"; tag] (S compile_flags);
-    flag ["c"; "compile"; tag] (S [A"-cc";A"g++"; A"-ccopt";A"-std=c++0x";A"-ccopt";A"-fPIC"]);
+    (* Some tricks required for copying .h file to builddir. I use poor man solution
+       for now. See link for right solution
+    https://github.com/ocaml/ocamlbuild/blob/master/manual/manual.adoc#dynamic-dependencies
+    *)
+    flag ["c"; "compile"; tag]
+         (S (make_ccopts ["-std=c++0x";"-fPIC";"-I.."] @ [A"-cc";A"g++"]) );
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-Dprotected=public"]);
-    flag ["c"; "compile"; tag] (S [A"-package";A"lablqml"]);
+    (* flag ["c"; "compile"; tag] (S [A"-package";A"lablqml"]); *)
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-I."]);
   ) [ "mocml_generated"; "qtmoc_generated"; "qt_resource_file"
     ; "oasis_library_lablqml_ccopt"];
