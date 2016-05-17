@@ -100,6 +100,8 @@ clean:\n\
 	\$(MAKE) -C $ROOT_DIR/demos clean\n\
 	\$(MAKE) -C $ROOT_DIR/lablqml clean\n\
 	\$(MAKE) -C $ROOT_DIR/src clean\n\
+uninstall:\n\
+	ocamlfind remove lablqml\n\n\
 \n\
 " > Makefile
 cat Makefile.install >> Makefile
