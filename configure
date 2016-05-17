@@ -111,13 +111,12 @@ fi
 echo "Generating Makefile"
 echo -e "\
 .PHONY: all generator lib test\n\
-all: generator lib test\n\
+all: generator lib \n\
 	\n\
 generator:\n\
 	cd $ROOT_DIR/src; ./configure && make all
 	rm -f $ROOT_DIR/qml/ppx_qt && ln -s $ROOT_DIR/src/ppx_qt.native $ROOT_DIR/qml/ppx_qt\n\
 lib:\n\
-	if [ ! -e $ROOT_DIR/lablqml/Makefile ]; then cd $ROOT_DIR/lablqml && ./configure; fi\n\
 	make -C $ROOT_DIR/lablqml\n\
 test:\n\
 	cd $ROOT_DIR/qml/test && ./configure && make\n\

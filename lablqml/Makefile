@@ -1,41 +1,38 @@
-# OASIS_START
-# DO NOT EDIT (digest: a3c674b4239234cbbe53afe090018954)
+OB=ocamlbuild -use-ocamlfind -classic-display
+TARGETS=lablqml.cmxa lablqml.a QmlContext.cmi liblablqml_stubs.a dlllablqml_stubs.so
+INSTALL_TARGETS=$(addprefix _build/,$(TARGETS))
 
-SETUP = ocaml setup.ml
+space :=
+space +=
+join-with = $(subst $(space),$1,$(strip $2))
 
-build: setup.data
-	$(SETUP) -build $(BUILDFLAGS)
+TEST_EXECS = test1 test2
 
-doc: setup.data build
-	$(SETUP) -doc $(DOCFLAGS)
+COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
+#$(warning $(COLON_SEPARATED_TESTS) )
 
-test: setup.data build
-	$(SETUP) -test $(TESTFLAGS)
+.PHONY: tests_compile run_tests tests test
 
-all:
-	$(SETUP) -all $(ALLFLAGS)
+all: lib
 
-install: setup.data
-	$(SETUP) -install $(INSTALLFLAGS)
-
-uninstall: setup.data
-	$(SETUP) -uninstall $(UNINSTALLFLAGS)
-
-reinstall: setup.data
-	$(SETUP) -reinstall $(REINSTALLFLAGS)
+lib:
+	$(OB) liblablqml_stubs.a lablqml.cmxa
 
 clean:
-	$(SETUP) -clean $(CLEANFLAGS)
+	$(RM) -r _build
 
-distclean:
-	$(SETUP) -distclean $(DISTCLEANFLAGS)
 
-setup.data:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
+tests_compile: lib
+	$(OB) src_tests/$(call join-with,.native src_tests/,$(TEST_EXECS)).native
 
-configure:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
+run_tests: tests_compile
+	$(COLON_SEPARATED_TESTS)
 
-.PHONY: build doc test all install uninstall reinstall clean distclean configure
+tests: tests_compile run_tests
+test: tests
 
-# OASIS_STOP
+install:
+	ocamlfind install lablqml META $(INSTALL_TARGETS)
+
+uninstall:
+	ocamlfind remove lablqml
