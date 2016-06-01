@@ -37,7 +37,6 @@ module Time = struct
             tm_mday (str_of_month tm_mon) (1900+tm_year) tm_hour tm_min tm_sec
 end
 
-
 let printfn fmt = kprintf (printf "%s\n") fmt
 let fprintfn ch fmt = ksprintf (fprintf ch "%s\n") fmt
 
@@ -64,44 +63,47 @@ module FilesMap = Map.Make(FilesKey)
 
 let files = ref FilesMap.empty
 
-let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
+type generation_mode = QtMoc | Verdigris
+
+let open_files (* ?(mode=QtMoc) *) ?(destdir=".") ?(ext="cpp") ~options ~classname =
   (*print_endline "Opening files....";*)
   let src = open_out (sprintf "%s/%s_c.%s" destdir classname ext) in
   let hdr = open_out (sprintf "%s/%s.h" destdir classname) in
   print_time hdr;
   let println fmt = fprintfn hdr fmt in
-  fprintfn hdr "#ifndef %s_H" (String.uppercase classname);
-  fprintfn hdr "#define %s_H" (String.uppercase classname);
-  fprintfn hdr "";
-  fprintfn hdr "#include <QtCore/QDebug>";
-  fprintfn hdr "#include <QtCore/QObject>";
-  fprintfn hdr "#include <QtCore/QAbstractItemModel>";
+  println "#ifndef %s_H" (String.uppercase classname);
+  println "#define %s_H" (String.uppercase classname);
+  println "";
+  println "#include <QtCore/QDebug>";
+  println "#include <QtCore/QObject>";
+  println "#include <QtCore/QAbstractItemModel>";
   println "";
   println "#ifdef __cplusplus";
   println "extern \"C\" {";
   println "#endif";
-  fprintfn hdr "#include <caml/alloc.h>";
-  fprintfn hdr "#include <caml/mlvalues.h>";
-  fprintfn hdr "#include <caml/callback.h>";
-  fprintfn hdr "#include <caml/memory.h>";
-  fprintfn hdr "#include <caml/threads.h>";
+  println "#include <caml/alloc.h>";
+  println "#include <caml/mlvalues.h>";
+  println "#include <caml/callback.h>";
+  println "#include <caml/memory.h>";
+  println "#include <caml/threads.h>";
   println "#ifdef __cplusplus";
   println "}";
   println "#endif";
   println "";
   fprintfn hdr "class %s : public %s {" classname
-           (if List.mem `ItemModel ~set:options then "QAbstractItemModel" else "QObject");
-  fprintfn hdr "  Q_OBJECT";
-  fprintfn hdr "  value _camlobjHolder; // store reference to OCaml value there";
-  fprintfn hdr "public:";
-  fprintfn hdr "  %s() : _camlobjHolder(0) { };" classname;
-  fprintfn hdr "  void storeCAMLobj(value x) {";
-  fprintfn hdr "    if (_camlobjHolder != 0) {";
-  fprintfn hdr "       //maybe unregister global root?";
-  fprintfn hdr "    }";
-  fprintfn hdr "    _camlobjHolder = x;";
-  fprintfn hdr "    register_global_root(&_camlobjHolder);";
-  fprintfn hdr "  }\n";
+    (if List.mem `ItemModel ~set:options then "QAbstractItemModel" else "QObject");
+  (* TODO: Verdigris here *)
+  println "  Q_OBJECT";
+  println "  value _camlobjHolder; // store reference to OCaml value there";
+  println "public:";
+  println "  %s() : _camlobjHolder(0) { };" classname;
+  println "  void storeCAMLobj(value x) {";
+  println "    if (_camlobjHolder != 0) {";
+  println "       //maybe unregister global root?";
+  println "    }";
+  println "    _camlobjHolder = x;";
+  println "    register_global_root(&_camlobjHolder);";
+  println "  }\n";
   let () =
     if List.mem `ItemModel ~set:options then (
       println "private:";
@@ -127,7 +129,6 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
       println "    emit dataChanged(topLeft, bottomRight);";
       println "  }";
       println "";
-
     )
   in
 
@@ -159,6 +160,7 @@ let close_files () =
        close_out hndl
     | FilesKey.CSRC ->
        (* we need to generate stubs for creating C++ object there *)
+       (* TODO: If we need some Verdigris-specific methods we can do that here *)
        println "extern \"C\" value caml_create_%s(value _dummyUnitVal) {" classname;
        println "  CAMLparam1(_dummyUnitVal);";
        println "  CAMLlocal1(_ans);";
@@ -335,6 +337,7 @@ let cpp_value_of_ocaml ?(options=[]) ~cppvar ~ocamlvar
          | None -> failwith "QModelIndex is not available without QAbstractItemModel base"
        end
     | `variant ->
+      (* TODO: call some conversion function there instead of code generation *)
        println "if (Is_block(%s)) {" ocamlvar;
        println "  if (caml_hash_variant(\"string\") == Field(%s,0))" ocamlvar;
        println "    %s = QVariant::fromValue(QString(String_val(Field(%s,1))));" dest ocamlvar;
@@ -458,14 +461,13 @@ let gen_stub_cpp ?(options=[]) ~classname ~stubname ~methname ch
   let println fmt = fprintfn ch fmt in
   let (args,res) = List.list_last types in
   let res = unref res in
-  println "// stub: %s name(%s)" (cpptyp_of_typ res) (List.to_string ~f:(fun _ -> cpptyp_of_typ) args);
+  println "// stub: %s name(%s)" (cpptyp_of_typ res)
+    (List.to_string ~f:(fun _ -> cpptyp_of_typ) args);
   let argnames = List.mapi ~f:(fun i _ -> sprintf "_x%d" i) args in
   let cppvars  = List.mapi ~f:(fun i _ -> sprintf "z%d" i) args in
   println "extern \"C\" value %s(%s) {"
           stubname
-          (match args with
-           (*| [(`unit,_)] -> "value _cppobj"*)
-           | _ -> List.map ~f:(sprintf "value %s") ("_cppobj"::argnames) |> String.concat ",");
+          (List.map ~f:(sprintf "value %s") ("_cppobj"::argnames) |> String.concat ",");
   print_param_declarations ch ("_cppobj"::argnames);
   let aux_count =
     List.fold_left ~f:(fun acc x -> max (aux_variables_count_to_cpp @@ fst x) acc) ~init:0 args
@@ -553,7 +555,6 @@ let gen_meth_cpp ~minfo ?(options=[]) ~classname ~methname ch (types: meth_typ) 
          let cppvar = sprintf "x%d" i in
          let ocamlvar = make_cb_var i in
          fprintf ch "  ";
-         (*fprintfn stdout "call ocaml_value_of_cpp %s" (cpptyp_of_typ arg);*)
          ocaml_value_of_cpp ch (get_var,release_var) ~ocamlvar ~cppvar typ;
          println "  _args[%d] = %s;" (i+1) ocamlvar
        in
@@ -590,6 +591,7 @@ let gen_prop ~classname ~propname (typ: prop_typ) =
   (*let setter_name = Names.setter_of_prop propname in*)
   let cpptyp_name = cpptyp_of_proptyp @@ wrap_typ_simple typ in
 
+  (* TODO: Verdigris here *)
   println "public:";
   println "  Q_PROPERTY(%s %s READ %s NOTIFY %s)" cpptyp_name propname getter_name sgnl_name;
   println "  Q_INVOKABLE %s %s();" cpptyp_name getter_name;
@@ -621,9 +623,11 @@ let gen_signal ~classname ~signalname types' =
   (*let () = List.iter ~f:(fun x -> print_endline x) argnames in*)
 
   let println fmt = fprintfn hndl fmt in
-  println "signals:";
   let types = List.map types ~f:wrap_typ_simple in
   let f t name = sprintf "%s %s" (cpptyp_of_typ t) name in
+
+  (* TODO: Verdigris here *)
+  println "signals:";
   println "  void %s(%s);" signalname (List.to_string2 ~f types argnames);
 
   let stubname: string  = sprintf "caml_%s_%s_emitter_wrapper" classname signalname in
@@ -642,6 +646,7 @@ let gen_meth ?(minfo={mi_virt=false; mi_const=false}) ?(options=[]) ~classname ~
   in
   let (args,res) = typ' |> List.list_last in
   let hndl = FilesMap.find (classname, FilesKey.CHDR) !files in
+  (* TODO: Verdigris here *)
   fprintfn hndl "public:";
   fprintfn hndl "  Q_INVOKABLE %s %s(%s)%s%s;"
            (cpptyp_of_typ @@ unconst @@ unref res)
@@ -680,7 +685,6 @@ let itemmodel_members =
   ; ("data",       [`modelindex; `int;`variant], mi)
   ; ("addRole",    [`string;`int;`unit], {mi_virt=false; mi_const=false} )
   ]
-
 
 let gen_itemmodel_stuff ~classname =
   let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
