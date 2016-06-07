@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 OB="ocamlbuild -use-ocamlfind -classic-display -j 2"
 
+export PATH=../../src/:$PATH
+export OCAMLPATH=../../lablqml/_build/bundle
 $OB  \
     src/moc_controller.c  \
     src/qrc_resources.c \
