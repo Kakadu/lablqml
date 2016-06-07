@@ -1,7 +1,11 @@
-#include "stubs.h"
+#include <stubs.h>
+
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/callback.h>
 
 #include <QtGui/QGuiApplication>
-#include <QtQuick/qquickview.h>
+#include <QtQuick/QQuickView>
 
 void doCaml() {
   CAMLparam0();
