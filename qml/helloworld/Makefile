@@ -6,7 +6,6 @@ PPX_QT=ppx_qt.native
 OCAMLC=ocamlc
 OCAMLOPT:=ocamlfind opt -package lablqml
 CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC
-CC=g++
 OUT=helloworld
 QT_MODULES=Qt5Quick Qt5Widgets
 CLINKLIBS = -cclib -lstdc++

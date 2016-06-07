@@ -6,7 +6,7 @@ PPX_QT=ppx_qt.native
 OCAMLFIND_PACKAGES=lablqml,compiler-libs.common,str
 OCAMLC=ocamlc
 OCAMLOPT=ocamlfind opt -package $(OCAMLFIND_PACKAGES) -thread
-CXXFLAGS=-std=c++0x `pkg-config --cflags Qt5Quick` -fPIC
+CXXFLAGS=-std=c++11 `pkg-config --cflags Qt5Quick` -fPIC
 
 OUT=test
 QT_MODULES=Qt5Quick Qt5Widgets
@@ -84,6 +84,6 @@ library_code:
 	$(OCAMLOPT) -c $<
 
 clean:
-	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) -f
+	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s $(GENERATED_CPP) $(MOC_CPP) -f
 
 -include  $(shell ocamlc -where)/Makefile.config

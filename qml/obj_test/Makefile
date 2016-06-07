@@ -1,70 +1,76 @@
-.SUFFIXES: .c .cpp .h .o .ml .cmx .cmo .cmi
-.PHONY: all depend clean library_code
+PPX_QT=ppx_qt.native
+
+OCAMLFIND_PACKAGES=lablqml,compiler-libs.common,str
+OCAMLC=ocamlc
+OCAMLOPT=ocamlfind opt -package $(OCAMLFIND_PACKAGES)
+CXXFLAGS=-std=c++11 `pkg-config --cflags Qt5Quick` -fPIC
 
 OUT=main
+QT_MODULES=Qt5Quick Qt5Widgets
+CLINKLIBS = -cclib -lstdc++
+CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-L     $(QT_MODULES) ) )
+CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-other $(QT_MODULES) ) )
+CLINKLIBS+= $(addprefix -cclib , $(shell pkg-config --libs-only-l     $(QT_MODULES) ) )
+GENERATED_FILES=
 
-$(OUT):
+.PHONY: clean all generate app
+.SUFFIXES: .cmx .o .ml .cpp .c
+ifeq ($(VERBOSE),1)
+V=
+else
+V=@
+endif
 
-MOC=`qmake -query QT_INSTALL_BINS`/moc
+all: $(OUT)
+
 LABLQML=../../lablqml
-CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Quick` -I$(LABLQML)/_build -I`ocamlc -where` \
-   -Dprotected=public -Dprivate=public
 CLINK=g++ -g `pkg-config --cflags Qt5Quick Qt5Widgets` -fPIC
 CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`
-QTCLASSES=controller item
-GEN_H=
-GEN_CMX=
-GEN_MOC=
-GEN_CPP=
-GEN_CPP_OBJS=
-#MOC_CPP= #$(addprefix moc_,$(GEN_CMX:.cmx=_c.cpp) )
-PPX_QT=../ppx_qt
-OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix -linkpkg -g
-
 CMX=program.cmx
 CMX_TEST=
 
-define PPXRULES
-GEN_CMX+=$(1).cmx
-GEN_H+=$(1).h
-GEN_CPP+=$(1)_c.cpp
+define MAKE_RULES
+GENERATED_H += $(1).h
+GENERATED_SOURCES += $(1)_c.cpp
+GENERATED_CPP += $(1)_c.o
+GENERATED_MOC += moc_$(1).o
+GENERATED_OBJS += $(1)_c.o moc_$(1).o
+GENERATED_CMX += $(1).cmx
 $(1).h: $(1).ml
-	ocamlopt -I $(LABLQML)/_build/ -c -dsource -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
 
-GEN_CPP+=moc_$(1).cpp
-moc_$(1).cpp: $(1).h
-	$(MOC) $(1).h -o moc_$(1).cpp
+$(1).cmx: $(1).ml
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) -nocpp" $(1).ml
 
-GEN_CPP_OBJS+=$(1)_c.o
 $(1)_c.o: $(1)_c.cpp
-	$(CC) $(CXXFLAGS) -c $(1)_c.cpp -o $(1)_c.o
+	$(V)$(CXX) $(CXXFLAGS) -Dprotected=public -c $(1)_c.cpp -o $(1)_c.o
 
-GEN_CPP_OBJS+=moc_$(1).o
-moc_$(1)_c.o: moc_$(1)_c.cpp
-	$(CC) $(CXXFLAGS) -c $(1)_c.cpp -o $(1)_c.o
+moc_$(1).cpp: $(1).h
+	$(V)moc $(1).h -o moc_$(1).cpp
 
 endef
-$(foreach i,$(QTCLASSES),$(eval $(call PPXRULES,$(i)) ) )
 
-$(OUT): $(GEN_H) $(GEN_CPP_OBJS) $(GEN_CMX) $(CMX) camlcode.o  main.o
+QTCLASSES=controller item
+$(foreach i,$(QTCLASSES),$(eval $(call MAKE_RULES,$(i)) ) )
+
+$(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o  main.o
 	$(CLINK) -L`ocamlc -where` \
-	$(LABLQML)/_build/stubs.o $(LABLQML)/_build/startup_stubs.o $(GEN_CPP_OBJS) camlcode.o main.o -lasmrun \
+	$(GENERATED_OBJS) camlcode.o main.o -lasmrun \
+	-L../../lablqml/_build/bundle/lablqml -llablqml_stubs \
 	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
 camlcode.o: $(GEN_CMX) $(CMX)
-	$(OCAMLOPT) -output-obj -dstartup -I $(LABLQML)/_build $(LABLQML)/_build/lablqml.cmxa str.cmxa \
-	$(GEN_CMX) $(CMX) -linkall -o camlcode.o
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -output-obj -dstartup \
+	$(GENERATED_CMX) $(CMX) -linkpkg -linkall -o camlcode.o
 
-
-
-moc_%.cpp: %.h
-	$(MOC) $< > $@
-
-.cpp.o:
-	$(CC) -c $< -I.
+main.o: CXXFLAGS += -Dprotected=public -I../../lablqml
 
 .ml.cmx:
-	$(OCAMLOPT) -I $(LABLQML)/_build -c $<
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT)  -c $<
 
 clean:
 	rm -f *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) $(GEN_H) $(GEN_CPP) $(OUT)
