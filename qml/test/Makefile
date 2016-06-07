@@ -1,56 +1,89 @@
-MOC=`qmake -query QT_INSTALL_BINS`/moc
-LABLQML=../../lablqml
-CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I$(LABLQML)/_build -I`ocamlc -where` \
-   -Dprotected=public -Dprivate=public
-CLINK=g++ -g
-CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib -lQt5Quick \
-	-cclib -lQt5Gui -cclib -lQt5Qml -cclib -lQt5Widgets -cclib -lQt5Network -cclib -lQt5Core
-OUT=main
-GEN_CMX=dataItem.cmx abstractModel.cmx controller.cmx
-MOC_CPP=$(addprefix moc_,$(GEN_CMX:.cmx=_c.c) )
-GEN_CPP=$(GEN_CMX:.cmx=_c.o) $(MOC_CPP:.c=.o)
-GEN_MOC=$(GEN_CMX:.cmx=_c.c)
-OCAMLOPT=ocamlfind opt -package compiler-libs.common,unix,threads -thread -linkpkg -g
+# In this makefile we make a library from OCaml code.
+# It is not required in this concrete case but can be useful if we do
+# start-up from C
+PPX_QT=ppx_qt.native
 
+OCAMLFIND_PACKAGES=lablqml,compiler-libs.common,str
+OCAMLC=ocamlc
+OCAMLOPT=ocamlfind opt -package $(OCAMLFIND_PACKAGES) -thread
+CXXFLAGS=-std=c++0x `pkg-config --cflags Qt5Quick` -fPIC
+
+OUT=test
+QT_MODULES=Qt5Quick Qt5Widgets
+CLINKLIBS = -cclib -lstdc++
+CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-L     $(QT_MODULES) ) )
+CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-other $(QT_MODULES) ) )
+CLINKLIBS+= $(addprefix -cclib , $(shell pkg-config --libs-only-l     $(QT_MODULES) ) )
+GENERATED_FILES=
+
+.PHONY: clean all generate app
+.SUFFIXES: .cmx .o .ml .cpp .c
+ifeq ($(VERBOSE),1)
+V=
+else
+V=@
+endif
+
+GENERATED_H=
+
+all: generate $(OUT)
+
+define MAKE_RULES
+GENERATED_H += $(1).h
+GENERATED_SOURCES += $(1)_c.cpp
+GENERATED_CPP += $(1)_c.o
+GENERATED_MOC += moc_$(1).o
+GENERATED_CMX += $(1).cmx
+$(1).h: $(1).ml
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
+
+$(1).cmx: $(1).ml
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) -nocpp" $(1).ml
+
+$(1)_c.o: $(1)_c.cpp
+	$(V)$(CXX) $(CXXFLAGS) -Dprotected=public -c $(1)_c.cpp -o $(1)_c.o
+
+moc_$(1).cpp: $(1).h
+	$(V)moc $(1).h -o moc_$(1).cpp
+
+endef
+
+GEN_TARGETS=controller abstractModel dataItem
+$(foreach i,$(GEN_TARGETS),$(eval $(call MAKE_RULES,$(i)) ) )
+GEN_CMX=$(addsuffix .cmx,$(GEN_TARGETS) )
+GEN_CPP=$(GEN_CMX:.cmx=_c.c)
+GEN_MOC=$(addprefix moc_,$(GEN_CMX:.cmx=.cpp) )
+GEN_OBJS=$(GEN_CPP:.c=.o) $(GEN_MOC:.cpp=.o)
+
+generate: $(GENERATED_H)
+
+MOC=`qmake -query QT_INSTALL_BINS`/moc
+OUT=test
 CMX=helpers.cmx tree.cmx S.cmx Richify.cmx program.cmx
 CMX_TEST=Test.cmx
 
 .SUFFIXES: .c .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all depend clean
 
-all: $(GEN_CMX) $(CMX) $(GEN_MOC) $(MOC_CPP) $(GEN_CPP)
-	$(OCAMLOPT) -package str -linkpkg \
-	 $(GEN_CPP)  $(CLINKLIBS) \
-	-ccopt -L$(LABLQML)/_build/ $(LABLQML)/_build/lablqml.cmxa $(GEN_CMX) $(CMX) -o $(OUT)
-
-depend:
-	ocamlfind dep *.ml *.ml > .depend
+$(OUT): generate $(GEN_CMX) $(CMX) $(GEN_MOC) $(GEN_OBJS)
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -linkpkg \
+	$(GEN_OBJS)  $(CLINKLIBS) \
+	$(GEN_CMX) $(CMX) \
+	-o $(OUT)
 
 library_code:
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	$(OCAMLOPT) -output-obj -dstartup -I $(LABLQML)/_build $(LABLQML)/_build/lablqml.cmxa str.cmxa \
-	$(GEN_CMX) $(CMX) -linkall -o camlcode.o #-verbose
-
-moc_%_c.c: %.h
-	$(MOC) $< > $@
-
-.c.o:
-	$(CC) -c $< -I.
-
-controller.cmx: controller.ml
-	$(OCAMLOPT) -ppx ../ppx_qt -I $(LABLQML)/_build -c $<
-
-dataItem.cmx: dataItem.ml
-	$(OCAMLOPT) -ppx ../ppx_qt -I $(LABLQML)/_build -c $<
-
-abstractModel.cmx: abstractModel.ml
-	$(OCAMLOPT) -ppx ../ppx_qt -I $(LABLQML)/_build -c $<
+	$(V)$(GEN_CMX) $(CMX) -linkall -o camlcode.o
 
 .ml.cmx:
-	$(OCAMLOPT) -I $(LABLQML)/_build -c $<
+	$(V)OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c $<
 
 clean:
-	rm *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) -f
+	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) -f
 
 -include  $(shell ocamlc -where)/Makefile.config
-include .depend
-
