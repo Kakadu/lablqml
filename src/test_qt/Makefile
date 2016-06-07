@@ -6,7 +6,7 @@ src:
 ppx:
 	ocamlc -c -dsource -ppx "../ppx_qt.native -nocpp" def.ml && echo "PRINTING SOURCE" && \
 	ocamlc -c -dsource -ppx "../ppx_qt.native -destdir ." def.ml
-	g++ -std=c++0x `pkg-config --cflags Qt5Core` -Dprotected=public -fPIC -c \
+	g++ -std=c++11 `pkg-config --cflags Qt5Core` -Dprotected=public -fPIC -c \
 	controller_c.c historyModel_c.c
 
 clean:

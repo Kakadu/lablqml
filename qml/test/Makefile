@@ -1,6 +1,6 @@
 MOC=`qmake -query QT_INSTALL_BINS`/moc
 LABLQML=../../lablqml
-CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Core` -I$(LABLQML)/_build -I`ocamlc -where` \
+CC=g++ -g -fPIC -std=c++11 `pkg-config --cflags Qt5Core` -I$(LABLQML)/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g
 CLINKLIBS=-cclib -lstdc++ -ccopt -L$(shell qmake -query QT_INSTALL_LIBS) -cclib -lQt5Quick \
