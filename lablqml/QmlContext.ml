@@ -103,6 +103,7 @@ module PropMap: sig
 
   val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
   val insert: t -> name:string -> QVariant.t -> unit
+  val value_: t -> string -> QVariant.t
 end = struct
   type t = cppobj
 
@@ -110,10 +111,12 @@ end = struct
 
   external create_stub: (string -> QVariant.t -> unit) -> unit -> cppobj = "caml_create_QQmlPropertyMap"
   external insert_stub: t -> string -> QVariant.t -> unit = "caml_QQmlPropertyMap_insert"
+  external value_stub:  t -> string -> QVariant.t = "caml_QQmlPropertyMap_value"
 
   let create ?(callback=fun _ _ -> ()) () =
     let (_:string -> QVariant.t -> unit) = callback in
     create_stub callback ()
   let insert map ~name variant = insert_stub map name variant
 
+  let value_ map name = value_stub map name
 end

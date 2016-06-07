@@ -14,13 +14,19 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
 
     if (!var.isValid()) {
         _dest = hash_variant("empty");
+        /* fprintf(stderr, "invalid variant\n"); */
+
     } else {
         int ut = var.userType();
+        /* qDebug() << "ut = " << ut; */
+        /* fprintf(stderr, "ut = %d\n", ut); */
+
         switch (ut) {
         case QMetaType::Bool:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("bool"));
             Store_field(_dest, 1, Val_bool(var.toBool()));
+            /* qDebug() << "going to return bool"; */
             break;
         case QMetaType::QString:
             _dest = caml_alloc(2, 0);
@@ -79,6 +85,23 @@ extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
                      } );
 
     //caml_leave_blocking_section();
+    CAMLreturn(_ans);
+}
+
+extern "C" value caml_QQmlPropertyMap_value(value _map, value _propName) {
+    CAMLparam2(_map, _propName);
+    CAMLlocal1(_ans);
+
+    QQmlPropertyMap *map = (QQmlPropertyMap*) (Field(_map,0));
+    Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
+
+    const QVariant& ans = map->value(QString( String_val(_propName) ));
+
+    qDebug() << "WTF";
+    fflush(stderr);
+
+
+    _ans = Val_QVariant(_ans, ans);
     CAMLreturn(_ans);
 }
 

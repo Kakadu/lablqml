@@ -79,4 +79,5 @@ module PropMap: sig
 
   val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
   val insert: t -> name:string -> QVariant.t -> unit
+  val value_: t -> string -> QVariant.t
 end
