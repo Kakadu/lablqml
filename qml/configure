@@ -97,22 +97,21 @@ fi
 echo "Generating Makefile"
 echo -e "\
 .PHONY: all generator lib test\n\
-all: generator lib test\n\
+all: generator test\n\
 	\n\
 generator:\n\
 	cd $ROOT_DIR/../src; ./configure && make
 	rm -f $ROOT_DIR/ppx_qt && ln -s $ROOT_DIR/../src/ppx_qt.native $ROOT_DIR/ppx_qt\n\
 lib:\n\
-	if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/../lablqml && ./configure; fi\n\
+	#if [ ! -e $ROOT_DIR/lib/Makefile ]; then cd $ROOT_DIR/../lablqml && ./configure; fi\n\
 	\n\
 test: lib\n\
 	rm -f $ROOT_DIR/test/.depend && touch $ROOT_DIR/test/.depend
-	cd $ROOT_DIR/test && ./configure && make\n\
-	echo 'Now you can change dir to test and execute ./main -I \`ocamlc -where\`, for example'\n\
+	cd $ROOT_DIR/test && make\n\
+	@echo 'Now you can change dir to test and execute ./test -I \`ocamlc -where\`, for example'\n\
 clean:\n\
 	rm -f $ROOT_DIR/test/.depend && touch $ROOT_DIR/test/.depend && \$(MAKE) -C test clean\n\
 	\$(MAKE) -C lib clean\n\
 	\$(MAKE) -C $ROOT_DIR/../src clean\n\
 \
 " > Makefile
-
