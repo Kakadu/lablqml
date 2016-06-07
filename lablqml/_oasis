@@ -12,7 +12,7 @@ Library lablqml
   Modules:      QmlContext
   DataFiles:    stubs.h,kamlo.h
   CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c,startup_stubs.c,propMap_stubs.c
-  CCOpt:        -std=c++0x -x c++ `pkg-config --cflags Qt5Widgets Qt5Quick` -O2 -Dprivate=public
+  CCOpt:        -std=c++11 -x c++ `pkg-config --cflags Qt5Widgets Qt5Quick` -O2 -Dprivate=public
 
 Executable "test1"
   BuildTools:   ocamlbuild
@@ -22,7 +22,7 @@ Executable "test1"
   CompiledObject: best
   Install: false
   BuildDepends: oUnit,lablqml
-  CCOpt:        -std=c++0x -x c++ `pkg-config --libs Qt5Widgets Qt5Quick` -O2 -Dprivate=public
+  CCOpt:        -std=c++11 -x c++ `pkg-config --libs Qt5Widgets Qt5Quick` -O2 -Dprivate=public
 
 Test "test1"
   #Run$: flag(tests)

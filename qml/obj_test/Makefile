@@ -7,7 +7,7 @@ $(OUT):
 
 MOC=`qmake -query QT_INSTALL_BINS`/moc
 LABLQML=../../lablqml
-CC=g++ -g -fPIC -std=c++0x `pkg-config --cflags Qt5Quick` -I$(LABLQML)/_build -I`ocamlc -where` \
+CC=g++ -g -fPIC -std=c++11 `pkg-config --cflags Qt5Quick` -I$(LABLQML)/_build -I`ocamlc -where` \
    -Dprotected=public -Dprivate=public
 CLINK=g++ -g `pkg-config --cflags Qt5Quick Qt5Widgets` -fPIC
 CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`

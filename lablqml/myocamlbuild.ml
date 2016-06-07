@@ -43,7 +43,7 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
     https://github.com/ocaml/ocamlbuild/blob/master/manual/manual.adoc#dynamic-dependencies
     *)
     flag ["c"; "compile"; tag]
-         (S (make_ccopts ["-std=c++0x";"-fPIC";"-I.."] @ [A"-cc";A"g++"]) );
+         (S (make_ccopts ["-std=c++11";"-fPIC";"-I.."] @ [A"-cc";A"g++"]) );
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-Dprotected=public"]);
     (* flag ["c"; "compile"; tag] (S [A"-package";A"lablqml"]); *)
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-I."]);
