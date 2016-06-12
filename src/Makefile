@@ -1,41 +1,14 @@
-# OASIS_START
-# DO NOT EDIT (digest: a3c674b4239234cbbe53afe090018954)
+OB=ocamlbuild -use-ocamlfind -classic-display
 
-SETUP = ocaml setup.ml
+.PHONY: all clean
 
-build: setup.data
-	$(SETUP) -build $(BUILDFLAGS)
+all: ppx_qt
 
-doc: setup.data build
-	$(SETUP) -doc $(DOCFLAGS)
+ppx_qt: ppx_qt.native
+	ln -sf ./ppx_qt.native ./ppx_qt
 
-test: setup.data build
-	$(SETUP) -test $(TESTFLAGS)
-
-all:
-	$(SETUP) -all $(ALLFLAGS)
-
-install: setup.data
-	$(SETUP) -install $(INSTALLFLAGS)
-
-uninstall: setup.data
-	$(SETUP) -uninstall $(UNINSTALLFLAGS)
-
-reinstall: setup.data
-	$(SETUP) -reinstall $(REINSTALLFLAGS)
+ppx_qt.native:
+	$(OB) ppxext/ppx_qt.native
 
 clean:
-	$(SETUP) -clean $(CLEANFLAGS)
-
-distclean:
-	$(SETUP) -distclean $(DISTCLEANFLAGS)
-
-setup.data:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
-
-configure:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
-
-.PHONY: build doc test all install uninstall reinstall clean distclean configure
-
-# OASIS_STOP
+	$(RM) -r _build *.native ./ppx_qt

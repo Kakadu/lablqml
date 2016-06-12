@@ -1,6 +1,3 @@
-mocml.byte
-mocml.native
-setup.data
-setup.log
 ppx_qt.native
+/ppx_qt
 
