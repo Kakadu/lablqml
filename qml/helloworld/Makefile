@@ -1,11 +1,13 @@
+include  $(shell ocamlc -where)/Makefile.config
+
 #export PATH=$(shell echo ${PATH}):../../src
 #export OCAML_PATH=/home/kakadu/lablqt/lablqml/_build/bundle
 # WTF. We can't export variable to subshells in make
-PPX_QT=ppx_qt.native
+PPX_QT=ppx_qt
 
 OCAMLC=ocamlc
 OCAMLOPT:=ocamlfind opt -package lablqml
-CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC
+CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC -I`ocamlc -where`
 OUT=helloworld
 QT_MODULES=Qt5Quick Qt5Widgets
 CLINKLIBS = -cclib -lstdc++

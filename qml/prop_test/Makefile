@@ -1,10 +1,10 @@
 .SUFFIXES: .c .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all depend clean library_code
 
-PPX_QT=ppx_qt.native
+PPX_QT=ppx_qt
 OCAMLC=ocamlc
 OCAMLOPT:=ocamlfind opt -package lablqml
-CXXFLAGS=-std=c++11 `pkg-config --cflags Qt5Quick` -fPIC
+CXXFLAGS=-std=c++11 `pkg-config --cflags Qt5Quick` -fPIC -I`ocamlc -where`
 OUT=main
 QT_MODULES=Qt5Quick Qt5Widgets
 #CLINKLIBS = -cclib -lstdc++
