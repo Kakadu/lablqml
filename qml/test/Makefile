@@ -1,7 +1,6 @@
 # In this makefile we make a library from OCaml code.
 # It is not required in this concrete case but can be useful if we do
 # start-up from C
-PPX_QT=ppx_qt
 
 OCAMLFIND_PACKAGES=lablqml,compiler-libs.common,str
 OCAMLC=ocamlc
@@ -27,14 +26,16 @@ endif
 all: generate $(OUT)
 
 include ../Makefile.rule
+GEN_TARGETS=controller abstractModel dataItem
+$(foreach i,$(GEN_TARGETS),$(eval $(call MAKE_RULES,$(i)) ) )
 
-GEN_CPP=$(GEN_CMX:.cmx=_c.c)
-GEN_MOC=$(addprefix moc_,$(GEN_CMX:.cmx=.cpp) )
-GEN_OBJS=$(GEN_CPP:.c=.o) $(GEN_MOC:.cpp=.o)
+
+#GEN_CPP=$(GEN_CMX:.cmx=_c.c)
+#GEN_MOC=$(addprefix moc_,$(GEN_CMX:.cmx=.cpp) )
+#GEN_OBJS=$(GEN_CPP:.c=.o) $(GEN_MOC:.cpp=.o)
 
 generate: $(GENERATED_H)
 
-MOC=`qmake -query QT_INSTALL_BINS`/moc
 OUT=test
 CMX=helpers.cmx tree.cmx S.cmx Richify.cmx program.cmx
 CMX_TEST=Test.cmx
@@ -42,7 +43,7 @@ CMX_TEST=Test.cmx
 .SUFFIXES: .c .cpp .h .o .ml .cmx .cmo .cmi
 .PHONY: all depend clean
 
-$(OUT): generate $(GENRATED_CMX) $(CMX) $(GENERATED_MOC) $(GENERATED_CPP)
+$(OUT): generate $(GENERATED_CMX) $(CMX) $(GENERATED_MOC) $(GENERATED_CPP)
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	$(OCAMLOPT) -linkpkg \
 	$(GENERATED_CPP) $(GENERATED_MOC) $(CLINKLIBS) \
@@ -58,7 +59,7 @@ library_code:
 	$(OCAMLOPT) -c $<
 
 clean:
-	$(RM) -f *.o *.cm[oiax] *.cmxa *.o.startup.s \
-	$(GENERATED_SOURCES) $(GENERATED_H) $(MOC_CPP)
+	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s \
+	$(GENERATED_SOURCES) $(GENERATED_H) $(MOC_CPP) $(OUT)
 
 -include  $(shell ocamlc -where)/Makefile.config

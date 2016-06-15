@@ -62,7 +62,7 @@ g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --lib
 compile_test
 if [ $? != 0 ]; then
   echo "Building test C++&Qt application failed."
-  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 for website there is \
+  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 from website there is \
   a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
     Libs: -L\${libdir} -lQt5Core\n\
   for\n\
@@ -101,8 +101,8 @@ if [ $res != 0 ]; then
   exit 1
 fi
 
-LC=`ocamlfind list 2>/dev/null |grep lablqml | wc -l`
-if [ $LC != 0 ]; then
+ocamlfind query lablqml
+if [ $? = 0 ]; then
   echo "It seems that lablqml is already installed. Please remove it! Exit"
   #exit 1
 fi
@@ -110,22 +110,20 @@ fi
 
 echo "Generating Makefile"
 echo -e "\
-.PHONY: all generator lib test\n\
-all: generator lib \n\
-	\n\
-generator:\n\
-	cd $ROOT_DIR/src; ./configure && make all
-	rm -f $ROOT_DIR/qml/ppx_qt && ln -s $ROOT_DIR/src/ppx_qt.native $ROOT_DIR/qml/ppx_qt\n\
+.PHONY: all syntax lib test clean\n\
+all: syntax lib\n\
+\n\
+syntax:\n\
+	cd $ROOT_DIR/src && make all
 lib:\n\
 	make -C $ROOT_DIR/lablqml\n\
 test:\n\
-	cd $ROOT_DIR/qml/test && ./configure && make\n\
+	cd $ROOT_DIR/qml && make all\n\
 	echo 'Now you can change dir to qml/test and execute './main', for example'\n\
 clean:\n\
-	rm -f $ROOT_DIR/qml/test/.depend && touch $ROOT_DIR/qml/test/.depend && \$(MAKE) -C qml/test clean\n\
 	\$(MAKE) -C lablqml clean\n\
 	\$(MAKE) -C $ROOT_DIR/src clean\n\
+	\$(MAKE) -C $ROOT_DIR/qml clean\n\
 \n\
 " > Makefile
 cat Makefile.install >> Makefile
-

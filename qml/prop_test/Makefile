@@ -24,41 +24,17 @@ endif
 
 GENERATED_H=
 
-all: generate $(OUT)
+all: $(OUT)
 
-define MAKE_RULES
-GENERATED_H += $(1).h
-GENERATED_CPP += $(1)_c.cpp
-GENERATED_MOC += moc_$(1).cpp
-GENERATED_SOURCES += $(1)_c.cpp moc_$(1).cpp
-GENERATED_CMX += $(1).cmx
-$(1).h: $(1).ml
-	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
-	$(OCAMLOPT) -c -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
-
-$(1).cmx: $(1).ml
-	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
-	$(OCAMLOPT) -ppx $(PPX_QT) -c $(1).ml
-
-$(1)_c.o: $(1)_c.cpp
-	$(V)$(CXX) $(CXXFLAGS) -Dprotected=public -c $(1)_c.cpp -o $(1)_c.o
-
-moc_$(1).cpp: $(1).h
-	$(V)moc $(1).h -o moc_$(1).cpp
-
-endef
+include ../Makefile.rule
 QTCLASSES=controller intModel dataItem
 $(foreach i,$(QTCLASSES),$(eval $(call MAKE_RULES,$(i)) ) )
 
-GEN_CPP_OBJS=$(GENERATED_SOURCES:.cpp=.o)
 CMX=program.cmx
-generate: $(GENERATED_H)
 
-
-$(OUT): $(GENERATED_H) $(GEN_CPP_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o  main.o
-	$(CLINK) -L`ocamlc -where` \
-	$(GEN_CPP_OBJS)  \
-	-L../../lablqml/_build/bundle/lablqml \
+$(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o main.o
+	$(CLINK) -L`ocamlfind c -where` \
+	$(GENERATED_OBJS) -L`ocamlfind query lablqml` \
 	camlcode.o main.o -lasmrun -llablqml_stubs \
 	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
@@ -68,8 +44,6 @@ camlcode.o: $(GEN_CMX) $(CMX)
 	lablqml.cmxa $(GENERATED_CMX) $(CMX)  -linkall -o camlcode.o
 
 main.o: CXXFLAGS += -I../../lablqml
-#.cpp.o:
-#	$(CXX) $(CXXFLAGS) -I`ocamlc -where` -I../../lablqml -c $< -I.
 
 .ml.cmx:
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
@@ -79,4 +53,3 @@ clean:
 	rm -f *.o *.cm[oiax] *.cmxa *.o.startup.s $(GENERATED_SOURCES) $(GENERATED_H) $(OUT)
 
 -include  $(shell ocamlc -where)/Makefile.config
-#include .depend

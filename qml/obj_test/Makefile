@@ -1,5 +1,3 @@
-PPX_QT=ppx_qt.native
-
 OCAMLFIND_PACKAGES=lablqml,compiler-libs.common,str
 OCAMLC=ocamlc
 OCAMLOPT=ocamlfind opt -package $(OCAMLFIND_PACKAGES)
@@ -29,28 +27,7 @@ CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`
 CMX=program.cmx
 CMX_TEST=
 
-define MAKE_RULES
-GENERATED_H += $(1).h
-GENERATED_SOURCES += $(1)_c.cpp
-GENERATED_CPP += $(1)_c.o
-GENERATED_MOC += moc_$(1).o
-GENERATED_OBJS += $(1)_c.o moc_$(1).o
-GENERATED_CMX += $(1).cmx
-$(1).h: $(1).ml
-	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
-	$(OCAMLOPT) -c -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
-
-$(1).cmx: $(1).ml
-	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
-	$(OCAMLOPT) -c -ppx "$(PPX_QT) -nocpp" $(1).ml
-
-$(1)_c.o: $(1)_c.cpp
-	$(V)$(CXX) $(CXXFLAGS) -Dprotected=public -c $(1)_c.cpp -o $(1)_c.o
-
-moc_$(1).cpp: $(1).h
-	$(V)moc $(1).h -o moc_$(1).cpp
-
-endef
+include ../Makefile.rule
 
 QTCLASSES=controller item
 $(foreach i,$(QTCLASSES),$(eval $(call MAKE_RULES,$(i)) ) )
@@ -66,7 +43,7 @@ camlcode.o: $(GEN_CMX) $(CMX)
 	$(OCAMLOPT) -output-obj -dstartup \
 	$(GENERATED_CMX) $(CMX) -linkpkg -linkall -o camlcode.o
 
-main.o: CXXFLAGS += -Dprotected=public -I../../lablqml
+main.o: CXXFLAGS += -Dprotected=public -I../../lablqml -I`ocamlfind c -where`
 
 .ml.cmx:
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
@@ -76,4 +53,3 @@ clean:
 	rm -f *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) $(GEN_H) $(GEN_CPP) $(OUT)
 
 -include  $(shell ocamlc -where)/Makefile.config
-#include .depend

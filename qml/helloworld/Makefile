@@ -28,25 +28,7 @@ GENERATED_H=
 
 all: generate $(OUT)
 
-define MAKE_RULES
-GENERATED_H += $(1).h
-GENERATED_SOURCES += $(1)_c.cpp
-GENERATED_CPP += $(1)_c.o
-GENERATED_MOC += moc_$(1).o
-GENERATED_CMX += $(1).cmx
-$(1).h: $(1).ml
-	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
-	$(OCAMLOPT) -c -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
-
-$(1).cmx: $(1).ml
-
-$(1)_c.o: $(1)_c.cpp
-	$(V)$(CXX) $(CXXFLAGS) -c $(1)_c.cpp -o $(1)_c.o
-
-moc_$(1).cpp: $(1).h
-	$(V)moc $(1).h -o moc_$(1).cpp
-
-endef
+include ../Makefile.rule
 $(foreach i,controller,$(eval $(call MAKE_RULES,$(i)) ) )
 
 generate: $(GENERATED_H)
@@ -61,8 +43,8 @@ clean_gen:
 clean: clean_gen
 	$(V)$(RM) *.cm[iox] *.o libcppstubs.a $(OUT)
 
-.cpp.o:
-	$(V)$(CC) $(CXXFLAGS) -c $< -o $@
+#.cpp.o:
+#	$(V)$(CC) $(CXXFLAGS) -c $< -o $@
 
 .ml.cmx:
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
