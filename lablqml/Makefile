@@ -13,7 +13,7 @@ COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
 
 .PHONY: tests_compile run_tests tests test bundle
 
-all: lib
+all: lib bundle
 
 lib:
 	$(OB) liblablqml_stubs.a lablqml.cmxa
