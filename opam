@@ -8,12 +8,7 @@ bug-reports: "https://github.com/kakadu/lablqt/issues"
 dev-repo: "https://github.com/Kakadu/lablqt.git"
 build: [
   ["./configure"]
-  [make "generator"]
-  [
-    "bash"
-    "-exc"
-    "cd lablqml && ./configure --datarootdir=%{lib}% && %{make}%"
-  ]
+  [make]
 ]
 install: [make "opam.install"]
 remove: [
@@ -22,7 +17,6 @@ remove: [
 ]
 depends: [
   "ocamlfind"
-  "core_kernel"
   "conf-qt" {>= "5.2.1"}
   "ocamlbuild" {build}
 ]
