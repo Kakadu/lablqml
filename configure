@@ -118,9 +118,9 @@ generator:\n\
 lib:\n\
 	\$(MAKE) -C $ROOT_DIR/lablqml\n\
 test: generator lib\n\
-	cd $ROOT_DIR/qml/ && \$(MAKE)\n\
+	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
 clean:\n\
-	\$(MAKE) -C $ROOT_DIR/qml clean\n\
+	\$(MAKE) -C $ROOT_DIR/demos clean\n\
 	\$(MAKE) -C $ROOT_DIR/lablqml clean\n\
 	\$(MAKE) -C $ROOT_DIR/src clean\n\
 \n\
