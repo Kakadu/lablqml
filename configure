@@ -110,20 +110,19 @@ fi
 
 echo "Generating Makefile"
 echo -e "\
-.PHONY: all syntax lib test clean\n\
-all: syntax lib\n\
-\n\
-syntax:\n\
-	cd $ROOT_DIR/src && make all
+.PHONY: all generator lib test\n\
+all: generator lib \n\
+	\n\
+generator:\n\
+	cd $ROOT_DIR/src && \$(MAKE) all\n\
 lib:\n\
-	make -C $ROOT_DIR/lablqml\n\
-test:\n\
-	cd $ROOT_DIR/qml && make all\n\
-	echo 'Now you can change dir to qml/test and execute './main', for example'\n\
+	\$(MAKE) -C $ROOT_DIR/lablqml\n\
+test: generator lib\n\
+	cd $ROOT_DIR/qml/ && \$(MAKE)\n\
 clean:\n\
-	\$(MAKE) -C lablqml clean\n\
-	\$(MAKE) -C $ROOT_DIR/src clean\n\
 	\$(MAKE) -C $ROOT_DIR/qml clean\n\
+	\$(MAKE) -C $ROOT_DIR/lablqml clean\n\
+	\$(MAKE) -C $ROOT_DIR/src clean\n\
 \n\
 " > Makefile
 cat Makefile.install >> Makefile
