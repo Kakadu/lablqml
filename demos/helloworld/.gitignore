@@ -1,0 +1,8 @@
+*.cm[oxi]
+*.o
+camlcode.o.startup.s
+
+/controller.h
+/controller_c.cpp
+/helloworld
+

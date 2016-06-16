@@ -11,9 +11,9 @@ TEST_EXECS = test1 test2
 COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
 #$(warning $(COLON_SEPARATED_TESTS) )
 
-.PHONY: tests_compile run_tests tests test
+.PHONY: tests_compile run_tests tests test bundle
 
-all: lib
+all: lib bundle
 
 lib:
 	$(OB) liblablqml_stubs.a lablqml.cmxa
@@ -21,6 +21,20 @@ lib:
 clean:
 	$(RM) -r _build
 
+# put all files to the single directory (to be accessible for ocamlfind)
+BUNDLEDIR=_build/bundle/lablqml
+define MAKE_BUNDLE_RULE
+$(BUNDLEDIR)/$(1): $(1)
+	cp $(1) $(BUNDLEDIR)
+MAKE_BUNDLE_TARGETS += $(BUNDLEDIR)/$(1)
+endef
+$(foreach i,META $(INSTALL_TARGETS),$(eval $(call MAKE_BUNDLE_RULE,$(i)) ) )
+
+$(BUNDLEDIR):
+	mkdir -p $@
+
+
+bundle: lib $(BUNDLEDIR) $(MAKE_BUNDLE_TARGETS)
 
 tests_compile: lib
 	$(OB) src_tests/$(call join-with,.native src_tests/,$(TEST_EXECS)).native
@@ -31,8 +45,8 @@ run_tests: tests_compile
 tests: tests_compile run_tests
 test: tests
 
-install:
-	ocamlfind install lablqml META $(INSTALL_TARGETS)
+install: bundle
+	ocamlfind install lablqml META $(BUNDLEDIR)/*
 
 uninstall:
 	ocamlfind remove lablqml

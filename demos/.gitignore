@@ -1,0 +1,5 @@
+*.native
+*.pro.user
+/ppx_qt
+
+

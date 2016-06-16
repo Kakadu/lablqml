@@ -184,7 +184,7 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
   end
 
 let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration) =
-  print_endline "wrap_class_type_decl on class type markend with `qtclass`";
+  (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
   let classname = ci.pci_name.txt in
   let options =  if has_attr "itemmodel" attributes then [`ItemModel] else [] in
   if config.gencpp then Gencpp.open_files ~options ~ext:config.ext ~destdir ~classname;
@@ -287,7 +287,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   in
   let itemmodel_meths =  if has_attr "itemmodel" attributes then (
     let f (methname, meth_typ, minfo) =
-      printf "Generating itemmodel-specific meth: '%s'\n" methname;
+      (* printf "Generating itemmodel-specific meth: '%s'\n" methname; *)
       if config.gencpp then Gencpp.gen_meth ~classname ~methname ~minfo meth_typ
     in
     if config.gencpp then List.iter ~f Gencpp.itemmodel_members;

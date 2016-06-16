@@ -1,0 +1,31 @@
+PPX_QT ?= ppx_qt
+
+define MAKE_RULES
+GENERATED_H += $(1).h
+GENERATED_SOURCES += $(1)_c.cpp
+GENERATED_CMX += $(1).cmx
+GENERATED_CPP += $(1)_c.o
+GENERATED_MOC += moc_$(1).o
+GENERATED_OBJS += moc_$(1).o $(1)_c.o
+$(1).h: $(1).ml
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) -destdir . -ext cpp" $(1).ml
+
+$(1).cmx: $(1).ml
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) -nocpp" $(1).ml
+
+$(1)_c.o: $(1)_c.cpp
+	$(V)$(CXX) $(CXXFLAGS) -Dprotected=public -I`ocamlfind c -where` \
+	-c $(1)_c.cpp -o $(1)_c.o
+
+moc_$(1).o: moc_$(1).cpp
+	$(V)$(CXX) $(CXXFLAGS) -I`ocamlfind c -where` -c moc_$(1).cpp -o moc_$(1).o
+
+moc_$(1).cpp: $(1).h
+	$(V)moc $(1).h -o moc_$(1).cpp
+
+endef
+
+#GEN_TARGETS=controller abstractModel dataItem
+#$(foreach i,$(GEN_TARGETS),$(eval $(call MAKE_RULES,$(i)) ) )
