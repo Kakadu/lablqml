@@ -1,5 +1,0 @@
-version = "0.1"
-description = "OCaml bindings to Qt"
-requires = "ocamlgraph,tyxml,core"
-archive(byte) = "lablqt.cma"
-archive(native) = "lablqt.cmxa"
