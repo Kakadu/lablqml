@@ -34,7 +34,7 @@ $(foreach i,controller,$(eval $(call MAKE_RULES,$(i)) ) )
 generate: $(GENERATED_H)
 
 $(OUT): $(GENERATED_CMX) program.cmx $(GENERATED_CPP) $(GENERATED_MOC)
-	PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	$(OCAMLOPT) -linkpkg $(CLINKLIBS) $^ -o $(OUT)
 
 clean_gen:

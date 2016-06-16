@@ -13,7 +13,7 @@ make_$(1):
 	if [ -e $(1)/configure ]; then \
 		cd $(1) && PATH=`pwd`/../../src:$$$$PATH ./configure ; fi
 	PATH=`pwd`/../src:$$$$PATH OCAMLPATH=`pwd`/../lablqml/_build/bundle \
-		$(MAKE) -C $(1) VERBOSE=1
+		$(MAKE) -C $(1) #VERBOSE=1
 clean_$(1):
 	$(MAKE) -C $(1) clean
 

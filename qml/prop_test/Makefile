@@ -33,17 +33,19 @@ $(foreach i,$(QTCLASSES),$(eval $(call MAKE_RULES,$(i)) ) )
 CMX=program.cmx
 
 $(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o main.o
-	$(CLINK) -L`ocamlfind c -where` \
+	$(V)$(CLINK) -L`ocamlfind c -where` \
 	$(GENERATED_OBJS) -L`ocamlfind query lablqml` \
 	camlcode.o main.o -lasmrun -llablqml_stubs \
 	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
 camlcode.o: $(GEN_CMX) $(CMX)
-	PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	$(OCAMLOPT) -output-obj -dstartup \
 	lablqml.cmxa $(GENERATED_CMX) $(CMX)  -linkall -o camlcode.o
 
-main.o: CXXFLAGS += -I../../lablqml
+main.o: CXXFLAGS += -I../../lablqml #for stubs.h
+main.o: main.cpp
+	$(V)$(CXX) $(CXXFLAGS) -I`ocamlfind c -where` -c $< -o $@
 
 .ml.cmx:
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \

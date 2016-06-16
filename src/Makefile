@@ -1,6 +1,6 @@
 OB=ocamlbuild -use-ocamlfind -classic-display
 
-.PHONY: all clean
+.PHONY: all clean ppx_qt.native
 
 all: ppx_qt
 

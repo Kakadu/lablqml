@@ -1,8 +1,12 @@
 OUT=qocamlbrowser
+OB=ocamlbuild -use-ocamlfind #-classic-display
+
 .PHONY: all clean install uninstall
 
-all: 
-	./build
+all:
+	PATH=`pwd`/../../src/:$$PATH OCAMLPATH=`pwd`/../../lablqml/_build/bundle \
+	$(OB) src/moc_controller.c src/qrc_resources.c src/libcppstubs.a src/program.native
+
 
 clean:
 	rm -fr _build program.native
@@ -12,4 +16,3 @@ install:
 
 uninstall:
 	rm -fr $(PREFIX)/bin/$(OUT)
-

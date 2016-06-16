@@ -3,8 +3,15 @@
 PPX_QT=ppx_qt
 OUT=test.native
 
+ifeq ($(VERBOSE),1)
+V=
+else
+V=@
+endif
+
+
 all:
-	PATH=`pwd`/../../src/:$$PATH \
+	$(V)PATH=`pwd`/../../src/:$$PATH \
 	OCAMLPATH=`pwd`/../../lablqml/_build/bundle \
 	ocamlfind opt -package lablqml -ppx "$(PPX_QT) -destdir . -ext cpp" \
 	-thread -linkpkg \
