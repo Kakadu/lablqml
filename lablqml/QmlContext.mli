@@ -81,3 +81,9 @@ module PropMap: sig
   val insert: t -> name:string -> QVariant.t -> unit
   val value_: t -> string -> QVariant.t
 end
+
+module SingleFunc: sig
+  type t
+  val handler: t -> cppobj
+  val create: (unit -> unit) -> t
+end

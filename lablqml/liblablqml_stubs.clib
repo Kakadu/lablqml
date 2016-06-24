@@ -3,3 +3,5 @@ modelindex.o
 startup_stubs.o
 propMap_stubs.o
 test_stubs.o
+QSingleFunc_stubs.o
+moc_QSingleFunc.o

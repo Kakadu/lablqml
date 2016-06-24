@@ -56,13 +56,14 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   flag ["link"; "ocaml"; "use_qt5"] (make_opt "-cclib" (A"-lstdc++"));
   ()
 
+(*
 let resource_depends =
   [ "ui/ApiBrowser.qml"; "ui/main.js";"ui/PathEditor.qml";"ui/Root.qml";"ui/Scrollable.qml"
   ; "ui/ScrollBar.qml"
   (* pictures *)
   ; "ui/pics/minus-sign.png"; "ui/pics/plus-sign.png"
   ]
-
+*)
 let () =
   dispatch begin function
   | After_rules ->
@@ -75,15 +76,15 @@ let () =
         Cmd (S [A "moc"; P (env "%(path)%(modname).h"); Sh ">"; P (env "%(path)moc_%(modname).c")]);
        end);
 
-    rule "Qt resource: %.qrc -> qrc_%.c"
-      ~prods:["%(path:<**/>)qrc_%(modname:<*>).c"]
-      ~deps:("%(path)%(modname).qrc" :: resource_depends)
-      (begin fun env _ ->
-        (*
-        tag_file (env "%(path)%(modname).h") ["qt_resource"]; *)
-        Cmd(S[ A"rcc"; A"-name"; A(env "%(modname)"); P (env "%(path)%(modname).qrc")
-             ; A "-o"; P (env "%(path)qrc_%(modname).c")])
-       end);
+    (* rule "Qt resource: %.qrc -> qrc_%.c" *)
+    (*   ~prods:["%(path:<**/>)qrc_%(modname:<*>).c"] *)
+    (*   ~deps:("%(path)%(modname).qrc" :: resource_depends) *)
+    (*   (begin fun env _ -> *)
+    (*     (\* *)
+    (*     tag_file (env "%(path)%(modname).h") ["qt_resource"]; *\) *)
+    (*     Cmd(S[ A"rcc"; A"-name"; A(env "%(modname)"); P (env "%(path)%(modname).qrc") *)
+    (*          ; A "-o"; P (env "%(path)qrc_%(modname).c")]) *)
+    (*    end); *)
 
     pkg_config_lib ~lib:"Qt5Quick Qt5Widgets";
     flag ["ocaml"; "compile"; "use_ppx_qt"] (S[A"-ppx"; A"ppx_qt -nocpp"; A"-dsource"]);
@@ -99,7 +100,7 @@ let () =
     (*                      ; "src/historyModel.h" *)
     (*                      ; "src/abstractModel.h"]; *)
 
-
+    dep ["compile"; "qsinglefunc"] ["QSingleFunc.h"];
     (* Some stuff for tests *)
     flag ["link"; "ocaml"; "native";   "use_lablqml" ]
       (S[A"-g"

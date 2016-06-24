@@ -120,3 +120,18 @@ end = struct
 
   let value_ map name = value_stub map name
 end
+
+module SingleFunc: sig
+  type t
+  val handler: t -> cppobj
+  val create: (unit -> unit) -> t
+end = struct
+  type t = cppobj
+
+  let handler: t -> cppobj = fun x -> x
+
+  external create_stub: (unit -> unit) -> cppobj = "caml_create_qsinglefunc"
+
+  let create cb = create_stub cb
+
+end

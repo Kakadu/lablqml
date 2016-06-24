@@ -29,7 +29,9 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   // we need allocate argc because QApplication(int& argc,...)
   QGuiApplication *app = new QGuiApplication(*argc, copy);
   QQmlEngine* engine = new QQmlEngine();
- 
+  qDebug() << "connectiing";
+  QObject::connect(engine, SIGNAL(quit()), app, SLOT(quit()) );
+
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
 
@@ -87,6 +89,7 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
   //qDebug() << "App exec. ENTER blocking section" << __FILE__ ;
   caml_enter_blocking_section();
   app->exec();
+  caml_leave_blocking_section();
   CAMLreturn(Val_unit);
 }
 
@@ -116,15 +119,16 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   QApplication app(*argc, copy);
   QQmlApplicationEngine engine;
   QQmlContext *ctxt = engine.rootContext();
+  QObject::connect(&engine, SIGNAL(quit()), &app, SLOT(quit()));
 
   registerContext(QString("rootContext"), ctxt);
   /*
   _ctx = caml_alloc_small(1, Abstract_tag);
   (*((QQmlContext **) &Field(_ctx, 0))) = ctxt; */
-  //debug_leave_blocking;  
+  //debug_leave_blocking;
   caml_leave_blocking_section();
   _cb_res = caml_callback(_cb, Val_unit);
-  //debug_enter_blocking;  
+  //debug_enter_blocking;
   caml_enter_blocking_section();
   Q_ASSERT(_cb_res == Val_unit);
 
@@ -137,5 +141,6 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   window->showMaximized();
   //qDebug() << "executing app.exec()";
   app.exec();
+  caml_leave_blocking_section();
   CAMLreturn(Val_unit);
 }
