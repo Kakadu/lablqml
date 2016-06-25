@@ -4,7 +4,7 @@
 class QSingleFunc : public QObject
 {
   Q_OBJECT
-  value _caml_callback;
+  value _saved_callback;
 public:
   QSingleFunc(value v);
   ~QSingleFunc() {

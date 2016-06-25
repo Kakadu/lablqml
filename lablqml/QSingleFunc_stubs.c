@@ -2,6 +2,8 @@
 #include <caml/memory.h>
 #include <caml/threads.h>
 #include <caml/alloc.h>
+#include <caml/callback.h>
+#include <QtCore/QDebug>
 
 extern "C"
 value caml_create_qsinglefunc(value _cb)
@@ -17,11 +19,17 @@ value caml_create_qsinglefunc(value _cb)
   CAMLreturn(_ans);
 }
 //-----------------------------------------------------------
-QSingleFunc::QSingleFunc(value v) : _caml_callback(v)
+QSingleFunc::QSingleFunc(value v) : _saved_callback(v)
 {
-   caml_register_global_root(&_caml_callback);
+   caml_register_global_root(&_saved_callback);
 }
 void QSingleFunc::run()
 {
-      // call callback there
+    // call callback there
+    qDebug() << Q_FUNC_INFO;
+
+    //Q_ASSERT(false);
+    caml_leave_blocking_section();
+    caml_callback(_saved_callback, Val_unit);
+    caml_enter_blocking_section();
 }

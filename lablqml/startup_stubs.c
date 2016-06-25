@@ -18,7 +18,6 @@ static value Val_some(value v) {
   }\
   int *argc = new int(argc_val);
 
-
 // string array -> QGuiApplication.t * QQmlEngine.t
 extern "C" value caml_create_QGuiApplication(value _argv) {
   CAMLparam1(_argv);
@@ -29,8 +28,13 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   // we need allocate argc because QApplication(int& argc,...)
   QGuiApplication *app = new QGuiApplication(*argc, copy);
   QQmlEngine* engine = new QQmlEngine();
-  qDebug() << "connectiing";
-  QObject::connect(engine, SIGNAL(quit()), app, SLOT(quit()) );
+
+  QObject::connect(engine, &QQmlEngine::quit,
+                   [=]() {
+                       qDebug() << "Going to quit but I wont by some stupid reason, WTF";
+                       app->quit();
+                   }
+      );
 
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
@@ -90,6 +94,7 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
   caml_enter_blocking_section();
   app->exec();
   caml_leave_blocking_section();
+  qDebug() << "quittting";
   CAMLreturn(Val_unit);
 }
 

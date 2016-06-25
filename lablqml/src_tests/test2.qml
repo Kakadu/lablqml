@@ -6,6 +6,5 @@ ApplicationWindow {
   Component.onCompleted: {
       runner.run();
       Qt.quit();
-      console.log(1);
   }
 }

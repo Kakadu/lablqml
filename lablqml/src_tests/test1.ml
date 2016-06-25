@@ -5,7 +5,9 @@ open QmlContext
 let test1 () =
   let (app,engine) = create_qapplication Sys.argv in
 
-  let single = SingleFunc.create (fun () -> print_endline "single func in OCaml") in
+  let single = SingleFunc.create
+      (fun () -> Printf.printf "single func in OCaml\n%!")
+  in
 
 
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"runner"

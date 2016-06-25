@@ -1,3 +1,10 @@
+MAKE_PID := $(shell echo $$PPID)
+JOB_FLAG := $(filter -j%, $(subst -j ,-j,$(shell ps T | grep "^\s*$(MAKE_PID).*$(MAKE)")))
+JOBS     := $(subst -j,,$(JOB_FLAG))
+
+$(message $(JOB))
+$(message 1234123412341234)
+
 OB=ocamlbuild -use-ocamlfind -classic-display
 TARGETS=lablqml.cmxa lablqml.a QmlContext.cmi liblablqml_stubs.a dlllablqml_stubs.so
 INSTALL_TARGETS=$(addprefix _build/,$(TARGETS))
