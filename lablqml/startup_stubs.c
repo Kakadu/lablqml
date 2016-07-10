@@ -31,7 +31,6 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
 
   QObject::connect(engine, &QQmlEngine::quit,
                    [=]() {
-                       qDebug() << "Going to quit but I wont by some stupid reason, WTF";
                        app->quit();
                    }
       );

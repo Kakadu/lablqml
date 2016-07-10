@@ -23,12 +23,12 @@ QSingleFunc::QSingleFunc(value v) : _saved_callback(v)
 {
    caml_register_global_root(&_saved_callback);
 }
+QSingleFunc::~QSingleFunc() {
+    // TODO: unregister global root
+}
 void QSingleFunc::run()
 {
     // call callback there
-    qDebug() << Q_FUNC_INFO;
-
-    //Q_ASSERT(false);
     caml_leave_blocking_section();
     caml_callback(_saved_callback, Val_unit);
     caml_enter_blocking_section();

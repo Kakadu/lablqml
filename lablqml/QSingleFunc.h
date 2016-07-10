@@ -7,9 +7,7 @@ class QSingleFunc : public QObject
   value _saved_callback;
 public:
   QSingleFunc(value v);
-  ~QSingleFunc() {
-      // TODO: unregister global root
-  }
+  ~QSingleFunc();
   Q_INVOKABLE void run();
 
 };

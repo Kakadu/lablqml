@@ -3,5 +3,13 @@ import QtQuick.Controls 1.0
 
 ApplicationWindow {
 
-  property int intProp: 123
+    Timer {
+         interval: 500; 
+         running: true; 
+         repeat: false
+         onTriggered: {
+             runner.run();
+             Qt.quit();
+         }
+    }
 }

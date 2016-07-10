@@ -14,19 +14,14 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
 
     if (!var.isValid()) {
         _dest = hash_variant("empty");
-        /* fprintf(stderr, "invalid variant\n"); */
-
     } else {
-        int ut = var.userType();
-        /* qDebug() << "ut = " << ut; */
-        /* fprintf(stderr, "ut = %d\n", ut); */
+        const int ut = var.userType();
 
         switch (ut) {
         case QMetaType::Bool:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("bool"));
             Store_field(_dest, 1, Val_bool(var.toBool()));
-            /* qDebug() << "going to return bool"; */
             break;
         case QMetaType::QString:
             _dest = caml_alloc(2, 0);
@@ -39,6 +34,7 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
             Store_field(_dest, 1, Val_int(var.value<int>()));
             break;
         case QMetaType::Float:
+        case QMetaType::Double:
             _dest = caml_alloc(2, 0);
             Store_field(_dest, 0, hash_variant("float"));
             Store_field(_dest, 1, caml_copy_double(var.toFloat()));
@@ -97,10 +93,6 @@ extern "C" value caml_QQmlPropertyMap_value(value _map, value _propName) {
 
     const QVariant& ans = map->value(QString( String_val(_propName) ));
 
-    qDebug() << "WTF";
-    fflush(stderr);
-
-
     _ans = Val_QVariant(_ans, ans);
     CAMLreturn(_ans);
 }
@@ -116,7 +108,8 @@ extern "C" value caml_QQmlPropertyMap_insert(value _map, value _propName, value 
     QVariant newval;
     if (Is_block(_variant)) {
         if (caml_hash_variant("bool") == Field(_variant,0) )
-            newval = QVariant::fromValue(Bool_val(Field(_variant,1)));
+            // without cast it will creation Qvariant of int
+            newval = QVariant::fromValue( (bool)Bool_val(Field(_variant,1)) );
         else if (caml_hash_variant("string") == Field(_variant,0) )
             newval = QVariant::fromValue(QString(String_val(Field(_variant,1))));
         else if (caml_hash_variant("int") == Field(_variant,0) )
@@ -125,7 +118,9 @@ extern "C" value caml_QQmlPropertyMap_insert(value _map, value _propName, value 
             newval = QVariant::fromValue(Double_val(Field(_variant,1)));
         else if (caml_hash_variant("qobject") == Field(_variant,0) )
             newval = QVariant::fromValue((QObject*) (Field(Field(_variant,1),0)));
-        else Q_ASSERT_X(false,"While converting OCaml value to QVariant","Unknown variant tag");
+        else
+            Q_ASSERT_X(false, "While converting OCaml value to QVariant",
+                       "Unknown variant tag");
     } else { // empty QVariant
         newval = QVariant();
     }

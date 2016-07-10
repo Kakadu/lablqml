@@ -3,8 +3,5 @@ import QtQuick.Controls 1.0
 
 ApplicationWindow {
 
-  Component.onCompleted: {
-      runner.run();
-      Qt.quit();
-  }
+  property int intProp: 123
 }
