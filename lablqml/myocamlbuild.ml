@@ -12,6 +12,8 @@ let caml_stdlib =
   try Scanf.sscanf out "%s\n" (fun x -> x)
   with End_of_file -> failwith (sprintf "%s: can't get ocaml library path" __FILE__)
 
+let cxx = "g++"
+
 let pkg_config flags package =
   let cmd tmp =
     Command.execute ~quiet:true &
@@ -49,7 +51,7 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
     https://github.com/ocaml/ocamlbuild/blob/master/manual/manual.adoc#dynamic-dependencies
     *)
     flag ["c"; "compile"; tag]
-         (S (make_ccopts ["-std=c++11";"-fPIC";"-I.."] @ [A"-cc";A"g++"]) );
+         (S (make_ccopts ["-std=c++11";"-fPIC";"-I.."] @ [A"-cc";A cxx]) );
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-Dprotected=public"]);
     (* flag ["c"; "compile"; tag] (S [A"-package";A"lablqml"]); *)
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-I."]);
@@ -70,6 +72,61 @@ let resource_depends =
   ; "ui/pics/minus-sign.png"; "ui/pics/plus-sign.png"
   ]
 *)
+let make_gcc_rules () =
+  (* dependencies for c files from *)
+  (* http://ocaml.org/learn/tutorials/ocamlbuild/Compiling_C_with_gcc.html *)
+  let parallel files = List.map (fun f -> [f]) files in
+  let err_circular file path =
+    Printf.sprintf "Circular build detected (%s already seen in [%s])"
+      file (String.concat "; " path)
+  in
+  let parse_deps file =
+    printf "parse_deps %s\n%!" file;
+    let dir = Pathname.dirname file in
+    let deps = List.tl (List.tl (string_list_of_file file)) in
+    let deps = List.filter (fun d -> d <> "\\") deps in (* remove \ *)
+    let correct d = if Pathname.dirname d = dir then d else dir / d in
+    List.map correct deps
+  in
+  let deps_action dep prod env build =
+    let c = env dep in
+    let tags = tags_of_pathname c in
+    Cmd (S [A cxx; T tags; A "-MM"; A "-MG"; A "-MF"; Px (env prod); P c])
+  in
+  rule "c++: c -> c.depends"
+    ~dep: "%.c"
+    ~prod:"%.c.depends" (deps_action "%.c" "%.c.depends");
+
+  rule "c++: h -> h.depends"
+    ~dep:"%.h"
+    ~prod:"%.h.depends" (deps_action "%.h" "%.h.depends");
+  rule "c++: c & c.depends -> o"
+    ~deps:["%.c"; "%.c.depends"]
+    ~prod: "%.o"
+    begin fun env build ->
+      let c = env "%.c" in
+      let rec build_transitive_deps = function
+      | [] -> ()
+      | (_, []) :: todo -> build_transitive_deps todo
+      | (path, f :: rest) :: todo ->
+          if List.mem f path then failwith (err_circular f path)
+          else
+            let deps = parse_deps (f ^ ".depends") in
+            let dep_files = List.map (fun d -> d ^ ".depends") deps in
+            List.iter print_endline dep_files;
+            List.iter Outcome.ignore_good (build (parallel deps));
+            List.iter Outcome.ignore_good (build (parallel dep_files));
+            build_transitive_deps (((f :: path), deps) :: (path, rest) :: todo)
+      in
+      print_endline "A";
+      build_transitive_deps [([],[c])];
+      Cmd (S [A cxx;
+          A "-Wall"; A "-Os"; A "-std=c99";
+          T (tags_of_pathname c ++ "compile" ++ "avr-gcc");
+          A "-c"; P c;
+          A "-o"; Px (env "%.o");])
+    end
+
 let () =
   dispatch begin function
   | After_rules ->
@@ -112,8 +169,8 @@ let () =
 
     (* Explicit dependenices for header. It will be great if ocamlbiuld could detect them
        himself *)
-    dep ["compile"; "qsinglefunc"] ["QSingleFunc.h"];
-    dep ["compile"; "camlpropmap"] ["CamlPropertyMap.h"];
+    (* dep ["compile"; "qsinglefunc"] ["QSingleFunc.h"]; *)
+    (* dep ["compile"; "camlpropmap"] ["CamlPropertyMap.h"]; *)
 
     (* Some stuff for tests *)
     flag ["link"; "ocaml"; "native";   "use_lablqml" ]
@@ -122,6 +179,8 @@ let () =
         (* ;A"-cclib"; A"-llablqml_stubs" *)
         ;A"liblablqml_stubs.a"
         ]);
+
+    make_gcc_rules ();
     ()
   | _ -> ()
   end
