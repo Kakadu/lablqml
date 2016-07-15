@@ -1,8 +1,10 @@
 #include "QSingleFunc.h"
+
 #include <caml/memory.h>
 #include <caml/threads.h>
 #include <caml/alloc.h>
 #include <caml/callback.h>
+
 #include <QtCore/QDebug>
 
 extern "C"

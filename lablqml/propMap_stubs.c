@@ -1,7 +1,14 @@
 #include "stubs.h"
+extern "C" {
+#include <caml/memory.h>
+#include <caml/threads.h>
+#include <caml/alloc.h>
+#include <caml/callback.h>
+}
+#include "CamlPropertyMap.h"
+
 
 #include <QtCore/QDebug>
-#include <QtQml/QQmlPropertyMap>
 
 // converts QVariant to OCaml QVariant.t. Should be ported to the lablqml
 /*
@@ -63,13 +70,13 @@ extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
     CAMLparam2(_func, _unit);
     CAMLlocal1(_ans);
     //caml_enter_blocking_section();
-    caml_register_global_root(&_func);
 
-    QQmlPropertyMap *propMap = new QQmlPropertyMap();
+    CamlPropertyMap *propMap = new CamlPropertyMap();
     _ans = caml_alloc_small(1, Abstract_tag);
-    (*((QQmlPropertyMap **) &Field(_ans, 0))) = propMap;
+    (*((CamlPropertyMap **) &Field(_ans, 0))) = propMap;
+    propMap->saveCallback(_func);
 
-    QObject::connect(propMap, &QQmlPropertyMap::valueChanged,
+    QObject::connect(propMap, &CamlPropertyMap::valueChanged,
                      [=](const QString& propName, const QVariant& var) {
                          CAMLparam0();
                          CAMLlocal2(_nameArg,_variantArg);
@@ -88,10 +95,10 @@ extern "C" value caml_QQmlPropertyMap_value(value _map, value _propName) {
     CAMLparam2(_map, _propName);
     CAMLlocal1(_ans);
 
-    QQmlPropertyMap *map = (QQmlPropertyMap*) (Field(_map,0));
-    Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
+    QQmlPropertyMap *m = (QQmlPropertyMap*) (Field(_map,0));
+    Q_ASSERT_X(m != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
 
-    const QVariant& ans = map->value(QString( String_val(_propName) ));
+    const QVariant& ans = m->value(QString( String_val(_propName) ));
 
     _ans = Val_QVariant(_ans, ans);
     CAMLreturn(_ans);

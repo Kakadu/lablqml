@@ -1,5 +1,7 @@
 #include "stubs.h"
+
 #include <QtCore/QDebug>
+#include <QtQuick/QQuickWindow>
 
 extern "C" value Val_QVariant(value _dest, const QVariant& var);
 

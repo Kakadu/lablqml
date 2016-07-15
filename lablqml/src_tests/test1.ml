@@ -9,13 +9,12 @@ let test1 () =
       (fun () -> Printf.printf "single func in OCaml\n%!")
   in
 
-
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"runner"
     (SingleFunc.handler single);
 
   let w = loadQml "src_tests/test1.qml" engine in
   assert (w <> None);
-  let w = match w with Some w -> w | None -> failwith "can't create window" in
+  let _w = match w with Some w -> w | None -> failwith "can't create window" in
 
   QGuiApplication.exec app;
   ()

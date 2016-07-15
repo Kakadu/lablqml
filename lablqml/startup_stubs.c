@@ -1,4 +1,16 @@
 #include "stubs.h"
+
+/*  QGuiApplication for any GUI application
+ *  QApplication inherits QGuiApplication is for QWidget-based apps.
+ *  We use first one.
+ */
+#include <QtGui/QGuiApplication>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlApplicationEngine>
+#include <QtQuick/QQuickView>
+#include <QtQuick/QQuickWindow>
+#include <QtQuick/QQuickItem>
+
 static value Val_some(value v) {
   CAMLparam1(v);
   CAMLlocal1(some);
@@ -96,16 +108,37 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
   qDebug() << "quittting";
   CAMLreturn(Val_unit);
 }
-
+// QQuickWindow.t -> unit
 extern "C" value caml_QQuickWindow_showMaximized(value _w) {
   CAMLparam1(_w);
-  //caml_enter_blocking_section();
+  caml_enter_blocking_section();
   QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
-  Q_ASSERT_X(w != NULL, "caml_QQuickWindow_showMaximized", "Trying to show window which is NULL");
+  Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
   w->showMaximized();
-  //caml_leave_blocking_section();
+  caml_leave_blocking_section();
   CAMLreturn(Val_unit);
 }
+// QQuickWindow.t -> unit
+extern "C" value caml_QQuickWindow_show(value _w) {
+  CAMLparam1(_w);
+  caml_enter_blocking_section();
+  QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
+  Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
+  w->show();
+  caml_leave_blocking_section();
+  CAMLreturn(Val_unit);
+}
+// QQuickWindow.t -> unit
+extern "C" value caml_QQuickWindow_showFullScreen(value _w) {
+  CAMLparam1(_w);
+  caml_enter_blocking_section();
+  QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
+  Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
+  w->showFullScreen();
+  caml_leave_blocking_section();
+  CAMLreturn(Val_unit);
+}
+
 #define debug_enter_blocking \
 qDebug() << "___________ ENTER blocking section in " << __FILE__ << " +" << __LINE__;
 
@@ -120,7 +153,7 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   caml_enter_blocking_section();
 
   ARGC_N_ARGV(_argv, copy);
-  QApplication app(*argc, copy);
+  QGuiApplication app(*argc, copy);
   QQmlApplicationEngine engine;
   QQmlContext *ctxt = engine.rootContext();
   QObject::connect(&engine, SIGNAL(quit()), &app, SLOT(quit()));

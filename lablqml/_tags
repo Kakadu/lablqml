@@ -19,7 +19,8 @@ true: debug
 "startup_stubs.c": oasis_library_lablqml_ccopt
 "propMap_stubs.c": oasis_library_lablqml_ccopt
 "QSingleFunc_stubs.c": oasis_library_lablqml_ccopt, qsinglefunc
-"moc_QSingleFunc.c": oasis_library_lablqml_ccopt
+"CamlPropertyMap_stubs.c": oasis_library_lablqml_ccopt, camlpropmap
+<moc_*.c>: oasis_library_lablqml_ccopt
 "test_stubs.c": oasis_library_lablqml_ccopt
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 # OASIS_STOP

@@ -5,3 +5,5 @@ propMap_stubs.o
 test_stubs.o
 QSingleFunc_stubs.o
 moc_QSingleFunc.o
+CamlPropertyMap_stubs.o
+moc_CamlPropertyMap.o

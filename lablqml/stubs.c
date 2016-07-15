@@ -1,5 +1,7 @@
 #include "stubs.h"
 
+#include <QtQml/QQmlEngine>
+
 void registerContext(const QString& name, QQmlContext* v) {
   CAMLparam0();
   CAMLlocal3(_name,_view,_ans);

@@ -65,7 +65,11 @@ end
 module QQuickWindow = struct
   type base_t = t
   type t
+  external show: t -> unit = "caml_QQuickWindow_show"
+  (* backward-compatibility for SP *)
   external showMaximized: t -> unit = "caml_QQuickWindow_showMaximized"
+  external show_full_screen: t -> unit = "caml_QQuickWindow_showFullScreen"
+
   external as_test_object_stub: t -> base_t = "caml_QQuickWindow_as_qobject"
   let as_test_object win = new test_object (as_test_object_stub win)
 end

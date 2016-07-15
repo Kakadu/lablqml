@@ -42,8 +42,10 @@ end
 
 module QQuickWindow : sig
   type t
-  val showMaximized : t -> unit
-  val as_test_object: t -> test_object
+  val show             : t -> unit
+  val showMaximized    : t -> unit
+  val show_full_screen : t -> unit
+  val as_test_object   : t -> test_object
 end
 
 (** Creates QGuiApplication. No platform-dependent styling applied. *)

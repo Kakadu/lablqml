@@ -1,3 +1,4 @@
+open Printf
 open Ocamlbuild_plugin
 open Command
 
@@ -6,6 +7,10 @@ open Command
  *)
 
 let os = Ocamlbuild_pack.My_unix.run_and_read "uname -s"
+let caml_stdlib =
+  let out = Ocamlbuild_pack.My_unix.run_and_read "ocamlfind c -where" in
+  try Scanf.sscanf out "%s\n" (fun x -> x)
+  with End_of_file -> failwith (sprintf "%s: can't get ocaml library path" __FILE__)
 
 let pkg_config flags package =
   let cmd tmp =
@@ -22,6 +27,7 @@ let make_ccopts xs =
 let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   let cflags = (*(A has_lib) :: *) pkg_config "cflags" lib in (*
   let stub_l = [A (Printf.sprintf "-l%s" stublib)] in *)
+  let cflags = A("-I" ^ caml_stdlib) :: cflags in
   let libs_l = pkg_config "libs-only-l" lib in
   let libs_L = pkg_config "libs-only-L" lib in
   let linker = match os with
@@ -76,6 +82,10 @@ let () =
         Cmd (S [A "moc"; P (env "%(path)%(modname).h"); Sh ">"; P (env "%(path)moc_%(modname).c")]);
        end);
 
+
+    (* flag ["compile"; "oasis_library_lablqml_ccopt"] *)
+    (*   (S[A"-ccopt"; A("-I"^ (F.ocaml_stdlib())) ]); *)
+
     (* rule "Qt resource: %.qrc -> qrc_%.c" *)
     (*   ~prods:["%(path:<**/>)qrc_%(modname:<*>).c"] *)
     (*   ~deps:("%(path)%(modname).qrc" :: resource_depends) *)
@@ -87,7 +97,7 @@ let () =
     (*    end); *)
 
     pkg_config_lib ~lib:"Qt5Quick Qt5Widgets";
-    flag ["ocaml"; "compile"; "use_ppx_qt"] (S[A"-ppx"; A"ppx_qt -nocpp"; A"-dsource"]);
+    (* flag ["ocaml"; "compile"; "use_ppx_qt"] (S[A"-ppx"; A"ppx_qt -nocpp"; A"-dsource"]); *)
     dep ["link"; "ocaml"; "use_qrc_stub"] ["src/qrc_resources.o"];
     flag ["link"; "ocaml"; "native"; "use_liblablqml_stubs" ]
       (S[A"-cclib"; A"-llablqml_stubs"]);
@@ -100,7 +110,11 @@ let () =
     (*                      ; "src/historyModel.h" *)
     (*                      ; "src/abstractModel.h"]; *)
 
+    (* Explicit dependenices for header. It will be great if ocamlbiuld could detect them
+       himself *)
     dep ["compile"; "qsinglefunc"] ["QSingleFunc.h"];
+    dep ["compile"; "camlpropmap"] ["CamlPropertyMap.h"];
+
     (* Some stuff for tests *)
     flag ["link"; "ocaml"; "native";   "use_lablqml" ]
       (S[A"-g"
