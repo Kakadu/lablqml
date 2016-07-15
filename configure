@@ -6,12 +6,12 @@ NC='\033[0m'      # No Color
 echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
 
 function verlte() {
-    [ "$1" = "`echo -e "$1\n$2" | sort | head -n1`" ]
+    [ "$1" = "`printf "$1\n$2\n" | sort | head -n1`" ]
 }
 
 function maybe_exit() {
   if [ $1 != 0 ]; then
-    echo "ERROR: $2"
+    printf "${RED}ERROR${NC}: $2\n"
     exit 1
   fi
 }
@@ -59,7 +59,8 @@ QQuickView viewer;
 viewer.show();
 return 0;
 }" > testQtDeclarative.cpp
-g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --libs Qt5Quick`
+g++ -std=c++11 -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp \
+    `pkg-config --libs Qt5Quick`
 }
 
 compile_test
@@ -77,37 +78,10 @@ fi
 cd $ROOT_DIR
 
 
-OCAML_PACKAGES=() #required ocaml packages
-res=0
-
-for item in ${OCAML_PACKAGES[*]}
-do
-  LOC=`ocamlfind query $item`
-  if [ $? != 0 ]; then
-    #echo "OCaml package $item not found."
-    res=$(($res+1))
-  else
-    echo "OCaml package $item found at $LOC."
-    #if [ $item == "core" ]; then
-    #  #echo "Do something about core"
-    #  CORE_VERSION=`ocamlfind query core -format %v`
-    #  CORE_VERSION_MIN="109.21.00"
-    #  if ! verlte $CORE_VERSION_MIN $CORE_VERSION ; then
-    #    echo "Core version >=$CORE_VERSION_MIN (your is $CORE_VERSION) is needed"
-    #    exit 1
-    #  fi
-    #fi
-  fi
-done
-if [ $res != 0 ]; then
-  echo "There are uninstalled dependencies. Exit."
-  exit 1
-fi
-
 ocamlfind query lablqml
 if [ $? = 0 ]; then
-  echo "It seems that lablqml is already installed. Please remove it! Exit"
-  #exit 1
+    printf "It seems that lablqml is ${RED}already installed${NC}.\n"
+    printf "It may cause ocamlfind issues and/or annoying warnings. Please remove it!\n"
 fi
 
 

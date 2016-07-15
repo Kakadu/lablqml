@@ -1,5 +1,9 @@
 OUT=qocamlbrowser
-OB=ocamlbuild -use-ocamlfind #-classic-display
+OB=ocamlbuild -use-ocamlfind
+
+ifeq ($(VERBOSE),1)
+OB+= -classic-display
+endif
 
 .PHONY: all clean install uninstall
 

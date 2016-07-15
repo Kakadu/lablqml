@@ -24,10 +24,11 @@ let main () =
          printf "qobject: %s %d\n%!" (item#getname ()) (item#getage())
       | `string s -> printf "String: '%s'\n%!" s
       | `int  x -> printf "int %d\n%!" x
+      | `float f -> printf "float %f\n%!" f
+      | `bool b -> printf "bool %b\n%!" b
       | `empty -> print_endline "empty"
   end in
 
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"controller" controller#handler
 
 let () = Callback.register "doCaml" main
-

@@ -1,4 +1,8 @@
-OB=ocamlbuild -use-ocamlfind  -j 2 #-classic-display
+OB=ocamlbuild -use-ocamlfind
+
+ifeq ($(VERBOSE),1)
+OB+= -classic-display
+endif
 
 .PHONY: all clean
 

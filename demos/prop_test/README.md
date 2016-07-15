@@ -1,4 +1,5 @@
-This is very small example about sending data to OCaml side and changing properties of GUI controls from OCaml side. I don't really remember why I have created it :)
+This is very small example about sending data to OCaml side and changing properties of GUI
+controls from OCaml side. I don't really remember why I have created it :)
 
 ===============================================
 It is a demo for lablqt (outdated) introduction from:
@@ -9,4 +10,3 @@ N.B. This example is not built automatically by `$LABLQT_ROOT/qml/configure`.
 
 N.B. Don't forget that QtQuick 1.0 == QtDeclarative from Qt 4.x,
 QtQuick 2.0 == QtDeclarative from Qt5.
-

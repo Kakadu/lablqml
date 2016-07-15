@@ -26,7 +26,7 @@ let main () =
         inherit DataItem.dataItem cppObj as super
         method getcellX () = n
         val mutable text_ = sprintf "text %d" n
- 	method gettext  () = text_
+        method gettext  () = text_
         method setText s =
           if (s <> self#gettext ()) then ( text_ <- s; self#emit_textChanged s);
 
@@ -41,12 +41,12 @@ let main () =
       if (n<0 || n>= List.length data) then QVariant.empty
       else begin
         match role with
- 	| 0
-	| 555 (* DisplayRole *) ->
+        | 0
+        | 555 (* DisplayRole *) ->
             QVariant.of_int ((List.nth data n)#getcellX ())
-	| 556 (* title *) ->
+        | 556 (* title *) ->
             QVariant.of_string ((List.nth data n)#gettext ())
- 	| 666 -> QVariant.of_object ((List.nth data n)#handler)
+        | 666 -> QVariant.of_object ((List.nth data n)#handler)
         | _ -> QVariant.empty
       end
   end in

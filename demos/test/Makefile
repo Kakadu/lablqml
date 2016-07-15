@@ -2,37 +2,22 @@
 # It is not required in this concrete case but can be useful if we do
 # start-up from C
 
-OCAMLFIND_PACKAGES=lablqml,compiler-libs.common,str
-OCAMLC=ocamlc
-OCAMLOPT=ocamlfind opt -package $(OCAMLFIND_PACKAGES) -thread
-CXXFLAGS=-std=c++11 `pkg-config --cflags Qt5Quick` -fPIC -I`ocamlc -where`
+include ../Makefile.rule
+
+OCAMLFIND_PACKAGES+=compiler-libs.common str threads
+OCAML_OPT_FLAGS+=-thread
+OCAML_C_FLAGS+=-vmhread
+OCAML_COMMON_FLAGS+=-g
 
 OUT=test
-QT_MODULES=Qt5Quick Qt5Widgets
-CLINKLIBS = -cclib -lstdc++
-CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-L     $(QT_MODULES) ) )
-CLINKLIBS+= $(addprefix -ccopt , $(shell pkg-config --libs-only-other $(QT_MODULES) ) )
-CLINKLIBS+= $(addprefix -cclib , $(shell pkg-config --libs-only-l     $(QT_MODULES) ) )
-GENERATED_FILES=
 
+.DEFAULT_GOAL: all
 .PHONY: clean all generate app
-.SUFFIXES: .cmx .o .ml .cpp .c
-ifeq ($(VERBOSE),1)
-V=
-else
-V=@
-endif
 
 all: generate $(OUT)
 
-include ../Makefile.rule
 GEN_TARGETS=controller abstractModel dataItem
-$(foreach i,$(GEN_TARGETS),$(eval $(call MAKE_RULES,$(i)) ) )
-
-
-#GEN_CPP=$(GEN_CMX:.cmx=_c.c)
-#GEN_MOC=$(addprefix moc_,$(GEN_CMX:.cmx=.cpp) )
-#GEN_OBJS=$(GEN_CPP:.c=.o) $(GEN_MOC:.cpp=.o)
+$(call MAKE_RULES,$(GEN_TARGETS))
 
 generate: $(GENERATED_H)
 
@@ -45,9 +30,8 @@ CMX_TEST=Test.cmx
 
 $(OUT): generate $(GENERATED_CMX) $(CMX) $(GENERATED_MOC) $(GENERATED_CPP)
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
-	$(OCAMLOPT) -linkpkg \
-	$(GENERATED_CPP) $(GENERATED_MOC) $(CLINKLIBS) \
-	$(GENERATED_CMX) $(CMX) \
+	$(OCAMLOPT) -linkpkg $(GENERATED_CPP) $(GENERATED_MOC) \
+	$(GENERATED_CMX) $(CMX) $(ML_LDFLAGS) $(ML_LDLIBS) $(CLINKLIBS)  \
 	-o $(OUT)
 
 library_code:
@@ -58,8 +42,5 @@ library_code:
 	$(V)OCAMLPATH=../../lablqml/_build/bundle \
 	$(OCAMLOPT) -c $<
 
-clean:
-	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s \
-	$(GENERATED_SOURCES) $(GENERATED_H) $(MOC_CPP) $(OUT)
-
--include  $(shell ocamlc -where)/Makefile.config
+clean::
+	$(RM) *.o *.cm[oiax] *.cmxa $(OUT)

@@ -1,6 +1,39 @@
-PPX_QT ?= ppx_qt
+include  $(shell ocamlfind c -where)/Makefile.config
 
-define MAKE_RULES
+ifeq ($(VERBOSE),1)
+V=
+else
+V=@
+endif
+
+.SUFFIXES: .cmx .cmi .cmo .o .ml .cpp .c
+
+null  :=
+space := $(null) $(null)
+comma := ,
+
+PPX_QT ?= ppx_qt
+OCAMLFIND_PACKAGES=lablqml
+# deferred expansion allows to update PACKAGES variable in parent makefiles
+OCAML_COMMON_FLAGS=
+OCAML_OPT_FLAGS=
+OCAML_C_FLAGS=
+OCAMLOPT=ocamlfind opt -package $(subst $(space),$(comma),$(OCAMLFIND_PACKAGES)) \
+		$(OCAML_COMMON_FLAGS) $(OCAML_OPT_FLAGS)
+OCAMLC  =ocamlfind   c -package $(subst $(space),$(comma),$(OCAMLFIND_PACKAGES)) \
+		$(OCAML_COMMON_FLAGS) $(OCAML_OPT_FLAGS)
+
+override CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC -I`ocamlc -where` -std=c++11
+
+QT_MODULES=Qt5Quick Qt5Widgets
+LDLIBS += $(shell pkg-config --libs-only-l   $(QT_MODULES) ) -lstdc++
+
+LDFLAGS+= $(shell pkg-config --libs-only-L     $(QT_MODULES))
+LDFLAGS+= $(shell pkg-config --libs-only-other $(QT_MODULES))
+ML_LDFLAGS = $(addprefix -ccopt ,$(LDFLAGS))
+ML_LDLIBS  = $(addprefix -cclib ,$(LDLIBS) )
+
+define MAKE_RULES0
 GENERATED_H += $(1).h
 GENERATED_SOURCES += $(1)_c.cpp
 GENERATED_CMX += $(1).cmx
@@ -25,7 +58,14 @@ moc_$(1).o: moc_$(1).cpp
 moc_$(1).cpp: $(1).h
 	$(V)moc $(1).h -o moc_$(1).cpp
 
+clean::
+	$(RM) moc_$(1).cpp $(1)_c.cpp $(1).h
 endef
 
 #GEN_TARGETS=controller abstractModel dataItem
-#$(foreach i,$(GEN_TARGETS),$(eval $(call MAKE_RULES,$(i)) ) )
+#$(foreach i,$(GEN_TARGETS),$(eval $(call MAKE_RULES0,$(i)) ) )
+
+#specify a list of file names (without extension)
+define MAKE_RULES
+$(foreach i,$(1),$(eval $(call MAKE_RULES0,$(i)) ) )
+endef

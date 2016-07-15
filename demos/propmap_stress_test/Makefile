@@ -20,5 +20,5 @@ all:
 	-cclib -lQt5Widgets -cclib -lQt5Gui -cclib -lQt5Core \
 	-g main.ml -o $(OUT)
 
-clean:
+clean::
 	$(RM) -f *.o $(OUT) *.cm[oix]

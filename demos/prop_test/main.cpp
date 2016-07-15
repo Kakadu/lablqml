@@ -1,4 +1,4 @@
-#include <stubs.h>
+#include <stubs.h> // for register_context
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
