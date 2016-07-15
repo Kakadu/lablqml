@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Script for building OCaml+QML from cold start
+RED='\033[0;31m'
+NC='\033[0m'      # No Color
+
 echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
 
 function verlte() {
@@ -42,7 +45,7 @@ echo "qmake found for Qt $QT_VERSION"
 #    Qt 5.2 --- bugfixes and QQmlApplicationEngine
 QT_MIN_VERSION="5.2.0"
 if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
-  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)"
+  printf "${RED}Minimal Qt version is $QT_MIN_VERSION${NC} (your is $QT_VERSION)\n"
   exit 1
 fi
 
@@ -117,7 +120,7 @@ generator:\n\
 	cd $ROOT_DIR/src && \$(MAKE) all\n\
 lib:\n\
 	\$(MAKE) -C $ROOT_DIR/lablqml\n\
-test: generator lib\n\
+demos: generator lib\n\
 	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
 clean:\n\
 	\$(MAKE) -C $ROOT_DIR/demos clean\n\
