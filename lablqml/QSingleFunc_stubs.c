@@ -26,7 +26,8 @@ QSingleFunc::QSingleFunc(value v) : _saved_callback(v)
    caml_register_global_root(&_saved_callback);
 }
 QSingleFunc::~QSingleFunc() {
-    // TODO: unregister global root
+    if (_saved_callback)
+        caml_remove_global_root(&_saved_callback);
 }
 void QSingleFunc::run()
 {
