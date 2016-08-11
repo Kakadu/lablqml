@@ -63,9 +63,9 @@ let string_coretyp loc = make_coretyp ~loc (Lident "string")
 let make_store_func ~loc ~classname : structure_item =
   let pval_name = {txt="store"; loc} in
   let pval_prim = [sprintf "caml_store_value_in_%s" classname] in
-  let pval_type = Ast_helper.Typ.(arrow ""
+  let pval_type = Ast_helper.Typ.(arrow Nolabel
                                         (cppobj_coretyp loc)
-                                        (arrow ""
+                                        (arrow Nolabel
                                                (object_ ~loc [] Open)
                                                (constr ~loc {txt=Lident "unit"; loc} [] ) ) )
   in
@@ -80,7 +80,7 @@ let make_stub_general ~loc ~typnames ~name ~stub_name =
   let rec helper = function
     | [] -> assert false
     | [txt] ->   Ast_helper.Typ.constr ~loc {txt; loc} []
-    | txt::xs -> Ast_helper.Typ.(arrow "" (constr ~loc {txt; loc} []) (helper xs) )
+    | txt::xs -> Ast_helper.Typ.(arrow Nolabel (constr ~loc {txt; loc} []) (helper xs) )
   in
   let pval_type = helper typnames in
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
@@ -92,7 +92,7 @@ let make_creator ~loc ~classname =
   let pval_name = {txt=sprintf "create_%s" classname; loc} in
 
   let pval_type =
-    Ast_helper.Typ.(arrow "" (constr ~loc {txt=Lident "unit"; loc} [])
+    Ast_helper.Typ.(arrow Nolabel (constr ~loc {txt=Lident "unit"; loc} [])
                           (var ~loc "a") )
   in
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
@@ -104,9 +104,9 @@ let make_stub_for_signal ~classname ~loc ~typ name : structure_item =
 (*  let open Ast_helper in*)
   let pval_name = {txt="stub_"^name; loc} in
   let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname name] in
-  let pval_type = Ast_helper.Typ.(arrow ""
+  let pval_type = Ast_helper.Typ.(arrow Nolabel
                                         (cppobj_coretyp loc)
-                                        (arrow "" typ
+                                        (arrow Nolabel typ
                                                (constr ~loc {txt=Lident "unit"; loc} [] ) ) )
   in
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
@@ -118,7 +118,9 @@ let make_virt_meth ~loc ~name xs =
   let rec helper = function
     | [] -> assert false
     | [t] ->   Typ.constr ~loc {txt=Gencpp.ocaml_ast_of_typ t; loc} []
-    | t::xs -> Typ.(arrow "" (constr ~loc {txt=Gencpp.ocaml_ast_of_typ t; loc} []) (helper xs) )
+    | t::xs -> Typ.(arrow Nolabel
+                          (constr ~loc {txt=Gencpp.ocaml_ast_of_typ t; loc} [])
+                          (helper xs) )
   in
   let typ = helper xs in
   Cf.method_ (mkloc name loc) Public (Cfk_virtual typ)
@@ -128,8 +130,8 @@ let make_virt_meth ~loc ~name xs =
 let make_initializer ~loc : class_field =
   let pexp_desc = Ast_helper.Exp.(
     apply (ident (mkloc (Lident "store") loc))
-          [ ("",ident (mkloc (Lident "cppobj") loc))
-          ; ("",ident (mkloc (Lident "self") loc))
+          [ (Nolabel, ident (mkloc (Lident "cppobj") loc))
+          ; (Nolabel, ident (mkloc (Lident "self") loc))
           ]
           )
   in (* TODO: *)
@@ -155,7 +157,7 @@ let eval_meth_typ_gen t =
   let rec helper t =
     match t.ptyp_desc with
     | Ptyp_arrow (name,l,r) -> [name, parse_one l] @ (helper r)
-    | x -> ["", parse_one t]
+    | x -> [Nolabel, parse_one t]
   in
   helper t
 
@@ -183,6 +185,12 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
      [Pcf_method m]
   end
 
+(* in 4.03 definition have changed from string to Ast_types.arg_label *)
+let oldify_arg_label = function
+  | Nolabel -> ""
+  | Labelled s -> s
+  | Optional s -> s
+
 let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration) =
   (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
   let classname = ci.pci_name.txt in
@@ -207,7 +215,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
        let external_stub =
          let pval_name = {txt="stub_"^signalname; loc} in
          let pval_prim = [sprintf "caml_%s_%s_emitter_wrapper" classname signalname] in
-         let pval_type = Ast_helper.Typ.(arrow ""
+         let pval_type = Ast_helper.Typ.(arrow Nolabel
                                                (cppobj_coretyp loc)
                                                core_typ)
          in
@@ -223,17 +231,19 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
        if snd res <> `unit
        then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
 
-       assert (fst res = ""); (* last argument alsways will be without a label, isn't it? *)
+       assert (fst res = Nolabel);
+       (* last argument always will be without a label, isn't it? *)
 
-       if List.exists ~f:(fun (label,_) -> label="") args
+       if List.exists ~f:(fun (label,_) -> label=Nolabel) args
        then raise @@ ErrorMsg ("All arguments should have a label", loc);
 
-       if config.gencpp then Gencpp.gen_signal ~classname ~signalname args;
+       if config.gencpp then Gencpp.gen_signal ~classname ~signalname @@
+                               List.map ~f:(fun (l,x) -> (oldify_arg_label l,x)) args;
        (* OCaml meth *)
        let open Ast_helper in
        let e = Exp.(poly (apply
                             (ident (mkloc (Lident ("stub_"^signalname)) loc) )
-                            ["",send (ident (mkloc (Lident "self") loc)) "handler"
+                            [Nolabel, send (ident (mkloc (Lident "self") loc)) "handler"
                             ]
                          )
                          None) in
@@ -258,7 +268,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
           let open Ast_helper in
           let e = Exp.(poly (apply
                                (ident (mkloc (Lident ("stub_"^signal_name)) l) )
-                               ["",send (ident (mkloc (Lident "self") l)) "handler"
+                               [Nolabel, send (ident (mkloc (Lident "self") l)) "handler"
                                ]
                             )
                             None) in
@@ -267,7 +277,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
                       Public (Cfk_concrete (Fresh,e)) ).pcf_desc
           ; Pcf_method ({loc with txt=Gencpp.Names.getter_of_prop propname},
                         flag,
-                        Cfk_virtual Ast_helper.Typ.(arrow "" (unit_coretyp l) core_typ) )
+                        Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp l) core_typ) )
           ]
        | `Error msg ->
           raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, l)
@@ -311,9 +321,9 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
     let add_role_stub =
       let pval_name = {txt="add_role"; loc} in
       let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole"] in
-      let pval_type = Ast_helper.Typ.(arrow "" (var "a")
-                                            (arrow "" (int_coretyp loc)
-                                                   (arrow "" (string_coretyp loc)
+      let pval_type = Ast_helper.Typ.(arrow Nolabel (var "a")
+                                            (arrow Nolabel (int_coretyp loc)
+                                                   (arrow Nolabel (string_coretyp loc)
                                                           (unit_coretyp loc)
                                                    )
                                             )
@@ -328,7 +338,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
       let open Ast_helper in
       let e = Exp.(poly (apply
                            (ident (mkloc (Lident ("stub_"^name)) loc) )
-                           [("",ident (mkloc (Lident "cppobj") loc) )]
+                           [(Nolabel,ident (mkloc (Lident "cppobj") loc) )]
                         ) None
               )
       in
@@ -356,7 +366,9 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   let new_desc = Pcl_structure { pcstr_fields = new_fields;
                                  pcstr_self = Ast_helper.Pat.var (mkloc "self" loc) } in
   let new_expr = {ci.pci_expr with pcl_desc = new_desc } in
-  let new_desc2 = Pcl_fun ("", None, Ast_helper.Pat.var (mkloc "cppobj" loc), new_expr) in
+  let new_desc2 =
+    Pcl_fun (Nolabel, None, Ast_helper.Pat.var (mkloc "cppobj" loc), new_expr)
+  in
   let new_expr2 = {new_expr with pcl_desc = new_desc2 } in
 
   let ans = { pstr_desc=Pstr_class [{{ci with pci_expr=new_expr2} with pci_attributes=[]}]

@@ -1,3 +1,14 @@
+0.4
+OCaml (>= 4.03.0 compatibility).
+Other minor fixes (by request of and with help from Orbital Fox).
+
+0.3
+Massive rewrite from external specification file to PPX.
+
+0.2
+Compatibility with Qt 5.2. Some minor issues fixed. Removed some dependecies
+(no ocamlgraph, core -> core_kernel).
+
 0.1.8
 Clearing, reorganizing repository. Removing QtGUI outdated features. 
 Preparing for Qt 5.2 release.
