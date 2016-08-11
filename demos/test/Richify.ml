@@ -48,7 +48,7 @@ let make s =
         | STRUCT     -> Some Structure
         | CHAR _   | STRING _ -> Some Char
         | INFIXOP1 _        | INFIXOP2 _        | INFIXOP3 _        | INFIXOP4 _        | PREFIXOP _
-        | BACKQUOTE | SHARP          ->  Some Infix
+        | BACKQUOTE | HASH          ->  Some Infix
         | LABEL _        | OPTLABEL _        | QUESTION        | TILDE          ->  Some Label
         | UIDENT _ -> Some UIndent
         | LIDENT _ ->
