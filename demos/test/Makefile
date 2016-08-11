@@ -38,9 +38,16 @@ library_code:
 	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	$(V)$(OCAMLOPT) -output-obj -dstartup $(GEN_CMX) $(CMX) -linkall -o camlcode.o
 
+OCAML_MAJOR=$(shell ocamlc -version | cut -d . -f 1)
+OCAML_MINOR=$(shell ocamlc -version | cut -d . -f 2)
+
+Richify.ml: Richify.cppo.ml
+	cppo -D 'OCAML_MAJOR $(OCAML_MAJOR)' -D 'OCAML_MINOR $(OCAML_MINOR)' \
+		$< -o $@
+
 .ml.cmx:
 	$(V)OCAMLPATH=../../lablqml/_build/bundle \
 	$(OCAMLOPT) -c $<
 
 clean::
-	$(RM) *.o *.cm[oiax] *.cmxa $(OUT)
+	$(RM) *.o *.cm[oiax] Richify.ml *.cmxa $(OUT)

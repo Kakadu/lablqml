@@ -29,6 +29,7 @@ depends: [
   "ocamlbuild"  { build }
   "conf-qt"     { >= "5.2.1"}
   "lwt"         { test }
+  "cppo"        { test }
 ]
 
 available: [ (ocaml-version >= "4.02.0") & (ocaml-version <= "4.03") ]

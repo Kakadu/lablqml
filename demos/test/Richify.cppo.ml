@@ -47,8 +47,13 @@ let make s =
         | BEGIN    | END      | INCLUDE      | OBJECT      | OPEN      | SIG
         | STRUCT     -> Some Structure
         | CHAR _   | STRING _ -> Some Char
-        | INFIXOP1 _        | INFIXOP2 _        | INFIXOP3 _        | INFIXOP4 _        | PREFIXOP _
-        | BACKQUOTE | SHARP          ->  Some Infix
+        | BACKQUOTE | INFIXOP1 _  | INFIXOP2 _ | INFIXOP3 _ | INFIXOP4 _ | PREFIXOP _
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 4
+        | HASH
+#else
+        | SHARP
+#endif
+          ->  Some Infix
         | LABEL _        | OPTLABEL _        | QUESTION        | TILDE          ->  Some Label
         | UIDENT _ -> Some UIndent
         | LIDENT _ ->
