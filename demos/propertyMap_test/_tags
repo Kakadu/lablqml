@@ -1,0 +1,10 @@
+true: debug, warn(@6)
+<src/*.ml*>: package(lablqml)
+<src/*.ml*>: thread, package(compiler-libs.common), package(str)
+<src/propMapTest.native>: use_qt5, package(str,unix,lablqml), use_qrc_stub, thread
+#<src/propMapTest.native>: use_cppstubs
+
+<src/propMap_stubs.*>: package(lablqml), mocml_generated
+
+<src/resources.qrc>:     qt_resource_file
+<src/qrc_resources.c>:   qt_resource_file

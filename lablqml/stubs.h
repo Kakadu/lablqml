@@ -3,25 +3,11 @@
 
 #include "kamlo.h"
 
-#include <QtWidgets/QApplication>
 #include <QtCore/QAbstractItemModel>
-#include <QtCore/QDebug>
+#include <QtCore/QString>
 #include <QtQml/QQmlContext>
-#include <QtGui/QGuiApplication>
-#include <QtQml/QQmlEngine>
-#include <QtQml/QQmlComponent>
-#include <QtQml/QQmlApplicationEngine>
-#include <QtQuick/QQuickView>
-#include <QtQuick/QQuickWindow>
-#include <QtQuick/QQuickItem>
 
 extern void registerContext(const QString& name, QQmlContext* v);
 extern QModelIndex make_qmodelindex4(int, int, void*, const QAbstractItemModel *);
-/*
-#define CAMLOBJ_PROPERTY "_camlobj"
 
-#define GET_CAML_OBJECT(cppobj,varname) \
- QVariant camlobj_variant = cppobj->property(CAMLOBJ_PROPERTY);\
- qlonglong varname = (camlobj_variant.isValid()) ? camlobj_variant.toLongLong() : 0;
-*/
-#endif
+#endif // STUBS_H

@@ -3,7 +3,7 @@ open QmlContext
 
 let test2 () =
   let (app,engine) = create_qapplication Sys.argv in
-  let w = loadQml "src_tests/test1.qml" engine in
+  let w = loadQml "src_tests/test2.qml" engine in
   assert (w <> None);
   let w = match w with Some w -> w | None -> failwith "can't create window" in
   let map1 = PropMap.create () in
@@ -14,7 +14,7 @@ let test2 () =
   let naive_values =
     [ ("title",   QVariant.of_string "hello")
     ; ("count",   QVariant.of_int 0)
-    ; ("isSmth",  QVariant.of_bool false)
+    ; ("isSmth",  QVariant.of_bool true)
     ; ("floatVal",QVariant.of_float 1.0)
     ]
   in

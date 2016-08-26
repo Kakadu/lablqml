@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # Script for building OCaml+QML from cold start
+RED='\033[0;31m'
+NC='\033[0m'      # No Color
+
 echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
 
 function verlte() {
-    [ "$1" = "`echo -e "$1\n$2" | sort | head -n1`" ]
+    [ "$1" = "`printf "$1\n$2\n" | sort | head -n1`" ]
 }
 
 function maybe_exit() {
   if [ $1 != 0 ]; then
-    echo "ERROR: $2"
+    printf "${RED}ERROR${NC}: $2\n"
     exit 1
   fi
 }
@@ -42,7 +45,7 @@ echo "qmake found for Qt $QT_VERSION"
 #    Qt 5.2 --- bugfixes and QQmlApplicationEngine
 QT_MIN_VERSION="5.2.0"
 if ! verlte $QT_MIN_VERSION $QT_VERSION ; then
-  echo "Minimal Qt version is $QT_MIN_VERSION (your is $QT_VERSION)"
+  printf "${RED}Minimal Qt version is $QT_MIN_VERSION${NC} (your is $QT_VERSION)\n"
   exit 1
 fi
 
@@ -56,13 +59,14 @@ QQuickView viewer;
 viewer.show();
 return 0;
 }" > testQtDeclarative.cpp
-g++ -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp `pkg-config --libs Qt5Quick`
+g++ -std=c++11 -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp \
+    `pkg-config --libs Qt5Quick`
 }
 
 compile_test
 if [ $? != 0 ]; then
   echo "Building test C++&Qt application failed."
-  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 for website there is \
+  echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 from website there is \
   a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
     Libs: -L\${libdir} -lQt5Core\n\
   for\n\
@@ -74,37 +78,10 @@ fi
 cd $ROOT_DIR
 
 
-OCAML_PACKAGES=() #required ocaml packages
-res=0
-
-for item in ${OCAML_PACKAGES[*]}
-do
-  LOC=`ocamlfind query $item`
-  if [ $? != 0 ]; then
-    #echo "OCaml package $item not found."
-    res=$(($res+1))
-  else
-    echo "OCaml package $item found at $LOC."
-    #if [ $item == "core" ]; then
-    #  #echo "Do something about core"
-    #  CORE_VERSION=`ocamlfind query core -format %v`
-    #  CORE_VERSION_MIN="109.21.00"
-    #  if ! verlte $CORE_VERSION_MIN $CORE_VERSION ; then
-    #    echo "Core version >=$CORE_VERSION_MIN (your is $CORE_VERSION) is needed"
-    #    exit 1
-    #  fi
-    #fi
-  fi
-done
-if [ $res != 0 ]; then
-  echo "There are uninstalled dependencies. Exit."
-  exit 1
-fi
-
-LC=`ocamlfind list 2>/dev/null |grep lablqml | wc -l`
-if [ $LC != 0 ]; then
-  echo "It seems that lablqml is already installed. Please remove it! Exit"
-  #exit 1
+ocamlfind query lablqml
+if [ $? = 0 ]; then
+    printf "It seems that lablqml is ${RED}already installed${NC}.\n"
+    printf "It may cause ocamlfind issues and/or annoying warnings. Please remove it!\n"
 fi
 
 
@@ -114,18 +91,17 @@ echo -e "\
 all: generator lib \n\
 	\n\
 generator:\n\
-	cd $ROOT_DIR/src; ./configure && make all
-	rm -f $ROOT_DIR/qml/ppx_qt && ln -s $ROOT_DIR/src/ppx_qt.native $ROOT_DIR/qml/ppx_qt\n\
+	cd $ROOT_DIR/src && \$(MAKE) all\n\
 lib:\n\
-	make -C $ROOT_DIR/lablqml\n\
-test:\n\
-	cd $ROOT_DIR/qml/test && ./configure && make\n\
-	echo 'Now you can change dir to qml/test and execute './main', for example'\n\
+	\$(MAKE) -C $ROOT_DIR/lablqml\n\
+demos: generator lib\n\
+	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
 clean:\n\
-	rm -f $ROOT_DIR/qml/test/.depend && touch $ROOT_DIR/qml/test/.depend && \$(MAKE) -C qml/test clean\n\
-	\$(MAKE) -C lablqml clean\n\
+	\$(MAKE) -C $ROOT_DIR/demos clean\n\
+	\$(MAKE) -C $ROOT_DIR/lablqml clean\n\
 	\$(MAKE) -C $ROOT_DIR/src clean\n\
+uninstall:\n\
+	ocamlfind remove lablqml\n\n\
 \n\
 " > Makefile
 cat Makefile.install >> Makefile
-

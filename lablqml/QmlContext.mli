@@ -42,8 +42,10 @@ end
 
 module QQuickWindow : sig
   type t
-  val showMaximized : t -> unit
-  val as_test_object: t -> test_object
+  val show             : t -> unit
+  val showMaximized    : t -> unit
+  val show_full_screen : t -> unit
+  val as_test_object   : t -> test_object
 end
 
 (** Creates QGuiApplication. No platform-dependent styling applied. *)
@@ -80,4 +82,10 @@ module PropMap: sig
   val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
   val insert: t -> name:string -> QVariant.t -> unit
   val value_: t -> string -> QVariant.t
+end
+
+module SingleFunc: sig
+  type t
+  val handler: t -> cppobj
+  val create: (unit -> unit) -> t
 end

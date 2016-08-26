@@ -1,0 +1,15 @@
+camlcode.o.startup.s
+main
+test
+# C++
+.moc
+.pch
+.obj
+
+
+intModel_c.cpp
+intModel.h
+controller.h
+controller_c.cpp
+dataItem_c.cpp
+dataItem.h

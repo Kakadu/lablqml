@@ -1,4 +1,16 @@
 #include "stubs.h"
+
+/*  QGuiApplication for any GUI application
+ *  QApplication inherits QGuiApplication is for QWidget-based apps.
+ *  We use first one.
+ */
+#include <QtGui/QGuiApplication>
+#include <QtQml/QQmlEngine>
+#include <QtQml/QQmlApplicationEngine>
+#include <QtQuick/QQuickView>
+#include <QtQuick/QQuickWindow>
+#include <QtQuick/QQuickItem>
+
 static value Val_some(value v) {
   CAMLparam1(v);
   CAMLlocal1(some);
@@ -18,7 +30,6 @@ static value Val_some(value v) {
   }\
   int *argc = new int(argc_val);
 
-
 // string array -> QGuiApplication.t * QQmlEngine.t
 extern "C" value caml_create_QGuiApplication(value _argv) {
   CAMLparam1(_argv);
@@ -29,7 +40,13 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   // we need allocate argc because QApplication(int& argc,...)
   QGuiApplication *app = new QGuiApplication(*argc, copy);
   QQmlEngine* engine = new QQmlEngine();
- 
+
+  QObject::connect(engine, &QQmlEngine::quit,
+                   [=]() {
+                       app->quit();
+                   }
+      );
+
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
 
@@ -87,18 +104,41 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
   //qDebug() << "App exec. ENTER blocking section" << __FILE__ ;
   caml_enter_blocking_section();
   app->exec();
+  caml_leave_blocking_section();
+  qDebug() << "quittting";
+  CAMLreturn(Val_unit);
+}
+// QQuickWindow.t -> unit
+extern "C" value caml_QQuickWindow_showMaximized(value _w) {
+  CAMLparam1(_w);
+  caml_enter_blocking_section();
+  QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
+  Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
+  w->showMaximized();
+  caml_leave_blocking_section();
+  CAMLreturn(Val_unit);
+}
+// QQuickWindow.t -> unit
+extern "C" value caml_QQuickWindow_show(value _w) {
+  CAMLparam1(_w);
+  caml_enter_blocking_section();
+  QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
+  Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
+  w->show();
+  caml_leave_blocking_section();
+  CAMLreturn(Val_unit);
+}
+// QQuickWindow.t -> unit
+extern "C" value caml_QQuickWindow_showFullScreen(value _w) {
+  CAMLparam1(_w);
+  caml_enter_blocking_section();
+  QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
+  Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
+  w->showFullScreen();
+  caml_leave_blocking_section();
   CAMLreturn(Val_unit);
 }
 
-extern "C" value caml_QQuickWindow_showMaximized(value _w) {
-  CAMLparam1(_w);
-  //caml_enter_blocking_section();
-  QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
-  Q_ASSERT_X(w != NULL, "caml_QQuickWindow_showMaximized", "Trying to show window which is NULL");
-  w->showMaximized();
-  //caml_leave_blocking_section();
-  CAMLreturn(Val_unit);
-}
 #define debug_enter_blocking \
 qDebug() << "___________ ENTER blocking section in " << __FILE__ << " +" << __LINE__;
 
@@ -113,18 +153,19 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   caml_enter_blocking_section();
 
   ARGC_N_ARGV(_argv, copy);
-  QApplication app(*argc, copy);
+  QGuiApplication app(*argc, copy);
   QQmlApplicationEngine engine;
   QQmlContext *ctxt = engine.rootContext();
+  QObject::connect(&engine, SIGNAL(quit()), &app, SLOT(quit()));
 
   registerContext(QString("rootContext"), ctxt);
   /*
   _ctx = caml_alloc_small(1, Abstract_tag);
   (*((QQmlContext **) &Field(_ctx, 0))) = ctxt; */
-  //debug_leave_blocking;  
+  //debug_leave_blocking;
   caml_leave_blocking_section();
   _cb_res = caml_callback(_cb, Val_unit);
-  //debug_enter_blocking;  
+  //debug_enter_blocking;
   caml_enter_blocking_section();
   Q_ASSERT(_cb_res == Val_unit);
 
@@ -137,5 +178,6 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   window->showMaximized();
   //qDebug() << "executing app.exec()";
   app.exec();
+  caml_leave_blocking_section();
   CAMLreturn(Val_unit);
 }

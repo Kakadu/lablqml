@@ -1,5 +1,0 @@
-#!/bin/bash
-#running script. Use `source run` to run test app
-export LD_LIBRARY_PATH=$QT5/lib:$LD_LIBRARY_PATH
-./test
-

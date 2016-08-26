@@ -65,7 +65,11 @@ end
 module QQuickWindow = struct
   type base_t = t
   type t
+  external show: t -> unit = "caml_QQuickWindow_show"
+  (* backward-compatibility for SP *)
   external showMaximized: t -> unit = "caml_QQuickWindow_showMaximized"
+  external show_full_screen: t -> unit = "caml_QQuickWindow_showFullScreen"
+
   external as_test_object_stub: t -> base_t = "caml_QQuickWindow_as_qobject"
   let as_test_object win = new test_object (as_test_object_stub win)
 end
@@ -119,4 +123,19 @@ end = struct
   let insert map ~name variant = insert_stub map name variant
 
   let value_ map name = value_stub map name
+end
+
+module SingleFunc: sig
+  type t
+  val handler: t -> cppobj
+  val create: (unit -> unit) -> t
+end = struct
+  type t = cppobj
+
+  let handler: t -> cppobj = fun x -> x
+
+  external create_stub: (unit -> unit) -> cppobj = "caml_create_qsinglefunc"
+
+  let create cb = create_stub cb
+
 end
