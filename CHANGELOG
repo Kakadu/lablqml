@@ -10,7 +10,7 @@ Compatibility with Qt 5.2. Some minor issues fixed. Removed some dependecies
 (no ocamlgraph, core -> core_kernel).
 
 0.1.8
-Clearing, reorganizing repository. Removing QtGUI outdated features. 
+Clearing, reorganizing repository. Removing QtGUI outdated features.
 Preparing for Qt 5.2 release.
 
 0.1.7
@@ -27,4 +27,3 @@ Added signal support to mocml
 
 0.1.3
 First version released via OPAM
-

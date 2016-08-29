@@ -1,5 +1,4 @@
 #include "CamlPropertyMap.h"
-//#include "QSingleFunc.h"
 
 #include <caml/memory.h>
 #include <caml/threads.h>

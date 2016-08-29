@@ -3,3 +3,4 @@ B ../../lablqml/_build
 S .
 B .
 PKG compiler-libs
+B +threads
