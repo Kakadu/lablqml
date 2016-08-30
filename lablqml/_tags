@@ -8,6 +8,8 @@ true: annot, bin_annot, debug
 <stubs/QSingleFunc_stubs.c>: qsinglefunc
 <stubs/CamlPropertyMap_stubs.c>: camlpropmap
 <stubs/moc_*.c>: oasis_library_lablqml_ccopt
+<stubs/variant.c>: oasis_library_lablqml_ccopt, qvariant
+<stubs/property_ml.c>: oasis_library_lablqml_ccopt, property_binding
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 
 #tests
