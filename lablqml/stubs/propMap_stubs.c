@@ -95,24 +95,24 @@ value caml_create_QQmlPropertyMap(value _func, value _unit) {
     value *fv = (value*) malloc(sizeof(_func));
     *fv = _func;
     caml_register_global_root(fv);
-
+    
     CamlPropertyMap *propMap = new CamlPropertyMap();
-    _ans = caml_alloc_custom(&camlpropertymap_ops, sizeof(CamlPropertyMap*), 0, 1);
-    (*((CamlPropertyMap **) Data_custom_val(_ans))) = propMap;
+    _ans = caml_alloc_small(1, Abstract_tag);
+    (*((CamlPropertyMap **) &Field(_ans, 0))) = propMap;
     propMap->saveCallback(fv);
 
     QObject::connect(propMap, &CamlPropertyMap::valueChanged,
-                     [fv](const QString& propName, const QVariant& var) {
+                     [=](const QString& propName, const QVariant& var) {
                        caml_leave_blocking_section();
 
-                       [&fv, &propName, &var]() {
+		       [=]() {
                          CAMLparam0();
-                         CAMLlocal2(_nameArg, _variantArg);
+                         CAMLlocal2(_nameArg,_variantArg);
                          _nameArg = caml_copy_string( propName.toLocal8Bit().data() );
                          caml_callback2(*fv, _nameArg, Val_QVariant(_variantArg, var) );
                          CAMLreturn0;
-                       }();
-
+		       }();
+		       
                        caml_enter_blocking_section();
                      } );
 
