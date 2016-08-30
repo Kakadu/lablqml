@@ -69,25 +69,31 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
 extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
     CAMLparam2(_func, _unit);
     CAMLlocal1(_ans);
-    //caml_enter_blocking_section();
 
+    value *fv = (value*) malloc(sizeof(_func));
+    *fv = _func;
+    caml_register_global_root(fv);
+    
     CamlPropertyMap *propMap = new CamlPropertyMap();
     _ans = caml_alloc_small(1, Abstract_tag);
     (*((CamlPropertyMap **) &Field(_ans, 0))) = propMap;
-    propMap->saveCallback(_func);
+    propMap->saveCallback(fv);
 
     QObject::connect(propMap, &CamlPropertyMap::valueChanged,
                      [=](const QString& propName, const QVariant& var) {
+                       caml_leave_blocking_section();
+
+		       [=]() {
                          CAMLparam0();
                          CAMLlocal2(_nameArg,_variantArg);
-                         caml_leave_blocking_section();
                          _nameArg = caml_copy_string( propName.toLocal8Bit().data() );
-                         caml_callback2(_func, _nameArg, Val_QVariant(_variantArg, var) );
-                         caml_enter_blocking_section();
+                         caml_callback2(*fv, _nameArg, Val_QVariant(_variantArg, var) );
                          CAMLreturn0;
+		       }();
+		       
+                       caml_enter_blocking_section();
                      } );
 
-    //caml_leave_blocking_section();
     CAMLreturn(_ans);
 }
 
