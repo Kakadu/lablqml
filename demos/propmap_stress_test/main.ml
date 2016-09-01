@@ -5,10 +5,9 @@ let qml_mapper () =
   let o_channel = Unix.out_channel_of_descr socket in *)
 
   let value_changed name value = match value with
-    | `int i -> Printf.printf "%s %d;\t\t" name i; flush Pervasives.stdout;
+    | `int i -> if i mod 1000 = 0 then (Printf.printf "%s %d;\n" name i; flush Pervasives.stdout;)
     | _ -> ()
   in
-  let _ = Callback.register "test cb" value_changed in
   let alpha = PropMap.create ~callback:value_changed () in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"alpha" (PropMap.handler alpha);
   PropMap.insert alpha ~name:"count" (QVariant.of_int 0);
@@ -21,13 +20,9 @@ let qml_mapper () =
 
   let rec f x =
     PropMap.insert beta ~name:"count" (QVariant.of_int x);
-    Thread.delay 0.01;
+    Thread.delay 0.00001;
     f (x+1)
   in  
-  let alpha_thread = Thread.create f 0 in
-  Printf.printf "beta thread: %d\n" (Thread.id alpha_thread);
-  flush Pervasives.stdout;
-
-  ()
+  ignore (Thread.create f 0)
 
 let () = run_with_QQmlApplicationEngine Sys.argv (fun () -> qml_mapper ()) "ui.qml"
