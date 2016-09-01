@@ -1,14 +1,10 @@
 open Lablqml
 
-
-let value_changed name value = match value with
-    | `int i -> (Printf.printf "%s %d;\n%!" name i)
+  let value_changed name value = match value with
+    | `int i -> if i mod 1000 = 0 then (Printf.printf "%s %d;\n" name i; flush Pervasives.stdout;)
     | _ -> ()
-
-let beta = PropMap.create ()
-let alpha = PropMap.create ~callback:value_changed ()
-
-let qml_mapper () =
+  in
+  let alpha = PropMap.create ~callback:value_changed () in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"alpha" (PropMap.handler alpha);
   PropMap.insert alpha ~name:"countA" (QVariant.of_int 0);
   PropMap.insert alpha ~name:"c0" (QVariant.of_int 0);
@@ -17,10 +13,10 @@ let qml_mapper () =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"beta" (PropMap.handler beta);
 
   let rec f x =
-    PropMap.insert beta ~name:"countB" (QVariant.of_int x);
-    Thread.delay 0.0001;
+    PropMap.insert beta ~name:"count" (QVariant.of_int x);
+    Thread.delay 0.00001;
     f (x+1)
-  in
+  in  
   ignore (Thread.create f 0)
 
 let () = run_with_QQmlApplicationEngine Sys.argv (fun () -> qml_mapper ()) "ui.qml"
