@@ -11,10 +11,10 @@ extern "C" {
 
 /* Custom CamlPropertyMap block freeing operations */
 
-void free_qml_propertymap(value v){
-  CamlPropertyMap *m = (CamlPropertyMap*) Data_custom_val(v);
-  free(m->_saved_callback);
-  delete m;
+void free_qml_propertymap(value camlmap){
+  CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(camlmap)));
+  free(map->_saved_callback);
+  delete map;
 }
 
 static struct custom_operations camlpropertymap_ops = {
