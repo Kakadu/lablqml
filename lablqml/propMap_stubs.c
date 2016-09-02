@@ -103,10 +103,10 @@ value caml_create_QQmlPropertyMap(value _func, value _unit) {
     propMap->saveCallback(fv);
 
     QObject::connect(propMap, &CamlPropertyMap::valueChanged,
-                     [=](const QString& propName, const QVariant& var) {
+                     [fv](const QString& propName, const QVariant& var) {
                        caml_leave_blocking_section();
 
-                       [=]() {
+                       [&]() {
                          CAMLparam0();
                          CAMLlocal2(_nameArg, _variantArg);
                          _nameArg = caml_copy_string( propName.toLocal8Bit().data() );
