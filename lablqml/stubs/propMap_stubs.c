@@ -97,8 +97,9 @@ value caml_create_QQmlPropertyMap(value _func, value _unit) {
     caml_register_global_root(fv);
     
     CamlPropertyMap *propMap = new CamlPropertyMap();
-    _ans = caml_alloc_small(1, Abstract_tag);
-    (*((CamlPropertyMap **) &Field(_ans, 0))) = propMap;
+    fprintf(stderr, "\nmap @ %ld", propMap);
+    _ans = caml_alloc_custom(&camlpropertymap_ops, sizeof(CamlPropertyMap*), 0, 1);
+    (*((CamlPropertyMap **) Data_custom_val(_ans))) = propMap;
     propMap->saveCallback(fv);
 
     QObject::connect(propMap, &CamlPropertyMap::valueChanged,
