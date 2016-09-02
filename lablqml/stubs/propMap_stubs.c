@@ -106,14 +106,14 @@ value caml_create_QQmlPropertyMap(value _func, value _unit) {
                      [=](const QString& propName, const QVariant& var) {
                        caml_leave_blocking_section();
 
-		       [=]() {
+                       [=]() {
                          CAMLparam0();
-                         CAMLlocal2(_nameArg,_variantArg);
+                         CAMLlocal2(_nameArg, _variantArg);
                          _nameArg = caml_copy_string( propName.toLocal8Bit().data() );
                          caml_callback2(*fv, _nameArg, Val_QVariant(_variantArg, var) );
                          CAMLreturn0;
-		       }();
-		       
+                       }();
+
                        caml_enter_blocking_section();
                      } );
 
@@ -132,7 +132,6 @@ value caml_QQmlPropertyMap_value(value _map, value _propName) {
     _ans = Val_QVariant(_ans, ans);
     CAMLreturn(_ans);
 }
-
 
 value caml_QQmlPropertyMap_insert(value _map, value _propName, value _variant) {
     CAMLparam3(_map, _propName, _variant);
@@ -161,6 +160,7 @@ value caml_QQmlPropertyMap_insert(value _map, value _propName, value _variant) {
 
     CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(_map)));
     Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
+    fprintf(stderr, "\n inserting @ %ld", map);
     map->insert( QString(String_val(_propName)), newval);
 
     CAMLreturn(Val_unit);
