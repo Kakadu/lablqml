@@ -1,12 +1,32 @@
 #include "stubs.h"
+
+#include "CamlPropertyMap.h"
+
 extern "C" {
 #include <caml/memory.h>
 #include <caml/threads.h>
 #include <caml/alloc.h>
 #include <caml/callback.h>
-}
-#include "CamlPropertyMap.h"
+#include <caml/custom.h>
 
+/* Custom CamlPropertyMap block freeing operations */
+
+void free_qml_propertymap(value v){
+  CamlPropertyMap *m = (CamlPropertyMap*) Data_custom_val(v);
+  free(m->_saved_callback);
+  delete m;
+}
+
+static struct custom_operations camlpropertymap_ops = {
+  "lablqml.qml.propertymap",
+  free_qml_propertymap,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default,
+  custom_compare_ext_default
+};
+}
 
 #include <QtCore/QDebug>
 
@@ -66,6 +86,7 @@ extern "C" value Val_QVariant(value _dest, const QVariant& var) {
     CAMLreturn(_dest);
 }
 
+
 extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
     CAMLparam2(_func, _unit);
     CAMLlocal1(_ans);
@@ -75,8 +96,9 @@ extern "C" value caml_create_QQmlPropertyMap(value _func, value _unit) {
     caml_register_global_root(fv);
     
     CamlPropertyMap *propMap = new CamlPropertyMap();
-    _ans = caml_alloc_small(1, Abstract_tag);
-    (*((CamlPropertyMap **) &Field(_ans, 0))) = propMap;
+    fprintf(stderr, "\nmap @ %ld", propMap);
+    _ans = caml_alloc_custom(&camlpropertymap_ops, sizeof(CamlPropertyMap*), 0, 1);
+    (*((CamlPropertyMap **) Data_custom_val(_ans))) = propMap;
     propMap->saveCallback(fv);
 
     QObject::connect(propMap, &CamlPropertyMap::valueChanged,
@@ -101,10 +123,10 @@ extern "C" value caml_QQmlPropertyMap_value(value _map, value _propName) {
     CAMLparam2(_map, _propName);
     CAMLlocal1(_ans);
 
-    QQmlPropertyMap *m = (QQmlPropertyMap*) (Field(_map,0));
-    Q_ASSERT_X(m != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
+    CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(_map)));
+    Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
 
-    const QVariant& ans = m->value(QString( String_val(_propName) ));
+    const QVariant& ans = map->value(QString( String_val(_propName) ));
 
     _ans = Val_QVariant(_ans, ans);
     CAMLreturn(_ans);
@@ -113,9 +135,10 @@ extern "C" value caml_QQmlPropertyMap_value(value _map, value _propName) {
 extern "C" value caml_QQmlPropertyMap_insert(value _map, value _propName, value _variant) {
     CAMLparam3(_map, _propName, _variant);
 
-    QQmlPropertyMap *map = (QQmlPropertyMap*) (Field(_map,0));
+    CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(_map)));
     Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
 
+    fprintf(stderr, "\n inserting @ %ld", map);
     // copy and paste from the generated file for QAbstractModel subclass
     // TODO: move this conversion to the lablqml
     QVariant newval;

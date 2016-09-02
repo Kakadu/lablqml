@@ -22,7 +22,7 @@ value_hack caml_create_camlpropertymap(value_hack _cb)
 }
 //-----------------------------------------------------------
 CamlPropertyMap::CamlPropertyMap()
-  : _saved_callback(NULL)
+  : QQmlPropertyMap(), _saved_callback(NULL)
 {
 }
 

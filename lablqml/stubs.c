@@ -25,7 +25,7 @@ extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj)
   CAMLparam3(_ctx,_name,_cppObj);
 
   Q_ASSERT( Tag_val(_ctx) == Abstract_tag );
-  Q_ASSERT( Tag_val(_cppObj) == Abstract_tag );
+  Q_ASSERT( Tag_val(_cppObj) == Abstract_tag || Tag_val(_cppObj) == Custom_tag );
   QQmlContext *ctx =  ((QQmlContext*) Field(_ctx,0));
   QString name = QString(String_val(_name));
   QObject *o =  ((QObject*) Field(_cppObj,0));
