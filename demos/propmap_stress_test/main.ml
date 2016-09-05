@@ -1,21 +1,24 @@
 open QmlContext
 
+
+let value_changed name value = match value with
+    | `int i -> if i mod 1000 = 0 then (Printf.printf "%s %d;\n" name i; flush Pervasives.stdout;)
+    | _ -> ()
+
+let alpha = PropMap.create ~callback:value_changed ()
+let callback _ _ = ()
+let beta = PropMap.create ~callback ()
+
 let qml_mapper () =
 (*  let i_channel = Unix.in_channel_of_descr socket in
   let o_channel = Unix.out_channel_of_descr socket in *)
 
-  let value_changed name value = match value with
-    | `int i -> if i mod 1000 = 0 then (Printf.printf "%s %d;\n" name i; flush Pervasives.stdout;)
-    | _ -> ()
-  in
-  let alpha = PropMap.create ~callback:value_changed () in
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"alpha" (PropMap.handler alpha);
   PropMap.insert alpha ~name:"count" (QVariant.of_int 0);
   PropMap.insert alpha ~name:"c0" (QVariant.of_int 0);
   PropMap.insert alpha ~name:"c1" (QVariant.of_int 0);
 
-  let callback _ _ = () in
-  let beta = PropMap.create ~callback () in
+
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"beta" (PropMap.handler beta);
 
   let rec f x =
