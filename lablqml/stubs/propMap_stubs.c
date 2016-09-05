@@ -17,7 +17,7 @@ extern "C" {
 /* Custom CamlPropertyMap block freeing operations */
 
 void free_qml_propertymap(value camlmap){
-  CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(camlmap)));
+  CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(camlmap))); 
   free(map->_saved_callback);
   delete map;
 }
@@ -97,7 +97,6 @@ value caml_create_QQmlPropertyMap(value _func, value _unit) {
     caml_register_global_root(fv);
     
     CamlPropertyMap *propMap = new CamlPropertyMap();
-    fprintf(stderr, "\nmap @ %ld", propMap);
     _ans = caml_alloc_custom(&camlpropertymap_ops, sizeof(CamlPropertyMap*), 0, 1);
     (*((CamlPropertyMap **) Data_custom_val(_ans))) = propMap;
     propMap->saveCallback(fv);
@@ -160,7 +159,6 @@ value caml_QQmlPropertyMap_insert(value _map, value _propName, value _variant) {
 
     CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(_map)));
     Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
-    fprintf(stderr, "\n inserting @ %ld", map);
     map->insert( QString(String_val(_propName)), newval);
 
     CAMLreturn(Val_unit);
