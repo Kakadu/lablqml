@@ -10,13 +10,13 @@ typedef intnat value_hack;
 class CamlPropertyMap : public QQmlPropertyMap
 {
     Q_OBJECT
-private:
-    value_hack _saved_callback;
-public:
+ public:
+    value_hack *_saved_callback;
+
     CamlPropertyMap();
     ~CamlPropertyMap();
 
-    void saveCallback(value_hack _cb);
+    void saveCallback(value_hack *_cb);
 };
 
 #endif // CAML_PROPERTY_MAP_H
