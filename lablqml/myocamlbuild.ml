@@ -112,6 +112,7 @@ let () =
     dep ["compile"; "c"] ["stubs/lablqml.h"];
     dep ["compile"; "qsinglefunc"] ["stubs/QSingleFunc.h"];
     dep ["compile"; "camlpropmap"] ["stubs/CamlPropertyMap.h"];
+    dep ["compile"; "qstring"]     ["qml-bindings/string.h"];
 
     (* Some stuff for tests *)
     ()

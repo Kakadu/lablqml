@@ -139,6 +139,16 @@ end = struct
   let value_ map name = value_stub map name
 end
 
+module Binding = struct
+  type t = cppobj
+  type string_handler_t = string -> unit
+
+  external qml_string_c: cppobj -> string -> string_handler_t -> cppobj = "caml_qml_string_binding"
+
+  let qml_string ~(f:string_handler_t) obj name =
+    qml_string_c obj name f
+end
+
 module SingleFunc: sig
   type t
   val handler: t -> cppobj

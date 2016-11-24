@@ -102,6 +102,12 @@ module PropMap: sig
   val value_: t -> string -> QVariant.t
 end
 
+module Binding: sig
+  type t
+  type string_handler_t
+  val qml_string: f:string_handler_t -> cppobj -> string -> cppobj
+end
+
 module SingleFunc: sig
   type t
   val handler: t -> cppobj

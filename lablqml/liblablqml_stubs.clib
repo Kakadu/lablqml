@@ -7,3 +7,6 @@ stubs/QSingleFunc_stubs.o
 stubs/moc_QSingleFunc.o
 stubs/CamlPropertyMap_stubs.o
 stubs/moc_CamlPropertyMap.o
+
+qml-bindings/string_ml.o
+qml-bindings/moc_string.o

@@ -11,7 +11,8 @@ Library lablqml
   BuildTools:   ocamlbuild
   Modules:      QmlContext
   DataFiles:    stubs.h,kamlo.h
-  CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c,startup_stubs.c,propMap_stubs.c
+  CSources:     stubs.c,stubs.h,kamlo.h,modelindex.c,startup_stubs.c,propMap_stubs.c,
+		qml-bindings/string_ml.c
   CCOpt:        -std=c++11 -x c++ `pkg-config --cflags Qt5Widgets Qt5Quick` -O2 -Dprivate=public
 
 Executable "test1"
