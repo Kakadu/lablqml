@@ -63,6 +63,7 @@ value caml_qml_string_binding(value qt_object, value property_name, value func) 
   CAMLlocal1(result);
 
   QObject *parent = Ctype_of_val(QObject, qt_object);
+  Q_ASSERT(parent != nullptr);
   QmlString *str = new QmlString(func);
   QQmlProperty property (parent, String_val(property_name));
   property.connectNotifySignal(str, SLOT(valueChanged(QString)));
