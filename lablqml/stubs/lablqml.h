@@ -16,6 +16,7 @@ extern "C" {
 #include <QtQml/QQmlContext>
 
 #define Ctype_of_val(T, V) (*((T **) Data_custom_val(V)))
+#define Ctype_field(T, B, I) ((*((T **) &Field(B, I))))
 
 extern void registerContext(const QString& name, QQmlContext* v);
 extern QModelIndex make_qmodelindex4(int, int, void*, const QAbstractItemModel *);
