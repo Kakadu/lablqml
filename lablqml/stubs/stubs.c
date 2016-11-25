@@ -1,6 +1,8 @@
 #include "lablqml.h"
 
 #include <QtQml/QQmlEngine>
+#include <QtQml/QQmlApplicationEngine>
+#include <QQuickWindow>
 
 void registerContext(const QString& name, QQmlContext* v) {
   CAMLparam0();
@@ -58,6 +60,38 @@ extern "C" value caml_QQmlEngine_addImportPath(value _path, value _engine) {
   const QString &path = QString::fromLocal8Bit(String_val(_path));
   engine->addImportPath(path);
   CAMLreturn(Val_unit);
+}
+
+// QQmlApplicationEngine.t -> cppobj array
+extern "C" value caml_qml_application_engine_root_objects(value app_engine_val) {
+#warning "not tested"
+  CAMLparam1(app_engine_val);
+  CAMLlocal1(objects_array);
+
+  QQmlApplicationEngine *app_engine = ((QQmlApplicationEngine*) Field(app_engine_val, 0));
+  Q_ASSERT(app_engine != nullptr);
+
+  QList<QObject*> list =  app_engine->rootObjects();
+  objects_array = caml_alloc(list.size(), Abstract_tag);
+  for (int i = 0; i < list.size(); ++i)
+    Ctype_field(QObject, objects_array, i) = list.at(i);
+
+  CAMLreturn(objects_array);
+}
+
+// QQuickWindow.t -> string -> cppobj option
+extern "C" value caml_quick_window_find_child(value window_val, value name_val) {
+#warning "not tested"
+  CAMLparam1(window_val);
+  CAMLlocal1(object_val);
+
+  QQuickWindow *window = ((QQuickWindow*) Field(window_val, 0));
+  Q_ASSERT(window != nullptr);
+  QObject* qobject = window->findChild<QObject*>(String_val(name_val));
+  if(0 == qobject)
+    CAMLreturn(Val_none);
+  else
+    CAMLreturn(Val_some(object_val));
 }
 
 /*
