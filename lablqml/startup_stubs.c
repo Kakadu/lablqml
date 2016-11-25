@@ -20,7 +20,11 @@ static value Val_some(value v) {
 
   CAMLreturn(some);
 }
-
+/* This is a crazy macro to allocation argc and argv and pass them to
+ * QApplication. The problem is that we need copying of argv because they are
+ * ocaml values that can be moved. Moreover, we need to allocate argc because
+ * constructors receive them by reference and we cannot store them on stack.
+ */
 #define ARGC_N_ARGV(_argv,copy)\
   int argc_val = Wosize_val(_argv);\
   char **copy = new char*[argc_val];\
@@ -30,30 +34,42 @@ static value Val_some(value v) {
   }\
   int *argc = new int(argc_val);
 
-// string array -> QGuiApplication.t * QQmlEngine.t
-extern "C" value caml_create_QGuiApplication(value _argv) {
-  CAMLparam1(_argv);
-  CAMLlocal3(_ans,_app,_engine);
-  caml_enter_blocking_section();
-
-  ARGC_N_ARGV(_argv, copy)
-  // we need allocate argc because QApplication(int& argc,...)
-  QGuiApplication *app = new QGuiApplication(*argc, copy);
+std::pair<QGuiApplication*, QQmlEngine*> construct_engine(int* argc, char** argv) {
+  QGuiApplication *app = new QGuiApplication(*argc, argv);
   QQmlEngine* engine = new QQmlEngine();
 
   QObject::connect(engine, &QQmlEngine::quit,
-                   [=]() {
-                       app->quit();
-                   }
+                   [=]() { app->quit(); }
       );
 
   QQmlContext *ctxt = engine->rootContext();
   registerContext(QString("rootContext"), ctxt);
 
+  return std::make_pair(app, engine);
+}
+
+// string array -> QGuiApplication.t * QQmlEngine.t
+extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
+  CAMLparam1(_argv);
+  CAMLlocal3(_ans,_app,_engine);
+  caml_enter_blocking_section();
+
+  ARGC_N_ARGV(_argv, copy)
+  //static char* demo_args[] = { "pizda" };
+  // we need allocate argc because QApplication(int& argc,...)
+  std::pair<QGuiApplication*, QQmlEngine*> p =
+    construct_engine(argc, copy);
+
+  // qDebug() << "copy[0] = " << copy[0];
+  // qDebug() << "*argc = " << *argc;
+
+  Q_ASSERT(p.first  != nullptr);
+  Q_ASSERT(p.second != nullptr);
+
   _app = caml_alloc_small(1, Abstract_tag);
-  (*((QGuiApplication **) &Field(_app, 0))) = app;
+  (*((QGuiApplication **) &Field(_app, 0))) = p.first;
   _engine = caml_alloc_small(1, Abstract_tag);
-  (*((QQmlEngine **) &Field(_engine, 0))) = engine;
+  (*((QQmlEngine **) &Field(_engine, 0))) = p.second;
 
   _ans = caml_alloc(2,0);
   Store_field(_ans, 0, _app);
@@ -62,13 +78,82 @@ extern "C" value caml_create_QGuiApplication(value _argv) {
   CAMLreturn(_ans);
 }
 
+// TERRIBLE copy and paste :)
+std::pair<QGuiApplication*, QQmlApplicationEngine*> construct_app_engine(int argc, char** argv, const QUrl& url) {
+  QGuiApplication *app = new QGuiApplication(argc, argv);
+  QQmlApplicationEngine* engine = new QQmlApplicationEngine(url);
+
+  QObject::connect(engine, &QQmlEngine::quit,
+                   [=]() { app->quit(); }
+      );
+
+  QQmlContext *ctxt = engine->rootContext();
+  registerContext(QString("rootContext"), ctxt);
+
+  return std::make_pair(app, engine);
+}
+
+
+// almost copy and paste of previous function
+// string array -> path:string -> QGuiApplication.t * QQmlAppEngine.t
+extern "C" value caml_create_QQmlAppEngine_and_app(value _argv, value _path) {
+  CAMLparam1(_argv);
+  CAMLlocal3(_ans,_app,_engine);
+  caml_enter_blocking_section();
+
+  ARGC_N_ARGV(_argv, copy)
+  // we need allocate argc because QApplication(int& argc,...)
+  QString path = QString(String_val(_path));
+  QUrl source(path);
+  Q_ASSERT_X(!source.isEmpty(), "Url is empty", QString("The value %1 is bad.").arg(path).toLocal8Bit() );
+
+  std::pair<QGuiApplication*, QQmlApplicationEngine*> p =
+    construct_app_engine(*argc, copy, source);
+
+  Q_ASSERT(p.first  != nullptr);
+  Q_ASSERT(p.second != nullptr);
+
+  QObject::connect(p.second, &QQmlApplicationEngine::quit,
+                   [=]() { p.first->quit(); }
+                 );
+
+  _app = caml_alloc_small(1, Abstract_tag);
+  (*((QGuiApplication **) &Field(_app, 0))) = p.first;
+  _engine = caml_alloc_small(1, Abstract_tag);
+  (*((QQmlEngine **) &Field(_engine, 0))) = p.second;
+
+  _ans = caml_alloc(2,0);
+  Store_field(_ans, 0, _app);
+  Store_field(_ans, 1, _engine);
+  caml_leave_blocking_section();
+  CAMLreturn(_ans);
+}
+
+// QQmlAppEngine.t -> QQmlEngine.t
+extern "C" value caml_QQmlAppEngine_to_QQmlEngine(value _appEngine) {
+  CAMLparam1(_appEngine);
+  CAMLlocal1(_ans);
+  caml_enter_blocking_section();
+  QQmlApplicationEngine *appEngine = (QQmlApplicationEngine*) (Field(_appEngine,0));
+  Q_ASSERT(appEngine != nullptr);
+
+  QQmlEngine * engine = dynamic_cast<QQmlEngine*>(appEngine);
+  Q_ASSERT_X(engine != nullptr, "ERROR", "Can't cast QQmlAppEngine to QQmlEngine");
+
+  _ans = caml_alloc_small(1, Abstract_tag);
+  (*((QQmlEngine **) &Field(_ans, 0))) = engine;
+  caml_leave_blocking_section();
+  CAMLreturn(_ans);
+}
+
 // string -> QQmlEngine.t -> QQuickWindow.t option
-extern "C" value caml_loadQml(value _path, value _engine) {
+extern "C" value caml_QQmlEngine_loadQml(value _path, value _engine) {
   CAMLparam2(_path, _engine);
   CAMLlocal1(_ans);
   caml_enter_blocking_section();
 
   QQmlEngine *engine = (QQmlEngine*) (Field(_engine,0));
+  Q_ASSERT(engine != nullptr);
   QUrl source(String_val(_path));
   QQmlComponent *comp = new QQmlComponent(engine, source);
   QObject *topLevel = comp->create(engine->rootContext() );
@@ -101,6 +186,7 @@ extern "C" value caml_loadQml(value _path, value _engine) {
 extern "C" value caml_QGuiApplication_exec(value _app) {
   CAMLparam1(_app);
   QGuiApplication *app = (QGuiApplication*) (Field(_app,0));
+  Q_ASSERT(app != nullptr);
   //qDebug() << "App exec. ENTER blocking section" << __FILE__ ;
   caml_enter_blocking_section();
   app->exec();

@@ -13,7 +13,7 @@ space :=
 space +=
 join-with = $(subst $(space),$1,$(strip $2))
 
-TEST_EXECS = test1 test2
+TEST_EXECS = test1 test2 test4
 
 COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
 #$(warning $(COLON_SEPARATED_TESTS) )
@@ -44,6 +44,7 @@ $(BUNDLEDIR):
 bundle: lib $(BUNDLEDIR) $(MAKE_BUNDLE_TARGETS)
 
 tests_compile: lib
+	@$(RM) -r _build/src_tests
 	$(OB) src_tests/$(call join-with,.native src_tests/,$(TEST_EXECS)).native
 
 run_tests: tests_compile

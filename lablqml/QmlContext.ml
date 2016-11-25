@@ -62,6 +62,11 @@ module QQmlEngine = struct
   external register_context: name:string -> t -> unit = "caml_QQmlEngine_registerContext"
   external add_import_path: string -> t -> unit = "caml_QQmlEngine_addImportPath"
 end
+
+external create_qguiapplication_stub : string array -> QGuiApplication.t * QQmlEngine.t
+  = "caml_create_QQmlEngine_and_app"
+let create_qapplication argv = create_qguiapplication_stub argv
+
 module QQuickWindow = struct
   type base_t = t
   type t
@@ -74,12 +79,19 @@ module QQuickWindow = struct
   let as_test_object win = new test_object (as_test_object_stub win)
 end
 
-external create_qguiapplication_stub : string array -> QGuiApplication.t * QQmlEngine.t
-  = "caml_create_QGuiApplication"
-let create_qapplication argv = create_qguiapplication_stub argv
-
-external loadQml_stub: string -> QQmlEngine.t -> QQuickWindow.t option = "caml_loadQml"
+external loadQml_stub: string -> QQmlEngine.t -> QQuickWindow.t option
+  = "caml_QQmlEngine_loadQml"
 let loadQml path engine = loadQml_stub path engine
+
+(* Some stuff related to QQmlAppEngine *)
+module QQmlAppEngine = struct
+  type t
+  external to_QQmlEngine : t -> QQmlEngine.t = "caml_QQmlAppEngine_to_QQmlEngine"
+end
+(* TODO: make the names good *)
+external create_app_engine_stub : string array -> string -> QGuiApplication.t * QQmlAppEngine.t
+  = "caml_create_QQmlAppEngine_and_app"
+let create_app_engine argv path = create_app_engine_stub argv path
 
 external run_with_QQmlApplicationEngine_stub : string array -> (unit -> unit) -> string -> unit
   = "caml_run_QQmlApplicationEngine"

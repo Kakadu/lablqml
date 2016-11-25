@@ -34,11 +34,16 @@ module QGuiApplication : sig
   type t
   val exec : t -> unit
 end
+
+(** This Qml engine doesn't apply any platform dependent styling. *)
 module QQmlEngine : sig
   type t
   val register_context: name:string -> t -> unit
   val add_import_path: string -> t -> unit
 end
+
+(** Creates QGuiApplication. No platform-dependent styling applied. *)
+val create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
 
 module QQuickWindow : sig
   type t
@@ -48,13 +53,26 @@ module QQuickWindow : sig
   val as_test_object   : t -> test_object
 end
 
-(** Creates QGuiApplication. No platform-dependent styling applied. *)
-val create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
-
 (** Creates QQuickWindow using file and QQmlEngine *)
 val loadQml : string -> QQmlEngine.t -> QQuickWindow.t option
 
-(** Initializates and open QQuickWindow. Uses platform dependent styling *)
+(* This QML engine applies platform-dependent styling. With this engine
+ * your root QML object should be a Window form QtQuick.Controls library.
+ * *)
+module QQmlAppEngine : sig
+  type t
+
+  (* Use this function to get access to functions from QQmlEngine module *)
+  val to_QQmlEngine : t -> QQmlEngine.t
+end
+
+(** Creates QGuiApplication and QQmlApplicationEngine. *)
+val create_app_engine: string array -> string -> QGuiApplication.t * QQmlAppEngine.t
+
+(** Function [run_with_QQmlApplicationEngine argv callback path] initializates
+ *  and open QQuickWindow using QQmlApplcationEngine. It uses platform-dependet
+ *  styling, so the root element of the QML file specified in [path] should be
+ *  a Window from QtQuick.Controls library *)
 val run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
 
 type qvariantable
