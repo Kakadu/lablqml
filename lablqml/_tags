@@ -9,6 +9,7 @@ true: annot, bin_annot, debug
 <stubs/CamlPropertyMap_stubs.c>: camlpropmap
 <stubs/moc_*.c>: oasis_library_lablqml_ccopt
 "qml-bindings/string_ml.c": oasis_library_lablqml_ccopt, qstring
+"qml-bindings/property_ml.c": oasis_library_lablqml_ccopt, property_binding
 <qml-bindings/moc_*.c>: oasis_library_lablqml_ccopt
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 

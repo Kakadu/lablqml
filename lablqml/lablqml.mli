@@ -104,8 +104,10 @@ end
 
 module Binding: sig
   type t
-  type string_handler_t
-  val qml_string: f:string_handler_t -> cppobj -> string -> cppobj
+  type string_handler_t = string -> unit
+  type variant_handler_t = QVariant.t -> unit
+  val object_of_name: QQmlAppEngine.t -> string -> cppobj option
+  val qml_property: f:variant_handler_t -> cppobj -> string -> cppobj
 end
 
 module SingleFunc: sig

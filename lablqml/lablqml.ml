@@ -142,11 +142,11 @@ end
 module Binding = struct
   type t = cppobj
   type string_handler_t = string -> unit
+  type variant_handler_t = QVariant.t -> unit
 
-  external qml_string_c: cppobj -> string -> string_handler_t -> cppobj = "caml_qml_string_binding"
-
-  let qml_string ~(f:string_handler_t) obj name =
-    qml_string_c obj name f
+  external object_of_name: QQmlAppEngine.t -> string -> cppobj option = "caml_qml_application_engine_object_of_name"
+  external qml_property_c: cppobj -> string -> variant_handler_t -> cppobj = "caml_qml_property_binding"
+  let qml_property ~(f:variant_handler_t) obj name = qml_property_c obj name f
 end
 
 module SingleFunc: sig

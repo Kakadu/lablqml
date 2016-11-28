@@ -3,7 +3,12 @@ import QtQuick.Controls 1.0
 
 ApplicationWindow {
     QtObject {
-	objectName: "testOjb"
+	id: t
+	objectName: "test"
 	property string msg: "Hello world! Hello Qml with OCaml!"
+    }
+    Timer {
+        interval: 500; running: true; repeat: true
+        onTriggered: t.msg = "Message changed"
     }
 }

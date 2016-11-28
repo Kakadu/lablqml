@@ -2,6 +2,7 @@
 
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlApplicationEngine>
+#include <QtQml/QQmlProperty>
 #include <QQuickWindow>
 
 void registerContext(const QString& name, QQmlContext* v) {
@@ -77,6 +78,35 @@ extern "C" value caml_qml_application_engine_root_objects(value app_engine_val) 
     Ctype_field(QObject, objects_array, i) = list.at(i);
 
   CAMLreturn(objects_array);
+}
+
+#include <QDebug>
+// QQmlApplicationEngine.t -> string -> Abstract option
+extern "C" value caml_qml_application_engine_object_of_name(value app_engine_val, value object_name_val) {
+#warning "not tested"
+  CAMLparam2(app_engine_val, object_name_val);
+  CAMLlocal2(obj_val, some_property);
+
+  QQmlApplicationEngine *app_engine = ((QQmlApplicationEngine*) Field(app_engine_val, 0));
+  Q_ASSERT(app_engine != nullptr);
+  QList<QObject*> list = app_engine->rootObjects();
+  if(list.empty()){
+    qDebug() << "empty list";
+    CAMLreturn(Val_none);
+  }else{
+    QObject *o = 0;
+    for (int i = 0; i < list.size(); ++i)
+      if (0 != (o = list.at(i)->findChild<QObject*>(String_val(object_name_val))))
+	break;
+    if(0 == o){
+      qDebug() << "no object:" << String_val(object_name_val);
+      CAMLreturn(Val_none);
+    }else{
+      obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
+      Ctype_field(QObject, obj_val, 0) = o;
+      CAMLreturn(Val_some(obj_val));
+    }
+  }
 }
 
 // QQuickWindow.t -> string -> cppobj option
