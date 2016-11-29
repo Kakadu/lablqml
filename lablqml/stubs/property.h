@@ -4,7 +4,7 @@
 #include <QQmlProperty>
 #include <QString>
 #include <QtCore/QDebug>
-#include "stubs.h"
+#include <lablqml.h>
 
 class PropertyBinding : public QObject {
   Q_OBJECT
@@ -17,5 +17,4 @@ class PropertyBinding : public QObject {
 
   public slots:
     void valueChanged();
-    void valueChanged(QString);
 };

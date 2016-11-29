@@ -87,6 +87,7 @@ let loadQml path engine = loadQml_stub path engine
 module QQmlAppEngine = struct
   type t
   external to_QQmlEngine : t -> QQmlEngine.t = "caml_QQmlAppEngine_to_QQmlEngine"
+  external object_of_name: t -> string -> cppobj option = "caml_qml_application_engine_object_of_name"
 end
 (* TODO: make the names good *)
 external create_app_engine_stub : string array -> string -> QGuiApplication.t * QQmlAppEngine.t
@@ -139,14 +140,10 @@ end = struct
   let value_ map name = value_stub map name
 end
 
-module Binding = struct
+module Property = struct
   type t = cppobj
-  type string_handler_t = string -> unit
-  type variant_handler_t = QVariant.t -> unit
-
-  external object_of_name: QQmlAppEngine.t -> string -> cppobj option = "caml_qml_application_engine_object_of_name"
-  external qml_property_c: cppobj -> string -> variant_handler_t -> cppobj = "caml_qml_property_binding"
-  let qml_property ~(f:variant_handler_t) obj name = qml_property_c obj name f
+  type variant_fn_t = QVariant.t -> unit
+  external bind_variant: obj:cppobj -> name:string -> fn:variant_fn_t -> cppobj = "caml_qml_property_binding"
 end
 
 module SingleFunc: sig

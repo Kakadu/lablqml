@@ -1,4 +1,5 @@
-#include "stubs.h"
+#include "lablqml.h"
+#include "variant.h"
 
 #include <caml/memory.h>
 #include <caml/threads.h>
@@ -7,8 +8,7 @@
 #include <caml/custom.h>
 #include <assert.h>
 
-#include <qml-bindings/object.h>
-#include <qml-bindings/property.h>
+#include "property.h"
 
 PropertyBinding::PropertyBinding(QObject *o, QString name, value func)
 :QObject(), ocaml_function(), property(o, name)
@@ -18,30 +18,23 @@ PropertyBinding::PropertyBinding(QObject *o, QString name, value func)
   caml_register_global_root(ocaml_function);
 
   property.connectNotifySignal(this, SLOT(valueChanged()));
-  qDebug() << "property:" << property.read();
+  qDebug() << "binding:" << property.read() << this;
 }
 
 PropertyBinding::~PropertyBinding(){
   free(ocaml_function);
+  qDebug() << "binding destroyed: " << property.name() << this;
 }
 
 void PropertyBinding::valueChanged() {
-  qDebug() << "changed";
-}
+  CAMLparam0();
+  CAMLlocal1(variant_val);
 
-void PropertyBinding::valueChanged(QString v) {
-  qDebug() << "changed" << v;
   caml_leave_blocking_section();
-
-    //[&this, &v]() {
-    CAMLparam0();
-    CAMLlocal1(caml_value);
-    caml_value = caml_copy_string(v.toLocal8Bit().data());
-    caml_callback(*(this->ocaml_function), caml_value);
-    CAMLreturn0;
-    //}();
-
+  caml_callback(*(this->ocaml_function), Val_QVariant(variant_val, property.read()));
   caml_enter_blocking_section();
+
+  CAMLreturn0;
 }
 
 extern "C" {
