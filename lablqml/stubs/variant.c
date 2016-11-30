@@ -4,25 +4,24 @@ extern "C" {
 
   QVariant QVariant_val(value variant_val) {
     CAMLparam1(variant_val);
+    QVariant v;
     if (Is_block(variant_val)) {
         if (caml_hash_variant("bool") == Field(variant_val, 0))
           // without cast it will create Qvariant of int
-	  return QVariant::fromValue( (bool) Bool_val(Field(variant_val, 1)) );
+	  v = QVariant::fromValue( (bool) Bool_val(Field(variant_val, 1)) );
         else if (caml_hash_variant("string") == Field(variant_val, 0) )
-	  return QVariant::fromValue(QString(String_val(Field(variant_val, 1))));
+	  v = QVariant::fromValue(QString(String_val(Field(variant_val, 1))));
         else if (caml_hash_variant("int") == Field(variant_val, 0) )
-	  return QVariant::fromValue(Int_val(Field(variant_val, 1)));
+	  v = QVariant::fromValue(Int_val(Field(variant_val, 1)));
         else if (caml_hash_variant("float") == Field(variant_val, 0) )
-	  return QVariant::fromValue(Double_val(Field(variant_val, 1)));
+	  v = QVariant::fromValue(Double_val(Field(variant_val, 1)));
         else if (caml_hash_variant("qobject") == Field(variant_val, 0) )
-	  return QVariant::fromValue((QObject*) (Field(Field(variant_val, 1),0)));
+	  v = QVariant::fromValue((QObject*) (Field(Field(variant_val, 1),0)));
         else
             Q_ASSERT_X(false, "While converting OCaml value to QVariant",
                        "Unknown variant tag");
-	return QVariant();
-    } else { // empty QVariant
-        return QVariant();
     }
+    CAMLreturnT (QVariant, v);
   }
 
   // converts QVariant to OCaml QVariant.t. Should be ported to the lablqml

@@ -14,19 +14,21 @@ ApplicationWindow {
 	property string msg: "Hello world! Hello Qml with OCaml!"
     }
 
-    Text { text: t.msg }
-    Text { objectName: "mirror" }
+    Column {
+	Text { text: t.msg }
+	Text { objectName: "mirror"; text: "mirror" }
+    }
 
     Timer {
         interval: 50; running: true; repeat: true
         onTriggered: t.msg = "Message changed"
     }
+
     Timer {
          interval: 5000;
          running: true;
          repeat: false
          onTriggered: {
-             runner.run();
              Qt.quit();
          }
     }

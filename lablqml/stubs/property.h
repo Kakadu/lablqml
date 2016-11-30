@@ -9,11 +9,12 @@
 class PropertyBinding : public QObject {
   Q_OBJECT
   value *ocaml_function;
-  QQmlProperty property;
 
   public:
+  QQmlProperty property;
+
   PropertyBinding(QObject *, QString name, value ocaml_function);
-    ~PropertyBinding();
+  ~PropertyBinding();
 
   public slots:
     void valueChanged();

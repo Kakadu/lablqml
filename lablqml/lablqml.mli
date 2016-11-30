@@ -107,6 +107,8 @@ module Property: sig
   type t
   type variant_fn_t = QVariant.t -> unit
   val bind_variant: obj:cppobj -> name:string -> fn:variant_fn_t -> cppobj
+  val value: obj:cppobj -> QVariant.t
+  val write: obj:cppobj -> QVariant.t -> bool
 end
 
 module SingleFunc: sig
