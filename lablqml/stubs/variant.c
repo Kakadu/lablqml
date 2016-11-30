@@ -1,12 +1,36 @@
 #include "variant.h"
 
 extern "C" {
-// converts QVariant to OCaml QVariant.t. Should be ported to the lablqml
-/*
-// I intentionally skipped CAMLlocalN because intuition says that they are
-// not needed because it is done in caller function
-*/
-value Val_QVariant(value _dest, const QVariant& var) {
+
+  QVariant QVariant_val(value variant_val) {
+    CAMLparam1(variant_val);
+    if (Is_block(variant_val)) {
+        if (caml_hash_variant("bool") == Field(variant_val, 0))
+          // without cast it will create Qvariant of int
+	  return QVariant::fromValue( (bool) Bool_val(Field(variant_val, 1)) );
+        else if (caml_hash_variant("string") == Field(variant_val, 0) )
+	  return QVariant::fromValue(QString(String_val(Field(variant_val, 1))));
+        else if (caml_hash_variant("int") == Field(variant_val, 0) )
+	  return QVariant::fromValue(Int_val(Field(variant_val, 1)));
+        else if (caml_hash_variant("float") == Field(variant_val, 0) )
+	  return QVariant::fromValue(Double_val(Field(variant_val, 1)));
+        else if (caml_hash_variant("qobject") == Field(variant_val, 0) )
+	  return QVariant::fromValue((QObject*) (Field(Field(variant_val, 1),0)));
+        else
+            Q_ASSERT_X(false, "While converting OCaml value to QVariant",
+                       "Unknown variant tag");
+	return QVariant();
+    } else { // empty QVariant
+        return QVariant();
+    }
+  }
+
+  // converts QVariant to OCaml QVariant.t. Should be ported to the lablqml
+  /*
+  // I intentionally skipped CAMLlocalN because intuition says that they are
+  // not needed because it is done in caller function
+  */
+  value Val_QVariant(value _dest, const QVariant& var) {
     CAMLparam1(_dest);
     CAMLlocal1(_var);
 
@@ -55,6 +79,6 @@ value Val_QVariant(value _dest, const QVariant& var) {
         }
     }
     CAMLreturn(_dest);
-}
+  }
 
 }

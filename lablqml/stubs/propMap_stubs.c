@@ -79,31 +79,9 @@ value caml_QQmlPropertyMap_value(value _map, value _propName) {
 value caml_QQmlPropertyMap_insert(value _map, value _propName, value _variant) {
     CAMLparam3(_map, _propName, _variant);
 
-    // copy and paste from the generated file for QAbstractModel subclass
-    // TODO: move this conversion to the lablqml
-    QVariant newval;
-    if (Is_block(_variant)) {
-        if (caml_hash_variant("bool") == Field(_variant,0) )
-            // without cast it will create Qvariant of int
-            newval = QVariant::fromValue( (bool)Bool_val(Field(_variant,1)) );
-        else if (caml_hash_variant("string") == Field(_variant,0) )
-            newval = QVariant::fromValue(QString(String_val(Field(_variant,1))));
-        else if (caml_hash_variant("int") == Field(_variant,0) )
-            newval = QVariant::fromValue(Int_val(Field(_variant,1)));
-        else if (caml_hash_variant("float") == Field(_variant,0) )
-            newval = QVariant::fromValue(Double_val(Field(_variant,1)));
-        else if (caml_hash_variant("qobject") == Field(_variant,0) )
-            newval = QVariant::fromValue((QObject*) (Field(Field(_variant,1),0)));
-        else
-            Q_ASSERT_X(false, "While converting OCaml value to QVariant",
-                       "Unknown variant tag");
-    } else { // empty QVariant
-        newval = QVariant();
-    }
-
     CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(_map)));
     Q_ASSERT_X(map != NULL, __func__, "Trying to use QQmlPropertyMap object which is NULL");
-    map->insert( QString(String_val(_propName)), newval);
+    map->insert( QString(String_val(_propName)), QVariant_val(_variant) );
 
     CAMLreturn(Val_unit);
 }
