@@ -8,6 +8,7 @@ extern "C" {
 #include <caml/callback.h>
 #include <caml/signals.h>
 #include <caml/threads.h>
+#include <caml/fail.h>
 }
 
 #include <QtCore/QAbstractItemModel>

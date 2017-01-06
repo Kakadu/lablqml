@@ -64,7 +64,7 @@ module QQmlAppEngine : sig
 
   (* Use this function to get access to functions from QQmlEngine module *)
   val to_QQmlEngine : t -> QQmlEngine.t
-  val object_of_name: t -> string -> cppobj option
+  val object_of_name: t -> string -> cppobj
 end
 
 (** Creates QGuiApplication and QQmlApplicationEngine. *)
