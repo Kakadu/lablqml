@@ -1,31 +1,14 @@
-true: annot, bin_annot
-<**/.svn>: -traverse
-<**/.svn>: not_hygienic
-".bzr": -traverse
-".bzr": not_hygienic
-".hg": -traverse
-".hg": not_hygienic
+true: annot, bin_annot, debug
 ".git": -traverse
 ".git": not_hygienic
-"_darcs": -traverse
-"_darcs": not_hygienic
 
-true: debug
-# Library lablqml
-# "lablqml.cmxs": use_lablqml
-<*.ml{,i,y}>: oasis_library_lablqml_ccopt
-"stubs.c": oasis_library_lablqml_ccopt
-"modelindex.c": oasis_library_lablqml_ccopt, d_private_public
-"startup_stubs.c": oasis_library_lablqml_ccopt
-"propMap_stubs.c": oasis_library_lablqml_ccopt
-"QSingleFunc_stubs.c": oasis_library_lablqml_ccopt, qsinglefunc
-"CamlPropertyMap_stubs.c": oasis_library_lablqml_ccopt, camlpropmap
-<moc_*.c>: oasis_library_lablqml_ccopt
-"test_stubs.c": oasis_library_lablqml_ccopt
+<stubs/*.ml{,i,y}>: oasis_library_lablqml_ccopt
+<stubs/modelindex.c>: oasis_library_lablqml_ccopt, d_private_public
+<stubs/*stubs.c>: oasis_library_lablqml_ccopt
+<stubs/QSingleFunc_stubs.c>: qsinglefunc
+<stubs/CamlPropertyMap_stubs.c>: camlpropmap
+<stubs/moc_*.c>: oasis_library_lablqml_ccopt
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
-# OASIS_STOP
-"test": not_hygienic, -traverse
-
 
 #tests
 <src_tests/*.*>: package(oUnit)
