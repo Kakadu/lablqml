@@ -1,4 +1,4 @@
-open QmlContext
+open Lablqml
 
 class virtual controller = object(self)
   method virtual hiGotten: message:string -> unit[@@qtsignal]
@@ -6,4 +6,3 @@ class virtual controller = object(self)
   method virtual clicksCount: int[@@qtprop]
 
 end[@@qtclass]
-

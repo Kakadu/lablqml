@@ -1,4 +1,4 @@
-open QmlContext
+open Lablqml
 
 class virtual controller = object(self)
 

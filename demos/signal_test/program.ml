@@ -3,7 +3,7 @@ open Printf
 let () = Printexc.record_backtrace true
 let root_qml_file = "Root.qml"
 
-open QmlContext
+open Lablqml
 
 let main () =
   let controller_cppobj = Controller.create_controller () in

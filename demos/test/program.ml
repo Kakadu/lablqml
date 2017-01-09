@@ -1,6 +1,6 @@
 open Printf
 open Helpers
-open QmlContext
+open Lablqml
 
 type options = { mutable path: string list }
 let options = { path = [Config.standard_library]  }

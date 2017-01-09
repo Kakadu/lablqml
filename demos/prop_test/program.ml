@@ -2,7 +2,7 @@ open Printf
 
 let () = Printexc.record_backtrace true
 
-open QmlContext
+open Lablqml
 
 class virtual abstractListModel cppobj = object(self)
   inherit IntModel.intModel cppobj as super
@@ -76,4 +76,3 @@ let main () =
   set_context_property ~ctx:(get_view_exn ~name:"rootContext") ~name:"intModel"   model#handler
 
 let () = Callback.register "doCaml" main
-

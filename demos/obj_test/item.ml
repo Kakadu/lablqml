@@ -1,4 +1,4 @@
-open QmlContext
+open Lablqml
 
 class virtual item = object(self)
   method virtual name: string[@@qtprop]

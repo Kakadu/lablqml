@@ -1,4 +1,4 @@
-open QmlContext
+open Lablqml
 
 
 let value_changed name value = match value with
@@ -20,7 +20,7 @@ let qml_mapper () =
     PropMap.insert beta ~name:"countB" (QVariant.of_int x);
     Thread.delay 0.0001;
     f (x+1)
-  in  
+  in
   ignore (Thread.create f 0)
 
 let () = run_with_QQmlApplicationEngine Sys.argv (fun () -> qml_mapper ()) "ui.qml"

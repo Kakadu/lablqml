@@ -1,4 +1,4 @@
-open QmlContext
+open Lablqml
 
 class virtual dataItem = object(self)
   method virtual text: string[@@qtprop]

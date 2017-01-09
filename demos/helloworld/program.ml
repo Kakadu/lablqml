@@ -1,4 +1,4 @@
-open QmlContext
+open Lablqml
 
 let main () =
   let controller_cppobj = Controller.create_controller () in
@@ -11,4 +11,3 @@ let main () =
 
 let () =
   run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
-  

@@ -1,5 +1,5 @@
 open Printf
-open QmlContext
+open Lablqml
 
 let () = Printexc.record_backtrace true
 
