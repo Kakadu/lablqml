@@ -1,4 +1,4 @@
-#include "stubs.h"
+#include "lablqml.h"
 
 /*  QGuiApplication for any GUI application
  *  QApplication inherits QGuiApplication is for QWidget-based apps.

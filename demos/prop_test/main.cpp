@@ -1,9 +1,10 @@
-#include <stubs.h> // for register_context
+#include <lablqml.h> // for register_context
 
+extern "C" {
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/callback.h>
-
+}
 #include <QtGui/QGuiApplication>
 #include <QtQuick/QQuickView>
 

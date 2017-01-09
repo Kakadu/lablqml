@@ -1,4 +1,4 @@
-#include "stubs.h"
+#include "lablqml.h"
 
 #include <QtGui/QGuiApplication>
 #include <QtQuick/qquickview.h>

@@ -6,10 +6,6 @@ test
 .moc
 .pch
 .obj
-#folderlistmodel stuff
-Qt/
-folderlistmodel/libqmlfolderlistmodelplugin.prl
-folderlistmodel/libqmlfolderlistmodelplugin.so*
 
 abstractModel_c.cpp
 abstractModel.h
@@ -19,4 +15,6 @@ dataItem_c.cpp
 dataItem.h
 ppx_qt
 moc_*.cpp
+# cppo-generated file
+Richify.ml
 

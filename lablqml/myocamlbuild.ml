@@ -27,7 +27,7 @@ let make_ccopts xs =
 let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   let cflags = (*(A has_lib) :: *) pkg_config "cflags" lib in (*
   let stub_l = [A (Printf.sprintf "-l%s" stublib)] in *)
-  let cflags = A("-I" ^ caml_stdlib) :: cflags in
+  let cflags = [A("-I"^caml_stdlib); A"-Istubs"] @ cflags in
   let libs_l = pkg_config "libs-only-l" lib in
   let libs_L = pkg_config "libs-only-L" lib in
   let linker = match os with
@@ -49,7 +49,7 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
     https://github.com/ocaml/ocamlbuild/blob/master/manual/manual.adoc#dynamic-dependencies
     *)
     flag ["c"; "compile"; tag]
-         (S (make_ccopts ["-Wall";"-std=c++11";"-fPIC";"-I.."] @ [A"-cc";A"g++"]) );
+         (S (make_ccopts ["-Wall";"-std=c++11";"-fPIC"] @ [A"-cc";A"g++"]) );
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-Dprotected=public"]);
     (* flag ["c"; "compile"; tag] (S [A"-package";A"lablqml"]); *)
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-I."]);
@@ -109,6 +109,7 @@ let () =
 
     (* Explicit dependenices for header. It will be great if ocamlbiuld could detect them
        himself *)
+    dep ["compile"; "c"] ["stubs/lablqml.h"; "stubs/kamlo.h"];
     dep ["compile"; "qsinglefunc"] ["stubs/QSingleFunc.h"];
     dep ["compile"; "camlpropmap"] ["stubs/CamlPropertyMap.h"];
 

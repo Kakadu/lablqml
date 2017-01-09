@@ -16,13 +16,13 @@ $(call MAKE_RULES,$(QTCLASSES))
 
 CMX=program.cmx
 
-LABLQML_LOC=$(shell PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+LABLQML_WHERE=$(shell PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	ocamlfind query lablqml)
 
 $(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o main.o
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
 	$(CLINK) -L`ocamlfind c -where` \
-	$(GENERATED_OBJS) -L$(LABLQML_LOC) \
+	$(GENERATED_OBJS) -L$(LABLQML_WHERE) \
 	camlcode.o main.o -lasmrun -llablqml_stubs \
 	-lunix -lcamlstr $(LDFLAGS) $(LDLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
@@ -31,7 +31,7 @@ camlcode.o: $(GEN_CMX) $(CMX)
 	$(OCAMLOPT) -output-obj -dstartup \
 	lablqml.cmxa $(GENERATED_CMX) $(CMX)  -linkall -o camlcode.o
 
-main.o: CXXFLAGS += -I../../lablqml #for stubs.h
+main.o: CXXFLAGS += -I$(LABLQML_WHERE) #for stubs.h
 main.o: main.cpp
 	$(V)$(CXX) $(CXXFLAGS) -I`ocamlfind c -where` -c $< -o $@
 

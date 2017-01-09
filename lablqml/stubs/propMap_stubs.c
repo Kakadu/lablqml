@@ -1,4 +1,4 @@
-#include "stubs.h"
+#include "lablqml.h"
 
 #include "CamlPropertyMap.h"
 #include <QtCore/QDebug>
@@ -17,7 +17,7 @@ extern "C" {
 /* Custom CamlPropertyMap block freeing operations */
 
 void free_qml_propertymap(value camlmap){
-  CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(camlmap))); 
+  CamlPropertyMap *map = (*(CamlPropertyMap**) (Data_custom_val(camlmap)));
   free(map->_saved_callback);
   delete map;
 }
@@ -95,7 +95,7 @@ value caml_create_QQmlPropertyMap(value _func, value _unit) {
     value *fv = (value*) malloc(sizeof(_func));
     *fv = _func;
     caml_register_global_root(fv);
-    
+
     CamlPropertyMap *propMap = new CamlPropertyMap();
     _ans = caml_alloc_custom(&camlpropertymap_ops, sizeof(CamlPropertyMap*), 0, 1);
     (*((CamlPropertyMap **) Data_custom_val(_ans))) = propMap;
@@ -132,7 +132,7 @@ value caml_QQmlPropertyMap_value(value _map, value _propName) {
     CAMLreturn(_ans);
 }
 
-  
+
 value caml_QQmlPropertyMap_insert(value _map, value _propName, value _variant) {
     CAMLparam3(_map, _propName, _variant);
 
