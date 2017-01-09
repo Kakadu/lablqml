@@ -109,7 +109,7 @@ let () =
 
     (* Explicit dependenices for header. It will be great if ocamlbiuld could detect them
        himself *)
-    dep ["compile"; "c"] ["stubs/lablqml.h"; "stubs/kamlo.h"];
+    dep ["compile"; "c"] ["stubs/lablqml.h"];
     dep ["compile"; "qsinglefunc"] ["stubs/QSingleFunc.h"];
     dep ["compile"; "camlpropmap"] ["stubs/CamlPropertyMap.h"];
 
