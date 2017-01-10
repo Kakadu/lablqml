@@ -1,5 +1,5 @@
 open OUnit
-open QmlContext
+open Lablqml
 
 let test1 () =
   let (app,appEngine) = create_app_engine Sys.argv "src_tests/test4.qml" in

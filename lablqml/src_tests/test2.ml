@@ -1,5 +1,5 @@
 open OUnit
-open QmlContext
+open Lablqml
 
 let test2 () =
   let (app,engine) = create_qapplication Sys.argv in

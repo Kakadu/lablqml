@@ -1,5 +1,5 @@
 open OUnit
-open QmlContext
+open Lablqml
 
 
 let test1 () =
