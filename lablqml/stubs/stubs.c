@@ -80,9 +80,8 @@ extern "C" value caml_qml_application_engine_root_objects(value app_engine_val) 
   CAMLreturn(objects_array);
 }
 
-#include <QDebug>
 // QQmlApplicationEngine.t -> string -> Abstract
-extern "C" value caml_qml_application_engine_object_of_name(value app_engine_val, value object_name_val) {
+extern "C" value caml_qml_application_engine_root_named(value app_engine_val, value object_name_val) {
   CAMLparam2(app_engine_val, object_name_val);
   CAMLlocal2(obj_val, some_property);
 

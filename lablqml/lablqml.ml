@@ -87,7 +87,7 @@ let loadQml path engine = loadQml_stub path engine
 module QQmlAppEngine = struct
   type t
   external to_QQmlEngine : t -> QQmlEngine.t = "caml_QQmlAppEngine_to_QQmlEngine"
-  external object_of_name: t -> string -> cppobj = "caml_qml_application_engine_object_of_name"
+  external root_named: t -> string -> cppobj = "caml_qml_application_engine_root_named"
 end
 (* TODO: make the names good *)
 external create_app_engine_stub : string array -> string -> QGuiApplication.t * QQmlAppEngine.t

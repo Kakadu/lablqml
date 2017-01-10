@@ -6,9 +6,9 @@ let test3 () =
   let (app,engine) = create_app_engine Sys.argv "src_tests/test3.qml" in
   ignore app;
   let _ =
-    let obj = QQmlAppEngine.object_of_name engine in (* this function raises Failure if object is missing *)
-    let test = obj "test" in
-    let mirror = obj "mirror" in
+    let root = QQmlAppEngine.root_named engine in (* this function raises Failure if object is missing *)
+    let test = root "test" in
+    let mirror = root "mirror" in
 
     let mirror_bind = Property.bind_variant mirror "text" (fun _ -> ()) in
     let test_bind =
