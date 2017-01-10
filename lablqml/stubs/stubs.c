@@ -101,6 +101,24 @@ extern "C" value caml_qml_application_engine_root_named(value app_engine_val, va
   CAMLreturn(obj_val);
 }
 
+// QQmlApplicationEngine.t -> string -> Abstract
+extern "C" value caml_qml_child_named(value parent_object_val, value child_name_val) {
+  CAMLparam2(parent_object_val, child_name_val);
+  CAMLlocal1(obj_val);
+
+  QObject *parent = ((QObject*) Field(parent_object_val, 0));
+  Q_ASSERT(parent != nullptr);
+
+  QObject *child = parent->findChild<QObject*>(String_val(child_name_val));
+
+  if(0 == child)
+	caml_failwith("Child not found");
+
+  obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
+  Ctype_field(QObject, obj_val, 0) = child;
+  CAMLreturn(obj_val);
+}
+
 // QQuickWindow.t -> string -> cppobj option
 extern "C" value caml_quick_window_find_child(value window_val, value name_val) {
 #warning "not tested"

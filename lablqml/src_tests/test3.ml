@@ -8,7 +8,8 @@ let test3 () =
   let _ =
     let root = QQmlAppEngine.root_named engine in (* this function raises Failure if object is missing *)
     let test = root "test" in
-    let mirror = root "mirror" in
+    let mirror_root = root "mirror" in
+    let mirror = object_child_named mirror_root "mirror" in
 
     let mirror_bind = Property.bind_variant mirror "text" (fun _ -> ()) in
     let test_bind =

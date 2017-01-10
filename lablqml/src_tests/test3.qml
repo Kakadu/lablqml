@@ -15,6 +15,7 @@ ApplicationWindow {
     }
 
     Column {
+	objectName: "mirror"
 	Text { text: t.msg }
 	Text { objectName: "mirror"; text: "mirror" }
     }
