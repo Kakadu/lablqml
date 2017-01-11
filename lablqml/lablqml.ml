@@ -147,7 +147,7 @@ end
 module Property = struct
   type t = cppobj
   type variant_fn_t = QVariant.t -> unit
-  external bind_variant: obj:cppobj -> name:string -> fn:variant_fn_t -> cppobj = "caml_qml_property_binding"
+  external binding: obj:cppobj -> name:string -> fn:variant_fn_t -> cppobj = "caml_qml_property_binding"
   external value: obj:cppobj -> QVariant.t = "caml_qml_property_binding_value"
   external write: obj:cppobj -> QVariant.t -> bool = "caml_qml_property_binding_assign"
 end

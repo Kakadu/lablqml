@@ -9,12 +9,12 @@ let test3 () =
     let root = QQmlAppEngine.root_named engine in (* this function raises Failure if object is missing *)
     let test = root "test" in
     let nested = object_property_named test "nested" in
-    let nested_binding = Property.bind_variant nested "nested_msg" (fun _ -> ()) in
+    let nested_binding = Property.binding nested "nested_msg" (fun _ -> ()) in
     print_endline ("nested message:" ^ (match Property.value nested_binding with `string s -> s | _ -> ""));
     let mirror_root = root "mirror" in
     let mirror = object_child_named mirror_root "mirror" in
 
-    let mirror_bind = Property.bind_variant mirror "text" (fun _ -> ()) in
+    let mirror_bind = Property.binding mirror "text" (fun _ -> ()) in
     let test_bind =
       let mirror_value = function
         | `string s ->
@@ -23,7 +23,7 @@ let test3 () =
            print_endline ("received:" ^ s)
         | _ -> prerr_string "unexpected variant"
       in
-      Property.bind_variant test "msg" mirror_value
+      Property.binding test "msg" mirror_value
     in
     Gc.full_major ();
     QGuiApplication.exec app;
