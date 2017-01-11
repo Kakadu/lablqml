@@ -23,8 +23,14 @@ COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
 
 all: lib bundle
 
+all.android: lib_android bundle
+
 lib:
 	$(OB) liblablqml_stubs.a lablqml.cmxa
+
+lib_android:
+	LABLQML_ANDROID= $(OB)
+	LABLQML_ANDROID= $(OB) -toolchain android liblablqml_stubs.a lablqml.cmxa
 
 clean:
 	$(RM) -r _build
@@ -42,7 +48,7 @@ $(BUNDLEDIR):
 	mkdir -p $@
 
 
-bundle: lib $(BUNDLEDIR) $(MAKE_BUNDLE_TARGETS)
+bundle: $(BUNDLEDIR) $(MAKE_BUNDLE_TARGETS)
 
 tests_compile: lib
 	@$(RM) -r _build/src_tests
@@ -55,6 +61,9 @@ tests: tests_compile run_tests
 test: tests
 
 install: bundle
+	ocamlfind install lablqml META $(BUNDLEDIR)/*
+
+install.android: bundle
 	ocamlfind install lablqml META $(BUNDLEDIR)/*
 
 uninstall:

@@ -1,15 +1,17 @@
 open Printf
 open Ocamlbuild_plugin
+open Ocamlbuild_pack
 open Command
 
+module String = My_std.String
 (* Generic pkg-config(1) support.
  * Adopted from tsdl's myocamlbuild.ml
  *)
 
-let os = Ocamlbuild_pack.My_unix.run_and_read "uname -s"
+let os = My_unix.run_and_read "uname -s" |> String.trim
 let caml_stdlib =
-  let out = Ocamlbuild_pack.My_unix.run_and_read "ocamlfind c -where" in
-  try Scanf.sscanf out "%s\n" (fun x -> x)
+  let out = My_unix.run_and_read "ocamlfind c -where" |> String.trim in
+  try Scanf.sscanf out "%s" (fun x -> x)
   with End_of_file -> failwith (sprintf "%s: can't get ocaml library path" __FILE__)
 
 let pkg_config flags package =
@@ -19,6 +21,27 @@ let pkg_config flags package =
     List.map (fun arg -> A arg) (string_list_of_file tmp)
   in
   with_temp_file "pkgconfig" "pkg-config" cmd
+
+let cxx_compiler,cxx_flags,toolchain_opts =
+  match Sys.getenv "LABLQML_ANDROID" with
+  | _ ->
+    (* let _ = failwith "" in *)
+    let opam_prefix = My_unix.run_and_read "opam config var prefix" |> String.trim in
+    let ndk_dir = opam_prefix ^ "/android-ndk" in
+    let cxx = ndk_dir ^ "/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-g++" in
+    (cxx,
+      [ sprintf "-I%s/%s" ndk_dir "sources/cxx-stl/gnu-libstdc++/4.9/include"
+      ; sprintf "-I%s/%s" ndk_dir "sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include"
+      ; sprintf "-I%s/%s" ndk_dir "platforms/android-21/arch-arm/usr/include"
+      ],
+      ["-toolchain"; "android"])
+  (* | _ -> ("g++", [],[]) *)
+  | exception Not_found -> ("g++", [],[])
+
+let cxx_flags = cxx_flags @
+  ["-Wall";"-std=c++11";"-fPIC"]
+
+
 
 let make_opt o arg = S [ A o; arg ]
 let make_ccopts xs =
@@ -31,7 +54,7 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   let libs_l = pkg_config "libs-only-l" lib in
   let libs_L = pkg_config "libs-only-L" lib in
   let linker = match os with
-  | "Linux\n" -> [A "-Wl,-no-as-needed"]
+  | "Linux" -> [A "-Wl,-no-as-needed"]
   | _ -> []
   in
   let mklib_flags = (List.map (make_opt "-ldopt") linker) @ libs_l @ libs_L in
@@ -42,6 +65,10 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
   let tag = Printf.sprintf "use_%s" lib in *)
   flag ["c"; "ocamlmklib"; "use_qt5"] (S mklib_flags);
 
+  (* flag ["compile"] (S (List.map (fun x -> A x) toolchain_opts));
+  flag ["c"] (S (List.map (fun x -> A x) toolchain_opts)); *)
+  (* flag ["ocamlmklib"] (S (List.map (fun x -> A x) toolchain_opts)); *)
+
   List.iter (fun tag ->
     flag ["c"; "compile"; tag] (S compile_flags);
     (* Some tricks required for copying .h file to builddir. I use poor man solution
@@ -49,7 +76,7 @@ let pkg_config_lib ~lib (*~has_lib ~stublib *) =
     https://github.com/ocaml/ocamlbuild/blob/master/manual/manual.adoc#dynamic-dependencies
     *)
     flag ["c"; "compile"; tag]
-         (S (make_ccopts ["-Wall";"-std=c++11";"-fPIC"] @ [A"-cc";A"g++"]) );
+         (S (make_ccopts cxx_flags @ [A"-cc";A cxx_compiler]) );
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-Dprotected=public"]);
     (* flag ["c"; "compile"; tag] (S [A"-package";A"lablqml"]); *)
     flag ["c"; "compile"; tag] (S [A"-ccopt";A"-I."]);

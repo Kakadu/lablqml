@@ -94,6 +94,8 @@ generator:\n\
 	cd $ROOT_DIR/src && \$(MAKE) all\n\
 lib:\n\
 	\$(MAKE) -C $ROOT_DIR/lablqml\n\
+lib.android:\n\
+	\$(MAKE) -C $ROOT_DIR/lablqml lib_android\n\
 demos: generator lib\n\
 	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
 clean:\n\
