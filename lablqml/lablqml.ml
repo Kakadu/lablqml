@@ -91,6 +91,7 @@ module QQmlAppEngine = struct
 end
 
 external object_child_named: cppobj -> string -> cppobj = "caml_qml_child_named"
+external object_property_named : cppobj -> string -> cppobj = "caml_qml_property_child_named"
 
 (* TODO: make the names good *)
 external create_app_engine_stub : string array -> string -> QGuiApplication.t * QQmlAppEngine.t

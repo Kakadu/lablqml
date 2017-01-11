@@ -68,6 +68,7 @@ module QQmlAppEngine : sig
 end
 
 val object_child_named: cppobj -> string -> cppobj
+val object_property_named : cppobj -> string -> cppobj
 
 (** Creates QGuiApplication and QQmlApplicationEngine. *)
 val create_app_engine: string array -> string -> QGuiApplication.t * QQmlAppEngine.t

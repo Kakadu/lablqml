@@ -101,7 +101,7 @@ extern "C" value caml_qml_application_engine_root_named(value app_engine_val, va
   CAMLreturn(obj_val);
 }
 
-// QQmlApplicationEngine.t -> string -> Abstract
+// Abstract (cppobj) -> string -> Abstract (cppobj)
 extern "C" value caml_qml_child_named(value parent_object_val, value child_name_val) {
   CAMLparam2(parent_object_val, child_name_val);
   CAMLlocal1(obj_val);
@@ -114,6 +114,24 @@ extern "C" value caml_qml_child_named(value parent_object_val, value child_name_
   if(0 == child)
 	caml_failwith("Child not found");
 
+  obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
+  Ctype_field(QObject, obj_val, 0) = child;
+  CAMLreturn(obj_val);
+}
+
+// Abstract (cppobj) -> string -> Abstract (cppobj)
+extern "C" value caml_qml_property_child_named(value parent_object_val, value child_name_val) {
+  CAMLparam2(parent_object_val, child_name_val);
+  CAMLlocal1(obj_val);
+
+  QObject *parent = ((QObject*) Field(parent_object_val, 0));
+  Q_ASSERT(parent != nullptr);
+
+  QVariant property_object = parent->property(String_val(child_name_val));
+  if(!property_object.isValid())
+	caml_failwith("Child not found");
+
+  QObject *child = qvariant_cast<QObject *>(property_object);
   obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
   Ctype_field(QObject, obj_val, 0) = child;
   CAMLreturn(obj_val);

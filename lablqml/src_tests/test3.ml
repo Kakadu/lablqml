@@ -8,6 +8,9 @@ let test3 () =
   let _ =
     let root = QQmlAppEngine.root_named engine in (* this function raises Failure if object is missing *)
     let test = root "test" in
+    let nested = object_property_named test "nested" in
+    let nested_binding = Property.bind_variant nested "nested_msg" (fun _ -> ()) in
+    print_endline ("nested message:" ^ (match Property.value nested_binding with `string s -> s | _ -> ""));
     let mirror_root = root "mirror" in
     let mirror = object_child_named mirror_root "mirror" in
 

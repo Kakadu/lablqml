@@ -12,6 +12,9 @@ ApplicationWindow {
 	id: t
 	objectName: "test"
 	property string msg: "Hello world! Hello Qml with OCaml!"
+	property QtObject nested: QtObject {
+	    property string nested_msg: "I'm nested"
+	}
     }
 
     Column {
