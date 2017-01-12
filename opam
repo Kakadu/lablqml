@@ -1,5 +1,5 @@
 opam-version: "1.2"
-name: "lablqt"
+name: "lablqt-android"
 version: "0.5"
 maintainer: "kakadu.hafanana@gmail.com"
 authors: "kakadu.hafanana@gmail.com"
@@ -10,21 +10,22 @@ dev-repo: "https://github.com/Kakadu/lablqt.git"
 tags: [ "gui" "ui" ]
 
 build: [
-  ["./configure"]
-  [make]
+  ["env" "OCAMLFIND_TOOLCHAIN=android" "./configure"]
+  [make "lib.android"]
 ]
 build-test: [
   ["./configure"]
   [make]
   [make "test"]
 ]
-install: [make "opam.install"]
+install: [make "install.android"]
 remove: [
-  ["ocamlfind" "remove" "lablqml"]
+  ["env" "OCAMLFIND_TOOLCHAIN=android" "ocamlfind" "remove" "lablqml"]
   ["rm" "-f" "%{prefix}%/bin/ppx_qt"]
 ]
 flags: [ light-uninstall ]
 depends: [
+  "ocaml-android"
   "ocamlfind"
   "ocamlbuild"  { build }
   "conf-qt"     { >= "5.2.1"}
