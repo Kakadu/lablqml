@@ -12,6 +12,8 @@ ApplicationWindow {
 	id: t
 	objectName: "test"
 	property string msg: "Hello world! Hello Qml with OCaml!"
+
+	// QtObjects can only be nested as properties
 	property QtObject nested: QtObject {
 	    property string nested_msg: "I'm nested"
 	}
@@ -19,21 +21,25 @@ ApplicationWindow {
 
     Column {
 	objectName: "mirror"
-	Text { text: t.msg }
+	// Starts as "Hello world ..." but when t.msg changes
+	Text { text: t.msg } 
+	// Starts as "mirror" and gets changed by `mirror_binding`
 	Text { objectName: "mirror"; text: "mirror" }
     }
 
+    // Change "test" object's `msg` value
     Timer {
-        interval: 50; running: true; repeat: true
-        onTriggered: t.msg = "Message changed"
+	interval: 50; running: true; repeat: true
+	onTriggered: t.msg = "Message changed"
     }
 
+    // Terminate program after 5s
     Timer {
-         interval: 5000;
-         running: true;
-         repeat: false
-         onTriggered: {
-             Qt.quit();
-         }
+	interval: 5000;
+	running: true;
+	repeat: false
+	onTriggered: {
+	    Qt.quit();
+	}
     }
 }
