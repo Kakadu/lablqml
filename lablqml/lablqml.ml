@@ -90,9 +90,6 @@ module QQmlAppEngine = struct
   external root_named: t -> string -> cppobj = "caml_qml_application_engine_root_named"
 end
 
-external object_child_named: cppobj -> string -> cppobj = "caml_qml_child_named"
-external object_property_named : cppobj -> string -> cppobj = "caml_qml_property_child_named"
-
 (* TODO: make the names good *)
 external create_app_engine_stub : string array -> string -> QGuiApplication.t * QQmlAppEngine.t
   = "caml_create_QQmlAppEngine_and_app"
@@ -147,10 +144,13 @@ end
 module Property = struct
   type t = cppobj
   type variant_fn_t = QVariant.t -> unit
-  external binding: obj:cppobj -> name:string -> fn:variant_fn_t -> cppobj = "caml_qml_property_binding"
+  external binding: obj:cppobj -> name:string -> fn:variant_fn_t -> t = "caml_qml_property_binding"
   external value: obj:cppobj -> QVariant.t = "caml_qml_property_binding_value"
   external write: obj:cppobj -> QVariant.t -> bool = "caml_qml_property_binding_assign"
 end
+
+external object_child_named: cppobj -> string -> cppobj = "caml_qml_child_named"
+external object_property_named : cppobj -> string -> Property.t = "caml_qml_property_child_named"
 
 module SingleFunc: sig
   type t
