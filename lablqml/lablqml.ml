@@ -87,7 +87,9 @@ let loadQml path engine = loadQml_stub path engine
 module QQmlAppEngine = struct
   type t
   external to_QQmlEngine : t -> QQmlEngine.t = "caml_QQmlAppEngine_to_QQmlEngine"
+  external root_named: t -> string -> cppobj = "caml_qml_application_engine_root_named"
 end
+
 (* TODO: make the names good *)
 external create_app_engine_stub : string array -> string -> QGuiApplication.t * QQmlAppEngine.t
   = "caml_create_QQmlAppEngine_and_app"
@@ -115,27 +117,40 @@ end
 
 module PropMap: sig
   type t
+  type callback_t = string -> QVariant.t -> unit
+
   val handler: t -> cppobj
 
-  val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
+  val create: ?callback:callback_t -> unit -> t
   val insert: t -> name:string -> QVariant.t -> unit
   val value_: t -> string -> QVariant.t
 end = struct
   type t = cppobj
+  type callback_t = string -> QVariant.t -> unit
 
   let handler: t -> cppobj = fun x -> x
 
-  external create_stub: (string -> QVariant.t -> unit) -> unit -> cppobj = "caml_create_QQmlPropertyMap"
+  external create_stub: callback_t -> unit -> cppobj = "caml_create_QQmlPropertyMap"
   external insert_stub: t -> string -> QVariant.t -> unit = "caml_QQmlPropertyMap_insert"
   external value_stub:  t -> string -> QVariant.t = "caml_QQmlPropertyMap_value"
 
-  let create ?(callback=fun _ _ -> ()) () =
-    let (_:string -> QVariant.t -> unit) = callback in
+  let create ?(callback:callback_t=fun _ _ -> ()) () =
     create_stub callback ()
   let insert map ~name variant = insert_stub map name variant
 
   let value_ map name = value_stub map name
 end
+
+module Property = struct
+  type t = cppobj
+  type variant_fn_t = QVariant.t -> unit
+  external binding: obj:cppobj -> name:string -> fn:variant_fn_t -> t = "caml_qml_property_binding"
+  external value: obj:cppobj -> QVariant.t = "caml_qml_property_binding_value"
+  external write: obj:cppobj -> QVariant.t -> bool = "caml_qml_property_binding_assign"
+end
+
+external object_child_named: cppobj -> string -> cppobj = "caml_qml_child_named"
+external object_property_named : cppobj -> string -> Property.t = "caml_qml_property_child_named"
 
 module SingleFunc: sig
   type t

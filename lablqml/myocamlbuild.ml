@@ -112,6 +112,8 @@ let () =
     dep ["compile"; "c"] ["stubs/lablqml.h"];
     dep ["compile"; "qsinglefunc"] ["stubs/QSingleFunc.h"];
     dep ["compile"; "camlpropmap"] ["stubs/CamlPropertyMap.h"];
+    dep ["compile"; "qvariant"] ["stubs/variant.h"];
+    dep ["compile"; "property_binding"] ["stubs/property.h"];
 
     (* Some stuff for tests *)
     ()

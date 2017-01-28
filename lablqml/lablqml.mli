@@ -64,7 +64,11 @@ module QQmlAppEngine : sig
 
   (* Use this function to get access to functions from QQmlEngine module *)
   val to_QQmlEngine : t -> QQmlEngine.t
+  val root_named: t -> string -> cppobj
 end
+
+val object_child_named: cppobj -> string -> cppobj
+val object_property_named : cppobj -> string -> cppobj
 
 (** Creates QGuiApplication and QQmlApplicationEngine. *)
 val create_app_engine: string array -> string -> QGuiApplication.t * QQmlAppEngine.t
@@ -100,6 +104,14 @@ module PropMap: sig
   val create: ?callback:(string -> QVariant.t -> unit) -> unit -> t
   val insert: t -> name:string -> QVariant.t -> unit
   val value_: t -> string -> QVariant.t
+end
+
+module Property: sig
+  type t
+  type variant_fn_t = QVariant.t -> unit
+  val binding: obj:cppobj -> name:string -> fn:variant_fn_t -> cppobj
+  val value: obj:cppobj -> QVariant.t
+  val write: obj:cppobj -> QVariant.t -> bool
 end
 
 module SingleFunc: sig
