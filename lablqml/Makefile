@@ -14,7 +14,7 @@ space :=
 space +=
 join-with = $(subst $(space),$1,$(strip $2))
 
-TEST_EXECS = test1 test2 test4
+TEST_EXECS = test1 test2 test3 test4
 
 COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
 #$(warning $(COLON_SEPARATED_TESTS) )

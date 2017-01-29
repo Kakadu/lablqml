@@ -1,6 +1,5 @@
 open Lablqml
 
-
 let value_changed name value = match value with
     | `int i -> (Printf.printf "%s %d;\n%!" name i)
     | _ -> ()

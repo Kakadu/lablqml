@@ -1,6 +1,9 @@
 #include "lablqml.h"
 
 #include <QtQml/QQmlEngine>
+#include <QtQml/QQmlApplicationEngine>
+#include <QtQml/QQmlProperty>
+#include <QQuickWindow>
 
 void registerContext(const QString& name, QQmlContext* v) {
   CAMLparam0();
@@ -58,6 +61,95 @@ extern "C" value caml_QQmlEngine_addImportPath(value _path, value _engine) {
   const QString &path = QString::fromLocal8Bit(String_val(_path));
   engine->addImportPath(path);
   CAMLreturn(Val_unit);
+}
+
+// QQmlApplicationEngine.t -> cppobj array
+extern "C" value caml_qml_application_engine_root_objects(value app_engine_val) {
+#warning "not tested"
+  CAMLparam1(app_engine_val);
+  CAMLlocal1(objects_array);
+
+  QQmlApplicationEngine *app_engine = ((QQmlApplicationEngine*) Field(app_engine_val, 0));
+  Q_ASSERT(app_engine != nullptr);
+
+  QList<QObject*> list =  app_engine->rootObjects();
+  objects_array = caml_alloc(list.size(), Abstract_tag);
+  for (int i = 0; i < list.size(); ++i)
+    Ctype_field(QObject, objects_array, i) = list.at(i);
+
+  CAMLreturn(objects_array);
+}
+
+// QQmlApplicationEngine.t -> string -> Abstract
+extern "C" value caml_qml_application_engine_root_named(value app_engine_val, value object_name_val) {
+  CAMLparam2(app_engine_val, object_name_val);
+  CAMLlocal2(obj_val, some_property);
+
+  QQmlApplicationEngine *app_engine = ((QQmlApplicationEngine*) Field(app_engine_val, 0));
+  Q_ASSERT(app_engine != nullptr);
+  QList<QObject*> list = app_engine->rootObjects();
+  if(list.empty())
+	caml_failwith("Object tree is empty");
+  QObject *o = 0;
+  for (int i = 0; i < list.size(); ++i)
+    if (0 != (o = list.at(i)->findChild<QObject*>(String_val(object_name_val))))
+      break;
+  if(0 == o)
+    caml_failwith("No such object in QML");
+  obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
+  Ctype_field(QObject, obj_val, 0) = o;
+  CAMLreturn(obj_val);
+}
+
+// Abstract (cppobj) -> string -> Abstract (cppobj)
+extern "C" value caml_qml_child_named(value parent_object_val, value child_name_val) {
+  CAMLparam2(parent_object_val, child_name_val);
+  CAMLlocal1(obj_val);
+
+  QObject *parent = ((QObject*) Field(parent_object_val, 0));
+  Q_ASSERT(parent != nullptr);
+
+  QObject *child = parent->findChild<QObject*>(String_val(child_name_val));
+
+  if(0 == child)
+	caml_failwith("Child not found");
+
+  obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
+  Ctype_field(QObject, obj_val, 0) = child;
+  CAMLreturn(obj_val);
+}
+
+// Abstract (cppobj) -> string -> Abstract (cppobj)
+extern "C" value caml_qml_property_child_named(value parent_object_val, value child_name_val) {
+  CAMLparam2(parent_object_val, child_name_val);
+  CAMLlocal1(obj_val);
+
+  QObject *parent = ((QObject*) Field(parent_object_val, 0));
+  Q_ASSERT(parent != nullptr);
+
+  QVariant property_object = parent->property(String_val(child_name_val));
+  if(!property_object.isValid())
+	caml_failwith("Child not found");
+
+  QObject *child = qvariant_cast<QObject *>(property_object);
+  obj_val = caml_alloc(sizeof(QObject*), Abstract_tag);
+  Ctype_field(QObject, obj_val, 0) = child;
+  CAMLreturn(obj_val);
+}
+
+// QQuickWindow.t -> string -> cppobj option
+extern "C" value caml_quick_window_find_child(value window_val, value name_val) {
+#warning "not tested"
+  CAMLparam1(window_val);
+  CAMLlocal1(object_val);
+
+  QQuickWindow *window = ((QQuickWindow*) Field(window_val, 0));
+  Q_ASSERT(window != nullptr);
+  QObject* qobject = window->findChild<QObject*>(String_val(name_val));
+  if(0 == qobject)
+    CAMLreturn(Val_none);
+  else
+    CAMLreturn(Val_some(object_val));
 }
 
 /*
