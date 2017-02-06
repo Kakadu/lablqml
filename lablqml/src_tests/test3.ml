@@ -14,6 +14,13 @@ let test3 () =
     (* to access a nested QtObject with select it via it's property name *)
     let nested = object_property_named test_root "nested" in
 
+    (* this should cause an exception, as "nonExistent" doens't exist *)
+    let non_existent =
+      try Some (object_property_named test_root "nonExistent")
+      with Failure str -> prerr_endline @@ "NonExistent -- " ^ str; None
+    in
+    assert (non_existent = None);
+
     (* now bind to the nested QtObject's property "nested_msg" *)
     let nested_binding = Property.binding nested "nested_msg" (fun _ -> ()) in
 
@@ -23,6 +30,14 @@ let test3 () =
     (* create a binding to object "mirror" inside parent "mirror" so we can write to it with test_bind *)
     let mirror_root = root "mirror" in
     let mirror = object_child_named mirror_root "mirror" in
+
+    (* this should cause an exception, as "nonExistent" doens't exist *)
+    let non_existent =
+      try Some (object_child_named mirror_root "nonExistent")
+      with Failure str -> prerr_endline @@ "NonExistent -- " ^ str; None
+    in
+    assert (non_existent = None);
+
     let mirror_binding = Property.binding mirror "text" (fun _ -> ()) in
 
     (* demonstrate binding callback *)
