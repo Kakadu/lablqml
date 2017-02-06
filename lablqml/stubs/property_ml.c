@@ -53,12 +53,19 @@ extern "C" {
     custom_compare_ext_default
   };
 
-  value caml_qml_property_binding(value qt_object_val, value property_name_val, value func_val) {
-    CAMLparam3(qt_object_val, property_name_val, func_val);
+  value caml_qml_property_binding(value create, value qt_object_val, value property_name_val, value func_val) {
+    CAMLparam4(create, qt_object_val, property_name_val, func_val);
     CAMLlocal1(result_val);
 
     QObject *o = Ctype_field(QObject, qt_object_val, 0);
     Q_ASSERT(o != nullptr);
+
+    if (!Bool_val(create)) {
+      QVariant property_object = o->property(String_val(property_name_val));
+      if (!property_object.isValid())
+	caml_failwith("Property not found");
+    }
+
     PropertyBinding *p = new PropertyBinding(o, String_val(property_name_val), func_val);
 
     result_val = caml_alloc_custom(&qml_property_ops, sizeof(PropertyBinding*), 0, 1);
