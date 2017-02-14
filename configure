@@ -91,7 +91,7 @@ echo -e "\
 all: generator lib \n\
 	\n\
 generator:\n\
-	cd $ROOT_DIR/src && \$(MAKE) all\n\
+	cd $ROOT_DIR/ppx && \$(MAKE) all\n\
 lib:\n\
 	\$(MAKE) -C $ROOT_DIR/lablqml\n\
 demos: generator lib\n\
