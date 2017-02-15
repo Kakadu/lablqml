@@ -182,7 +182,7 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
   caml_enter_blocking_section();
   app->exec();
   caml_leave_blocking_section();
-  qDebug() << "quittting";
+  qDebug() << "quitting gui application";
   CAMLreturn(Val_unit);
 }
 // QQuickWindow.t -> unit
