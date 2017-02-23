@@ -18,12 +18,10 @@ PropertyBinding::PropertyBinding(QObject *o, QString name, value func)
   caml_register_global_root(ocaml_function);
 
   property.connectNotifySignal(this, SLOT(valueChanged()));
-  qDebug() << "binding:" << property.read() << this;
 }
 
 PropertyBinding::~PropertyBinding(){
   free(ocaml_function);
-  qDebug() << "binding destroyed: " << property.name() << this;
 }
 
 void PropertyBinding::valueChanged() {
