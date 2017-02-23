@@ -1,11 +1,11 @@
 opam-version: "1.2"
-name: "lablqt"
+name: "lablqml"
 version: "0.5"
 maintainer: "kakadu.hafanana@gmail.com"
 authors: "kakadu.hafanana@gmail.com"
-homepage: "http://kakadu.github.io/lablqt/"
-bug-reports: "https://github.com/kakadu/lablqt/issues"
-dev-repo: "https://github.com/Kakadu/lablqt.git"
+homepage: "http://kakadu.github.io/lablqml/"
+bug-reports: "https://github.com/kakadu/lablqml/issues"
+dev-repo: "https://github.com/Kakadu/lablqml.git"
 
 tags: [ "gui" "ui" ]
 
