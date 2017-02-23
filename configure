@@ -93,12 +93,12 @@ all: generator lib \n\
 generator:\n\
 	cd $ROOT_DIR/ppx && \$(MAKE) all\n\
 lib:\n\
-	\$(MAKE) -C $ROOT_DIR/lablqml\n\
+	\$(MAKE) -C $ROOT_DIR/lib\n\
 demos: generator lib\n\
 	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
 clean:\n\
 	\$(MAKE) -C $ROOT_DIR/demos clean\n\
-	\$(MAKE) -C $ROOT_DIR/lablqml clean\n\
+	\$(MAKE) -C $ROOT_DIR/lib clean\n\
 	\$(MAKE) -C $ROOT_DIR/src clean\n\
 uninstall:\n\
 	ocamlfind remove lablqml\n\n\
