@@ -33,4 +33,4 @@ Test "test1"
 
 SourceRepository master
   Type: git
-  Location: https://github.com/Kakadu/lablqt.git
+  Location: https://github.com/Kakadu/lablqml.git
