@@ -1,0 +1,5 @@
+FINDLIB_PATH ../../lib/_build/bundle
+PKG lablqml
+S .
+S ../../lib
+B .

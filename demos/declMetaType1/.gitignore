@@ -1,0 +1,7 @@
+*.cm[oxi]
+*.o
+camlcode.o.startup.s
+
+/demoClass1.h
+/demoClass1_c.cpp
+/declMetaType1

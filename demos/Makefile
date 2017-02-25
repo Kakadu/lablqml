@@ -1,5 +1,5 @@
 #compile all the tests
-TEST_APPS=helloworld obj_test \
+TEST_APPS= declMetaType1 helloworld obj_test \
 	propertyMap_test propmap_stress_test prop_test \
 	signal_test threads_test \
 	test
