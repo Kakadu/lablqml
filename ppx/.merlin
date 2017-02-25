@@ -1,7 +1,4 @@
-S .
+PKG compiler-libs.common
+PKG ppx_tools.metaquot
 S ppxext
-
-B _build
 B _build/ppxext
-
-PKG ppx_tools

@@ -1,1 +1,1 @@
-true: package(compiler-libs.common,unix)
+true: package(compiler-libs.common,unix,ppx_tools.metaquot)

@@ -64,44 +64,73 @@ module FilesMap = Map.Make(FilesKey)
 
 let files = ref FilesMap.empty
 
-let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
+let creator_container_name ~classname = sprintf "creator_of_%s_func" classname
+
+let open_files ?(destdir=".") ?(ext="cpp") ~create_from_caml ~options ~classname =
   (*print_endline "Opening files....";*)
   let src = open_out (sprintf "%s/%s_c.%s" destdir classname ext) in
   let hdr = open_out (sprintf "%s/%s.h" destdir classname) in
+
+  let println  fmt = fprintfn hdr fmt in
+  let printcpp fmt = fprintfn src fmt in
+
   print_time hdr;
-  let println fmt = fprintfn hdr fmt in
-  fprintfn hdr "#ifndef %s_H" (String.uppercase classname);
-  fprintfn hdr "#define %s_H" (String.uppercase classname);
-  fprintfn hdr "";
-  fprintfn hdr "#include <QtCore/QDebug>";
-  fprintfn hdr "#include <QtCore/QObject>";
-  fprintfn hdr "#include <QtCore/QAbstractItemModel>";
+  print_time src;
+  files := FilesMap.(add (classname, FilesKey.CHDR) hdr !files);
+  files := FilesMap.(add (classname, FilesKey.CSRC) src !files);
+  printcpp "#include \"%s.h\"" classname;
+  printcpp "";
+
+  println "#ifndef %s_H" (String.uppercase_ascii classname);
+  println "#define %s_H" (String.uppercase_ascii classname);
+  println "";
+  println "#include <QtCore/QDebug>";
+  println "#include <QtCore/QObject>";
+  println "#include <QtCore/QAbstractItemModel>";
+  println "#include <QtQml/QtQml>";
   println "";
   println "#ifdef __cplusplus";
   println "extern \"C\" {";
   println "#endif";
-  fprintfn hdr "#include <caml/alloc.h>";
-  fprintfn hdr "#include <caml/mlvalues.h>";
-  fprintfn hdr "#include <caml/callback.h>";
-  fprintfn hdr "#include <caml/memory.h>";
-  fprintfn hdr "#include <caml/threads.h>";
+  println "#include <caml/alloc.h>";
+  println "#include <caml/mlvalues.h>";
+  println "#include <caml/callback.h>";
+  println "#include <caml/memory.h>";
+  println "#include <caml/threads.h>";
   println "#ifdef __cplusplus";
   println "}";
   println "#endif";
   println "";
-  fprintfn hdr "class %s : public %s {" classname
+  println "class %s : public %s {" classname
            (if List.mem `ItemModel ~set:options then "QAbstractItemModel" else "QObject");
-  fprintfn hdr "  Q_OBJECT";
-  fprintfn hdr "  value _camlobjHolder; // store reference to OCaml value there";
-  fprintfn hdr "public:";
-  fprintfn hdr "  %s() : _camlobjHolder(0) { };" classname;
-  fprintfn hdr "  void storeCAMLobj(value x) {";
-  fprintfn hdr "    if (_camlobjHolder != 0) {";
-  fprintfn hdr "       //maybe unregister global root?";
-  fprintfn hdr "    }";
-  fprintfn hdr "    _camlobjHolder = x;";
-  fprintfn hdr "    register_global_root(&_camlobjHolder);";
-  fprintfn hdr "  }\n";
+  println "  Q_OBJECT";
+  println "  value _camlobjHolder; // store reference to OCaml value there";
+  println "public:";
+  println "  %s();" classname;
+  println "  void storeCAMLobj(value x) {";
+  println "    if (_camlobjHolder != 0) {";
+  println "       //maybe unregister global root?";
+  println "    }";
+  println "    _camlobjHolder = x;";
+  println "    register_global_root(&_camlobjHolder);";
+  println "  }";
+  println "";
+
+  if not create_from_caml then begin
+    let container = creator_container_name ~classname in
+    printcpp "static value *%s = 0;" container;
+    printcpp "%s::%s() {" classname classname;
+    printcpp "  Q_ASSERT_X(%s != 0, \"\", \"no creator closure\");" container;
+    printcpp "  _camlobjHolder = caml_callback(*%s, Val_unit);" container;
+    printcpp "  register_global_root(&_camlobjHolder);";
+    printcpp "  // TODO: check for object tag";
+    printcpp "}";
+  end else begin
+    printcpp "%s::%s() : _camlobjHolder(0) {}" classname classname
+  end;
+
+
+
   let () =
     if List.mem `ItemModel ~set:options then (
       println "private:";
@@ -131,11 +160,6 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
     )
   in
 
-  files := FilesMap.(add (classname, FilesKey.CHDR) hdr !files);
-  print_time src;
-  fprintfn src "#include \"%s.h\"" classname;
-  fprintfn src "";
-  files := FilesMap.(add (classname, FilesKey.CSRC) src !files);
   ()
 
 let enter_blocking_section ch =
@@ -146,38 +170,46 @@ let leave_blocking_section ch =
   fprintfn ch "  caml_acquire_runtime_system();";
   ()
 
-let close_files () =
+let store_cppprim_name ~classname = sprintf "caml_store_value_in_%s" classname
+
+let close_files ~create_from_caml () =
   (*print_endline "Closing files";*)
   let f (classname,ext) hndl =
     let println fmt = fprintfn hndl fmt in
-    match ext with
-    | FilesKey.CHDR ->
-       println "};";
-       println "#endif /* %s_H */\n" (String.uppercase classname);
-       println "extern \"C\" value caml_create_%s(value _dummyUnitVal);" classname;
-       println "extern \"C\" value caml_store_value_in_%s(value _cppobj,value _camlobj);" classname;
-       close_out hndl
-    | FilesKey.CSRC ->
-       (* we need to generate stubs for creating C++ object there *)
-       println "extern \"C\" value caml_create_%s(value _dummyUnitVal) {" classname;
-       println "  CAMLparam1(_dummyUnitVal);";
-       println "  CAMLlocal1(_ans);";
-       enter_blocking_section hndl;
-       println "  _ans = caml_alloc_small(1, Abstract_tag);";
-       println "  (*((%s **) &Field(_ans, 0))) = new %s();" classname classname;
-       leave_blocking_section hndl;
-       println "  CAMLreturn(_ans);";
-       println "}\n";
+    let () =
+      match ext with
+      | FilesKey.CHDR ->
+        println "};";
+        println "#endif /* %s_H */\n" (String.uppercase_ascii classname);
+        if create_from_caml then begin
+          println "extern \"C\" value caml_create_%s(value _dummyUnitVal);" classname;
+          println "extern \"C\" value %s(value _cppobj,value _camlobj);" (store_cppprim_name ~classname);
+        end else begin
+          (* I think nothing because value will be created from C++ *)
+        end
+      | FilesKey.CSRC when create_from_caml ->
+        (* we need to generate stubs for creating C++ object there *)
+        println "extern \"C\" value caml_create_%s(value _dummyUnitVal) {" classname;
+        println "  CAMLparam1(_dummyUnitVal);";
+        println "  CAMLlocal1(_ans);";
+        enter_blocking_section hndl;
+        println "  _ans = caml_alloc_small(1, Abstract_tag);";
+        println "  (*((%s **) &Field(_ans, 0))) = new %s();" classname classname;
+        leave_blocking_section hndl;
+        println "  CAMLreturn(_ans);";
+        println "}\n";
 
-       println "extern \"C\" value caml_store_value_in_%s(value _cppobj,value _camlobj) {" classname;
-       println "  CAMLparam2(_cppobj,_camlobj);";
-       enter_blocking_section hndl;
-       println "  %s *o = (%s*) (Field(_cppobj,0));" classname classname;
-       println "  o->storeCAMLobj(_camlobj);";
-       leave_blocking_section hndl;
-       println "  CAMLreturn(Val_unit);";
-       println "}";
-       close_out hndl
+        println "extern \"C\" value caml_store_value_in_%s(value _cppobj,value _camlobj) {" classname;
+        println "  CAMLparam2(_cppobj,_camlobj);";
+        enter_blocking_section hndl;
+        println "  %s *o = (%s*) (Field(_cppobj,0));" classname classname;
+        println "  o->storeCAMLobj(_camlobj);";
+        leave_blocking_section hndl;
+        println "  CAMLreturn(Val_unit);";
+        println "}";
+      | FilesKey.CSRC -> ()
+    in
+    close_out hndl
   in
   FilesMap.iter f !files;
   files := FilesMap.empty
@@ -699,4 +731,25 @@ let gen_itemmodel_stuff ~classname =
     gen_stub_cpp ~options:[`ItemModel] ~classname ~stubname ~methname hndl types
   in
   List.iter ~f (itemmodel_externals ~classname);
+  ()
+
+let gen_register_metatype ~classname ~primname =
+  let hndl = FilesMap.find (classname,FilesKey.CSRC) !files in
+  let println fmt = fprintfn hndl fmt in
+  let creator_container = creator_container_name classname in
+  println "// register metatype for %s here" classname;
+  println "extern \"C\" value %s(value _constr, value _namespace, value _version_major, value _version_minor, value _classname) {" primname;
+  println "  CAMLparam5(_constr, _namespace, _classname, _version_major, _version_minor);";
+  println "  Q_ASSERT (%s == 0);" creator_container;
+  println "  // TODO: assert for closure tag";
+  println "  %s = new value;" creator_container;
+  println "  *%s = _constr;" creator_container;
+  println "  register_global_root(%s);" creator_container;
+  println "";
+  println "  const QString& ns = QString::fromLocal8Bit(String_val(_namespace));";
+  println "  const QString& classname = QString::fromLocal8Bit(String_val(_classname));";
+  println "  qDebug() << \"going to register\" << ns << classname;";
+  println "  qmlRegisterType<%s>(String_val(_namespace), Int_val(_version_major), Int_val(_version_minor), String_val(_classname)); " classname;
+  println "  CAMLreturn(Val_unit);";
+  println "}\n";
   ()
