@@ -6,8 +6,8 @@ JOBS     := $(subst -j,,$(JOB_FLAG))
 #$(message 1234123412341234)
 
 OB=ocamlbuild -use-ocamlfind -classic-display
-TARGETS=lablqml.cmxa lablqml.a lablqml.cmi liblablqml_stubs.a dlllablqml_stubs.so \
-	stubs/lablqml.h
+TARGETS=lablqml.cmxa lablqml.cmx lablqml.a lablqml.cmi liblablqml_stubs.a dlllablqml_stubs.so \
+	stubs/lablqml.h lablqml.cmt
 INSTALL_TARGETS=$(addprefix _build/,$(TARGETS))
 
 space :=
