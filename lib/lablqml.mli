@@ -74,7 +74,7 @@ val object_property_named : cppobj -> string -> cppobj
 val create_app_engine: string array -> string -> QGuiApplication.t * QQmlAppEngine.t
 
 (** Function [run_with_QQmlApplicationEngine argv callback path] initializates
- *  and open QQuickWindow using QQmlApplcationEngine. It uses platform-dependet
+ *  and open QQuickWindow using QQmlApplcationEngine. It uses platform-dependent
  *  styling, so the root element of the QML file specified in [path] should be
  *  a Window from QtQuick.Controls library *)
 val run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
