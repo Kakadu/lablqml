@@ -20,12 +20,12 @@ $(eval $(call MAKE_RULES,$(TO_GENERATE) ) )
 generate: $(GENERATED_H)
 
 $(OUT): $(GENERATED_CMX) program.cmx $(GENERATED_CPP) $(GENERATED_MOC)
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -linkpkg $(CLINKLIBS) $(ML_LDFLAGS) $(ML_LDLIBS) $^ -o $(OUT)
 
 clean::
 	$(V)$(RM) *.cm[iox] *.o libcppstubs.a $(OUT)
 
 .ml.cmx:
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -c $<

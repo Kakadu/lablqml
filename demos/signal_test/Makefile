@@ -14,7 +14,7 @@ libcppstubs.a:
 	ar cr $@ controller_c.o moc_controller.o
 
 $(OUT): $(GENERATED_CMX) $(GENERATED_OBJS) program.cmx libcppstubs.a
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -linkpkg libcppstubs.a $(ML_LDFLAGS) $(ML_LDLIBS) $(CLINKLIBS) \
 	controller.cmx program.cmx -o $(OUT)
 
@@ -22,7 +22,7 @@ $(OUT): $(GENERATED_CMX) $(GENERATED_OBJS) program.cmx libcppstubs.a
 	$(V)$(CC) $(CXXFLAGS) -c $< -o $@
 
 .ml.cmx:
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -c $<
 
 clean::

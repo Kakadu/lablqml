@@ -36,7 +36,7 @@ main.o: main.cpp
 	$(V)$(CXX) $(CXXFLAGS) -I`ocamlfind c -where` -c $< -o $@
 
 .ml.cmx:
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT)  -c $<
 
 clean::

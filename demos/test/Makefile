@@ -29,13 +29,13 @@ CMX_TEST=Test.cmx
 .PHONY: all depend clean
 
 $(OUT): generate $(GENERATED_CMX) $(CMX) $(GENERATED_MOC) $(GENERATED_CPP)
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -linkpkg $(GENERATED_CPP) $(GENERATED_MOC) \
 	$(GENERATED_CMX) $(CMX) $(ML_LDFLAGS) $(ML_LDLIBS) $(CLINKLIBS)  \
 	-o $(OUT)
 
 library_code:
-	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(V)$(OCAMLOPT) -output-obj -dstartup $(GEN_CMX) $(CMX) -linkall -o camlcode.o
 
 OCAML_MAJOR=$(shell ocamlc -version | cut -d . -f 1)
@@ -46,7 +46,7 @@ Richify.ml: Richify.cppo.ml
 		$< -o $@
 
 .ml.cmx:
-	$(V)OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -c $<
 
 clean::

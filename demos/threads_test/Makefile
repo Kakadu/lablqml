@@ -8,7 +8,7 @@ endif
 .PHONY: all clean install uninstall
 
 all:
-	PATH=`pwd`/../../src/:$$PATH OCAMLPATH=`pwd`/../../lablqml/_build/bundle \
+	PATH=`pwd`/../../src/:$$PATH OCAMLPATH=`pwd`/../../lib/_build/bundle \
 	$(OB) src/moc_controller.c src/qrc_resources.c src/libcppstubs.a src/program.native
 
 

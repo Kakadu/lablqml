@@ -2,7 +2,7 @@
 OB="ocamlbuild -use-ocamlfind -classic-display"
 
 export PATH=`pwd`/../../src/:$PATH
-export OCAMLPATH=`pwd`/../../lablqml/_build/bundle
+export OCAMLPATH=`pwd`/../../lib/_build/bundle
 $OB  \
     src/moc_controller.c  \
     src/qrc_resources.c \
