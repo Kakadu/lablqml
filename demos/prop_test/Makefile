@@ -16,9 +16,6 @@ $(call MAKE_RULES,$(QTCLASSES))
 
 CMX=program.cmx
 
-LABLQML_WHERE=$(shell PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
-	ocamlfind query lablqml)
-
 $(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o main.o
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(CLINK) -L`ocamlfind c -where` \

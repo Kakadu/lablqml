@@ -7,7 +7,8 @@ endif
 .PHONY: all clean
 
 all:
-	$(OB) src/qrc_resources.c src/propMapTest.native
+	env OCAMLPATH=$$OCAMLPATH:`pwd`/../../lib/_build/bundle \
+		$(OB) src/qrc_resources.c src/propMapTest.native
 
 clean:
 	rm -fr _build *.native

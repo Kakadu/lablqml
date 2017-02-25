@@ -9,8 +9,7 @@ GENERATED_FILES=
 .DEFAULT_GOAL: all
 all: $(OUT)
 
-LABLQML=../../lablqml
-LABLQML_WHERE= `OCAMLPATH=../../lablqml/_build/bundle ocamlfind query lablqml`
+LABLQML=../../lib
 CLINK=g++ -g `pkg-config --cflags Qt5Quick Qt5Widgets` -fPIC
 CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`
 CMX=program.cmx
@@ -26,7 +25,7 @@ $(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o  mai
 	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
 camlcode.o: $(GEN_CMX) $(CMX)
-	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lablqml/_build/bundle \
+	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -output-obj -dstartup \
 	$(GENERATED_CMX) $(CMX) -linkpkg -linkall -o camlcode.o
 

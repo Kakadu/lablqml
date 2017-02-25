@@ -1,3 +1,4 @@
+FINDLIB_PATH ../../lib/_build/bundle
 PKG lablqml
 PKG threads
 SRC src/
