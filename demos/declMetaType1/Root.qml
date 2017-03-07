@@ -6,8 +6,13 @@ ApplicationWindow {
     width:  400;
     height: 300;     // with custom size
 
+    function somePropertyChanged(newval) {
+      console.log("received: " + newval);
+    }
+
     DemoClass1 {
       id: d1
+      Component.onCompleted: countChanged.connect(somePropertyChanged);
     }
     Text {
       anchors.centerIn: parent

@@ -121,9 +121,14 @@ let open_files ?(destdir=".") ?(ext="cpp") ~create_from_caml ~options ~classname
     printcpp "static value *%s = 0;" container;
     printcpp "%s::%s() {" classname classname;
     printcpp "  Q_ASSERT_X(%s != 0, \"\", \"no creator closure\");" container;
-    printcpp "  _camlobjHolder = caml_callback(*%s, Val_unit);" container;
+    printcpp "  CAMLparam0();";
+    printcpp "  CAMLlocal1(_handler);";
+    printcpp "  _handler = caml_alloc_small(1, Abstract_tag);";
+    printcpp "  (*((%s **) &Field(_handler, 0))) = this;" classname;
+    printcpp "  _camlobjHolder = caml_callback(*%s, _handler);" container;
     printcpp "  register_global_root(&_camlobjHolder);";
     printcpp "  // TODO: check for object tag";
+    printcpp "  CAMLreturn0;";
     printcpp "}";
   end else begin
     printcpp "%s::%s() : _camlobjHolder(0) {}" classname classname

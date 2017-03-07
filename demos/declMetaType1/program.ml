@@ -1,15 +1,18 @@
 open Lablqml
 
-class demo_class_impl =
+class demo_class_impl cppobj =
   let counter = ref 0 in
-  object
-  inherit DemoClass1.demoClass1 ()
-  method getcount () = !counter
-  method tick () = incr counter
-end
+  object(self)
+    inherit DemoClass1.demoClass1 cppobj
+    method getcount () = !counter
+    method tick () =
+      incr counter;
+      print_endline "Emitting a signal from OCaml to QML";
+      self#emit_countChanged (10 * !counter)
+  end
 
 let main () =
-  DemoClass1.register_metatype_demoClass1 (fun () -> new demo_class_impl)
+  DemoClass1.register_metatype_demoClass1 (new demo_class_impl)
     ~ns:"com.asdf" ~classname:"DemoClass1" ~major:1 ~minor:0;
   print_endline "startup initialiation at OCaml side"
 

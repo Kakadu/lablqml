@@ -41,7 +41,7 @@ let parse_generation_params : Parsetree.attributes -> qtclass_params option = fu
     let declare_meta = match pl with
       | PStr (sitems: structure_item list) ->
         sitems |> List.exists ~f:(function
-          | [%stri {metatype}] -> print_endline "found";      true
+          | [%stri {metatype}] -> true
           | _ -> false
           )
       | _ -> false
@@ -89,7 +89,7 @@ let register_meta_cppprim ~classname = sprintf "caml_register_%s_metatype" class
 let make_register_metatype_func ~classname ~primname ~loc =
   let pval_name = {txt = sprintf "register_metatype_%s" classname; loc} in
   let pval_prim = [primname] in
-  let pval_type = [%type: (unit -> [%t Ast_helper.Typ.constr ~loc {txt=Lident classname;loc} []]) ->
+  let pval_type = [%type: (cppobj -> [%t Ast_helper.Typ.constr ~loc {txt=Lident classname;loc} []]) ->
                           ns:string -> major:int -> minor: int -> classname:string -> unit]
   in
   let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
@@ -147,7 +147,7 @@ let make_initializer ~loc : class_field =
   { pcf_desc; pcf_loc=loc; pcf_attributes=[] }
 
 let make_handler_meth ~loc : class_field =
-  let e = Ast_helper.Exp.(poly (ident (mkloc (Lident "cppobj") loc) ) None) in
+  let e = [%expr (cppobj : Lablqml.cppobj) ] in
   Ast_helper.(Cf.method_ (mkloc "handler" loc) Public (Cfk_concrete (Fresh,e)  ) )
 
 (* return list of pairs. 1st is argument label. 2nd is actual type *)
@@ -270,6 +270,7 @@ let wrap_class_decl ?(destdir=".") ~declare_meta ~attributes mapper loc (ci: cla
           if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
           let signal_name = Names.signal_of_prop propname in
           (* TODO: maybe move this between class and object declaration *)
+          (* TODO: or add class name to stub name to avoid clashes *)
           Ref.append ~set:heading (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
           let open Ast_helper in
           let e = Exp.(poly (apply
@@ -279,15 +280,15 @@ let wrap_class_decl ?(destdir=".") ~declare_meta ~attributes mapper loc (ci: cla
                             )
                             None)
           in
-          let ans =  Pcf_method ({loc; txt=Gencpp.Names.getter_of_prop propname},
-                        flag,
-                        Cfk_virtual [%type: unit -> [%t core_typ]]) :: []
+          let emitter =
+            (Cf.method_ (mkloc ("emit_" ^ signal_name) loc)
+                        Public (Cfk_concrete (Fresh,e)) ).pcf_desc
           in
-          if create_from_caml then
-           (Cf.method_ (mkloc ("emit_" ^ signal_name) loc)
-                      Public (Cfk_concrete (Fresh,e)) ).pcf_desc
-              :: ans
-          else ans
+          let getter = Pcf_method ({loc; txt=Gencpp.Names.getter_of_prop propname},
+                        flag,
+                        Cfk_virtual [%type: unit -> [%t core_typ]])
+          in
+          [emitter; getter]
        | `Error msg ->
           raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc)
     end
@@ -340,7 +341,7 @@ let wrap_class_decl ?(destdir=".") ~declare_meta ~attributes mapper loc (ci: cla
       let open Ast_helper in
       let e = Exp.(poly (apply
                            (ident (mkloc (Lident ("stub_"^name)) loc) )
-                           [(Nolabel,ident (mkloc (Lident "cppobj") loc) )]
+                           [(Nolabel, [%expr cppobj ])]
                         ) None
               )
       in
@@ -367,7 +368,7 @@ let wrap_class_decl ?(destdir=".") ~declare_meta ~attributes mapper loc (ci: cla
   let new_fields =
     if create_from_caml
     then (make_initializer ~loc) :: (make_handler_meth ~loc) :: new_fields
-    else new_fields
+    else (make_handler_meth ~loc) :: new_fields
   in
   let new_desc = Pcl_structure { pcstr_fields = new_fields;
                                  pcstr_self = Ast_helper.Pat.var (mkloc "self" loc) } in
