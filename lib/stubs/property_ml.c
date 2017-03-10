@@ -56,13 +56,11 @@ extern "C" {
     custom_compare_ext_default
   };
 
-  QMutex binding_mutex;
   value caml_qml_property_binding(value create, value qt_object_val, value property_name_val, value func_val) {
     CAMLparam4(create, qt_object_val, property_name_val, func_val);
     CAMLlocal1(result_val);
 
     printf("bind tid:%lu\n", syscall(SYS_gettid));
-    QMutexLocker locker(&binding_mutex);
     QObject *o = Ctype_field(QObject, qt_object_val, 0);
     Q_ASSERT(o != nullptr);
 
@@ -88,7 +86,6 @@ extern "C" {
 
     printf("value  %s tid:%lu\n", p->property.name().toLatin1().data(), syscall(SYS_gettid));
 
-    QMutexLocker locker(&p->mutex);
     CAMLreturn(Val_QVariant(result_variant_val, p->property.read()));
   }
 
@@ -98,10 +95,13 @@ extern "C" {
     PropertyBinding *binding = Ctype_of_val(PropertyBinding, property_binding_val);
     Q_ASSERT(binding != nullptr);
 
-    QMutexLocker locker(&binding->mutex);
-    printf("assign %s tid:%lu\n", binding->property.name().toLatin1().data(), syscall(SYS_gettid));
+    printf("assign  %s tid:%lu\n", binding->property.name().toLatin1().data(), syscall(SYS_gettid));
 
-    if(binding->property.write(QVariant_val(value_val)))
+    if (binding->property.method().invoke
+	(binding->property.object (), Qt::QueuedConnection,
+	 Q_ARG(QVariant, QVariant_val(value_val))
+	 )
+	)
       CAMLreturn(Val_true);
     else
       CAMLreturn(Val_false);
