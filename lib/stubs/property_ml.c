@@ -11,13 +11,14 @@
 #include "property.h"
 
 PropertyBinding::PropertyBinding(QObject *o, QString name, value func)
-:QObject(), ocaml_function(), property(o, name)
+: QThread(), QQmlPropertyValueSource(), ocaml_function(), property(o, name)
 {
   ocaml_function = (value*) malloc(sizeof(func));
   *ocaml_function = func;
   caml_register_global_root(ocaml_function);
 
-  property.connectNotifySignal(this, SLOT(valueChanged()));
+  o->moveToThread(this);
+  property.connectNotifySignal(this, SLOT(qtChanged()));
 }
 
 PropertyBinding::~PropertyBinding(){
@@ -26,13 +27,12 @@ PropertyBinding::~PropertyBinding(){
 
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <QMutexLocker>
 
-void PropertyBinding::valueChanged() {
+void PropertyBinding::qtChanged() {
   CAMLparam0();
   CAMLlocal1(variant_val);
 
-  QMutexLocker locker(&mutex);
-  printf("value change tid:%lu\n", syscall(SYS_gettid));
   caml_leave_blocking_section();
   caml_callback(*(this->ocaml_function), Val_QVariant(variant_val, property.read()));
   caml_enter_blocking_section();
@@ -60,7 +60,7 @@ extern "C" {
     CAMLparam4(create, qt_object_val, property_name_val, func_val);
     CAMLlocal1(result_val);
 
-    printf("bind tid:%lu\n", syscall(SYS_gettid));
+    //    printf("bind tid:%lu\n", syscall(SYS_gettid));
     QObject *o = Ctype_field(QObject, qt_object_val, 0);
     Q_ASSERT(o != nullptr);
 
@@ -71,6 +71,7 @@ extern "C" {
     }
 
     PropertyBinding *p = new PropertyBinding(o, String_val(property_name_val), func_val);
+    p->start();
 
     result_val = caml_alloc_custom(&qml_property_ops, sizeof(PropertyBinding*), 0, 1);
     Ctype_of_val(PropertyBinding, result_val) = p;
@@ -84,7 +85,7 @@ extern "C" {
     PropertyBinding *p = Ctype_of_val(PropertyBinding, property_binding_val);
     Q_ASSERT(p != nullptr);
 
-    printf("value  %s tid:%lu\n", p->property.name().toLatin1().data(), syscall(SYS_gettid));
+    //printf("value  %s tid:%lu\n", p->property.name().toLatin1().data(), syscall(SYS_gettid));
 
     CAMLreturn(Val_QVariant(result_variant_val, p->property.read()));
   }
@@ -95,13 +96,16 @@ extern "C" {
     PropertyBinding *binding = Ctype_of_val(PropertyBinding, property_binding_val);
     Q_ASSERT(binding != nullptr);
 
-    printf("assign  %s tid:%lu\n", binding->property.name().toLatin1().data(), syscall(SYS_gettid));
+    QMutexLocker locker(&(binding->mutex));
 
-    if (binding->property.method().invoke
-	(binding->property.object (), Qt::QueuedConnection,
-	 Q_ARG(QVariant, QVariant_val(value_val))
-	 )
-	)
+    /*    qDebug()
+      << "assign: " << binding->property.name ()
+      << " type name:" << binding->property.propertyTypeName ()
+      << " object thread:" << binding->property.object()->thread ()
+      << " current thread:" << QThread::currentThread();
+    */
+    bool written = binding->property.write(QVariant_val (value_val));
+    if (written)
       CAMLreturn(Val_true);
     else
       CAMLreturn(Val_false);
