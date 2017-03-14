@@ -17,7 +17,6 @@ PropertyBinding::PropertyBinding(QObject *o, QString name, value func)
   *ocaml_function = func;
   caml_register_global_root(ocaml_function);
 
-  o->moveToThread(this);
   property.connectNotifySignal(this, SLOT(qtChanged()));
 }
 
@@ -38,6 +37,16 @@ void PropertyBinding::qtChanged() {
   caml_enter_blocking_section();
 
   CAMLreturn0;
+}
+
+void PropertyBinding::fromOCaml(QVariant v) {
+    QMutexLocker locker(&mutex);
+    qDebug()
+      << "assign: " << property.name ()
+      << " type name:" << property.propertyTypeName ()
+      << " object thread:" << property.object()->thread ()
+      << " current thread:" << QThread::currentThread();
+    property.write(v);
 }
 
 extern "C" {
@@ -96,15 +105,8 @@ extern "C" {
     PropertyBinding *binding = Ctype_of_val(PropertyBinding, property_binding_val);
     Q_ASSERT(binding != nullptr);
 
-    QMutexLocker locker(&(binding->mutex));
-
-    /*    qDebug()
-      << "assign: " << binding->property.name ()
-      << " type name:" << binding->property.propertyTypeName ()
-      << " object thread:" << binding->property.object()->thread ()
-      << " current thread:" << QThread::currentThread();
-    */
-    bool written = binding->property.write(QVariant_val (value_val));
+    bool written = QMetaObject::invokeMethod
+      (binding, "fromOCaml", Qt::QueuedConnection, Q_ARG(QVariant, QVariant_val(value_val)));
     if (written)
       CAMLreturn(Val_true);
     else

@@ -31,4 +31,5 @@ class PropertyBinding : public QThread, public QQmlPropertyValueSource {
 
   public slots:
     void qtChanged();
+    void fromOCaml(QVariant);
 };
