@@ -10,8 +10,10 @@
 
 #include "property.h"
 
+#include <QMutexLocker>
+
 PropertyBinding::PropertyBinding(QObject *o, QString name, value func)
-: QThread(), QQmlPropertyValueSource(), ocaml_function(), property(o, name)
+: QThread(), ocaml_function(), property(o, name)
 {
   ocaml_function = (value*) malloc(sizeof(func));
   *ocaml_function = func;
@@ -24,9 +26,10 @@ PropertyBinding::~PropertyBinding(){
   free(ocaml_function);
 }
 
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <QMutexLocker>
+QVariant PropertyBinding::read() {
+  QMutexLocker locker(&mutex);
+  return property.read();
+}
 
 void PropertyBinding::qtChanged() {
   CAMLparam0();
@@ -41,11 +44,12 @@ void PropertyBinding::qtChanged() {
 
 void PropertyBinding::fromOCaml(QVariant v) {
     QMutexLocker locker(&mutex);
-    qDebug()
-      << "assign: " << property.name ()
-      << " type name:" << property.propertyTypeName ()
-      << " object thread:" << property.object()->thread ()
-      << " current thread:" << QThread::currentThread();
+
+    if (property.object()->thread () != QThread::currentThread())
+      qDebug()
+	<< "assign: " << property.name ()
+	<< " object thread:" << property.object()->thread ()
+	<< " current thread:" << QThread::currentThread();
     property.write(v);
 }
 
@@ -69,7 +73,6 @@ extern "C" {
     CAMLparam4(create, qt_object_val, property_name_val, func_val);
     CAMLlocal1(result_val);
 
-    //    printf("bind tid:%lu\n", syscall(SYS_gettid));
     QObject *o = Ctype_field(QObject, qt_object_val, 0);
     Q_ASSERT(o != nullptr);
 
@@ -91,12 +94,11 @@ extern "C" {
     CAMLparam1(property_binding_val);
     CAMLlocal1(result_variant_val);
 
-    PropertyBinding *p = Ctype_of_val(PropertyBinding, property_binding_val);
-    Q_ASSERT(p != nullptr);
+    PropertyBinding *binding = Ctype_of_val(PropertyBinding, property_binding_val);
+    Q_ASSERT(binding != nullptr);
+    QVariant ret = binding->read();
 
-    //printf("value  %s tid:%lu\n", p->property.name().toLatin1().data(), syscall(SYS_gettid));
-
-    CAMLreturn(Val_QVariant(result_variant_val, p->property.read()));
+    CAMLreturn(Val_QVariant(result_variant_val, ret));
   }
 
   value caml_qml_property_binding_assign(value property_binding_val, value value_val) {

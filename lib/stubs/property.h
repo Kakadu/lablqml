@@ -10,9 +10,8 @@
 #include <QtCore/QDebug>
 #include <lablqml.h>
 
-class PropertyBinding : public QThread, public QQmlPropertyValueSource {
+class PropertyBinding : public QThread {
   Q_OBJECT
-//Q_INTERFACES(QQmlPropertyValueSource)
 
   value *ocaml_function;
 
@@ -24,12 +23,11 @@ class PropertyBinding : public QThread, public QQmlPropertyValueSource {
   PropertyBinding(QObject *, QString name, value ocaml_function);
   ~PropertyBinding();
 
-  virtual void setTarget(const QQmlProperty &p) { property = p; }
-
   signals:
     void ocamlChanged(QVariant);
 
   public slots:
     void qtChanged();
     void fromOCaml(QVariant);
+    QVariant read();
 };
