@@ -10,24 +10,24 @@
 #include <QtCore/QDebug>
 #include <lablqml.h>
 
-class PropertyBinding : public QThread {
+class PropertyBinding : public QObject {
   Q_OBJECT
+  Q_PROPERTY (QVariant mlvalue READ read WRITE setMlValue NOTIFY mlvalueChanged)
 
   value *ocaml_function;
 
   public:
-  QQmlProperty property;
+  QVariant mlvalue;
 
-  QMutex mutex;
+  PropertyBinding (QObject *parent = 0);
+  ~PropertyBinding ();
+  void bind (value func);
+  QVariant read ();
+  void setMlValue (QVariant v);
 
-  PropertyBinding(QObject *, QString name, value ocaml_function);
-  ~PropertyBinding();
+ public slots:
+  void fromOCaml  (QVariant v);
 
-  signals:
-    void ocamlChanged(QVariant);
-
-  public slots:
-    void qtChanged();
-    void fromOCaml(QVariant);
-    QVariant read();
+ signals:
+    void mlvalueChanged (QVariant);
 };

@@ -144,8 +144,8 @@ end
 module Property = struct
   type t = cppobj
   type variant_fn_t = QVariant.t -> unit
-  external binding_stub: create:bool -> obj:cppobj -> name:string -> fn:variant_fn_t -> t = "caml_qml_property_binding"
-  let binding ?(create=false) obj name fn = binding_stub create obj name fn
+  external binding_stub: obj:cppobj -> fn:variant_fn_t -> t = "caml_qml_property_binding"
+  let binding obj fn = binding_stub obj fn
   external value: obj:t -> QVariant.t = "caml_qml_property_binding_value"
   external write: obj:t -> QVariant.t -> bool = "caml_qml_property_binding_assign"
 end
