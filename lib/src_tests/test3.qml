@@ -9,13 +9,13 @@ mirror's text value is set */
 
 ApplicationWindow {
     visible: true
-    OCamlBinding {
+    OCamlObject {
 	id: t
 	objectName: "test"
 	mlvalue: "Hello world! Hello Qml with OCaml!"
 
 	// QtObjects can only be nested as properties
-	property OCamlBinding nested: OCamlBinding {
+	property OCamlObject nested: OCamlObject {
 	   mlvalue: "I'm nested"
 	}
     }
@@ -25,7 +25,7 @@ ApplicationWindow {
 	// Starts as "Hello world ..." but when t.mlvalue changes
 	Text { text: t.mlvalue } 
 	// Starts as "mirror" and gets changed by `mirror_binding`
-	OCamlBinding { objectName: "mirror"; mlvalue: "mirror" }
+	OCamlObject { objectName: "mirror"; mlvalue: "mirror" }
     }
 
     // Change "test" object's `mlvalue` value

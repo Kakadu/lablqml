@@ -106,7 +106,7 @@ module PropMap: sig
   val value_: t -> string -> QVariant.t
 end
 
-module Property: sig
+module OCamlObject: sig
   type t
   type variant_fn_t = QVariant.t -> unit
   val binding: cppobj -> variant_fn_t -> t

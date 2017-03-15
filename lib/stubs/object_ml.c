@@ -8,29 +8,29 @@
 #include <caml/custom.h>
 #include <assert.h>
 
-#include "property.h"
+#include "object.h"
 
 #include <QMutexLocker>
 
-PropertyBinding::PropertyBinding(QObject *parent)
+OCamlObject::OCamlObject(QObject *parent)
 : QObject(parent), ocaml_function(NULL), mlvalue()
 {
 }
 
-void PropertyBinding::bind(value func) {
+void OCamlObject::bind(value func) {
   ocaml_function = (value*) malloc(sizeof(func));
   *ocaml_function = func;
   caml_register_global_root(ocaml_function);
 }
 
-PropertyBinding::~PropertyBinding() {
+OCamlObject::~OCamlObject() {
   if (ocaml_function != NULL) {
     caml_remove_global_root(ocaml_function);
     free(ocaml_function);
   }
 }
 
-void PropertyBinding::setMlValue(QVariant v) {
+void OCamlObject::write(QVariant v) {
   CAMLparam0();
   CAMLlocal1(variant_val);
 
@@ -45,27 +45,26 @@ void PropertyBinding::setMlValue(QVariant v) {
   CAMLreturn0;
 }
 
-QVariant PropertyBinding::read() {
+QVariant OCamlObject::read() {
   return mlvalue;
 }
 
-void PropertyBinding::fromOCaml(QVariant v) {
+void OCamlObject::fromOCaml(QVariant v) {
   qDebug()
     << "assign: " << objectName ()
-    << " object thread:" << thread ()
-    << " current thread:" << QThread::currentThread();
+    << " value:" << v;
   mlvalue = v;
 }
 
 extern "C" {
 
-  void free_qml_property_binding(value s){
-    //delete Ctype_of_val(PropertyBinding, s);
+  void free_qml_ocaml_object(value s){
+    //delete Ctype_of_val(OCamlObject, s);
   }
 
-  static struct custom_operations qml_property_ops = {
+  static struct custom_operations ops = {
     "lablqml.qml.property",
-    free_qml_property_binding,
+    free_qml_ocaml_object,
     custom_compare_default,
     custom_hash_default,
     custom_serialize_default,
@@ -73,7 +72,7 @@ extern "C" {
     custom_compare_ext_default
   };
 
-  value caml_qml_property_binding(value qt_object_val, value func_val) {
+  value caml_qml_ocaml_object(value qt_object_val, value func_val) {
     CAMLparam2(qt_object_val, func_val);
     CAMLlocal1(result_val);
 
@@ -82,29 +81,29 @@ extern "C" {
 
     qDebug () << "bound to: " << o->metaObject()->className();
 
-    PropertyBinding *binding = (PropertyBinding *)o;
+    OCamlObject *binding = (OCamlObject *)o;
     binding->bind(func_val);
 
-    result_val = caml_alloc_custom(&qml_property_ops, sizeof(PropertyBinding*), 0, 1);
-    Ctype_of_val(PropertyBinding, result_val) = binding;
+    result_val = caml_alloc_custom(&ops, sizeof(OCamlObject*), 0, 1);
+    Ctype_of_val(OCamlObject, result_val) = binding;
     CAMLreturn(result_val);
   }
 
-  value caml_qml_property_binding_value(value property_binding_val) {
-    CAMLparam1(property_binding_val);
+  value caml_qml_ocaml_object_value(value ocaml_object_val) {
+    CAMLparam1(ocaml_object_val);
     CAMLlocal1(result_variant_val);
 
-    PropertyBinding *binding = Ctype_of_val(PropertyBinding, property_binding_val);
+    OCamlObject *binding = Ctype_of_val(OCamlObject, ocaml_object_val);
     Q_ASSERT(binding != nullptr);
     QVariant ret = binding->read();
 
     CAMLreturn(Val_QVariant(result_variant_val, ret));
   }
 
-  value caml_qml_property_binding_assign(value property_binding_val, value value_val) {
-    CAMLparam2(property_binding_val, value_val);
+  value caml_qml_ocaml_object_assign(value ocaml_object_val, value value_val) {
+    CAMLparam2(ocaml_object_val, value_val);
 
-    PropertyBinding *binding = Ctype_of_val(PropertyBinding, property_binding_val);
+    OCamlObject *binding = Ctype_of_val(OCamlObject, ocaml_object_val);
     Q_ASSERT(binding != nullptr);
 
     bool written = QMetaObject::invokeMethod

@@ -25,7 +25,7 @@
   }\
   int *argc = new int(argc_val);
 
-#include <stubs/property.h>
+#include <stubs/object.h>
 
 std::pair<QGuiApplication*, QQmlEngine*> construct_engine(int* argc, char** argv) {
   QGuiApplication *app = new QGuiApplication(*argc, argv);
@@ -74,7 +74,7 @@ extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
 // TERRIBLE copy and paste :)
 std::pair<QGuiApplication*, QQmlApplicationEngine*> construct_app_engine(int argc, char** argv, const QUrl& url) {
   QGuiApplication *app = new QGuiApplication(argc, argv);
-  qmlRegisterType<PropertyBinding>("Lablqml", 1, 0, "OCamlBinding");
+  qmlRegisterType<OCamlObject>("Lablqml", 1, 0, "OCamlObject");
   QQmlApplicationEngine* engine = new QQmlApplicationEngine(url);
 
   QObject::connect(engine, &QQmlEngine::quit,

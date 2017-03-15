@@ -22,10 +22,10 @@ let test3 () =
     assert (non_existent = None);
 
     (* now bind to the nested QtObject's property "nested_msg" *)
-    let nested_binding = Property.binding nested (fun _ -> ()) in
+    let nested_binding = OCamlObject.binding nested (fun _ -> ()) in
 
     (* prove correct access by printing the value *)
-    print_endline ("nested message:" ^ (match Property.value nested_binding with `string s -> s | _ -> ""));
+    print_endline ("nested message:" ^ (match OCamlObject.value nested_binding with `string s -> s | _ -> ""));
 
     (* create a binding to object "mirror" inside parent "mirror" so we can write to it with test_bind *)
     let mirror_root = root "mirror" in
@@ -38,19 +38,19 @@ let test3 () =
     in
     assert (non_existent = None);
 
-    let mirror_binding = Property.binding mirror (fun _ -> ()) in
+    let mirror_binding = OCamlObject.binding mirror (fun _ -> ()) in
 
     (* demonstrate binding callback *)
     let test_bind =
       let mirror_value = function
         | `string s ->
-           ignore @@ Property.write mirror_binding (`string (s ^ " back"));
-           print_endline ("mirror now is:" ^ (match Property.value mirror_binding with `string s -> s | _ -> ""));
+           ignore @@ OCamlObject.write mirror_binding (`string (s ^ " back"));
+           print_endline ("mirror now is:" ^ (match OCamlObject.value mirror_binding with `string s -> s | _ -> ""));
            print_endline ("received:" ^ s)
         | _ -> prerr_string "unexpected variant"
       in
       (* When msg of "test" object is changed, update nested "mirror"'s msg to that value *)
-      Property.binding test_root mirror_value
+      OCamlObject.binding test_root mirror_value
     in
     Gc.full_major ();
     QGuiApplication.exec app;
