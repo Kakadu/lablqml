@@ -74,7 +74,7 @@ extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
 // TERRIBLE copy and paste :)
 std::pair<QGuiApplication*, QQmlApplicationEngine*> construct_app_engine(int argc, char** argv, const QUrl& url) {
   QGuiApplication *app = new QGuiApplication(argc, argv);
-  qmlRegisterType<PropertyBinding>("Lablqml", 1, 0, "PropertyBinding");
+  qmlRegisterType<PropertyBinding>("Lablqml", 1, 0, "OCamlBinding");
   QQmlApplicationEngine* engine = new QQmlApplicationEngine(url);
 
   QObject::connect(engine, &QQmlEngine::quit,
