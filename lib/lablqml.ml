@@ -144,10 +144,10 @@ end
 module OCamlObject = struct
   type t = cppobj
   type variant_fn_t = QVariant.t -> unit
-  external binding_stub: obj:cppobj -> fn:variant_fn_t -> t = "caml_qml_ocaml_object"
-  let binding obj fn = binding_stub obj fn
+  external binding_stub: create:bool -> obj:cppobj -> name:string -> fn:variant_fn_t -> t = "caml_qml_ocaml_object"
+  let binding ?(create=false) obj name fn = binding_stub create obj name fn
   external value: obj:t -> QVariant.t = "caml_qml_ocaml_object_value"
-  external write: obj:t -> QVariant.t -> bool = "caml_qml_ocaml_object_assign"
+  external write: obj:t -> QVariant.t -> bool = "caml_qml_ocaml_object_write"
 end
 
 external object_child_named: cppobj -> string -> cppobj = "caml_qml_child_named"

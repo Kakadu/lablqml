@@ -10,50 +10,46 @@
 
 #include "object.h"
 
-#include <QMutexLocker>
-
-OCamlObject::OCamlObject(QObject *parent)
-: QObject(parent), ocaml_function(NULL), mlvalue()
+OCamlBinding::OCamlBinding(QObject *obj, const QString &name, value func):
+QObject(obj), ocaml_function(NULL), property(obj, name)
 {
-}
-
-void OCamlObject::bind(value func) {
   ocaml_function = (value*) malloc(sizeof(func));
   *ocaml_function = func;
   caml_register_global_root(ocaml_function);
+  property.connectNotifySignal(this, SLOT(valueChanged()));
 }
 
-OCamlObject::~OCamlObject() {
+OCamlBinding::~OCamlBinding(){
   if (ocaml_function != NULL) {
     caml_remove_global_root(ocaml_function);
     free(ocaml_function);
   }
 }
 
-void OCamlObject::write(QVariant v) {
+bool OCamlBinding::write(QVariant v) {
+  qDebug() << "qt: binding write" << property.object()->objectName() << property.name() << v;
+  return property.write(v);
+}
+
+void OCamlBinding::valueChanged () {
   CAMLparam0();
   CAMLlocal1(variant_val);
-
   if (ocaml_function != NULL) {
     caml_leave_blocking_section();
-    caml_callback(*(this->ocaml_function), Val_QVariant(variant_val, v));
+    caml_callback(*(this->ocaml_function), Val_QVariant(variant_val, property.read()));
     caml_enter_blocking_section();
   }
-
-  mlvalue = v;
-
   CAMLreturn0;
 }
 
-QVariant OCamlObject::read() {
-  return mlvalue;
+OCamlObject::OCamlObject(QObject *parent):
+QObject(parent)
+{
 }
 
-void OCamlObject::fromOCaml(QVariant v) {
-  qDebug()
-    << "assign: " << objectName ()
-    << " value:" << v;
-  mlvalue = v;
+bool OCamlObject::write(QQmlProperty property, QVariant v) {
+  qDebug() << "qt: object write" << objectName() << property.name() << v;
+  return property.write(v);
 }
 
 extern "C" {
@@ -72,42 +68,50 @@ extern "C" {
     custom_compare_ext_default
   };
 
-  value caml_qml_ocaml_object(value qt_object_val, value func_val) {
-    CAMLparam2(qt_object_val, func_val);
+  value caml_qml_ocaml_object(value create, value qt_object_val, value property_name_val, value func_val) {
+    CAMLparam4(create, qt_object_val, property_name_val, func_val);
     CAMLlocal1(result_val);
 
     QObject *o = Ctype_field(QObject, qt_object_val, 0);
     Q_ASSERT(o != nullptr);
 
-    qDebug () << "bound to: " << o->metaObject()->className();
+    if (!Bool_val(create)) {
+      QVariant property_object = o->property(String_val(property_name_val));
+      if (!property_object.isValid())
+	caml_failwith("Property not found");
+    }else{
+      caml_failwith("Implicit creation not supported yet");
+    }
 
-    OCamlObject *binding = (OCamlObject *)o;
-    binding->bind(func_val);
+    OCamlObject *object = (OCamlObject *)o;
+    OCamlBinding *binding = new OCamlBinding (object, String_val(property_name_val), func_val);
 
-    result_val = caml_alloc_custom(&ops, sizeof(OCamlObject*), 0, 1);
-    Ctype_of_val(OCamlObject, result_val) = binding;
+    result_val = caml_alloc_custom(&ops, sizeof(OCamlBinding*), 0, 1);
+    Ctype_of_val(OCamlBinding, result_val) = binding;
     CAMLreturn(result_val);
   }
 
+  // Warning: synchronously reading into Qt from another thread can cause corruption
   value caml_qml_ocaml_object_value(value ocaml_object_val) {
     CAMLparam1(ocaml_object_val);
     CAMLlocal1(result_variant_val);
 
     OCamlObject *binding = Ctype_of_val(OCamlObject, ocaml_object_val);
     Q_ASSERT(binding != nullptr);
-    QVariant ret = binding->read();
+    QVariant ret /*= binding->read()*/;
 
     CAMLreturn(Val_QVariant(result_variant_val, ret));
   }
 
-  value caml_qml_ocaml_object_assign(value ocaml_object_val, value value_val) {
-    CAMLparam2(ocaml_object_val, value_val);
+  value caml_qml_ocaml_object_write(value binding_val, value value_val) {
+    CAMLparam2(binding_val, value_val);
 
-    OCamlObject *binding = Ctype_of_val(OCamlObject, ocaml_object_val);
-    Q_ASSERT(binding != nullptr);
+    auto *b = Ctype_of_val(OCamlBinding, binding_val);
+    Q_ASSERT(b != nullptr);
 
     bool written = QMetaObject::invokeMethod
-      (binding, "fromOCaml", Qt::QueuedConnection, Q_ARG(QVariant, QVariant_val(value_val)));
+      (b, "write", Qt::QueuedConnection,
+       Q_ARG(QVariant, QVariant_val(value_val)));
     if (written)
       CAMLreturn(Val_true);
     else

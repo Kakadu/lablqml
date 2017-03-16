@@ -3,27 +3,32 @@
 #include <QtCore/QObject>
 #include <QString>
 #include <QVariant>
+#include <QQmlProperty>
+#include <QMutex>
 #include <QtCore/QDebug>
 #include <lablqml.h>
 
-class OCamlObject : public QObject {
+class OCamlBinding : public QObject {
   Q_OBJECT
-  Q_PROPERTY (QVariant mlvalue READ read WRITE write NOTIFY changed)
 
   value *ocaml_function;
+  QQmlProperty property;
 
-  public:
-  QVariant mlvalue;
-
-  OCamlObject (QObject *parent = 0);
-  ~OCamlObject ();
-  void bind (value func);
-  QVariant read ();
-  void write (QVariant v);
+ public:
+  OCamlBinding (QObject *obj, const QString &name, value func);
+  ~OCamlBinding ();
 
  public slots:
-  void fromOCaml (QVariant v);
+    void valueChanged();
+    bool write (QVariant);
+};
 
- signals:
-    void changed (QVariant);
+class OCamlObject : public QObject {
+  Q_OBJECT
+
+ public:
+  OCamlObject (QObject *parent = 0);
+
+ public slots:
+   bool write (QQmlProperty property, QVariant value);
 };

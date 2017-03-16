@@ -109,8 +109,8 @@ end
 module OCamlObject: sig
   type t
   type variant_fn_t = QVariant.t -> unit
-  val binding: cppobj -> variant_fn_t -> t
-  val value: obj:t -> QVariant.t
+  val binding: ?create:bool -> cppobj -> string -> variant_fn_t -> t
+  (*val value: obj:t -> QVariant.t*)
   val write: obj:t -> QVariant.t -> bool
 end
 

@@ -12,11 +12,11 @@ ApplicationWindow {
     OCamlObject {
 	id: t
 	objectName: "test"
-	mlvalue: "Hello world! Hello Qml with OCaml!"
+	property string mlvalue: "Hello world!"
 
 	// QtObjects can only be nested as properties
 	property OCamlObject nested: OCamlObject {
-	   mlvalue: "I'm nested"
+	   property string mlvalue: "I'm nested"
 	}
     }
 
@@ -25,12 +25,12 @@ ApplicationWindow {
 	// Starts as "Hello world ..." but when t.mlvalue changes
 	Text { text: t.mlvalue } 
 	// Starts as "mirror" and gets changed by `mirror_binding`
-	OCamlObject { objectName: "mirror"; mlvalue: "mirror" }
+	OCamlObject { objectName: "mirror"; property string mlvalue: "mirror" }
     }
 
     // Change "test" object's `mlvalue` value
     Timer {
-	interval: 500; running: true; repeat: true
+	interval: 1000; running: true; repeat: true
 	onTriggered: t.mlvalue = "Message changed"
     }
 
