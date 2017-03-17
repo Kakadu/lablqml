@@ -10,42 +10,42 @@
 
 #include "object.h"
 
-OCamlBinding::OCamlBinding(QObject *obj, const QString &name, value func):
-QObject(obj), ocaml_function(NULL), property(obj, name)
+OCamlBinding::OCamlBinding(QObject *obj, const QString &name, value *func):
+QObject(obj), ocaml_function(func), property(obj, name)
 {
-  CAMLparam1(func);
-  ocaml_function = (value*) malloc(sizeof(func));
-  *ocaml_function = func;
-  caml_register_global_root(ocaml_function);
   property.connectNotifySignal(this, SLOT(valueChanged()));
   qDebug () << "created object for " << name;
-  CAMLreturn0;
 }
 
 OCamlBinding::~OCamlBinding(){
   if (ocaml_function != NULL) {
+    caml_acquire_runtime_system();
     caml_remove_global_root(ocaml_function);
+    caml_release_runtime_system();
     free(ocaml_function);
   }
   qDebug () << "destroyed object for " << property.name();
 }
 
 bool OCamlBinding::write(QVariant v) {
-  //  qDebug() << "qt: binding write" << property.object()->objectName() << property.name() << v;
   return property.write(v);
 }
 
-void OCamlBinding::valueChanged () {
+void lablqml_push (value *ocaml_function, QVariant v){
   CAMLparam0();
   CAMLlocal1(variant_val);
-  if (ocaml_function != NULL) {
-    int x = caml_c_thread_register();
-    if(x==1) qDebug () << "thread registration" << x;
-    caml_leave_blocking_section();
-    caml_callback(*(this->ocaml_function), Val_QVariant(variant_val, property.read()));
-    caml_enter_blocking_section();
-  }
+  int x = caml_c_thread_register();
+  if(x==1) qDebug () << "thread registration" << x;
+  caml_callback(*ocaml_function, Val_QVariant(variant_val, v));
   CAMLreturn0;
+}
+
+void OCamlBinding::valueChanged () {
+  if (ocaml_function != NULL) {
+    caml_acquire_runtime_system();
+    lablqml_push (ocaml_function, property.read ());
+    caml_release_runtime_system();
+  }
 }
 
 OCamlObject::OCamlObject(QObject *parent):
@@ -56,26 +56,22 @@ QObject(parent)
 
 OCamlObject::~OCamlObject(){
   caml_c_thread_unregister();
+  qDebug () << "object destroyed";
 }
 
 bool OCamlObject::write(QQmlProperty property, QVariant v) {
   return property.write(v);
 }
 
-#include <iostream>
-#include <chrono>
-
 extern "C" {
 
-  void free_qml_ocaml_object(value v){
-    CAMLparam1(v);
+  void free_ocaml_binding_object(value v){
     QMetaObject::invokeMethod (Ctype_of_val(OCamlBinding, v), "deleteLater", Qt::QueuedConnection);
-    CAMLreturn0;
   }
 
   static struct custom_operations ops = {
     "lablqml.qml.property",
-    free_qml_ocaml_object,
+    free_ocaml_binding_object,
     custom_compare_default,
     custom_hash_default,
     custom_serialize_default,
@@ -98,8 +94,11 @@ extern "C" {
       caml_failwith("Implicit creation not supported yet");
     }
 
-    OCamlObject *object = (OCamlObject *)o;
-    OCamlBinding *binding = new OCamlBinding (object, String_val(property_name_val), func_val);
+    value *ocaml_function = (value*) malloc(sizeof(func_val));
+    *ocaml_function = func_val;
+    caml_register_global_root(ocaml_function);
+
+    OCamlBinding *binding = new OCamlBinding ((OCamlObject *)o, String_val(property_name_val), ocaml_function);
 
     result_val = caml_alloc_custom(&ops, sizeof(OCamlBinding*), 0, 1);
     Ctype_of_val(OCamlBinding, result_val) = binding;

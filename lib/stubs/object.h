@@ -15,7 +15,7 @@ class OCamlBinding : public QObject {
   QQmlProperty property;
 
  public:
-  OCamlBinding (QObject *obj, const QString &name, value func);
+  OCamlBinding (QObject *obj, const QString &name, value *func);
   ~OCamlBinding ();
 
  public slots:
