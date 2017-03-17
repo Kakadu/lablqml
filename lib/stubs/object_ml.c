@@ -13,10 +13,13 @@
 OCamlBinding::OCamlBinding(QObject *obj, const QString &name, value func):
 QObject(obj), ocaml_function(NULL), property(obj, name)
 {
+  CAMLparam1(func);
   ocaml_function = (value*) malloc(sizeof(func));
   *ocaml_function = func;
   caml_register_global_root(ocaml_function);
   property.connectNotifySignal(this, SLOT(valueChanged()));
+  qDebug () << "created object for " << name;
+  CAMLreturn0;
 }
 
 OCamlBinding::~OCamlBinding(){
@@ -24,10 +27,11 @@ OCamlBinding::~OCamlBinding(){
     caml_remove_global_root(ocaml_function);
     free(ocaml_function);
   }
+  qDebug () << "destroyed object for " << property.name();
 }
 
 bool OCamlBinding::write(QVariant v) {
-  qDebug() << "qt: binding write" << property.object()->objectName() << property.name() << v;
+  //  qDebug() << "qt: binding write" << property.object()->objectName() << property.name() << v;
   return property.write(v);
 }
 
@@ -35,6 +39,8 @@ void OCamlBinding::valueChanged () {
   CAMLparam0();
   CAMLlocal1(variant_val);
   if (ocaml_function != NULL) {
+    int x = caml_c_thread_register();
+    if(x==1) qDebug () << "thread registration" << x;
     caml_leave_blocking_section();
     caml_callback(*(this->ocaml_function), Val_QVariant(variant_val, property.read()));
     caml_enter_blocking_section();
@@ -45,17 +51,26 @@ void OCamlBinding::valueChanged () {
 OCamlObject::OCamlObject(QObject *parent):
 QObject(parent)
 {
+  caml_c_thread_register();
+}
+
+OCamlObject::~OCamlObject(){
+  caml_c_thread_unregister();
 }
 
 bool OCamlObject::write(QQmlProperty property, QVariant v) {
-  qDebug() << "qt: object write" << objectName() << property.name() << v;
   return property.write(v);
 }
 
+#include <iostream>
+#include <chrono>
+
 extern "C" {
 
-  void free_qml_ocaml_object(value s){
-    //delete Ctype_of_val(OCamlObject, s);
+  void free_qml_ocaml_object(value v){
+    CAMLparam1(v);
+    QMetaObject::invokeMethod (Ctype_of_val(OCamlBinding, v), "deleteLater", Qt::QueuedConnection);
+    CAMLreturn0;
   }
 
   static struct custom_operations ops = {
@@ -88,20 +103,21 @@ extern "C" {
 
     result_val = caml_alloc_custom(&ops, sizeof(OCamlBinding*), 0, 1);
     Ctype_of_val(OCamlBinding, result_val) = binding;
+
     CAMLreturn(result_val);
   }
 
   // Warning: synchronously reading into Qt from another thread can cause corruption
-  value caml_qml_ocaml_object_value(value ocaml_object_val) {
-    CAMLparam1(ocaml_object_val);
-    CAMLlocal1(result_variant_val);
-
-    OCamlObject *binding = Ctype_of_val(OCamlObject, ocaml_object_val);
-    Q_ASSERT(binding != nullptr);
-    QVariant ret /*= binding->read()*/;
-
-    CAMLreturn(Val_QVariant(result_variant_val, ret));
-  }
+  //value caml_qml_ocaml_object_value(value ocaml_object_val) {
+  //  CAMLparam1(ocaml_object_val);
+  //  CAMLlocal1(result_variant_val);
+  //
+  //  OCamlObject *binding = Ctype_of_val(OCamlObject, ocaml_object_val);
+  //  Q_ASSERT(binding != nullptr);
+  //  QVariant ret = binding->read(); // Synchronous read..
+  //
+  //  CAMLreturn(Val_QVariant(result_variant_val, ret));
+  //}
 
   value caml_qml_ocaml_object_write(value binding_val, value value_val) {
     CAMLparam2(binding_val, value_val);
@@ -112,10 +128,8 @@ extern "C" {
     bool written = QMetaObject::invokeMethod
       (b, "write", Qt::QueuedConnection,
        Q_ARG(QVariant, QVariant_val(value_val)));
-    if (written)
-      CAMLreturn(Val_true);
-    else
-      CAMLreturn(Val_false);
+
+    CAMLreturn(written? Val_true: Val_false);
   }
 
 } // Extern C

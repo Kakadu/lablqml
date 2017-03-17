@@ -28,7 +28,7 @@ class OCamlObject : public QObject {
 
  public:
   OCamlObject (QObject *parent = 0);
-
+  ~OCamlObject();
  public slots:
    bool write (QQmlProperty property, QVariant value);
 };
