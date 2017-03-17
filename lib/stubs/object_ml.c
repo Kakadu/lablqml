@@ -10,11 +10,12 @@
 
 #include "object.h"
 
+extern "C" void ocamlobject_callback (value *ocaml_function, QVariant v);
+
 OCamlBinding::OCamlBinding(QObject *obj, const QString &name, value *func):
 QObject(obj), ocaml_function(func), property(obj, name)
 {
   property.connectNotifySignal(this, SLOT(valueChanged()));
-  qDebug () << "created object for " << name;
 }
 
 OCamlBinding::~OCamlBinding(){
@@ -31,19 +32,10 @@ bool OCamlBinding::write(QVariant v) {
   return property.write(v);
 }
 
-void lablqml_push (value *ocaml_function, QVariant v){
-  CAMLparam0();
-  CAMLlocal1(variant_val);
-  int x = caml_c_thread_register();
-  if(x==1) qDebug () << "thread registration" << x;
-  caml_callback(*ocaml_function, Val_QVariant(variant_val, v));
-  CAMLreturn0;
-}
-
 void OCamlBinding::valueChanged () {
   if (ocaml_function != NULL) {
     caml_acquire_runtime_system();
-    lablqml_push (ocaml_function, property.read ());
+    ocamlobject_callback (ocaml_function, property.read ());
     caml_release_runtime_system();
   }
 }
@@ -79,7 +71,7 @@ extern "C" {
     custom_compare_ext_default
   };
 
-  value caml_qml_ocaml_object(value create, value qt_object_val, value property_name_val, value func_val) {
+  value ocamlobject_binding(value create, value qt_object_val, value property_name_val, value func_val) {
     CAMLparam4(create, qt_object_val, property_name_val, func_val);
     CAMLlocal1(result_val);
 
@@ -118,7 +110,7 @@ extern "C" {
   //  CAMLreturn(Val_QVariant(result_variant_val, ret));
   //}
 
-  value caml_qml_ocaml_object_write(value binding_val, value value_val) {
+  value ocamlobject_write(value binding_val, value value_val) {
     CAMLparam2(binding_val, value_val);
 
     auto *b = Ctype_of_val(OCamlBinding, binding_val);
@@ -129,6 +121,15 @@ extern "C" {
        Q_ARG(QVariant, QVariant_val(value_val)));
 
     CAMLreturn(written? Val_true: Val_false);
+  }
+
+  void ocamlobject_callback (value *ocaml_function, QVariant v) {
+    CAMLparam0();
+    CAMLlocal1(variant_val);
+    int x = caml_c_thread_register();
+    if(x==1) qDebug () << "an unregistered thread" << x;
+    caml_callback(*ocaml_function, Val_QVariant(variant_val, v));
+    CAMLreturn0;
   }
 
 } // Extern C
