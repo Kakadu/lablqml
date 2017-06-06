@@ -4,6 +4,7 @@
  *  QApplication inherits QGuiApplication is for QWidget-based apps.
  *  We use first one.
  */
+// #define QT_QML_DEBUG // Enable for access with QML profiler
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlApplicationEngine>
