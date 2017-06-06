@@ -126,8 +126,7 @@ extern "C" {
   void ocamlobject_callback (value *ocaml_function, QVariant v) {
     CAMLparam0();
     CAMLlocal1(variant_val);
-    int x = caml_c_thread_register();
-    if(x==1) qDebug () << "an unregistered thread" << x;
+    caml_c_thread_register();
     caml_callback(*ocaml_function, Val_QVariant(variant_val, v));
     CAMLreturn0;
   }
