@@ -141,17 +141,17 @@ end = struct
   let value_ map name = value_stub map name
 end
 
-module Property = struct
+module OCamlObject = struct
   type t = cppobj
   type variant_fn_t = QVariant.t -> unit
-  external binding_stub: create:bool -> obj:cppobj -> name:string -> fn:variant_fn_t -> t = "caml_qml_property_binding"
+  external binding_stub: create:bool -> obj:cppobj -> name:string -> fn:variant_fn_t -> t = "ocamlobject_binding"
   let binding ?(create=false) obj name fn = binding_stub create obj name fn
-  external value: obj:t -> QVariant.t = "caml_qml_property_binding_value"
-  external write: obj:t -> QVariant.t -> bool = "caml_qml_property_binding_assign"
+  (*external value: obj:t -> QVariant.t = "ocamlobject_value"*)
+  external write: obj:t -> QVariant.t -> bool = "ocamlobject_write"
 end
 
 external object_child_named: cppobj -> string -> cppobj = "caml_qml_child_named"
-external object_property_named : cppobj -> string -> Property.t = "caml_qml_property_child_named"
+external object_property_named : cppobj -> string -> cppobj = "caml_qml_property_child_named"
 
 module SingleFunc: sig
   type t

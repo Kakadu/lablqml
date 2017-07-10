@@ -1,45 +1,42 @@
 import QtQuick 2.1
 import QtQuick.Controls 1.0
 
-/* Demonstraction of direct property binding
+import Lablqml 1.0
+/* Demonstration of direct property binding
 OCaml binds to objects named "test" and "mirror".
 When test changes, the binding function is called and the
 mirror's text value is set */
 
 ApplicationWindow {
     visible: true
-    QtObject {
+    OCamlObject {
 	id: t
 	objectName: "test"
-	property string msg: "Hello world! Hello Qml with OCaml!"
+	property string mlvalue: "Hello world!"
 
 	// QtObjects can only be nested as properties
-	property QtObject nested: QtObject {
-	    property string nested_msg: "I'm nested"
+	property OCamlObject nested: OCamlObject {
+	   property string mlvalue: "I'm nested"
 	}
     }
 
     Column {
 	objectName: "mirror"
-	// Starts as "Hello world ..." but when t.msg changes
-	Text { text: t.msg } 
+	// Starts as "Hello world ..." but when t.mlvalue changes
+	Text { text: t.mlvalue } 
 	// Starts as "mirror" and gets changed by `mirror_binding`
-	Text { objectName: "mirror"; text: "mirror" }
+	OCamlObject { objectName: "mirror"; property string mlvalue: "mirror" }
     }
 
-    // Change "test" object's `msg` value
+    // Change "test" object's `mlvalue` value
     Timer {
-	interval: 50; running: true; repeat: true
-	onTriggered: t.msg = "Message changed"
+	interval: 1000; running: true; repeat: true
+	onTriggered: t.mlvalue = "Message changed"
     }
 
     // Terminate program after 5s
     Timer {
-	interval: 5000;
-	running: true;
-	repeat: false
-	onTriggered: {
-	    Qt.quit();
-	}
+	interval: 5000; running: true; repeat: false
+	onTriggered: Qt.quit();
     }
 }
