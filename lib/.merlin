@@ -2,5 +2,3 @@ SRC .
 SRC src_tests
 B _build
 B _build/src_tests
-
-PKG oUnit

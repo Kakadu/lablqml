@@ -1,5 +1,4 @@
 (* read test3.qml for explanation *)
-open OUnit
 open Lablqml
 
 let test3 () =

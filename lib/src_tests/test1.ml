@@ -1,6 +1,4 @@
-open OUnit
 open Lablqml
-
 
 let test1 () =
   let (app,engine) = create_qapplication Sys.argv in
@@ -18,6 +16,5 @@ let test1 () =
 
   QGuiApplication.exec app;
   ()
-
 
 let () = test1 ()
