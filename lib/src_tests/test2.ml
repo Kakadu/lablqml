@@ -1,4 +1,3 @@
-open OUnit
 open Lablqml
 
 let test2 () =

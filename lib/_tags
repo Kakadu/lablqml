@@ -14,5 +14,4 @@ true: annot, bin_annot, debug
 <lablqml.{cma,cmxa}>: use_liblablqml_stubs
 
 #tests
-<src_tests/*.*>: package(oUnit)
 <src_tests/*.native>: use_lablqml, use_qt5

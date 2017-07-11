@@ -21,7 +21,7 @@ Executable "test1"
   Build$: flag(tests)
   CompiledObject: best
   Install: false
-  BuildDepends: oUnit,lablqml
+  BuildDepends: lablqml
   CCOpt:        -std=c++11 -x c++ `pkg-config --libs Qt5Widgets Qt5Quick` -O2 -Dprivate=public
 
 Test "test1"

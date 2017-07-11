@@ -1,4 +1,3 @@
-open OUnit
 open Lablqml
 
 let test1 () =
@@ -13,6 +12,5 @@ let test1 () =
 
   QGuiApplication.exec app;
   ()
-
 
 let () = test1 ()
