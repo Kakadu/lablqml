@@ -22,8 +22,8 @@ Directories mapping:
 * Demo app `qocamlbrowser` (ocamlbrowser with QtQuick instead of Tcl/Tk) is
 located in [separate repo](https://github.com/kakadu/qocamlbrowser_quick).
 
-Github pages [site](http://kakadu.github.io/lablqt/) and
-[tutorial](http://kakadu.github.io/lablqt/tutorial2.html) are available.
+Github pages [site](http://kakadu.github.io/lablqml/) and
+[tutorial](http://kakadu.github.io/lablqml/tutorial2.html) are available.
 
 Use `./configure && make` to build it. Don't forget to install `g++` and good Qt
 version (>= 5.3 I think, `./configure` will check for it, btw).
