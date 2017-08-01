@@ -1,3 +1,5 @@
+open Migrate_parsetree
+open OCaml_403.Ast
 open Ast_mapper
 open Ast_helper
 open Asttypes
@@ -15,15 +17,13 @@ type config = { mutable gencpp: bool
               }
 let config  = { gencpp=true; destdir="."; ext="c" }
 
-let () =
-  let specs = [ ("-nocpp",   Arg.Unit (fun () -> config.gencpp <- false), "Don't generate C++")
-              ; ("-destdir", Arg.String (fun s -> config.destdir <- s), "Where to put files")
-              ; ("-ext", Arg.String (fun s -> config.ext <- s), "File extension to use (.cpp or .c)")
-              (* TODO: implement -list choice which will print qtclasses declared in file *)
-              ] in
-  Arg.parse specs (fun _ -> ())
-            "usage there"
-
+let args =
+  Arg.([
+    "-nocpp", Unit (fun () -> config.gencpp <- false), "Don't generate C++";
+    "-destdir", String (fun s -> config.destdir <- s), "Where to put files";
+    "-ext", String (fun s -> config.ext <- s), "File extension to use (.cpp or .c)";
+  (* TODO: implement -list choice which will print qtclasses declared in file *)
+  ])
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
@@ -378,7 +378,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   !heading @ [ans; creator]
 
 
-let getenv_mapper argv =
+let mapper =
   { default_mapper with
     structure = fun mapper items ->
       let rec iter items =
@@ -396,4 +396,6 @@ let getenv_mapper argv =
       iter items
   }
 
-let () = run_main getenv_mapper
+let () =
+  Driver.register ~name:"ppx_qt" ~args Versions.ocaml_403
+    (fun _config _cookies -> mapper)
