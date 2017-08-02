@@ -19,8 +19,8 @@ CMX=program.cmx
 $(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o main.o
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(CLINK) -L`ocamlfind c -where` \
-	$(GENERATED_OBJS) -L$(LABLQML_WHERE) \
-	camlcode.o main.o -lasmrun -llablqml_stubs \
+	$(GENERATED_OBJS) -L$(LABLQML_WHERE) -L`ocamlfind query threads` \
+	camlcode.o main.o -lasmrun -llablqml_stubs -lthreadsnat -lpthread \
 	-lunix -lcamlstr $(LDFLAGS) $(LDLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
 camlcode.o: $(GEN_CMX) $(CMX)

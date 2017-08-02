@@ -17,8 +17,8 @@ OCAMLFIND_PACKAGES=lablqml
 LABLQML_WHERE= `OCAMLPATH=../../lib/_build/bundle ocamlfind query lablqml`
 # deferred expansion allows to update PACKAGES variable in parent makefiles
 OCAML_COMMON_FLAGS=
-OCAML_OPT_FLAGS=
-OCAML_C_FLAGS=
+OCAML_OPT_FLAGS=-thread
+OCAML_C_FLAGS=-vmthread
 OCAMLOPT=ocamlfind opt -package $(subst $(space),$(comma),$(OCAMLFIND_PACKAGES)) \
 		$(OCAML_COMMON_FLAGS) $(OCAML_OPT_FLAGS)
 OCAMLC  =ocamlfind   c -package $(subst $(space),$(comma),$(OCAMLFIND_PACKAGES)) \

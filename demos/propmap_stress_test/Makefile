@@ -13,7 +13,7 @@ endif
 all:
 	$(V)PATH=`pwd`/../../src/:$$PATH \
 	OCAMLPATH=`pwd`/../../lib/_build/bundle \
-	ocamlfind opt -package lablqml -ppx "$(PPX_QT) -destdir . -ext cpp" \
+	ocamlfind opt -package lablqml -ppx "$(PPX_QT) --as-ppx -destdir . -ext cpp" \
 	-thread -linkpkg \
 	-cclib -lstdc++ -ccopt -L`qmake -query QT_INSTALL_LIBS` \
 	-cclib -lQt5Quick -cclib -lQt5Qml -cclib -lQt5Network \

@@ -21,8 +21,9 @@ $(call MAKE_RULES,$(QTCLASSES))
 $(OUT): $(GENERATED_H) $(GENERATED_OBJS) $(GENERATED_CMX) $(CMX) camlcode.o  main.o
 	$(V)$(CLINK) -L`ocamlc -where` \
 	$(GENERATED_OBJS) camlcode.o main.o -lasmrun \
-	-L$(LABLQML_WHERE) -llablqml_stubs \
-	-lunix -lcamlstr $(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
+	-L$(LABLQML_WHERE) -L`ocamlfind query threads` \
+	-llablqml_stubs -lunix -lcamlstr -lthreadsnat -lpthread \
+	$(CLINKLIBS) $(NATIVECCLIBS)  -o $(OUT)
 
 camlcode.o: $(GEN_CMX) $(CMX)
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
