@@ -27,6 +27,7 @@ flags: [ light-uninstall ]
 depends: [
   "ocamlfind"
   "ocamlbuild"  { build }
+  "ocaml-migrate-parsetree"
   "conf-qt"     { >= "5.2.1"}
   "lwt"         { test }
   "cppo"        { test }
