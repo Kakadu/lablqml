@@ -7,3 +7,8 @@ archive(byte) = "lablqml.cma"
 archive(byte, plugin) = "lablqml.cma"
 archive(native) = "lablqml.cmxa"
 
+package "ppx" (
+
+  ppx = "ppx_qt"
+
+)

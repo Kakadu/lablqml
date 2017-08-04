@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-OB="ocamlbuild -use-ocamlfind" #-classic-display
+#OB=ocamlbuild -use-ocamlfind  -plugin-tag \"package(ocaml-migrate-parsetree-ocamlbuild)\"" #-classic-display
 # check that files are compilable
 export OCAMLPATH=`pwd`/../../lib/_build/bundle
-$OB src/Controller.cmx
+export PATH=`pwd`/../../ppx:$PATH
+ocamlbuild -use-ocamlfind  -plugin-tag "package(ocaml-migrate-parsetree-ocamlbuild)" src/Controller.cmx
 
 # generate required .cpp and .h files
 cd _build # we are doing this in the _build dir to prevent sanitize errors

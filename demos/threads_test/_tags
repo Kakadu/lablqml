@@ -3,7 +3,7 @@ true: debug, warn(@6), thread
 <src/*.ml*>: package(compiler-libs.common), package(str)
 <src/program.native>: use_qt5, package(compiler-libs.common), package(str), package(unix), package(lablqml), use_cppstubs,use_qrc_stub, thread, package(lwt.unix)
 
-<src/Controller.ml>:     use_ppx_qt
+<src/Controller.ml>:     predicate(custom_ppx),  omp-driver(lablqml.ppx -nocpp -destdir blah)
 <src/controller_c.c>:    mocml_generated
 <src/moc_controller.c>:  qtmoc_generated
 

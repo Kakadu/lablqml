@@ -1,5 +1,5 @@
 OUT=qocamlbrowser
-OB=ocamlbuild -use-ocamlfind
+OB=ocamlbuild -use-ocamlfind -plugin-tag "package(ocaml-migrate-parsetree-ocamlbuild)"
 
 ifeq ($(VERBOSE),1)
 OB+= -classic-display
@@ -8,7 +8,7 @@ endif
 .PHONY: all clean install uninstall
 
 all:
-	PATH=`pwd`/../../src/:$$PATH OCAMLPATH=`pwd`/../../lib/_build/bundle \
+	PATH=`pwd`/../../ppx/:$$PATH OCAMLPATH=`pwd`/../../lib/_build/bundle \
 	$(OB) src/moc_controller.c src/qrc_resources.c src/libcppstubs.a src/program.native
 
 
