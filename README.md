@@ -1,4 +1,4 @@
-Let's write QML/QtQuick GUI for OCaml using *lablqml*!
+Let's write QML/QtQuick GUI for OCaml (or Reason) using *lablqml*!
 
 In this repo you can find my work about integrating OCaml and Qt. Initially, I
 planned to generate binding code for OCaml and Qt Widgets and called this
