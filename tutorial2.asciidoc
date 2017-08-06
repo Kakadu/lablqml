@@ -19,7 +19,7 @@ Creating applications with QtQuick and OCaml
 * xref:signals[Adding signals]
 * xref:types[Supported types]
 * xref:building[Build system]
-* xref:no_moc[Using `lablqml` without codegeneration]
+* xref:no_moc[Using `lablqml` without code generation]
 * xref:conclusion[Conclusion]
 * xref:qt5[P.S. Installing Qt5]
 --
@@ -86,7 +86,7 @@ This QML file is already a valid application. It can be executed without any com
 
 image::images/tutorial2/img1.png[options="responsive"]
 
-The normal way to interact between QtQuick and C\++ is by exposing some objects into QtQuick engine. `Lablqt` has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let's describe class `controller` in `controller.ml`:
+The normal way to interact between QtQuick and C\++ is by exposing some objects into QtQuick engine. `Lablqml` has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let's describe class `controller` in `controller.ml`:
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
@@ -106,7 +106,7 @@ ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "ppx_qt -destdir . -ext c
 
 [NOTE]
 In the summer 2017 `lablqml` has started to depend on the OCaml  package `ocaml-migrate-parsetree`. Compilation commands
-will probalby require small adjustments for `lablqml` >= `0.6`.
+will probably require small adjustments for `lablqml` >= `0.6`.
 
 In `controller.ml` you can see the class `controller` with attribute `qtclass` and its method `onMouseClicked` with attribute `qtmeth`. Without this attributes the class and its method will not be available in QtQuick.
 
@@ -231,7 +231,7 @@ Our property is used in line
 text: "You have clicked " + controller.clicksCount + " times"
 ----
 
-At the right of the colon character should be a valid ECMAScript expression which is evaluted into a property value at runtime. It can be multiline, call some functions and methods and use many properties inside. When one of properties used inside changes the whole expression is reevaluated and the `text` property gets updated with a new value.
+At the right of the colon character should be a valid ECMAScript expression which is evaluated into a property value at runtime. It can be multi line, call some functions and methods and use many properties inside. When one of properties used inside changes the whole expression is reevaluated and the `text` property gets updated with a new value.
 
 Sources of this demo can be found on https://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3/demo2[github]. Final window should be similar to the one on this picture:
 
@@ -249,7 +249,7 @@ When a property is declared a signal is automatically created. Signals can be de
 include::demos/0.3/demo3/controller.ml[]
 ----
 
-Now signal `hiGotten` can be connnected to a handler in QtQuick:
+Now signal `hiGotten` can be connected to a handler in QtQuick:
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,qml]
@@ -384,16 +384,16 @@ ocamlfind opt -package lablqml -linkpkg \
 ----
 
 [[no_moc]]
-Using `lablqml` without codegeneration
+Using `lablqml` without code generation
 --------------------------------------
 
 The one may not be very happy about printing some C++ code to the source files and compiling them
-seperately. This approach may introduce compliations when the generated code is far from ideal
-and requires adjustments. However, Qt follows the approach with compile-time codegeneration
+separately. This approach may introduce compilations when the generated code is far from ideal
+and requires adjustments. However, Qt follows the approach with compile-time code generation
 and `lablqml` supports it as described above.
 
 Also, QtQuick has convenience class http://doc.qt.io/qt-5/qqmlpropertymap.html[QQmlPropertyMap] which
-allows you to dynamically (without compile-time codegeneration) add new properties to the subclasses
+allows you to dynamically (without compile-time code generation) add new properties to the subclasses
 of `QQmlPropertyMap`. The support of this class contributed to `lablqml` `0.5` by
 https://github.com/Orbifx[Orbital Fox].
 
@@ -423,7 +423,7 @@ Building from Git
 Official Qt Project wiki is
 http://qt-project.org/wiki/Building_Qt_5_from_Git[there]. Below you
 can see `my-init` and `configure` scripts which configure
-Qt5 to build only modules needed by lablqt.
+Qt5 to build only modules needed by lablqml.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,bash]
@@ -466,7 +466,7 @@ NOSSE="-no-sse2 -no-sse3 -no-ssse3 -no-sse4.1 -no-sse4.2 -no-avx -no-avx2"
   $@
 ----
 
-Value `$NOFB` disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value `$NOSSE` disables all special instruction sets.With that `./my-configure` QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.
+Value `$NOFB` disables frame buffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value `$NOSSE` disables all special instruction sets.With that `./my-configure` QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.
 
 If you want to compile Qt faster you can study next options of `./configure script`:
 
@@ -478,7 +478,7 @@ If you want to compile Qt faster you can study next options of `./configure scri
 
 .P.P.S. MacOS remark
 
-There are some issues https://bugreports.qt-project.org/browse/QTBUG-35256[on Qt bugtracker] about using `pkg-config` on MacOS. It seems that they handle `-F` option wrong. The solution is mentioned https://github.com/Kakadu/lablqt/issues/17[here].
+There are some issues https://bugreports.qt-project.org/browse/QTBUG-35256[on Qt bugtracker] about using `pkg-config` on MacOS. It seems that they handle `-F` option wrong. The solution is mentioned https://github.com/Kakadu/lablqml/issues/17[here].
 
 If you should compile Qt from source you will be able to avoid this issue by passing special options to `./configure` script: `-prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework`.
 
