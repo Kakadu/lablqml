@@ -19,6 +19,7 @@ Creating applications with QtQuick and OCaml
 * xref:signals[Adding signals]
 * xref:types[Supported types]
 * xref:building[Build system]
+* xref:no_moc[Using `lablqml` without codegeneration]
 * xref:conclusion[Conclusion]
 * xref:qt5[P.S. Installing Qt5]
 --
@@ -30,12 +31,17 @@ About
 In this tutorial we will see how to create simple QtQuick applications and how they will communicate with OCaml. QtQuick code will be very short because this tutorial is about using OCaml and QtQuick together. To get more information about programming in QtQuick you can visit link:https://qt-project.org/doc/qt-5/qtquick-index.html[official help] or link:http://qmlbook.org/[QML book].
 
 
-Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3[repository].
+Demos described below and sources of this tutorial can be found in Github http://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3[repository].
 
 Changelog
 ---------
+
+Starting from version `0.5` `lablqt` is known as `lablqml`. The rename was proposed because we don't create binding for Qt
+itself, most of the library is strongly connected to lablqml.
+
 This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
 In `lablqt` starting from version `0.3` external JSON file for specifying API is deprecated, PPX extension is required. That's why, `lablqt 0.3` requires OCaml 4.02 or newer.
+
 
 [[hello_world]]
 "Hello world!" in QtQuick
@@ -92,11 +98,15 @@ class virtual controller = object(self)
 end[@@qtclass]
 ----
 
-The module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqt` with version `0.3`. To apply syntax extension on this file you need to execute the following command:
+The module `QmlContext` can be found in ocamlfind package named `lablqml`. This package and PPX extension named `ppx_qt` are located in OPAM's package `lablqml`. To apply syntax extension on this file you need to execute the following command:
 
 ----
 ocamlopt -I `ocamlfind query lablqml` -c -dsource -ppx "ppx_qt -destdir . -ext cpp" controller.ml
 ----
+
+[NOTE]
+In the summer 2017 `lablqml` has started to depend on the OCaml  package `ocaml-migrate-parsetree`. Compilation commands
+will probalby require small adjustments for `lablqml` >= `0.6`.
 
 In `controller.ml` you can see the class `controller` with attribute `qtclass` and its method `onMouseClicked` with attribute `qtmeth`. Without this attributes the class and its method will not be available in QtQuick.
 
@@ -120,9 +130,9 @@ include::demos/0.3/demo1/Root.qml[]
 
 [NOTE]
 .Where is the entry point?
-Our applications can start either from OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqt/tree/gh-pages/demos/0.2/demo3[demos] from previous tutorial to get examples of startup from C++.
+Our applications can start either from OCaml and C\+\+. Example above starts up from OCaml. See http:github.com/Kakadu/lablqml/tree/gh-pages/demos/0.2/demo3[demos] from previous tutorial to get examples of startup from C++.
 
-Full code of first demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo1[github].
+Full code of first demo is available on https://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3/demo1[github].
 
 [[properties]]
 Qt object's metamodel
@@ -223,7 +233,7 @@ text: "You have clicked " + controller.clicksCount + " times"
 
 At the right of the colon character should be a valid ECMAScript expression which is evaluted into a property value at runtime. It can be multiline, call some functions and methods and use many properties inside. When one of properties used inside changes the whole expression is reevaluated and the `text` property gets updated with a new value.
 
-Sources of this demo can be found on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo2[github]. Final window should be similar to the one on this picture:
+Sources of this demo can be found on https://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3/demo2[github]. Final window should be similar to the one on this picture:
 
 image::images/tutorial2/img2.png[options="responsive"]
 
@@ -262,7 +272,7 @@ Syntax extension is expanded into method `emit_$(SIGNAL_NAME)` which can be used
 include::demos/0.3/demo3/program.ml[]
 ----
 
-Full code of this demo is available on https://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo3[github].
+Full code of this demo is available on https://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3/demo3[github].
 
 
 [[types]]
@@ -271,11 +281,11 @@ Supported types
 
 QML has its own type system. It is not as strong or static as the OCaml one but https://qt-project.org/doc/qt-5/qtqml-typesystem-basictypes.html[basic types] exist. When values are passed from C++ to QML they are wrapped into https://qt-project.org/doc/qt-5/qvariant.html[QVariant], which is a universal container (or https://blogs.janestreet.com/rethinking-univ/[universal type]).
 For simple types QML basic types suit well enough. But for more elaborated types (like structures with a number of fields inside) then the right approach is to create a QObject-derived class and put these field inside.
-At the moment objects support in `lablqt` is a little bit awkward but an application like https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] (screenshot below) can be created without this feature. If you have a better way to implement it, I would be glad to hear it.
+At the moment objects support in `lablqml` is a little bit awkward but an application like https://github.com/Kakadu/QOcamlBrowser_quick/[QOcamlBrowser] (screenshot below) can be created without this feature. If you have a better way to implement it, I would be glad to hear it.
 
 image::images/tutorial2/img3.png[options="responsive"]
 
-The demo can be found http://github.com/Kakadu/lablqt/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` some methods and properties, which use the universal type `Variant.t`, are declared.
+The demo can be found http://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3/demo4[there]. In `controller.ml` some methods and properties, which use the universal type `Variant.t`, are declared.
 
 [args="-O style={local-css-style},noclasses=True"]
 [source,ocaml]
@@ -327,10 +337,10 @@ At the moment not many types can be used in methods' signatures but any complex 
 // I'm not ashamed that supported types are so poor because (I think) I have wrote already many text and nobody will reach there. :)
 
 [[building]]
-Compiling applications using lablqt
+Compiling applications using lablqml
 -----------------------------------
 
-OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqt's http://github.com/Kakadu/lablqt/tree/master/qml[repository] (https://github.com/Kakadu/lablqt/blob/1d0c51792b113308d53d1ff48209a437b7ce5ab1/qml/tutorial_examples/example3/Makefile[This one] seems to be full enough). Also http://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] is available, it uses ocamlbuild as the build system (but is has some issues at the moment: we need to generate some code on `./configure` stage).
+OCaml+QtQuick applications can start up both from C++ and OCaml. Examples using makefiles are available in links above and at lablqml's http://github.com/Kakadu/lablqml/tree/master/demos[repository] (https://github.com/Kakadu/lablqml/blob/1d0c51792b113308d53d1ff48209a437b7ce5ab1/qml/tutorial_examples/example3/Makefile[This one] seems to be full enough). Also http://github.com/Kakadu/QOcamlBrowser_quick[QOCamlBrowser] is available, it uses ocamlbuild as the build system (but is has some issues at the moment: we need to generate some code on `./configure` stage).
 
 To compile sources manually we need to execute following commands. Let's suppose that PPX syntax extension was used at files `module1.ml` and `module2.ml`. To compile them we need to execute:
 
@@ -373,14 +383,29 @@ ocamlfind opt -package lablqml -linkpkg \
   -o a.out
 ----
 
+[[no_moc]]
+Using `lablqml` without codegeneration
+--------------------------------------
+
+The one may not be very happy about printing some C++ code to the source files and compiling them
+seperately. This approach may introduce compliations when the generated code is far from ideal
+and requires adjustments. However, Qt follows the approach with compile-time codegeneration
+and `lablqml` supports it as described above.
+
+Also, QtQuick has convenience class http://doc.qt.io/qt-5/qqmlpropertymap.html[QQmlPropertyMap] which
+allows you to dynamically (without compile-time codegeneration) add new properties to the subclasses
+of `QQmlPropertyMap`. The support of this class contributed to `lablqml` `0.5` by
+https://github.com/Orbifx[Orbital Fox].
+
 [[conclusion]]
 Conclusion
 ----------
 
-There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in the link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and `lablqt` which is used rather much in QOcamlBrowser. QtQuick has an embedded ECMAScript engine in it and you can compile OCaml code using `js_of_ocaml` and run it as a crossplatform application.
+There are many aspects of QtQuick which are not mentioned in this tutorial. For example, in the link:tutorial.html[previous tutorial] you can read about classes for desktop applications which live in harmony with your platform's style. There is Model-View framework available both in Qt and `lablqml` which is used rather much in QOcamlBrowser. QtQuick has an embedded
+https://wiki.qt.io/V4[ECMAScript engine] in it and you can compile OCaml code using `js_of_ocaml` and run it as a crossplatform application.
 QtQuick renders itself with OpenGL, so http://qmlbook.org/ch08/index.html[particle simulations] and http://qmlbook.org/ch09/index.html[shader effects] are built in.
 
-In my experience I *should* say that `lablqt` is mature enough for big industrial applications to get some feedback. I hope that after reading this tutorial somebody will try it and send me some notes about the experience.
+`lablqml` was used in some industrial applications. Ask https://github.com/Orbifx[Orbital Fox] for more detailed feedback.
 
 [[qt5]]
 P.S. Getting and installing Qt5
@@ -455,7 +480,7 @@ If you want to compile Qt faster you can study next options of `./configure scri
 
 There are some issues https://bugreports.qt-project.org/browse/QTBUG-35256[on Qt bugtracker] about using `pkg-config` on MacOS. It seems that they handle `-F` option wrong. The solution is mentioned https://github.com/Kakadu/lablqt/issues/17[here].
 
-If you should compile Qt from source you will be able to avoid this issue by passing special options to `./configure` script: `-prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework`. 
+If you should compile Qt from source you will be able to avoid this issue by passing special options to `./configure` script: `-prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework`.
 
 .P.P.P.S.
 
