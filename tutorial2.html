@@ -76,7 +76,7 @@ Table of Contents
 </li>
 <li>
 <p>
-<a href="#no_moc">Using <code>lablqml</code> without codegeneration</a>
+<a href="#no_moc">Using <code>lablqml</code> without code generation</a>
 </p>
 </li>
 <li>
@@ -103,10 +103,10 @@ Table of Contents
 <div class="section">
     <h1 class="page-header" id="changelog">Changelog</h1>
 <div class="paragraph"><p>Starting from version <code>0.5</code> <code>lablqt</code> is known as <code>lablqml</code>. The rename was proposed because we don&#8217;t create binding for Qt
-itself, most of the library is strongly connected to lablqml.</p></div>
+itself, most of the library is strongly connected to QtQuick.</p></div>
 <div class="paragraph"><p>This tutorial is the second one about OCaml and QtQuick. You can get old one 
 <a href="tutorial.html">here</a>.
-In <code>lablqt</code> starting from version <code>0.3</code> external JSON file for specifying API is deprecated, PPX extension is required. That&#8217;s why, <code>lablqt 0.3</code> requires OCaml 4.02 or newer.</p></div>
+In <code>lablqml</code> starting from version <code>0.3</code> external JSON file for specifying API is deprecated, PPX extension is required. That&#8217;s why, <code>lablqml 0.3</code> requires OCaml 4.02 or newer.</p></div>
 </div>
 <div class="section">
     <h1 class="page-header" id="hello_world">"Hello world!" in QtQuick</h1>
@@ -173,7 +173,7 @@ ApplicationWindow {
 <img class="img-responsive" src="images/tutorial2/img1.png" alt="images/tutorial2/img1.png">
 </div>
 </div>
-<div class="paragraph"><p>The normal way to interact between QtQuick and C++ is by exposing some objects into QtQuick engine. <code>Lablqt</code> has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let&#8217;s describe class <code>controller</code> in <code>controller.ml</code>:</p></div>
+<div class="paragraph"><p>The normal way to interact between QtQuick and C++ is by exposing some objects into QtQuick engine. <code>Lablqml</code> has specific API for exposing objects and allows to declare them in OCaml (instead on C++) by using PPX extension. Build system will compile all into final executable. Let&#8217;s describe class <code>controller</code> in <code>controller.ml</code>:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #008800; font-weight: bold">open</span> <span style="color: #bb0066; font-weight: bold">QmlContext</span>
 
@@ -191,7 +191,7 @@ ApplicationWindow {
 <img src="./images/icons/note.png" alt="Note">
 </div>
 <div class="content">In the summer 2017 <code>lablqml</code> has started to depend on the OCaml  package <code>ocaml-migrate-parsetree</code>. Compilation commands
-will probalby require small adjustments for <code>lablqml</code> &gt;= <code>0.6</code>.</div>
+will probably require small adjustments for <code>lablqml</code> &gt;= <code>0.6</code>.</div>
 </div>
 <div class="paragraph"><p>In <code>controller.ml</code> you can see the class <code>controller</code> with attribute <code>qtclass</code> and its method <code>onMouseClicked</code> with attribute <code>qtmeth</code>. Without this attributes the class and its method will not be available in QtQuick.</p></div>
 <div class="paragraph"><p>After preprocessing the source file a virtual class called <code>controller</code> will be generated. Let&#8217;s implement a virtual method <code>onMouseClicked</code> in <code>program.ml</code></p></div>
@@ -485,7 +485,7 @@ ApplicationWindow {
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #008800; font-weight: bold">text:</span> <span style="color: #dd2200; background-color: #fff0f0">&quot;You have clicked &quot;</span> + controller.clicksCount + <span style="color: #dd2200; background-color: #fff0f0">&quot; times&quot;</span>
 </pre></div></div></div>
-<div class="paragraph"><p>At the right of the colon character should be a valid ECMAScript expression which is evaluted into a property value at runtime. It can be multiline, call some functions and methods and use many properties inside. When one of properties used inside changes the whole expression is reevaluated and the <code>text</code> property gets updated with a new value.</p></div>
+<div class="paragraph"><p>At the right of the colon character should be a valid ECMAScript expression which is evaluated into a property value at runtime. It can be multi line, call some functions and methods and use many properties inside. When one of properties used inside changes the whole expression is reevaluated and the <code>text</code> property gets updated with a new value.</p></div>
 <div class="paragraph"><p>Sources of this demo can be found on <a href="https://github.com/Kakadu/lablqml/tree/gh-pages/demos/0.3/demo2">github</a>. Final window should be similar to the one on this picture:</p></div>
 <div class="imageblock">
 <div class="content">
@@ -514,7 +514,7 @@ ApplicationWindow {
 <span style="color: #008800; font-weight: bold">end</span>[@@qtclass]
 </pre></div>
 </td></tr></table></div></div>
-<div class="paragraph"><p>Now signal <code>hiGotten</code> can be connnected to a handler in QtQuick:</p></div>
+<div class="paragraph"><p>Now signal <code>hiGotten</code> can be connected to a handler in QtQuick:</p></div>
 <div class="listingblock">
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span>...
 Connections {
@@ -629,9 +629,7 @@ At the moment objects support in <code>lablqml</code> is a little bit awkward bu
 23
 24
 25
-26
-27
-28</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
+26</pre></div></td><td class="code"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #008800; font-weight: bold">import</span> QtQuick <span style="color: #0000DD; font-weight: bold">2.0</span>
 <span style="color: #008800; font-weight: bold">import</span> QtQuick.Controls <span style="color: #0000DD; font-weight: bold">1.0</span>
 
 ApplicationWindow {
@@ -648,8 +646,6 @@ ApplicationWindow {
       controller.setobj(o);
       controller.setobj(<span style="color: #dd2200; background-color: #fff0f0">&quot;asdf&quot;</span>);
       controller.setobj(<span style="color: #0000DD; font-weight: bold">15</span>);
-      controller.setobj(<span style="color: #0000DD; font-weight: bold">1.1</span>);
-      controller.setobj(<span style="color: #008800; font-weight: bold">false</span>);
 
       <span style="color: #888888">// get object from OCaml as property&#39;s value</span>
       <span style="color: #888888">// to get a property&#39;s value we don&#39;t need paretheses at the end</span>
@@ -740,13 +736,13 @@ g++ `pkg-config --cflags Qt5Quick` -fPIC -c moc_class2.cpp -o moc_class2.o</pre>
 </div></div>
 </div>
 <div class="section">
-    <h1 class="page-header" id="no_moc">Using <code>lablqml</code> without codegeneration</h1>
+    <h1 class="page-header" id="no_moc">Using <code>lablqml</code> without code generation</h1>
 <div class="paragraph"><p>The one may not be very happy about printing some C++ code to the source files and compiling them
-seperately. This approach may introduce compliations when the generated code is far from ideal
-and requires adjustments. However, Qt follows the approach with compile-time codegeneration
+separately. This approach may introduce compilations when the generated code is far from ideal
+and requires adjustments. However, Qt follows the approach with compile-time code generation
 and <code>lablqml</code> supports it as described above.</p></div>
 <div class="paragraph"><p>Also, QtQuick has convenience class <a href="http://doc.qt.io/qt-5/qqmlpropertymap.html">QQmlPropertyMap</a> which
-allows you to dynamically (without compile-time codegeneration) add new properties to the subclasses
+allows you to dynamically (without compile-time code generation) add new properties to the subclasses
 of <code>QQmlPropertyMap</code>. The support of this class contributed to <code>lablqml</code> <code>0.5</code> by
 <a href="https://github.com/Orbifx">Orbital Fox</a>.</p></div>
 </div>
@@ -768,7 +764,7 @@ QtQuick renders itself with OpenGL, so <a href="http://qmlbook.org/ch08/index.ht
 <div class="paragraph"><p>Official Qt Project wiki is
 <a href="http://qt-project.org/wiki/Building_Qt_5_from_Git">there</a>. Below you
 can see <code>my-init</code> and <code>configure</code> scripts which configure
-Qt5 to build only modules needed by lablqt.</p></div>
+Qt5 to build only modules needed by lablqml.</p></div>
 <div class="listingblock">
 <div class="title">My init-repository script</div>
 <div class="content"><div class="highlight" style="background: #ffffff"><pre style="line-height: 125%"><span></span><span style="color: #888888">#!/usr/bin/env bash</span>
@@ -797,7 +793,7 @@ normal.</p></div>
   <span style="color: #336699">$SQL</span> <span style="color: #336699">$NOFB</span> <span style="color: #336699">$NOSSE</span> <span style="color: #0044dd; background-color: #fff0f0">\</span>
   <span style="color: #336699">$@</span>
 </pre></div></div></div>
-<div class="paragraph"><p>Value <code>$NOFB</code> disables framebuffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value <code>$NOSSE</code> disables all special instruction sets.With that <code>./my-configure</code> QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.</p></div>
+<div class="paragraph"><p>Value <code>$NOFB</code> disables frame buffer and KMS support. I think these low-level interfaces are not needed for our OCaml GUI projects. Also we disable SQLite and MySQL DBMS in Qt. Value <code>$NOSSE</code> disables all special instruction sets.With that <code>./my-configure</code> QtQuick examples in Qt still work and my QOcamlBrowser startups without crash.</p></div>
 <div class="paragraph"><p>If you want to compile Qt faster you can study next options of <code>./configure script</code>:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
@@ -805,7 +801,7 @@ normal.</p></div>
     -feature-&lt;feature&gt; .. Compile in &lt;feature&gt;. The available features
                           are described in src/corelib/global/qfeatures.txt</pre>
 </div></div>
-<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>There are some issues <a href="https://bugreports.qt-project.org/browse/QTBUG-35256">on Qt bugtracker</a> about using <code>pkg-config</code> on MacOS. It seems that they handle <code>-F</code> option wrong. The solution is mentioned <a href="https://github.com/Kakadu/lablqt/issues/17">here</a>.</p></div>
+<div class="paragraph"><div class="title">P.P.S. MacOS remark</div><p>There are some issues <a href="https://bugreports.qt-project.org/browse/QTBUG-35256">on Qt bugtracker</a> about using <code>pkg-config</code> on MacOS. It seems that they handle <code>-F</code> option wrong. The solution is mentioned <a href="https://github.com/Kakadu/lablqml/issues/17">here</a>.</p></div>
 <div class="paragraph"><p>If you should compile Qt from source you will be able to avoid this issue by passing special options to <code>./configure</code> script: <code>-prefix /opt/Qt/5.2.1 -opensource -nomake tests -no-xcb -no-framework</code>.</p></div>
 <div class="paragraph"><div class="title">P.P.P.S.</div><p>Next script will be useful (as a part of <code>~/.bashrc</code>) for setting local environment for your Qt5 build:</p></div>
 <div class="listingblock">
@@ -828,7 +824,7 @@ normal.</p></div>
 <div class="row"><div id="footnotes"></div></div>
 <div id="footer-text">
 Last updated
- 2017-08-06 18:15:54 MSK
+ 2017-08-07 15:21:27 MSK
 <br>Built with <a href="https://github.com/llaville/asciidoc-bootstrap-backend">AsciiDoc-Bootstrap backend</a> 4.5.0
 </div>
         </div>

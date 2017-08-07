@@ -37,10 +37,10 @@ Changelog
 ---------
 
 Starting from version `0.5` `lablqt` is known as `lablqml`. The rename was proposed because we don't create binding for Qt
-itself, most of the library is strongly connected to lablqml.
+itself, most of the library is strongly connected to QtQuick.
 
 This tutorial is the second one about OCaml and QtQuick. You can get old one link:tutorial.html[here].
-In `lablqt` starting from version `0.3` external JSON file for specifying API is deprecated, PPX extension is required. That's why, `lablqt 0.3` requires OCaml 4.02 or newer.
+In `lablqml` starting from version `0.3` external JSON file for specifying API is deprecated, PPX extension is required. That's why, `lablqml 0.3` requires OCaml 4.02 or newer.
 
 
 [[hello_world]]
