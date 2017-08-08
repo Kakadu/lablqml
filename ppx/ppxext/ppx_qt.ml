@@ -397,6 +397,6 @@ let mapper =
   }
 
 let () =
+  print_endline "inside Ppx_qt module";
   Driver.register ~name:"ppx_qt" ~args Versions.ocaml_403
-    (fun _config _cookies -> mapper);
-  Driver.run_main ()
+    (fun _config _cookies -> mapper)

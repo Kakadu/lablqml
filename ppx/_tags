@@ -1,1 +1,4 @@
 true: package(compiler-libs.common,unix,ocaml-migrate-parsetree)
+
+<ppxext/ppx_qt.*>: linkall
+#<ppxext/ppx_qt_main.native>: predicates(ppx_driver)

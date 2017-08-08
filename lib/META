@@ -1,4 +1,4 @@
-version = "0.4"
+version = "0.5"
 description = "wrappers for QML objects"
 exists_if = "lablqml.cmxa"
 requires = "threads"
@@ -7,8 +7,20 @@ archive(byte) = "lablqml.cma"
 archive(byte, plugin) = "lablqml.cma"
 archive(native) = "lablqml.cmxa"
 
-package "ppx" (
+archive(ppx_driver,byte)   = "ppx_qt.cma"
+archive(ppx_driver,native) = "ppx_qt.cmxa"
+plugin(ppx_driver,byte)    = "ppx_qt.cma"
+plugin(ppx_driver,native)  = "ppx_qt.cmxs"
 
-  ppx = "ppx_qt"
+requires(-ppx_driver) = "lablqml.ppx"
+
+package "ppx" (
+  ppx = "ppx_qt_main"
+  requires = "unix"
+  ppx(-ppx_driver,-custom_ppx) = "./ppx_qt_main --as-ppx"
+  archive(ppx_driver,byte)   = "ppx_qt.cma"
+  archive(ppx_driver,native) = "ppx_qt.cmxa"
+  plugin(ppx_driver,byte)    = "ppx_qt.cma"
+  plugin(ppx_driver,native)  = "ppx_qt.cmxs"
 
 )
