@@ -11,7 +11,7 @@ endif
 
 
 all:
-	$(V)PATH=`pwd`/../../src/:$$PATH \
+	$(V)PATH=`pwd`/../../ppx/:$$PATH \
 	OCAMLPATH=`pwd`/../../lib/_build/bundle \
 	ocamlfind opt -package lablqml -ppx "$(PPX_QT) --as-ppx -destdir . -ext cpp" \
 	-thread -linkpkg \
