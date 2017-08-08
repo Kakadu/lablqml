@@ -1,3 +1,9 @@
+0.5.1
+Update for OCaml 4.05
+
+0.5
+Some fixes from Orbifx
+
 0.4
 OCaml (>= 4.03.0 compatibility).
 Other minor fixes (by request of and with help from Orbital Fox).
