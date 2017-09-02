@@ -54,7 +54,7 @@ $(function() {
 <!-- slim menu grabbed from https://github.com/adnantopal/slimmenu -->
 <ul class="slimmenu">
   <li>
-    <a href="http://github.com/Kakadu/lablqt">Github Page</a>
+    <a href="http://github.com/Kakadu/lablqml">Github Page</a>
   </li>
   <li>
     <a href="tutorial2.html">Tutorial</a>
@@ -116,7 +116,7 @@ $(function() {
 
 <h3 id="status">Current status</h3>
 <p>
-The first thing to mention is that this project (also known as lablqt)
+The first thing to mention is that <i>lablqml</i> (previously known as lablqt)
 does not provide "bindings" as people usually understand it. It
 started as a set of bindings, but that did not work very well: is not
 very easy to generate code for all the widgets, and the result would
@@ -129,7 +129,7 @@ recommended. It uses QML markup to declare GUI, ECMAscript to script
 GUI-related actions, and C++ to implement speed-sensitive business
 logic.</p>
 
-<p>In its current state, I think that lablqt can be used to replace C++
+<p>In its current state, I think that lablqml can be used to replace C++
 by OCaml in small applications. In large GUI applications, we would
 probably still need to implement some GUI controls in compilable
 language (like C++). My library doesn't allow implementing these
@@ -146,12 +146,13 @@ GUI for it?
 <li>At the moment startup process is hardcoded. That's why some features are inavailable:
   <a href="http://doc.qt.io/qt-5/qqmlapplicationengine.html#details">connecting</a> <em>quit</em> signal to application <em>close</em> slot, adding <a href="http://doc.qt.io/qt-5/qquickimageprovider.html">image provider</a> and maybe something else.
 </li>
-<li>I have working demo with <a href="http://caml.inria.fr/pub/docs/manual-ocaml/libref/Thread.html">OCaml threads</a> support but I'm not sure that everything will be OK when we construct more complex example.You can <a href="https://github.com/Kakadu/lablqt/tree/master/qml/threads_test">find</a> it in the <i>$SRC_ROOT/qml/threads_test</i> directory.</li>
+<li>I have working demo with <a href="http://caml.inria.fr/pub/docs/manual-ocaml/libref/Thread.html">OCaml threads</a> support but I'm not sure that everything will be OK when we construct more complex example.You can <a href="https://github.com/Kakadu/lablqml/tree/master/demos/threads_test">find</a> it in the <i>$SRC_ROOT/qml/threads_test</i> directory.</li>
 </ul>
 
 <h3 id="todo">TODO</h3>
 (Not sorted yet)
 <ul>
+<li>How to map Q_GADGET's to OCaml?</li>
 <li>Unhardcode startup process.</li>
 <li>Can we add opamdoc-generated documentation to QOCamlBrowser?</li>
 <li>Can we avoid codegeneration using <a href="https://doc.qt.io/archives/qq/qq16-dynamicqobject.html">this</a>? (As Fabrice Le Fessant recommended)</li>
@@ -164,7 +165,7 @@ GUI for it?
 <li>Announce library version 0.2 after Qt 5.2 release.
     <img class="completion" src="images/Done-icon.png"/>
 </li>
-<li>Add lablqt to <a href="http://wiki.qt.io/Category:LanguageBindings">Qt language bindings page</a>.
+<li>Add lablqml to <a href="http://wiki.qt.io/Category:LanguageBindings">Qt language bindings page</a>.
   <img class="completion" src="images/Done-icon.png"/>
 </li>
 <li>Integrate my OPAM repo with default one.<img class="completion" src="images/Done-icon.png"/></li>
@@ -176,15 +177,17 @@ GUI for it?
 <b>N.B.</b>You need Qt5(&gt;=5.2.0) to compile. Please, be sure that dev packages are installed too.
 
 <pre>
-opam remote add lablqt http://kakadu.github.io/lablqt/opam
+opam remote add lablqml http://kakadu.github.io/lablqml/opam
 opam update
-opam install lablqt        # code generator tool and library
+opam install lablqml        # code generator tool and library
 opam install qocamlbrowser # Demo application
 </pre>
+<!--
 Development versions:
 <pre>
-opam remote add lablqt-dev http://kakadu.github.io/lablqt/opam-dev
+opam remote add lablqml-dev http://kakadu.github.io/lablqml/opam-dev
 </pre>
+-->
 </p>
 
 </body>
