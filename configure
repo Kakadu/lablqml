@@ -6,7 +6,7 @@ NC='\033[0m'      # No Color
 echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
 
 function verlte() {
-    [ "$1" = "`printf "$1\n$2\n" | sort | head -n1`" ]
+    [ "$1" == "$2" ] || test "$(printf '%s\n' "$@" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | head -n 1)" != "$2"
 }
 
 function maybe_exit() {
