@@ -1,0 +1,5 @@
+(executable
+  (name        ppx_qt)
+  (public_name ppx_qt)
+  (libraries   unix ppxlib)
+)

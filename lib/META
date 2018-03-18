@@ -1,9 +1,0 @@
-version = "0.5.1"
-description = "wrappers for QML objects"
-exists_if = "lablqml.cmxa"
-requires = "threads"
-
-archive(byte) = "lablqml.cma"
-archive(byte, plugin) = "lablqml.cma"
-archive(native) = "lablqml.cmxa"
-

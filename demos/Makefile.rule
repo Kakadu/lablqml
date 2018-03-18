@@ -14,7 +14,7 @@ comma := ,
 
 PPX_QT ?= ppx_qt
 OCAMLFIND_PACKAGES=lablqml
-LABLQML_WHERE= `OCAMLPATH=../../lib/_build/bundle ocamlfind query lablqml`
+LABLQML_WHERE= $(shell ocamlfind query lablqml)
 # deferred expansion allows to update PACKAGES variable in parent makefiles
 OCAML_COMMON_FLAGS=
 OCAML_OPT_FLAGS=-thread

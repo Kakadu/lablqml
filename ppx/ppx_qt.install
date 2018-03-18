@@ -1,0 +1,11 @@
+lib: [
+  "_build/install/default/lib/ppx_qt/META" {"META"}
+  "_build/install/default/lib/ppx_qt/opam" {"opam"}
+]
+bin: [
+  "_build/install/default/bin/ppx_qt" {"ppx_qt"}
+]
+doc: [
+  "_build/install/default/doc/ppx_qt/README.md"
+  "_build/install/default/doc/ppx_qt/CHANGELOG"
+]

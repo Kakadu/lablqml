@@ -12,7 +12,7 @@ let () =
 let get_view_exn ~name = M.find name !container
 
 let get_view ~name =
-  try Some (get_view_exn name)
+  try Some (get_view_exn ~name)
   with Not_found -> None
 
 type cppobj = [ `cppobject ]
@@ -145,7 +145,7 @@ module OCamlObject = struct
   type t = cppobj
   type variant_fn_t = QVariant.t -> unit
   external binding_stub: create:bool -> obj:cppobj -> name:string -> fn:variant_fn_t -> t = "ocamlobject_binding"
-  let binding ?(create=false) obj name fn = binding_stub create obj name fn
+  let binding ?(create=false) obj name fn = binding_stub ~create ~obj ~name ~fn
   (*external value: obj:t -> QVariant.t = "ocamlobject_value"*)
   external write: obj:t -> QVariant.t -> bool = "ocamlobject_write"
 end

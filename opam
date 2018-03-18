@@ -18,19 +18,16 @@ build-test: [
   [make]
   [make "test"]
 ]
-install: [make "opam.install"]
-remove: [
-  ["ocamlfind" "remove" "lablqml"]
-  ["rm" "-f" "%{prefix}%/bin/ppx_qt"]
-]
+install: [make "install"]
+remove:  [make "uninstall"]
 flags: [ light-uninstall ]
 depends: [
   "ocamlfind"
-  "ocamlbuild"  { build }
-  "ocaml-migrate-parsetree"
+  "dune"  { build }
+  "ppxlib"
   "conf-qt"     { >= "5.2.1"}
-  "lwt"         { test }
-  "cppo"        { test }
+#  "lwt"         { test }
+#  "cppo"        { test }
 ]
 
 available: [ ocaml-version >= "4.03.0" ]

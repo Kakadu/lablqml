@@ -6,7 +6,7 @@ JOBS     := $(subst -j,,$(JOB_FLAG))
 #$(message 1234123412341234)
 
 OB=ocamlbuild -use-ocamlfind -classic-display
-TARGETS=lablqml.cmxa lablqml.cmx lablqml.a lablqml.cmi liblablqml_stubs.a dlllablqml_stubs.so \
+TARGETS=lablqml.cmxa lablqml.cmx lablqml.cma lablqml.a lablqml.cmi liblablqml_stubs.a dlllablqml_stubs.so \
 	stubs/lablqml.h lablqml.cmt
 INSTALL_TARGETS=$(addprefix _build/,$(TARGETS))
 
@@ -24,7 +24,7 @@ COLON_SEPARATED_TESTS := ./$(call join-with,.native && ./,$(TEST_EXECS)).native
 all: lib bundle
 
 lib:
-	$(OB) liblablqml_stubs.a lablqml.cmxa
+	$(OB) liblablqml_stubs.a lablqml.cma lablqml.cmxa
 
 clean:
 	$(RM) -r _build

@@ -13,7 +13,7 @@ let files_in_dir path =
 let modulename_of_file filename =
   let open Bytes in
   let ans = of_string filename |> copy in
-  set ans 0 (Char.uppercase ans.[0]);
+  set ans 0 (Char.uppercase_ascii (Bytes.get ans 0));
   to_string ans
 
 let process_cmi_file filename : Types.signature =
