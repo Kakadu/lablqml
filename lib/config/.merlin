@@ -1,0 +1,12 @@
+B ../_build/default/config
+FLG -w -40
+PKG base
+PKG base.caml
+PKG base.shadow_stdlib
+PKG bigarray
+PKG configurator
+PKG sexplib
+PKG sexplib.0
+PKG stdio
+PKG unix
+S .

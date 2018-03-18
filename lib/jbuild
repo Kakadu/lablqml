@@ -1,0 +1,25 @@
+(jbuild_version 1)
+(library
+ ((name            lablqml)
+  (modules         (lablqml))
+  (cxx_names         (stubs/CamlPropertyMap_stubs  
+                    stubs/object_ml
+                    stubs/QSingleFunc_stubs
+                    stubs/stubs
+                    stubs/variant
+                    stubs/modelindex
+                    stubs/propMap_stubs
+                    stubs/startup_stubs
+                    stubs/test_stubs
+    ) )
+  ; dirty hack next line
+  (cxx_flags         ( (:include c_flags.sexp) -O3 -I ../../stubs -Dprivate=public))
+  (c_library_flags (:include c_library_flags.sexp) )
+))
+
+(rule
+ ((targets (c_flags.sexp
+            c_library_flags.sexp))
+  (deps    (config/discover.exe))
+  (action  (run ${<} -ocamlc ${OCAMLC}))))
+
