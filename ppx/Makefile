@@ -9,6 +9,7 @@ ppx_qt: ppx_qt.native
 
 ppx_qt.native:
 	$(OB) ppxext/ppx_qt.native
+	# dune build ppxext/ppx_qt.cmxa
 
 clean:
 	$(RM) -r _build *.native ./ppx_qt

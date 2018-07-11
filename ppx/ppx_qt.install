@@ -1,0 +1,19 @@
+lib: [
+  "_build/install/default/lib/ppx_qt/META" {"META"}
+  "_build/install/default/lib/ppx_qt/opam" {"opam"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.cmi" {"ppx_qt.cmi"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.cmx" {"ppx_qt.cmx"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.cmt" {"ppx_qt.cmt"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.ml-gen" {"ppx_qt.ml-gen"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.cma" {"ppx_qt.cma"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.cmxa" {"ppx_qt.cmxa"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.a" {"ppx_qt.a"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.cmxs" {"ppx_qt.cmxs"}
+  "_build/install/default/lib/ppx_qt/ppx_qt.dune" {"ppx_qt.dune"}
+]
+libexec: [
+  "_build/install/default/lib/ppx_qt/ppx.exe" {"ppx.exe"}
+]
+doc: [
+  "_build/install/default/doc/ppx_qt/README.md"
+]

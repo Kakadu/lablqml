@@ -1,0 +1,8 @@
+(library
+  (name        ppx_qt)
+  (public_name ppx_qt)
+  (kind ppx_rewriter)
+  (libraries ppxlib)
+  ;(ppx_runtime_libraries ( ))
+  ;(preprocess (pps (ppx_metaquot)))
+)

@@ -32,7 +32,7 @@ module Time = struct
   let str_of_month n =
     if n>=0 && n<=12 then months.(n)
     else failwith "Wrong argument of str_of_month"
-  let to_string {Unix.tm_sec; Unix.tm_mon; Unix.tm_min; Unix.tm_hour; Unix.tm_mday; Unix.tm_year } =
+  let to_string {Unix.tm_sec; Unix.tm_mon; Unix.tm_min; Unix.tm_hour; Unix.tm_mday; Unix.tm_year; _ } =
     sprintf "%02d %s, %d %02d:%02d:%02d"
             tm_mday (str_of_month tm_mon) (1900+tm_year) tm_hour tm_min tm_sec
 end
@@ -70,8 +70,8 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
   let hdr = open_out (sprintf "%s/%s.h" destdir classname) in
   print_time hdr;
   let println fmt = fprintfn hdr fmt in
-  fprintfn hdr "#ifndef %s_H" (String.uppercase classname);
-  fprintfn hdr "#define %s_H" (String.uppercase classname);
+  fprintfn hdr "#ifndef %s_H" (String.uppercase_ascii classname);
+  fprintfn hdr "#define %s_H" (String.uppercase_ascii classname);
   fprintfn hdr "";
   fprintfn hdr "#include <QtCore/QDebug>";
   fprintfn hdr "#include <QtCore/QObject>";
@@ -153,7 +153,7 @@ let close_files () =
     match ext with
     | FilesKey.CHDR ->
        println "};";
-       println "#endif /* %s_H */\n" (String.uppercase classname);
+       println "#endif /* %s_H */\n" (String.uppercase_ascii classname);
        println "extern \"C\" value caml_create_%s(value _dummyUnitVal);" classname;
        println "extern \"C\" value caml_store_value_in_%s(value _cppobj,value _camlobj);" classname;
        close_out hndl
@@ -220,8 +220,8 @@ type meth_typ = (meth_typ_item*arg_info) list
 type meth_info = { mi_virt: bool; mi_const: bool }
 
 let wrap_typ_simple x = (x,{ ai_ref=false; ai_const=false })
-let unref   (x,{ai_ref;ai_const}) = (x, {ai_ref=false;ai_const})
-let unconst (x,{ai_ref;ai_const}) = (x, {ai_ref;ai_const=false})
+let unref   (x,{ai_const; _}) = (x, {ai_ref=false;ai_const})
+let unconst (x,{ai_ref;   _}) = (x, {ai_ref;ai_const=false})
 
 
 (* how many additional variables needed to convert C++ value to OCaml one *)
@@ -495,7 +495,7 @@ let gen_stub_cpp ?(options=[]) ~classname ~stubname ~methname ch
        println "  o->%s(%s);" methname (String.concat "," cppvars);
        leave_blocking_section ch;
        println "  CAMLreturn(Val_unit);";
-    | (t, ai)   ->
+    | (_t, _ai)   ->
        let cppvar = "res" in
        println "  %s %s = o->%s(%s);" (cpptyp_of_typ res) cppvar methname (String.concat "," cppvars);
        let ocamlvar = "_ans" in
@@ -509,6 +509,7 @@ let gen_stub_cpp ?(options=[]) ~classname ~stubname ~methname ch
 
 (* method implementation from class header. Used for invacation OCaml from C++ *)
 let gen_meth_cpp ~minfo ?(options=[]) ~classname ~methname ch (types: meth_typ) =
+  let _ = options in
   let println fmt = fprintfn ch fmt in
   let print   fmt = fprintf  ch fmt in
   fprintfn ch "// %s::%s: %s" classname methname (List.to_string ~f:(fun _ -> cpptyp_of_typ) types);

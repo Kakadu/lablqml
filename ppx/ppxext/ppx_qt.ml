@@ -1,7 +1,7 @@
 open Migrate_parsetree
 open OCaml_403.Ast
 open Ast_mapper
-open Ast_helper
+(* open Ast_helper *)
 open Asttypes
 open Parsetree
 open Longident
@@ -27,7 +27,7 @@ let args =
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
-  | ({txt;loc},_) :: _ when txt = name  -> true
+  | ({txt;_},_) :: _ when txt = name  -> true
   | _ :: xs -> has_attr name xs
 
 let getenv s = try Sys.getenv s with Not_found -> ""
@@ -157,7 +157,7 @@ let eval_meth_typ_gen t =
   let rec helper t =
     match t.ptyp_desc with
     | Ptyp_arrow (name,l,r) -> [name, parse_one l] @ (helper r)
-    | x -> [Nolabel, parse_one t]
+    | _ -> [Nolabel, parse_one t]
   in
   helper t
 
@@ -165,6 +165,7 @@ let eval_meth_typ t = List.map ~f:snd (eval_meth_typ_gen t)
 let eval_signal_typ = eval_meth_typ_gen
 
 let check_meth_typ ~loc _xs =
+  let _ = loc in
   (* TODO: some checks like unit type should be at the end of list *)
   (* TODO: check that modelindexes are not used without QAbstractItemModel base *)
   true
@@ -191,7 +192,7 @@ let oldify_arg_label = function
   | Labelled s -> s
   | Optional s -> s
 
-let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration) =
+let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaration) =
   (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
   let classname = ci.pci_name.txt in
   let options =  if has_attr "itemmodel" attributes then [`ItemModel] else [] in
@@ -207,6 +208,7 @@ let wrap_class_decl ?(destdir=".") ~attributes mapper loc (ci: class_declaration
   Ref.append ~set:heading (make_store_func ~classname ~loc);
 
   let wrap_signal ~options ~classname (({txt=signalname; loc},_,kind) as _m) =
+    let _ =  options in
     match kind with
     | Cfk_concrete _ ->
        raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
@@ -389,7 +391,7 @@ let mapper =
              wrap_class_decl ~destdir:config.destdir ~attributes:cinfo.pci_attributes
                              mapper pstr_loc cinfo
              @ iter rest )
-        | { pstr_loc } as item :: rest ->
+        | item :: rest ->
           mapper.structure_item mapper item :: iter rest
         | [] -> []
       in
