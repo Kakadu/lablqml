@@ -1,20 +1,21 @@
-(jbuild_version 1)
+(copy_files stubs/*.cpp)
+
 (library
  ((name            lablqml)
   (modules         (lablqml))
-  (cxx_names         (stubs/CamlPropertyMap_stubs  
-                    stubs/object_ml
-                    stubs/QSingleFunc_stubs
-                    stubs/stubs
-                    stubs/variant
-                    stubs/modelindex
-                    stubs/propMap_stubs
-                    stubs/startup_stubs
-                    stubs/test_stubs
-    ) )
+  (cxx_names       (CamlPropertyMap_stubs
+                    object_ml
+                    QSingleFunc_stubs
+                    stubs
+                    variant
+                    modelindex
+                    propMap_stubs
+                    startup_stubs
+                    test_stubs
+                   ))
   ; dirty hack next line
-  (cxx_flags         ( (:include c_flags.sexp) -O3 -I ../../stubs -Dprivate=public))
-  (c_library_flags (:include c_library_flags.sexp) )
+  (cxx_flags           ( (:include c_flags.sexp) -O3 -I ../../stubs -Dprivate=public) )
+  ;(c_library_flags     (:include c_library_flags.sexp) )
 ))
 
 (rule
@@ -22,4 +23,3 @@
             c_library_flags.sexp))
   (deps    (config/discover.exe))
   (action  (run ${<} -ocamlc ${OCAMLC}))))
-
