@@ -1,0 +1,10 @@
+B /home/kakadu/.opam/4.06.0+fp+flambda/lib/lablqml
+B /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml
+B /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml/threads
+B ../_build/default/src/.mystubs.objs
+B ../_build/default/src/.program.eobjs
+S /home/kakadu/.opam/4.06.0+fp+flambda/lib/lablqml
+S /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml
+S /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml/threads
+S .
+FLG -open Mystubs -w -33-27

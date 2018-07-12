@@ -1,0 +1,33 @@
+;(copy_files src/*.cpp)
+
+(library
+  (name            mystubs)
+  (modules )
+  (cxx_names       controller_c)
+  ;(cxx_flags       ( (:include c_flags.sexp) -O3) )
+  (flags ())   ; standart enable a few warning that I will fix later
+)
+
+
+(executable
+  (name        program)
+  (libraries   lablqml threads mystubs)
+  (flags (-w -33-27) )
+  ;(ppx_runtime_libraries ( ))
+
+  (preprocess (per_module
+               ((action (run ppx_qt.exe %{input-file})) Controller)) )
+  ;(cxx_flags           ( (:include c_flags.sexp) -O3 -I ../../stubs -Dprivate=public) )
+                                        ;(c_library_flags     (:include c_library_flags.sexp) )
+
+  (link_flags  (-ccopt -Wl,-no-as-needed
+                controller.o
+                -cclib -lstdc++ -cclib -llablqml_stubs (:include ocaml_qt_libs.sexp) ) )
+)
+
+(rule
+ (targets  c_flags.sexp
+           ocaml_qt_libs.sexp
+           c_library_flags.sexp)
+ (deps    config/discover.exe)
+ (action  (run config/discover.exe )) )

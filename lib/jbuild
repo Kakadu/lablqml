@@ -2,6 +2,8 @@
 
 (library
  ((name            lablqml)
+  (public_name     lablqml)
+  (synopsis        "wrappers for QML objects")
   (modules         (lablqml))
   (cxx_names       (CamlPropertyMap_stubs
                     object_ml
@@ -16,6 +18,7 @@
   ; dirty hack next line
   (cxx_flags           ( (:include c_flags.sexp) -O3 -I ../../stubs -Dprivate=public) )
   ;(c_library_flags     (:include c_library_flags.sexp) )
+  (flags ())   ; standart enable a few warning that I will fix later
 ))
 
 (rule
@@ -23,3 +26,8 @@
             c_library_flags.sexp))
   (deps    (config/discover.exe))
   (action  (run ${<} -ocamlc ${OCAMLC}))))
+
+(alias
+ ((name    default)
+  (deps    (liblablqml_stubs.a lablqml.cmxa))
+))
