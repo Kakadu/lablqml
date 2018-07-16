@@ -4,4 +4,5 @@ lib: [
 ]
 doc: [
   "_build/install/default/doc/ppx_qt/README.md"
+  "_build/install/default/doc/ppx_qt/CHANGELOG"
 ]

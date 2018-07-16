@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+OB="ocamlbuild -use-ocamlfind -classic-display"
+
+export PATH=`pwd`/../../src/:$PATH
+export OCAMLPATH=`pwd`/../../lib/_build/bundle
+$OB  \
+    src/moc_controller.c  \
+    src/qrc_resources.c \
+    src/libcppstubs.a \
+    src/program.native

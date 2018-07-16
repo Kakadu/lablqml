@@ -11,6 +11,7 @@
 #include <QtQuick/QQuickView>
 #include <QtQuick/QQuickWindow>
 #include <QtQuick/QQuickItem>
+#include <QtCore/QDirIterator>
 
 /* This is a crazy macro to allocation argc and argv and pass them to
  * QApplication. The problem is that we need copying of argv because they are
@@ -49,7 +50,13 @@ extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
   caml_enter_blocking_section();
 
   ARGC_N_ARGV(_argv, copy)
-  //static char* demo_args[] = { "pizda" };
+
+  qDebug() << __FILE__ << __LINE__ << __func__;
+  QDirIterator it(":", QDirIterator::Subdirectories);
+  while (it.hasNext()) {
+    qDebug() << it.next();
+  }
+
   // we need allocate argc because QApplication(int& argc,...)
   std::pair<QGuiApplication*, QQmlEngine*> p =
     construct_engine(argc, copy);
@@ -101,6 +108,13 @@ extern "C" value caml_create_QQmlAppEngine_and_app(value _argv, value _path) {
   QString path = QString(String_val(_path));
   QUrl source(path);
   Q_ASSERT_X(!source.isEmpty(), "Url is empty", QString("The value %1 is bad.").arg(path).toLocal8Bit() );
+
+  qDebug() << __FILE__ << __LINE__ << __func__;
+  QDirIterator it(":", QDirIterator::Subdirectories);
+  while (it.hasNext()) {
+    qDebug() << it.next();
+  }
+
 
   std::pair<QGuiApplication*, QQmlApplicationEngine*> p =
     construct_app_engine(*argc, copy, source);
@@ -234,6 +248,15 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   caml_enter_blocking_section();
 
   ARGC_N_ARGV(_argv, copy);
+
+  /*
+  qDebug() << __FILE__ << __LINE__ << __func__;
+  QDirIterator it(":", QDirIterator::Subdirectories);
+  while (it.hasNext()) {
+    qDebug() << it.next();
+  }
+  */
+
   QGuiApplication app(*argc, copy);
   QQmlApplicationEngine engine;
   QQmlContext *ctxt = engine.rootContext();
@@ -256,7 +279,7 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
     Q_ASSERT_X(false, "Creating C++ runtime", "Your QML file seems buggy");
   }
   QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0) );
-  window->showMaximized();
+  window->show();
   //qDebug() << "executing app.exec()";
   app.exec();
   caml_leave_blocking_section();

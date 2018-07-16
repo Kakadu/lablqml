@@ -16,6 +16,7 @@ lib: [
 ]
 doc: [
   "_build/install/default/doc/lablqml/README.md"
+  "_build/install/default/doc/lablqml/CHANGELOG"
 ]
 stublibs: [
   "_build/install/default/lib/stublibs/dlllablqml_stubs.so"

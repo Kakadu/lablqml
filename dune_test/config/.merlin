@@ -5,7 +5,7 @@ B /home/kakadu/.opam/4.06.0+fp+flambda/lib/configurator
 B /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml
 B /home/kakadu/.opam/4.06.0+fp+flambda/lib/sexplib0
 B /home/kakadu/.opam/4.06.0+fp+flambda/lib/stdio
-B ../../_build/default/lib/config/.discover.eobjs
+B ../../_build/default/dune_test/config/.discover.eobjs
 S /home/kakadu/.opam/4.06.0+fp+flambda/lib/base
 S /home/kakadu/.opam/4.06.0+fp+flambda/lib/base/caml
 S /home/kakadu/.opam/4.06.0+fp+flambda/lib/base/shadow_stdlib

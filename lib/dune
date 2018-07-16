@@ -1,0 +1,53 @@
+(copy_files stubs/*.cpp)
+(copy_files stubs/*.h)
+
+(library
+  (name            lablqml)
+  (public_name     lablqml)
+  (synopsis        "wrappers for QML objects")
+  (modules         lablqml)
+  (cxx_names        CamlPropertyMap_stubs
+                    moc_CamlPropertyMap
+                    object_ml
+                    moc_object
+                    QSingleFunc_stubs
+                    moc_QSingleFunc
+                    stubs
+                    variant
+                    modelindex
+                    propMap_stubs
+                    startup_stubs
+                    test_stubs
+                   )
+  ; dirty hack next line
+  (cxx_flags           ( (:include c_flags.sexp) -O3 -I . -Dprivate=public) )
+  ;(c_library_flags     (:include c_library_flags.sexp) )
+  (flags ())   ; standart enable a few warning that I will fix later
+)
+
+(rule
+  (targets c_flags.sexp c_library_flags.sexp)
+  (deps    config/discover.exe)
+  (action  (run config/discover.exe ))
+)
+
+(rule
+ (targets moc_QSingleFunc.cpp)
+ (deps    QSingleFunc.h)
+ (action  (run moc %{deps} -o %{targets})) )
+
+(rule
+ (targets moc_object.cpp)
+ (deps    object.h)
+ (action  (run moc %{deps} -o %{targets})) )
+
+(rule
+ (targets moc_CamlPropertyMap.cpp)
+ (deps    CamlPropertyMap.h)
+ (action  (run moc %{deps} -o %{targets})) )
+
+
+(alias
+  (name    default)
+  (deps    liblablqml_stubs.a lablqml.cmxa)
+)

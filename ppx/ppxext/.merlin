@@ -14,7 +14,7 @@ B /home/kakadu/.opam/4.06.0+fp+flambda/lib/ppxlib/traverse_builtins
 B /home/kakadu/.opam/4.06.0+fp+flambda/lib/result
 B /home/kakadu/.opam/4.06.0+fp+flambda/lib/sexplib0
 B /home/kakadu/.opam/4.06.0+fp+flambda/lib/stdio
-B ../_build/default/ppxext/.ppx_qt.eobjs
+B ../../_build/default/ppx/ppxext/.ppx_qt.eobjs
 S /home/kakadu/.opam/4.06.0+fp+flambda/lib/base
 S /home/kakadu/.opam/4.06.0+fp+flambda/lib/base/caml
 S /home/kakadu/.opam/4.06.0+fp+flambda/lib/base/shadow_stdlib
