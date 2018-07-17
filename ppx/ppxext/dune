@@ -1,5 +1,5 @@
 (executable
   (name        ppx_qt)
-  (libraries unix ppxlib)
-  ;(ppx_runtime_libraries ( ))
+  (public_name ppx_qt)
+  (libraries   unix ppxlib)
 )

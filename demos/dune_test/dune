@@ -1,4 +1,0 @@
-;; (rule
-;;  (targets ppx_qt)
-;;  (action (run ln -s ../../ppx_qt))
-;; )

@@ -1,18 +1,12 @@
 (copy_files ui/Root.qml)
 
-;(rule
-;  (targets controller_c.cpp controller_c.h)
-;  (deps    Controller.ml)
-;  (action  (run ../../ppx/ppxext/ppx_qt.exe Controller.ml -ext cpp) )
-;)
-
 (library
   (name            mystubs)
   (modules )
   (cxx_names       controller_c moc_controller_c qrc_resources)
   (install_c_headers controller)
   (cxx_flags       ( (:include c_flags.sexp) -O3) )
-  (flags ())   ; standart enable a few warning that I will fix later
+  (flags ())   ; :standart enables a few warnings that I will fix later
 )
 
 
@@ -23,12 +17,9 @@
   (flags (-w -33-27) )
   (preprocess (per_module
                ((action (run ppx_qt.exe %{input-file})) Controller)) )
-  ;(cxx_flags           ( (:include c_flags.sexp) -O3 -I ../../stubs -Dprivate=public) )
-                                        ;(c_library_flags     (:include c_library_flags.sexp) )
 
   (link_flags  (-ccopt -Wl,-no-as-needed
-                       -cclib -lstdc++ -cclib -llablqm
-                       l_stubs
+                -cclib -lstdc++ -cclib -llablqml_stubs
                 ; By some reason resources are not linked/loaded when places in mystubs
                 dune_test/qrc_resources.o
                 (:include ocaml_qt_libs.sexp) ) )
@@ -41,8 +32,9 @@
 
 (rule
  (targets qrc_resources.cpp)
- (deps    src/resources.qrc)
- (action  (run rcc -name resources %{deps} -o %{targets})) )
+ (deps    src/resources.qrc ui/Root.qml)
+ ; it will be great to have hack to access head of the dependecies (like in Makefile)
+ (action  (run rcc -name resources src/resources.qrc -o %{targets})) )
 
 (rule
  (targets  c_flags.sexp
