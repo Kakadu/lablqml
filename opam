@@ -22,10 +22,10 @@ install: [make "install"]
 remove:  [make "uninstall"]
 flags: [ light-uninstall ]
 depends: [
-  "ocamlfind"
   "dune"  { build }
   "ppxlib"
   "conf-qt"     { >= "5.2.1"}
+  "ocamlfind"    { test }
 #  "lwt"         { test }
 #  "cppo"        { test }
 ]

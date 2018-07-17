@@ -1,10 +1,10 @@
-B /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml
-B /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml/threads
+B /home/kakadu/.opam/4.06.1+fp+flambda/lib/ocaml
+B /home/kakadu/.opam/4.06.1+fp+flambda/lib/ocaml/threads
 B ../_build/default/dune_test/.mystubs.objs
 B ../_build/default/dune_test/.program.eobjs
 B ../_build/default/lib/.lablqml.objs
-S /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml
-S /home/kakadu/.opam/4.06.0+fp+flambda/lib/ocaml/threads
+S /home/kakadu/.opam/4.06.1+fp+flambda/lib/ocaml
+S /home/kakadu/.opam/4.06.1+fp+flambda/lib/ocaml/threads
 S .
 S ui
 S ../lib

@@ -2,4 +2,7 @@
 *.pro.user
 /ppx_qt
 
+# gitted QML files
+*.qmlc
+*.jsc
 
