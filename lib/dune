@@ -6,18 +6,20 @@
   (public_name     lablqml)
   (synopsis        "wrappers for QML objects")
   (modules         lablqml)
-  (cxx_names        CamlPropertyMap_stubs
-                    moc_CamlPropertyMap
-                    object_ml
-                    moc_object
-                    QSingleFunc_stubs
-                    moc_QSingleFunc
-                    stubs
-                    variant
-                    modelindex
-                    propMap_stubs
-                    startup_stubs
-                    test_stubs
+
+  (install_c_headers lablqml)
+  (cxx_names         CamlPropertyMap_stubs
+                     moc_CamlPropertyMap
+                     object_ml
+                     moc_object
+                     QSingleFunc_stubs
+                     moc_QSingleFunc
+                     stubs
+                     variant
+                     modelindex
+                     propMap_stubs
+                     startup_stubs
+                     test_stubs
                    )
   ; dirty hack next line
   (cxx_flags           ( (:include c_flags.sexp) -O3 -I . -Dprivate=public) )

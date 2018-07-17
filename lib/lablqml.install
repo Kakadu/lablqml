@@ -12,6 +12,7 @@ lib: [
   "_build/install/default/lib/lablqml/lablqml.cmxa" {"lablqml.cmxa"}
   "_build/install/default/lib/lablqml/lablqml.a" {"lablqml.a"}
   "_build/install/default/lib/lablqml/lablqml.cmxs" {"lablqml.cmxs"}
+  "_build/install/default/lib/lablqml/lablqml.h" {"lablqml.h"}
   "_build/install/default/lib/lablqml/lablqml.dune" {"lablqml.dune"}
 ]
 doc: [

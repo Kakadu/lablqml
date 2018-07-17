@@ -84,24 +84,25 @@ if [ $? = 0 ]; then
     printf "It may cause ocamlfind issues and/or annoying warnings. Please remove it!\n"
 fi
 
+exit 0
 
-echo "Generating Makefile"
-echo -e "\
-.PHONY: all generator lib test\n\
-all: generator lib \n\
-	\n\
-generator:\n\
-	cd $ROOT_DIR/ppx && \$(MAKE) all\n\
-lib:\n\
-	\$(MAKE) -C $ROOT_DIR/lib\n\
-demos: generator lib\n\
-	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
-clean:\n\
-	\$(MAKE) -C $ROOT_DIR/demos clean\n\
-	\$(MAKE) -C $ROOT_DIR/lib clean\n\
-	\$(MAKE) -C $ROOT_DIR/src clean\n\
-uninstall:\n\
-	ocamlfind remove lablqml\n\n\
-\n\
-" > Makefile
-cat Makefile.install >> Makefile
+# echo "Generating Makefile"
+# echo -e "\
+# .PHONY: all generator lib test\n\
+# all: generator lib \n\
+# 	\n\
+# generator:\n\
+# 	cd $ROOT_DIR/ppx && \$(MAKE) all\n\
+# lib:\n\
+# 	\$(MAKE) -C $ROOT_DIR/lib\n\
+# demos: generator lib\n\
+# 	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
+# clean:\n\
+# 	\$(MAKE) -C $ROOT_DIR/demos clean\n\
+# 	\$(MAKE) -C $ROOT_DIR/lib clean\n\
+# 	\$(MAKE) -C $ROOT_DIR/src clean\n\
+# uninstall:\n\
+# 	ocamlfind remove lablqml\n\n\
+# \n\
+# " > Makefile
+# cat Makefile.install >> Makefile
