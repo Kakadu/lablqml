@@ -1,4 +1,4 @@
-.PHONY: all generator lib demo rundemo
+.PHONY: all generator lib demo rundemo test
 all: lib generator
 
 generator:
@@ -6,11 +6,11 @@ generator:
 lib:
 	dune build lib/lablqml.a lib/dlllablqml_stubs.so
 
+test: demo
 demo: all
-	#PATH=`pwd`/_build/default/ppx/ppxext:$(PATH) bash -c "cd dune_test && ./configure"
 	PATH=`pwd`/_build/default/ppx/ppxext:$(PATH) \
 	dune build dune_test/ui/Root.qml \
-     dune_test/moc_controller_c.cpp dune_test/program.exe
+		dune_test/moc_controller_c.cpp dune_test/program.exe
 
 rundemo:
 	PATH=`pwd`/_build/default/ppx/ppxext:$(PATH) \

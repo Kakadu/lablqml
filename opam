@@ -1,6 +1,6 @@
 opam-version: "1.2"
 name: "lablqml"
-version: "0.5.1"
+version: "0.6"
 maintainer: "kakadu.hafanana@gmail.com"
 authors: "kakadu.hafanana@gmail.com"
 homepage: "http://kakadu.github.io/lablqml/"
@@ -16,7 +16,7 @@ build: [
 build-test: [
   ["./configure"]
   [make]
-  [make "test"]
+  [make "demo"]
 ]
 install: [make "install"]
 remove:  [make "uninstall"]
@@ -26,8 +26,6 @@ depends: [
   "ppxlib"
   "conf-qt"     { >= "5.2.1"}
   "ocamlfind"    { test }
-#  "lwt"         { test }
-#  "cppo"        { test }
 ]
 
 available: [ ocaml-version >= "4.03.0" ]

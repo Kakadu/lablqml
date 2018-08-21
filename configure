@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Script for building OCaml+QML from cold start
 RED='\033[0;31m'
+GREEN='\033[0;32m'
 NC='\033[0m'      # No Color
 
 echo "N.B. Don't forget to export right LD_LIBRARY_PATH and PKG_CONFIG_PATH for Qt5 before running this!"
@@ -65,7 +66,7 @@ g++ -std=c++11 -fPIC `pkg-config --cflags Qt5Quick` testQtDeclarative.cpp \
 
 compile_test
 if [ $? != 0 ]; then
-  echo "Building test C++&Qt application failed."
+  printf "Building C++&Qt test program application ${RED}failed${NC}.\n"
   echo -e "N.B. If you are using Ubuntu 13.04 or precompiled Qt5 from website there is \
   a possibility that file 'Qt5Core.pc' has bug. You can consider to substitute line\n\
     Libs: -L\${libdir} -lQt5Core\n\
@@ -73,36 +74,8 @@ if [ $? != 0 ]; then
     Libs: -Wl,-rpath,\${libdir} -L\${libdir} -lQt5Core\n"
   exit 1
 else
-  echo "Test C++&Qt application is built successfully"
+  printf "C++&Qt ${GREEN}test program${NC} is built ${GREEN}successfully${NC}.\n"
 fi
 cd $ROOT_DIR
 
-
-ocamlfind query lablqml
-if [ $? = 0 ]; then
-    printf "It seems that lablqml is ${RED}already installed${NC}.\n"
-    printf "It may cause ocamlfind issues and/or annoying warnings. Please remove it!\n"
-fi
-
 exit 0
-
-# echo "Generating Makefile"
-# echo -e "\
-# .PHONY: all generator lib test\n\
-# all: generator lib \n\
-# 	\n\
-# generator:\n\
-# 	cd $ROOT_DIR/ppx && \$(MAKE) all\n\
-# lib:\n\
-# 	\$(MAKE) -C $ROOT_DIR/lib\n\
-# demos: generator lib\n\
-# 	cd $ROOT_DIR/demos/ && \$(MAKE)\n\
-# clean:\n\
-# 	\$(MAKE) -C $ROOT_DIR/demos clean\n\
-# 	\$(MAKE) -C $ROOT_DIR/lib clean\n\
-# 	\$(MAKE) -C $ROOT_DIR/src clean\n\
-# uninstall:\n\
-# 	ocamlfind remove lablqml\n\n\
-# \n\
-# " > Makefile
-# cat Makefile.install >> Makefile
