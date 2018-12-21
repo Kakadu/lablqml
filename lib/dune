@@ -28,7 +28,7 @@
 )
 
 (rule
-  (targets c_flags.sexp c_library_flags.sexp)
+  (targets c_flags.sexp c_library_flags.sexp moc.sexp rcc.sexp)
   (deps    config/discover.exe)
   (action  (run config/discover.exe ))
 )
@@ -36,17 +36,17 @@
 (rule
  (targets moc_QSingleFunc.cpp)
  (deps    QSingleFunc.h)
- (action  (run moc %{deps} -o %{targets})) )
+ (action  (run %{read:moc.sexp} %{deps} -o %{targets})) )
 
 (rule
  (targets moc_object.cpp)
  (deps    object.h)
- (action  (run moc %{deps} -o %{targets})) )
+ (action  (run %{read:moc.sexp} %{deps} -o %{targets})) )
 
 (rule
  (targets moc_CamlPropertyMap.cpp)
  (deps    CamlPropertyMap.h)
- (action  (run moc %{deps} -o %{targets})) )
+ (action  (run %{read:moc.sexp} %{deps} -o %{targets})) )
 
 
 (alias
