@@ -1,3 +1,4 @@
-B ../_build/default/lib/.lablqml.objs
+EXCLUDE_QUERY_DIR
+B ../_build/default/lib/.lablqml.objs/byte
 S .
 S stubs

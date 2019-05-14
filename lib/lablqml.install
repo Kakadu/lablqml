@@ -1,23 +1,23 @@
 lib: [
   "_build/install/default/lib/lablqml/META" {"META"}
-  "_build/install/default/lib/lablqml/opam" {"opam"}
+  "_build/install/default/lib/lablqml/dune-package" {"dune-package"}
+  "_build/install/default/lib/lablqml/lablqml.a" {"lablqml.a"}
+  "_build/install/default/lib/lablqml/lablqml.cma" {"lablqml.cma"}
   "_build/install/default/lib/lablqml/lablqml.cmi" {"lablqml.cmi"}
-  "_build/install/default/lib/lablqml/lablqml.cmx" {"lablqml.cmx"}
   "_build/install/default/lib/lablqml/lablqml.cmt" {"lablqml.cmt"}
   "_build/install/default/lib/lablqml/lablqml.cmti" {"lablqml.cmti"}
-  "_build/install/default/lib/lablqml/lablqml.mli" {"lablqml.mli"}
-  "_build/install/default/lib/lablqml/lablqml.ml" {"lablqml.ml"}
-  "_build/install/default/lib/lablqml/lablqml.cma" {"lablqml.cma"}
-  "_build/install/default/lib/lablqml/liblablqml_stubs.a" {"liblablqml_stubs.a"}
+  "_build/install/default/lib/lablqml/lablqml.cmx" {"lablqml.cmx"}
   "_build/install/default/lib/lablqml/lablqml.cmxa" {"lablqml.cmxa"}
-  "_build/install/default/lib/lablqml/lablqml.a" {"lablqml.a"}
   "_build/install/default/lib/lablqml/lablqml.cmxs" {"lablqml.cmxs"}
   "_build/install/default/lib/lablqml/lablqml.h" {"lablqml.h"}
-  "_build/install/default/lib/lablqml/lablqml.dune" {"lablqml.dune"}
+  "_build/install/default/lib/lablqml/lablqml.ml" {"lablqml.ml"}
+  "_build/install/default/lib/lablqml/lablqml.mli" {"lablqml.mli"}
+  "_build/install/default/lib/lablqml/liblablqml_stubs.a" {"liblablqml_stubs.a"}
+  "_build/install/default/lib/lablqml/opam" {"opam"}
 ]
 doc: [
-  "_build/install/default/doc/lablqml/README.md"
   "_build/install/default/doc/lablqml/CHANGELOG"
+  "_build/install/default/doc/lablqml/README.md"
 ]
 stublibs: [
   "_build/install/default/lib/stublibs/dlllablqml_stubs.so"
