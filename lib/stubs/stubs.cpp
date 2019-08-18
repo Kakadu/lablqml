@@ -10,7 +10,7 @@ void registerContext(const QString& name, QQmlContext* v) {
   CAMLlocal3(_name,_view,_ans);
   static value *closure = nullptr;
   if (closure == nullptr) {
-    closure = caml_named_value("register_view");
+    closure = (value*) caml_named_value("register_view") ;
   }
   Q_ASSERT(closure!=nullptr);
   _name = caml_copy_string(name.toStdString().c_str());
