@@ -22,7 +22,7 @@
                      test_stubs
                    )
   ; dirty hack next line
-  (cxx_flags           ( (:include c_flags.sexp) -Wall -std=c++11 -O3 -I . -Dprivate=public) )
+  (cxx_flags           ( (:include c_flags.sexp) -Wall -std=c++11 -O3 -I . -Dprivate=public -fPIC) )
   ;(c_library_flags     (:include c_library_flags.sexp) )
   (flags ())   ; standart enable a few warning that I will fix later
 )
