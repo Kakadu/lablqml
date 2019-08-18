@@ -33,9 +33,9 @@ fi
 #TODO: maybe add g++ version checking
 
 # checking for ocamlfind
-OCAMLFIND_LOC=`which ocamlfind`
-maybe_exit $? "ocamlfind not found"
-echo "ocamlfind found."
+#OCAMLFIND_LOC=`which ocamlfind`
+#maybe_exit $? "ocamlfind not found"
+#echo "ocamlfind found."
 
 #checking Qt installation
 THEQMAKE=qmake-qt5

@@ -25,7 +25,7 @@ depends: [
   "dune"  { build }
   "ppxlib"
   "conf-qt"     { >= "5.2.1"}
-  "ocamlfind"    { test }
+#  "ocamlfind"    { test }
 ]
 
 available: [ ocaml-version >= "4.03.0" ]
