@@ -20,11 +20,10 @@ install: [
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make install"]       { os-distribution  = "alpine" | os-distribution  = "centos" | os-distribution  = "fedora" }
   [make "install"]                                                                  { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
 ]
-#remove: [make "uninstall"]
-#flags: [ light-uninstall ]
+
 depends: [
   "ocaml" {>= "4.03.0"}
-  "ocamlfind" {build}
+  "ocamlfind" { build & with-test }
   "dune"
   "configurator" {build & < "v0.13"}
   "conf-qt" {>= "5.2.1"}
@@ -34,7 +33,10 @@ depends: [
 synopsis:
   "OCamlfind package and PPX extension to interface OCaml and QtQuick"
 description: "Versions <= 0.4 are known as `lablqt`, >0.5 -- as `lablqml`."
-url {
-  src: "https://github.com/Kakadu/lablqml/archive/0.6.1.tar.gz"
-  checksum: "md5=78d82c02437eb2dcd4ebf2c60bf3946f"
-}
+
+#url {
+#  src: "https://github.com/Kakadu/lablqml/archive/0.6.1.tar.gz"
+#  checksum: "md5=78d82c02437eb2dcd4ebf2c60bf3946f"
+#
+#}
+
