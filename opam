@@ -20,8 +20,8 @@ install: [
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make install"]       { os-distribution  = "alpine" | os-distribution  = "centos" | os-distribution  = "fedora" }
   [make "install"]                                                                  { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
 ]
-remove: [make "uninstall"]
-flags: [ light-uninstall ]
+#remove: [make "uninstall"]
+#flags: [ light-uninstall ]
 depends: [
   "ocaml" {>= "4.03.0"}
   "ocamlfind" {build}
