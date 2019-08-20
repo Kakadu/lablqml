@@ -2,9 +2,9 @@
 all: lib generator
 
 generator:
-	dune build -p ppx_qt
+	dune build --only-packages ppx_qt
 lib:
-	dune build -p lablqml
+	dune build --only-packages lablqml
 
 test: demo
 demo: all
