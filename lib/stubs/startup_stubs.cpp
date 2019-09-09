@@ -278,7 +278,8 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   if (xs.count() == 0) {
     Q_ASSERT_X(false, "Creating C++ runtime", "Your QML file seems buggy");
   }
-  QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0) );
+  QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0));
+  Q_ASSERT_X(window != nullptr, "Creating C++ runtime", "Couldn't cast root object to QQuickWindow");
   window->show();
   //qDebug() << "executing app.exec()";
   app.exec();
