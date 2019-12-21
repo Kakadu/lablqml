@@ -1,0 +1,22 @@
+language: c
+sudo: true
+dist: bionic
+addons:
+  apt:
+    packages:
+    - qt5-default
+    - qtdeclarative5-dev
+    - qt5-qmake
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
+script: bash -ex .travis-opam.sh
+os:
+  - linux
+env:
+  matrix:
+  - OCAML_VERSION=4.07
+    PACKAGE=lablqml
+    TESTS=true
+#  - OCAML_VERSION=4.08
+#    PACKAGE=lablqml
+#    TESTS=true
+
