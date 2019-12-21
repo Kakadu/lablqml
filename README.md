@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Kakadu/lablqml.svg?branch=master)](https://travis-ci.org/Kakadu/lablqml)
+
 Let's write QML/QtQuick GUI for OCaml (or Reason) using *lablqml*!
 
 In this repo you can find my work about integrating OCaml and Qt. Initially, I
