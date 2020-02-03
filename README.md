@@ -33,6 +33,37 @@ Github pages [site](http://kakadu.github.io/lablqml/) and
 Use `./configure && make` to build it. Don't forget to install `g++` and good Qt
 version (>= 5.3 I think, `./configure` will check for it, btw).
 
+### Installed files
+
+```
+$ opam show lablqml --list-files
+/home/kakadu/.opam/4.07.0+fp+flambda/bin/ppx_qt
+/home/kakadu/.opam/4.07.0+fp+flambda/doc/lablqml/CHANGELOG
+/home/kakadu/.opam/4.07.0+fp+flambda/doc/lablqml/README.md
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/META
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/dune-package
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.a
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cma
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cmi
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cmt
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cmti
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cmx
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cmxa
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cmxs
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.h
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.ml
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.mli
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/liblablqml_stubs.a
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/opam
+/home/kakadu/.opam/4.07.0+fp+flambda/lib/stublibs/dlllablqml_stubs.so
+```
+
+There is a library here. It's fine to use it for simple programs
+
+There is also `ppx_qt` executable. It is used to generate C++ code from OCaml. 
+See `demos/` for examples
+
 ### Minimal ocamlfind-based helloworld
 
     ➜  cat a.ml                                                                                                                     

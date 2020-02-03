@@ -6,14 +6,15 @@ bug-reports:  "https://github.com/kakadu/lablqml/issues"
 dev-repo: "git+https://github.com/Kakadu/lablqml.git"
 tags: [ "gui" "ui" "qt" ]
 
+# TODO: hack build-env field https://opam.ocaml.org/doc/Manual.html#opamfield-build-env
 build: [
-  ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH ./configure"] {os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
-  ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make"]        {os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
-  ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make demos"]  
-    { (os-distribution = "alpine"  | os-distribution = "centos" | os-distribution = "fedora") & with-test }
+  ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH ./configure"] { os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
+  ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH dune build -p lablqml" ] { os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
+  ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make demos" ] { (os-distribution = "alpine"  | os-distribution = "centos" | os-distribution = "fedora") & with-test }
   
   ["./configure"]            { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
-  [make]                     { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
+  ["dune" "build" "-p" name "-j" jobs]
+                             { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
   [make "demos"] { with-test & os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" } 
 ]
 install: [
@@ -25,10 +26,10 @@ flags: [ light-uninstall ]
 depends: [
   "ocaml" {>= "4.03.0"}
   "ocamlfind" {build}
-  "dune"
+  "dune" { build }
   "configurator" {build & < "v0.13"}
   "conf-qt" {>= "5.2.1"}
-  "ppxlib"  #{<= "0.9.0"}
+  "ppxlib"  
   "conf-pkg-config" {build}
 ]
 synopsis:
