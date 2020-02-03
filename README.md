@@ -97,4 +97,13 @@ ApplicationWindow {
     ➜  ocamlfind opt -package lablqml a.ml -thread -linkpkg -cclib -lQt5Quick -cclib -lQt5Qml -cclib -lQt5Network -cclib -lQt5Widgets -cclib -lQt5Gui -cclib -lQt5Core -cclib -lstdc++
     ➜  ./a.out
 
+### Playing with REPL
+
+    # #thread;;
+    /home/kakadu/.opam/4.07.0+fp+flambda/lib/ocaml/threads: added to search path
+    /home/kakadu/.opam/4.07.0+fp+flambda/lib/ocaml/unix.cma: loaded
+    /home/kakadu/.opam/4.07.0+fp+flambda/lib/ocaml/threads/threads.cma: loaded
+    # #require "lablqml";;
+    /home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml: added to search path
+    /home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cma: loaded
 
