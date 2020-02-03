@@ -1,5 +1,18 @@
+;(library
+;  (name        ppx_qt)
+;  (package     lablqml-ppx)
+;  (public_name lablqml-ppx.ppx_qt)
+;  (kind        ppx_rewriter)
+
+;
+;
+;)
+
 (executable
   (name        ppx_qt)
   (public_name ppx_qt)
-  (libraries   unix ppxlib)
+  (package     lablqml)
+  (modules     gencpp ppx_qt)
+  (preprocess (pps ppxlib.metaquot))
+  (libraries   unix base ppxlib)
 )

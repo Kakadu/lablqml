@@ -32,3 +32,38 @@ Github pages [site](http://kakadu.github.io/lablqml/) and
 
 Use `./configure && make` to build it. Don't forget to install `g++` and good Qt
 version (>= 5.3 I think, `./configure` will check for it, btw).
+
+### Minimal ocamlfind-based helloworld
+
+    ➜  cat a.ml                                                                                                                     
+```
+open Lablqml
+
+let main () = ()
+let () =
+  run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
+```
+
+    ➜  cat Root.qml                                                                                   
+```
+import QtQuick 2.0
+import QtQuick.Controls 1.0
+
+ApplicationWindow {
+    color: "#FFFFDF" // we declare rectangle with custom background color
+    width:  400;
+    height: 300;     // with custom size
+    Text {
+        anchors.centerIn: parent
+        text: "Click me!"
+    }
+    MouseArea {
+        anchors.fill: parent      // all space in parent Rectangle will be clickable
+    }
+}
+```
+
+    ➜  ocamlfind opt -package lablqml a.ml -thread -linkpkg -cclib -lQt5Quick -cclib -lQt5Qml -cclib -lQt5Network -cclib -lQt5Widgets -cclib -lQt5Gui -cclib -lQt5Core -cclib -lstdc++
+    ➜  ./a.out
+
+

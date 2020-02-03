@@ -1,5 +1,7 @@
 .PHONY: all generator lib demo rundemo test
+
 all: lib generator
+	dune build -p lablqml
 
 generator:
 	dune build ppx/ppxext/ppx_qt.exe
