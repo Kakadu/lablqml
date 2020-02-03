@@ -99,11 +99,6 @@ ApplicationWindow {
 
 ### Playing with REPL
 
-    # #thread;;
-    /home/kakadu/.opam/4.07.0+fp+flambda/lib/ocaml/threads: added to search path
-    /home/kakadu/.opam/4.07.0+fp+flambda/lib/ocaml/unix.cma: loaded
-    /home/kakadu/.opam/4.07.0+fp+flambda/lib/ocaml/threads/threads.cma: loaded
-    # #require "lablqml";;
-    /home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml: added to search path
-    /home/kakadu/.opam/4.07.0+fp+flambda/lib/lablqml/lablqml.cma: loaded
+    #thread;;
+    #require "lablqml";;
 
