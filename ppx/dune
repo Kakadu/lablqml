@@ -5,6 +5,7 @@
   (libraries unix base ppxlib)
   (modules gencpp ppx_qt)
   (preprocess (pps ppxlib.metaquot))
+  (flags (:standard -warn-error -A -w -9-3))
 )
 
 (executable

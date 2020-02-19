@@ -1,13 +1,20 @@
-open Migrate_parsetree
-open OCaml_403.Ast
-open Ast_mapper
-(* open Ast_helper *)
-open Asttypes
-open Parsetree
-open Longident
-open Location
+open Base
 open Printf
 open Gencpp
+
+exception Error of Location.t
+exception ErrorMsg of string * Location.t
+
+let () =
+  Location.register_error_of_exn (fun exn ->
+    match exn with
+    | Error loc ->
+      Some (Location.error ~loc " QWE [%getenv] accepts a string, e.g. [%getenv \"USER\"]")
+    | ErrorMsg (msg,loc) -> Some (Location.error ~loc msg)
+    | _ -> None)
+
+open Ppxlib
+open Ppxlib.Ast_builder.Default
 
 (* Configuration of extension:
  * Should we geneate C++ code, should we add debug printing, etc. *)
@@ -18,7 +25,7 @@ type config = { mutable gencpp: bool
 let config  = { gencpp=true; destdir="."; ext="c" }
 
 let args =
-  Arg.([
+  Caml.Arg.([
     "-nocpp", Unit (fun () -> config.gencpp <- false), "Don't generate C++";
     "-destdir", String (fun s -> config.destdir <- s), "Where to put files";
     "-ext", String (fun s -> config.ext <- s), "File extension to use (.cpp or .c)";
@@ -27,31 +34,20 @@ let args =
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
-  | ({txt;_},_) :: _ when txt = name  -> true
+  | {attr_name= {txt;_} } :: _ when String.equal txt name  -> true
   | _ :: xs -> has_attr name xs
 
-let getenv s = try Sys.getenv s with Not_found -> ""
 
-exception Error of Location.t
-exception ErrorMsg of string * Location.t
-
-let () =
-  Location.register_error_of_exn (fun exn ->
-    match exn with
-    | Error loc ->
-      Some (error ~loc " QWE [%getenv] accepts a string, e.g. [%getenv \"USER\"]")
-    | ErrorMsg (msg,loc) -> Some (error ~loc msg)
-    | _ -> None)
-
-let (_: Ast_mapper.mapper) = default_mapper
-
-let type_suits_prop ty = match ty.ptyp_desc with
-  | Ptyp_constr ({txt=Lident "int";    _},[]) -> `Ok `int
-  | Ptyp_constr ({txt=Lident "bool";   _},[]) -> `Ok `bool
-  | Ptyp_constr ({txt=Lident "string"; _},[]) -> `Ok `string
-  | Ptyp_constr ({txt=Ldot(Lident "QVariant","t");_},[]) -> `Ok `variant
-  | Ptyp_constr ({txt=Lident "unit"; _},[]) -> `Error "property can't have type 'unit'"
-  | Ptyp_constr ({txt=Lident x; _},[]) -> `Error (sprintf "Don't know what to do with '%s'" x)
+let type_suits_prop ty =
+  let loc = ty.ptyp_loc in
+  match ty with
+  | [%type: int] -> `Ok `int
+  | [%type: bool] -> `Ok `bool
+  | [%type: string] -> `Ok `string
+  | [%type: Variant.t] -> `Ok `variant
+  | [%type: unit] -> `Error "property can't have type 'unit'"
+  | {ptyp_desc = Ptyp_constr ({txt=Lident x; _},[]); _ } ->
+      `Error (sprintf "Don't know what to do with '%s'" x)
   | _ -> `Error "Type is unknown"
 
 let make_coretyp ~loc txt = Ast_helper.Typ.constr ~loc ({txt; loc}) []
@@ -123,24 +119,24 @@ let make_virt_meth ~loc ~name xs =
                           (helper xs) )
   in
   let typ = helper xs in
-  Cf.method_ (mkloc name loc) Public (Cfk_virtual typ)
+  Cf.method_ (Located.mk name ~loc) Public (Cfk_virtual typ)
 
-
+let mkloc x loc = Located.mk ~loc x
 
 let make_initializer ~loc : class_field =
-  let pexp_desc = Ast_helper.Exp.(
+(*  let pexp_desc = Ast_helper.Exp.(
     apply (ident (mkloc (Lident "store") loc))
           [ (Nolabel, ident (mkloc (Lident "cppobj") loc))
           ; (Nolabel, ident (mkloc (Lident "self") loc))
           ]
           )
-  in (* TODO: *)
-  let pcf_desc = Pcf_initializer pexp_desc in
+  in (* TODO: *)*)
+  let pcf_desc = Pcf_initializer [%expr store cppobj self ] in
   { pcf_desc; pcf_loc=loc; pcf_attributes=[] }
 
 let make_handler_meth ~loc : class_field =
-  let e = Ast_helper.Exp.(poly (ident (mkloc (Lident "cppobj") loc) ) None) in
-  Ast_helper.(Cf.method_ (mkloc "handler" loc) Public (Cfk_concrete (Fresh,e)  ) )
+  let e = pexp_variant ~loc "cppobj" None in
+  Ast_helper.(Cf.method_ (Located.mk "handler" ~loc) Public (Cfk_concrete (Fresh,e)  ) )
 
 (* return list of pairs. 1st is argument label. 2nd is actual type *)
 let eval_meth_typ_gen t =
@@ -230,13 +226,13 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
        (* C++ stub *)
        let types = eval_signal_typ core_typ in
        let (args,res) = List.list_last types in
-       if snd res <> `unit
+       if Base.Pervasives.(snd res <> `unit)
        then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
 
-       assert (fst res = Nolabel);
+       assert Base.Pervasives.(fst res = Nolabel);
        (* last argument always will be without a label, isn't it? *)
 
-       if List.exists ~f:(fun (label,_) -> label=Nolabel) args
+       if List.exists ~f:(fun (label,_) -> Pervasives.(=) label Nolabel) args
        then raise @@ ErrorMsg ("All arguments should have a label", loc);
 
        if config.gencpp then Gencpp.gen_signal ~classname ~signalname @@
@@ -244,45 +240,45 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
        (* OCaml meth *)
        let open Ast_helper in
        let e = Exp.(poly (apply
-                            (ident (mkloc (Lident ("stub_"^signalname)) loc) )
-                            [Nolabel, send (ident (mkloc (Lident "self") loc)) "handler"
+                            (ident (Located.mk ~loc (Lident ("stub_"^signalname))) )
+                            [Nolabel, [%expr self#handler]
                             ]
                          )
                          None) in
 
-       [ (Cf.method_ (mkloc ("emit_" ^ signalname) loc)
+       [ (Cf.method_ (Located.mk ~loc ("emit_" ^ signalname))
                      Public (Cfk_concrete (Fresh,e)) ).pcf_desc
        ]
   in
 
   let wrap_prop ~classname (loc,flag,kind) =
     let propname = loc.txt in
-    let l = loc.loc in
+    let loc = loc.loc in
     match kind with
     | Cfk_concrete _ ->
-       raise @@ ErrorMsg ("We can generate prop methods for virtuals only", l)
+       raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
     | Cfk_virtual core_typ -> begin
        match type_suits_prop core_typ with
        | `Ok typ ->
           if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
           let signal_name = Names.signal_of_prop propname in
-          Ref.append ~set:heading (make_stub_for_signal ~classname ~loc:l ~typ:core_typ signal_name);
+          Ref.append ~set:heading (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
           let open Ast_helper in
           let e = Exp.(poly (apply
-                               (ident (mkloc (Lident ("stub_"^signal_name)) l) )
-                               [Nolabel, send (ident (mkloc (Lident "self") l)) "handler"
+                               (ident (mkloc (Lident ("stub_"^signal_name)) loc) )
+                               [Nolabel, [%expr self#handler]
                                ]
                             )
                             None) in
 
-          [ (Cf.method_ (mkloc ("emit_" ^ signal_name) l)
+          [ (Cf.method_ (mkloc ("emit_" ^ signal_name) loc)
                       Public (Cfk_concrete (Fresh,e)) ).pcf_desc
-          ; Pcf_method ({loc with txt=Gencpp.Names.getter_of_prop propname},
+          ; Pcf_method (Located.mk ~loc (Gencpp.Names.getter_of_prop propname),
                         flag,
-                        Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp l) core_typ) )
+                        Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp loc) core_typ) )
           ]
        | `Error msg ->
-          raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, l)
+          raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc)
     end
   in
   let wrap_field (f_desc: class_field) : class_field list =

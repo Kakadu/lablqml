@@ -16,7 +16,7 @@
   (modules     Program Controller)
   (flags (-w -33-27) )
   (preprocess (per_module
-               ((action (run ppx_qt %{input-file})) Controller)) )
+               ((pps lablqml.ppx) Controller)) )
 
   (link_flags  (-ccopt -Wl,-no-as-needed
                 -fPIC
