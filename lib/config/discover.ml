@@ -2,7 +2,7 @@ let command = Sys.command
 
 open Base
 open Stdio
-module C = Configurator
+module C = Configurator.V1
 
 let write_sexp fn sexp =
   Out_channel.write_all fn ~data:(Sexp.to_string sexp)

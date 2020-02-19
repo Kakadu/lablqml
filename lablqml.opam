@@ -20,13 +20,14 @@ build: [
 remove: [make "uninstall"]
 flags: [ light-uninstall ]
 depends: [
-  "ocaml" {>= "4.03.0"}
-  "ocamlfind" {build}
-  "dune" { build }
-  "configurator" {build & < "v0.13"}
-  "conf-qt" {>= "5.2.1"}
+  "ocaml"             {>= "4.03.0"}
+  "ocamlfind"         { build }
+  "dune"              { build }
+  "dune-configurator" { build }
+#  "configurator"     { build & < "v0.13"}
   "ppxlib"  
-  "conf-pkg-config" {build}
+  "conf-qt"           {>= "5.2.1"}
+  "conf-pkg-config"   { build}
 ]
 synopsis:
   "OCamlfind package and PPX extension to interface OCaml and QtQuick"
