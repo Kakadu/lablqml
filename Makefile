@@ -4,7 +4,7 @@ all: lib generator
 	dune build -p lablqml
 
 generator:
-	dune build ppx/ppxext/ppx_qt.exe
+	dune build ppx/pp_qt.exe
 lib:
 	dune build lib/lablqml.a lib/dlllablqml_stubs.so
 

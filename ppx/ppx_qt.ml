@@ -22,15 +22,15 @@ type config = { mutable gencpp: bool
               ; mutable destdir: string
               ; mutable ext: string
               }
-let config  = { gencpp=true; destdir="."; ext="c" }
+let config  = { gencpp=true; destdir="."; ext="cpp" }
 
-let args =
+(*let args =
   Caml.Arg.([
     "-nocpp", Unit (fun () -> config.gencpp <- false), "Don't generate C++";
     "-destdir", String (fun s -> config.destdir <- s), "Where to put files";
     "-ext", String (fun s -> config.ext <- s), "File extension to use (.cpp or .c)";
   (* TODO: implement -list choice which will print qtclasses declared in file *)
-  ])
+  ])*)
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
@@ -39,7 +39,6 @@ let rec has_attr name: Parsetree.attributes -> bool = function
 
 
 let type_suits_prop ty =
-  let loc = ty.ptyp_loc in
   match ty with
   | [%type: int] -> `Ok `int
   | [%type: bool] -> `Ok `bool
@@ -135,7 +134,7 @@ let make_initializer ~loc : class_field =
   { pcf_desc; pcf_loc=loc; pcf_attributes=[] }
 
 let make_handler_meth ~loc : class_field =
-  let e = pexp_variant ~loc "cppobj" None in
+  let e = [%expr cppobj ] in
   Ast_helper.(Cf.method_ (Located.mk "handler" ~loc) Public (Cfk_concrete (Fresh,e)  ) )
 
 (* return list of pairs. 1st is argument label. 2nd is actual type *)
@@ -375,7 +374,7 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
   if config.gencpp then Gencpp.close_files ();
   !heading @ [ans; creator]
 
-
+(*
 let mapper =
   { default_mapper with
     structure = fun mapper items ->
@@ -392,9 +391,30 @@ let mapper =
         | [] -> []
       in
       iter items
-  }
+  }*)
 
 let () =
+  Ppxlib.Driver.register_transformation
+      ~impl:(fun ss ->
+      let m = object(self)
+        inherit Ast_traverse.map as super
+        method! structure ss = (* TODO: Maybe we don't need this *)
+          List.concat @@ List.map ~f:(self#do_structure_item) ss
+
+        method do_structure_item si =
+          match si.pstr_desc with
+          | Pstr_class [cinfo] when has_attr "qtclass" cinfo.pci_attributes ->
+              Ast_helper.with_default_loc si.pstr_loc (fun () ->
+                wrap_class_decl ~destdir:config.destdir ~attributes:cinfo.pci_attributes
+                                self si.pstr_loc cinfo
+              )
+          | _ -> [super#structure_item si]
+      end in
+    m#structure ss
+  )
+  "ppx_qt"
+  (*
   Driver.register ~name:"ppx_qt" ~args Versions.ocaml_403
     (fun _config _cookies -> mapper);
   Driver.run_main ()
+*)

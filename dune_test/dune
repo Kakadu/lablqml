@@ -32,9 +32,10 @@
  (action  (run moc %{deps} -o %{targets})) )
 
 (rule
- (targets controller_c.cpp controller.h)
- (deps    Controller.ml)
- (action  (run ../ppx/ppxext/ppx_qt.exe -ext cpp %{deps})) )
+  (targets controller_c.cpp controller.h)
+  (deps    Controller.ml)
+  (action  (run ../ppx/pp_qt.exe -ext cpp %{deps}))
+)
 
 (rule
  (targets qrc_resources.cpp)

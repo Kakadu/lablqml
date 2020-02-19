@@ -7,7 +7,7 @@
 #export PATH=`pwd`/../:$PATH
 #dune build src/Controller.ml --verbose
 
-ppx_qt.exe Controller.ml -ext cpp
+ppx_qt Controller.ml -ext cpp
 #../ppx_qt src/Controller.ml -ext cpp
 
 

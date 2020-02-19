@@ -1,5 +1,5 @@
 (library
-  (name ppx)
+  (name ppx_qt_rewriter)
   (public_name lablqml.ppx)
   (kind ppx_rewriter)
   (libraries unix base ppxlib)
@@ -10,9 +10,9 @@
 
 (executable
   (name        pp_qt)
-  (public_name lablqml.ppx_qt)
+  (public_name lablqml.pp_qt)
   (package     lablqml)
   (modules     pp_qt)
-  (libraries   ppx ppxlib.runner)
+  (libraries   lablqml.ppx )
 )
 
