@@ -15,7 +15,7 @@ let options = { ctrl=Obj.magic (object end) }
 let main () =
   let controller_cppobj = Controller.create_controller () in
   let controller = object(self)
-    inherit Controller.controller controller_cppobj as super
+    inherit Controller.controller controller_cppobj
 
     val mutable desc = ""
     method updateDescription info =

@@ -6,7 +6,7 @@
   (cxx_names       controller_c moc_controller_c qrc_resources)
   (install_c_headers controller)
   (cxx_flags       ( (:include c_flags.sexp) -O3 -fPIC ))
-  (flags ())   ; :standart enables a few warnings that I will fix later
+  (flags           (:standard))
 )
 
 
@@ -14,7 +14,7 @@
   (name        program)
   (libraries   lablqml threads mystubs)
   (modules     Program Controller)
-  (flags (-w -33-27) )
+  (flags       (:standard -w -33-27) )
   (preprocess (per_module
                ((pps lablqml.ppx) Controller)) )
 
