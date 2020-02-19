@@ -1,15 +1,22 @@
-OB=ocamlbuild -use-ocamlfind -classic-display
+.PHONY: celan
+DUNEOPTS=
 
-.PHONY: all clean ppx_qt.native
+ifeq ($(VERBOSE),1)
+V=
+DUNEOPTS += --verbose
+else
+V=@
+endif
 
-all: ppx_qt
+
+all:
+	$(V)dune build pp_qt.exe $(DUNEOPTS)
+
+celan:	clean
+clean:	
+	$(V)$(RM) -r ../_build/default/ppx
 
 ppx_qt: ppx_qt.native
 	ln -sf ./ppx_qt.native ./ppx_qt
 
-ppx_qt.native:
-	$(OB) ppxext/ppx_qt.native
-	# dune build ppxext/ppx_qt.cmxa
 
-clean:
-	$(RM) -r _build *.native ./ppx_qt
