@@ -1,5 +1,0 @@
-FINDLIB_PATH ../../lib/_build/bundle
-S .
-B .
-PKG compiler-libs
-B +threads

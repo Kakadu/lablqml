@@ -1,7 +1,0 @@
-FINDLIB_PATH ../../lib/_build/bundle
-PKG lablqml
-PKG threads
-SRC src/
-B   _build
-B   _build/src
-FLG thread
