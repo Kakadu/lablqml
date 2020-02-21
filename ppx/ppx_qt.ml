@@ -2,14 +2,11 @@ open Base
 open Printf
 open Gencpp
 
-exception Error of Location.t
 exception ErrorMsg of string * Location.t
 
 let () =
   Location.register_error_of_exn (fun exn ->
     match exn with
-    | Error loc ->
-      Some (Location.error ~loc " QWE [%getenv] accepts a string, e.g. [%getenv \"USER\"]")
     | ErrorMsg (msg,loc) -> Some (Location.error ~loc msg)
     | _ -> None)
 
@@ -24,19 +21,10 @@ type config = { mutable gencpp: bool
               }
 let config  = { gencpp=true; destdir="."; ext="cpp" }
 
-(*let args =
-  Caml.Arg.([
-    "-nocpp", Unit (fun () -> config.gencpp <- false), "Don't generate C++";
-    "-destdir", String (fun s -> config.destdir <- s), "Where to put files";
-    "-ext", String (fun s -> config.ext <- s), "File extension to use (.cpp or .c)";
-  (* TODO: implement -list choice which will print qtclasses declared in file *)
-  ])*)
-
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
-  | {attr_name= {txt;_} } :: _ when String.equal txt name  -> true
+  | {attr_name= {txt;_}; _ } :: _ when String.equal txt name  -> true
   | _ :: xs -> has_attr name xs
-
 
 let type_suits_prop ty =
   match ty with
@@ -174,7 +162,7 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
      then raise @@ ErrorMsg (sprintf "Method '%s' has wrong type" methname, loc);
      let () = if config.gencpp then (
                   let options =
-                    if List.mem `ItemModel ~set:options then [`ItemModel] else []
+                    if Options.is_itemmodel options then [`ItemModel] else []
                   in
                   Gencpp.gen_meth ~options ~classname ~methname meth_typ
               ) in
@@ -190,7 +178,12 @@ let oldify_arg_label = function
 let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaration) =
   (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
   let classname = ci.pci_name.txt in
-  let options =  if has_attr "itemmodel" attributes then [`ItemModel] else [] in
+  let options =
+    List.concat
+      [ if has_attr "itemmodel"    attributes then [`ItemModel] else []
+      ; if has_attr "instantiable" attributes then [`Instantiable] else []
+      ]
+  in
   if config.gencpp then Gencpp.open_files ~options ~ext:config.ext ~destdir ~classname;
 
   let clas_sig = match ci.pci_expr.pcl_desc with
@@ -224,14 +217,14 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
 
        (* C++ stub *)
        let types = eval_signal_typ core_typ in
-       let (args,res) = List.list_last types in
-       if Base.Pervasives.(snd res <> `unit)
+       let (args,res) = List.(drop_last_exn types, last_exn types) in
+       if Stdlib.(snd res <> `unit)
        then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
 
-       assert Base.Pervasives.(fst res = Nolabel);
+       assert Stdlib.(fst res = Nolabel);
        (* last argument always will be without a label, isn't it? *)
 
-       if List.exists ~f:(fun (label,_) -> Pervasives.(=) label Nolabel) args
+       if List.exists ~f:(fun (label,_) -> Stdlib.(=) label Nolabel) args
        then raise @@ ErrorMsg ("All arguments should have a label", loc);
 
        if config.gencpp then Gencpp.gen_signal ~classname ~signalname @@
@@ -371,27 +364,8 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
   let ans = { pstr_desc=Pstr_class [{{ci with pci_expr=new_expr2} with pci_attributes=[]}]
             ; pstr_loc=loc } in
   let creator = make_creator ~loc ~classname in
-  if config.gencpp then Gencpp.close_files ();
+  if config.gencpp then Gencpp.close_files ~options;
   !heading @ [ans; creator]
-
-(*
-let mapper =
-  { default_mapper with
-    structure = fun mapper items ->
-      let rec iter items =
-        match items with
-        | { pstr_desc=Pstr_class [cinfo]; pstr_loc } :: rest when
-               has_attr "qtclass" cinfo.pci_attributes ->
-           Ast_helper.with_default_loc pstr_loc (fun () ->
-             wrap_class_decl ~destdir:config.destdir ~attributes:cinfo.pci_attributes
-                             mapper pstr_loc cinfo
-             @ iter rest )
-        | item :: rest ->
-          mapper.structure_item mapper item :: iter rest
-        | [] -> []
-      in
-      iter items
-  }*)
 
 let () =
   Ppxlib.Driver.register_transformation
@@ -413,8 +387,4 @@ let () =
     m#structure ss
   )
   "ppx_qt"
-  (*
-  Driver.register ~name:"ppx_qt" ~args Versions.ocaml_403
-    (fun _config _cookies -> mapper);
-  Driver.run_main ()
-*)
+

@@ -1,4 +1,4 @@
-.PHONY: all generator lib demo rundemo test
+.PHONY: all generator lib demo rundemo test watch
 
 all: lib generator
 	dune build -p lablqml
@@ -28,3 +28,7 @@ uninstall:
 install:
 	dune build @install
 	dune install
+
+watch:
+	dune build -w
+
