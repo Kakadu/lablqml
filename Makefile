@@ -1,4 +1,4 @@
-.PHONY: all generator lib demo rundemo test watch
+.PHONY: all generator lib demo rundemo test watch doc celan
 
 all: lib generator
 	dune build -p lablqml
@@ -18,8 +18,10 @@ rundemo:
 	PATH=`pwd`/_build/default/ppx/ppxext:$(PATH) \
 	dune exec -- dune_test/program.exe
 
+celan: clean
 clean:
 	$(RM) -r _build
+	$(RM) -r doc/_build
 
 uninstall:
 	dune build @install
@@ -31,4 +33,8 @@ install:
 
 watch:
 	dune build -w
+
+doc:
+	cd doc && sphinx-build . _build
+
 
