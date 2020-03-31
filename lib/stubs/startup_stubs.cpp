@@ -22,7 +22,7 @@
   int argc_val = Wosize_val(_argv);\
   char **copy = new char*[argc_val];\
   for (int i = 0; i < argc_val; ++i) {\
-    char *item = String_val(Field(_argv,i));\
+    const char *item = String_val(Field(_argv,i));\
     copy[i] = strdup(item);\
   }\
   int *argc = new int(argc_val);
