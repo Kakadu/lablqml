@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+#OB="ocamlbuild -use-ocamlfind" #-classic-display
+# check that files are compilable
+#export OCAMLPATH=`pwd`/../../lib/_build/bundle
+#export PATH=`pwd`/../../ppx:$PATH
+#export PATH=`pwd`/../:$PATH
+#dune build src/Controller.ml --verbose
+
+ppx_qt Controller.ml -ext cpp
+#../ppx_qt src/Controller.ml -ext cpp
+
+
+# generate required .cpp and .h files
+#cd _build # we are doing this in the _build dir to prevent sanitize errors
+#ocamlfind opt -thread -package lablqml -ppx "ppx_qt --as-ppx -destdir ../src/ -ext c" -c \
+#    src/Controller.ml

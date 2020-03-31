@@ -1,0 +1,107 @@
+(library
+  (name            mystubs_all_cpp)
+  (modules)
+  (foreign_stubs
+    (language   cxx)
+    (names      moc_MessageBoard
+                moc_MyQmlType
+                moc_messageboardattachedtype
+                moc_mysingleton
+                moc_message
+                moc_myinstantiable
+                demo1_qmltyperegistrations)
+    (flags     (-O3 -fPIC
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include/QtQuick
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include/QtCore
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include/
+                -I.
+               ))
+    )
+  (install_c_headers myinstantiable message mysingleton MyQmlType MessageBoard  messageboardattachedtype)
+  (flags           (:standard))
+)
+
+(rule
+  (targets moc_MessageBoard.cpp moc_MessageBoard.cpp.json)
+  (deps    MessageBoard.h)
+  (action  (run moc
+                ;-DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+                --include ../moc_predefs.h
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/mkspecs/linux-g++
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include
+                %{deps}
+                --output-json -o moc_MessageBoard.cpp)) )
+
+(rule
+  (targets moc_MyQmlType.cpp moc_MyQmlType.cpp.json)
+  (deps    MyQmlType.h ../moc_predefs.h)
+  (action  (run moc
+                ;-DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+                --include ../moc_predefs.h
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/mkspecs/linux-g++
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include
+                MyQmlType.h
+                --output-json -o moc_MyQmlType.cpp)) )
+
+(rule
+  (targets moc_messageboardattachedtype.cpp moc_messageboardattachedtype.cpp.json)
+  (deps    messageboardattachedtype.h ../moc_predefs.h)
+  (action  (run moc
+                ;-DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+                --include ../moc_predefs.h
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/mkspecs/linux-g++
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include
+                messageboardattachedtype.h
+                --output-json -o moc_messageboardattachedtype.cpp)) )
+
+(rule
+  (targets moc_myinstantiable.cpp moc_myinstantiable.cpp.json)
+  (deps    myinstantiable.h ../moc_predefs.h)
+  (action  (run moc
+                ;-DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+                --include ../moc_predefs.h
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/mkspecs/linux-g++
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include
+                myinstantiable.h
+                --output-json -o moc_myinstantiable.cpp)) )
+
+(rule
+  (targets moc_message.cpp moc_message.cpp.json)
+  (deps    message.h (:predef ../moc_predefs.h))
+  (action  (run moc
+                -DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+                --include ../moc_predefs.h
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/mkspecs/linux-g++
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include
+                message.h
+                --output-json -o moc_message.cpp)) )
+
+(rule
+  (targets moc_mysingleton.cpp moc_mysingleton.cpp.json)
+  (deps    mysingleton.h (:predef ../moc_predefs.h))
+  (action  (run moc
+                -DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QMLMODELS_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
+                --include ../moc_predefs.h
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/mkspecs/linux-g++
+                -I/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/include
+                mysingleton.h
+                --output-json -o moc_mysingleton.cpp)) )
+
+(rule
+  (targets demo1_metatypes.json)
+  (deps    moc_MessageBoard.cpp.json moc_MyQmlType.cpp.json moc_messageboardattachedtype.cpp.json
+           moc_myinstantiable.cpp.json moc_message.cpp.json moc_mysingleton.cpp.json)
+  (action  (run moc --collect-json -o %{targets} %{deps})) )
+
+(rule
+  (targets demo1_qmltyperegistrations.cpp)
+  (deps    demo1_metatypes.json)
+
+  (action
+    (run qmltyperegistrar
+       --generate-qmltypes=app.qmltypes --import-name=com.lablqml.demo --major-version=1 --minor-version=0
+       --foreign-types=/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/lib/metatypes/qt5quick_metatypes.json,/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/lib/metatypes/qt5gui_metatypes.json,/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/lib/metatypes/qt5qmlmodels_metatypes.json,/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/lib/metatypes/qt5qml_metatypes.json,/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/lib/metatypes/qt5network_metatypes.json,/media/oldhome/kakadu/prog/qt/qt_off/5.15.0/gcc_64/lib/metatypes/qt5core_metatypes.json
+       -o %{targets}
+       %{deps}
+       )) )
+
