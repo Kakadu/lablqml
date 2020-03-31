@@ -19,20 +19,17 @@ build: [
 ]
 remove: [make "uninstall"]
 flags: [ light-uninstall ]
+
 depends: [
   "ocaml"             {>= "4.03.0"}
   "ocamlfind"         { build }
-  "dune"              { build }
+  "dune"              { build & >= "2.0.0" }
   "dune-configurator" { build }
-#  "configurator"     { build & < "v0.13"}
   "ppxlib"  
   "conf-qt"           {>= "5.2.1"}
-  "conf-pkg-config"   { build}
+  "conf-pkg-config"   { build }
 ]
 synopsis:
   "OCamlfind package and PPX extension to interface OCaml and QtQuick"
 description: "Versions <= 0.4 are known as `lablqt`, >0.5 -- as `lablqml`."
-url {
-  src: "https://github.com/Kakadu/lablqml/archive/0.6.1.tar.gz"
-  checksum: "md5=78d82c02437eb2dcd4ebf2c60bf3946f"
-}
+
