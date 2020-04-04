@@ -2,17 +2,9 @@
   (name ppx_qt_rewriter)
   (public_name lablqml.ppx)
   (kind ppx_rewriter)
-  (libraries unix base ppxlib)
+  (libraries unix base ppxlib ppxlib.metaquot)
   (modules gencpp ppx_qt)
   (preprocess (pps ppxlib.metaquot))
   (flags (:standard -warn-error -A -w -9-3))
-)
-
-(executable
-  (name        pp_qt)
-  (public_name lablqml.pp_qt)
-  (package     lablqml)
-  (modules     pp_qt)
-  (libraries   lablqml.ppx )
 )
 

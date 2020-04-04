@@ -1,0 +1,8 @@
+(executable
+  (name        pp_qt)
+  (public_name lablqml.pp_qt)
+  (package     lablqml)
+  (modules     pp_qt)
+  (libraries   lablqml.ppx )
+)
+

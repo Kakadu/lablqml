@@ -8,21 +8,28 @@
   (modules         lablqml)
 
   (install_c_headers lablqml)
-  (cxx_names         CamlPropertyMap_stubs
-                     moc_CamlPropertyMap
-                     object_ml
-                     moc_object
-                     QSingleFunc_stubs
-                     moc_QSingleFunc
-                     stubs
-                     variant
-                     modelindex
-                     propMap_stubs
-                     startup_stubs
-                     test_stubs
-                   )
-  ; dirty hack next line
-  (cxx_flags           ( (:include c_flags.sexp) -Wall -std=c++11 -O3 -I . -Dprivate=public -fPIC) )
+  ;(cxx_flags           ( (:include c_flags.sexp) -Wall -std=c++11 -O3 -I . -Dprivate=public -fPIC) )
+  (foreign_stubs
+    (language cxx)
+    (names      CamlPropertyMap_stubs
+                moc_CamlPropertyMap
+                object_ml
+                moc_object
+                QSingleFunc_stubs
+                moc_QSingleFunc
+                stubs
+                variant
+                modelindex
+                propMap_stubs
+                startup_stubs
+                test_stubs
+              )
+    (flags    ( (:include c_flags.sexp)
+                -Wall -std=c++11 -O3 -I .
+                ; dirty hack next line
+                -Dprivate=public -fPIC) )
+  )
+
   (c_library_flags     (:include c_library_flags.sexp) )
   (flags ())   ; standart enable a few warning that I will fix later
 )
