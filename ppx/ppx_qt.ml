@@ -26,6 +26,12 @@ let rec has_attr name: Parsetree.attributes -> bool = function
   | {attr_name= {txt;_}; _ } :: _ when String.equal txt name  -> true
   | _ :: xs -> has_attr name xs
 
+let find_attr_exn ~name xs =
+  List.find_map_exn xs ~f:(fun {attr_name= {txt;_}; attr_payload } ->
+    if String.equal txt name
+    then Some attr_payload
+    else None)
+
 let type_suits_prop ty =
   match ty with
   | [%type: int] -> `Ok `int
@@ -367,6 +373,7 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
   if config.gencpp then Gencpp.close_files ~options;
   !heading @ [ans; creator]
 
+
 let () =
   Ppxlib.Driver.register_transformation
       ~impl:(fun ss ->
@@ -382,6 +389,15 @@ let () =
                 wrap_class_decl ~destdir:config.destdir ~attributes:cinfo.pci_attributes
                                 self si.pstr_loc cinfo
               )
+          | Pstr_module {pmb_expr; pmb_attributes}  when has_attr "qml" pmb_attributes ->
+              (*begin
+                match find_attr_exn pmb_attributes ~name:"qml" with
+                | PStr [{pstr_desc= Pstr_eval (e,_) }] ->
+
+                    [super#structure_item si]
+                | _ -> raise (ErrorMsg ("bad attribute", si.pstr_loc))
+              end*)
+              [super#structure_item si]
           | _ -> [super#structure_item si]
       end in
     m#structure ss

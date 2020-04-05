@@ -2,9 +2,10 @@
   (name ppx_qt_rewriter)
   (public_name lablqml.ppx)
   (kind ppx_rewriter)
+  (inline_tests)
   (libraries unix base ppxlib ppxlib.metaquot)
-  (modules gencpp ppx_qt)
-  (preprocess (pps ppxlib.metaquot))
+  (modules gencpp ppx_qt testdemo)
+  (preprocess (pps ppxlib.metaquot ppx_inline_test ppx_deriving.show))
   (flags (:standard -warn-error -A -w -9-3))
 )
 
