@@ -34,7 +34,7 @@
 (rule
   (targets controller_c.cpp controller.h)
   (deps    Controller.ml)
-  (action  (run ../ppx/pp_qt.exe -ext cpp %{deps}))
+  (action  (run ../ppx/pp/pp_qt.exe -ext cpp %{deps}))
 )
 
 (rule
