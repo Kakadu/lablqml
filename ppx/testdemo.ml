@@ -77,23 +77,23 @@ let choice ps input =
   in
   helper ps
 
-let wrap head parsef e (cond: _ -> _ -> bool) =
+let wrap head parsef e ~onfail cond =
   match head e with
   | Failed ->
       Format.printf "head failed : %s %d\n%!" __FILE__ __LINE__;
-      false
+      onfail
   | Parsed (head_result, xs) ->
 (*      Format.printf "Ars length = %d. %s %d\n%!" (List.length xs) __FILE__ __LINE__;*)
       match parsef xs with
       | Failed ->
 (*        Format.printf "%s %d\n%!" __FILE__ __LINE__;*)
-        false
+        onfail
       | Parsed (rez, []) ->
 (*          Format.printf "calling cond \n%!";*)
           cond head_result rez
       | Parsed (_,_) ->
 (*          Format.printf "%s %d\n%!" __FILE__ __LINE__;*)
-          false
+          onfail
 
 let loc = dummy_loc
 
@@ -135,9 +135,9 @@ let parse_body : prop_info parser =
     in
     myparse p (fun name tl -> Parsed (name, tl))
   in
-  let pwrite  = ptag_wrap "Write" in
-  let pread   = ptag_wrap "Read" in
-  let pnotify = ptag_wrap "Notify" in
+  let pwrite  = ptag_wrap "WRITE" in
+  let pread   = ptag_wrap "READ" in
+  let pnotify = ptag_wrap "NOTIFY" in
 
   begin fun xs ->
     let rez = make_prop_info () in
@@ -156,9 +156,9 @@ let wrap_prop e cond =
   wrap prop_head parse_body e cond
 
 let%test _ =
-  wrap_prop
-    [%expr (author: string) Read getAuthor ]
-(*    [%expr string author Read getAuthor Write setAuthor Notify authorChanged ]*)
+  wrap_prop ~onfail:false
+    [%expr (author: string) READ getAuthor ]
+(*    [%expr string author READ getAuthor WRITE setAuthor NOTIFY authorChanged ]*)
     (fun (name,typ) rez ->
 (*      Format.printf "name=%s, typ=%s, rez = %s\n%!" name typ (show_prop_info rez);*)
       (name="author") && (typ="string") && (rez.p_read = Some "getAuthor")
@@ -166,8 +166,8 @@ let%test _ =
     )
 
 let%test _ =
-  wrap_prop
-    [%expr (author: string) Read getAuthor Write setAuthor Notify authorChanged ]
+  wrap_prop ~onfail:false
+    [%expr (author: string) READ getAuthor WRITE setAuthor NOTIFY authorChanged ]
     (fun (name,typ) rez ->
 (*      Format.printf "name=%s, typ=%s, rez = %s\n%!" name typ (show_prop_info rez);*)
       (name="author")
@@ -185,7 +185,7 @@ type info =
   } [@@deriving show]
 
 type data_item =
-  | ISingleton of bool
+  | ISingleton of bool (** ISingleton *)
   | IProp of (string * string * prop_info)
   | IName of string
   [@@deriving show]
@@ -198,10 +198,7 @@ let all : info parser = fun xs ->
   xs |>
   ((many @@ choice
     [
-      (singleton >>= fun () ->
-(*        Format.printf "got singleton: %s %d\n%!" __FILE__ __LINE__;*)
-        return (ISingleton true))
-    ; (name      >>= fun s ->
+      (name      >>= fun s ->
 (*        Format.printf "got name `%s`: %s %d\n%!" s __FILE__ __LINE__;*)
         return (IName s))
     ; (fun stream ->
@@ -251,37 +248,46 @@ let qmlargs : expression -> unit parse_result =
   in
   myparse p (fun xs -> Parsed ((),xs) )
 
+let singleton : expression -> unit parse_result =
+  let p =
+    let open Ppxlib.Ast_pattern in
+    pexp_apply
+      (pexp_ident (lident (string "singleton"))) __
+  in
+  myparse p (return ())
+
 let wrap_qml e cond =
   wrap qmlargs all e (fun () -> cond)
 
-let%test _ =
-  wrap_qml [%expr qml ~name:"asdf" singleton  ]
-    (fun rez ->
-(*      Format.printf "rez = %s\n%!" (show_info  rez);*)
-      rez.is_singleton && (rez.name = (Some "asdf")))
+let wrap_singleton e cond =
+  wrap singleton all e (fun () -> cond)
 
 let%test _ =
-  wrap_qml [%expr qml singleton]
+  wrap_singleton ~onfail:false
+    [%expr singleton ~name:"mySingleton" ]
     (fun rez ->
 (*      Format.printf "rez = %s\n%!" (show_info  rez);*)
-      rez.is_singleton && (rez.name = None) && (rez.props = [])
-    )
+      (rez.name = (Some "mySingleton")))
+
 
 let%test _ =
-  wrap_qml
-    [%expr qml ~name:"qwe"
-      singleton
-      ((author: string) Read getAuthor Write setAuthor Notify authorChanged)
-      ((event: int) Read event Notify eventChanged)
+  wrap_singleton ~onfail:false
+    [%expr singleton ~name:"qwe"
+      ( (author: string) READ getAuthor WRITE setAuthor NOTIFY authorChanged)
+      ( (event: int) READ event NOTIFY eventChanged)
+(*      ( (someProperty:int) READ somePropery WRITE setSomeProperty NOTIFY somePropertyChanged)*)
     ]
     (fun rez ->
 (*      Format.printf "rez = %s\n%!" (show_info  rez);*)
-      rez.is_singleton &&
       (rez.name = Some "qwe") &&
       (match rez.props with
       | [ ("author","string",{ p_read=(Some "getAuthor"); p_write=(Some "setAuthor"); p_notify=(Some "authorChanged") })
         ; ("event","int",    { p_read=(Some "event");     p_write=None;  p_notify=(Some "eventChanged")  })
         ] -> true
       | _ -> false)
-
     )
+
+
+
+let parse_singleton e =
+  wrap singleton all e ~onfail:None (fun () -> Base.Option.some)

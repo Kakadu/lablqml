@@ -134,13 +134,13 @@ let make_handler_meth ~loc : class_field =
 (* return list of pairs. 1st is argument label. 2nd is actual type *)
 let eval_meth_typ_gen t =
   let rec parse_one t = match t.ptyp_desc with
-    | Ptyp_constr (({txt=Lident "list"  ;_}),[typarg]) -> `list (parse_one typarg)
-    | Ptyp_constr (({txt=Lident "string";_}),_) -> `string
-    | Ptyp_constr (({txt=Lident "unit"  ;_}),_) -> `unit
-    | Ptyp_constr (({txt=Lident "int"   ;_}),_) -> `int
-    | Ptyp_constr (({txt=Lident "variant";_}),_) -> `variant
-    | Ptyp_constr (({txt=Ldot (Lident "Variant", "t");_}),_) -> `variant
-    | Ptyp_constr (({txt=Ldot (Lident "QVariant","t");_}),_) -> `variant
+    | Ptyp_constr (({txt=Lident "list"  ;_}),[typarg]) -> Arg.qlist (parse_one typarg)
+    | Ptyp_constr (({txt=Lident "string";_}),_) -> Arg.qstring
+    | Ptyp_constr (({txt=Lident "unit"  ;_}),_) -> Arg.unit
+    | Ptyp_constr (({txt=Lident "int"   ;_}),_) -> Arg.int
+    | Ptyp_constr (({txt=Lident "variant";_}),_) -> Arg.variant
+    | Ptyp_constr (({txt=Ldot (Lident "Variant", "t");_}),_) -> Arg.variant
+    | Ptyp_constr (({txt=Ldot (Lident "QVariant","t");_}),_) -> Arg.variant
     | _ -> raise @@ ErrorMsg ("can't eval type", t.ptyp_loc)
   in
   let rec helper t =
@@ -170,7 +170,7 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
                   let options =
                     if Options.is_itemmodel options then [`ItemModel] else []
                   in
-                  Gencpp.gen_meth ~options ~classname ~methname meth_typ
+                  Gencpp.gen_meth ~options ~classname ~methname (meth_typ :> Arg.non_cppobj Arg.t list)
               ) in
      [Pcf_method m]
   end
@@ -181,7 +181,7 @@ let oldify_arg_label = function
   | Labelled s -> s
   | Optional s -> s
 
-let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaration) =
+let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
   (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
   let classname = ci.pci_name.txt in
   let options =
@@ -199,7 +199,8 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
   let fields: class_field list = clas_sig.pcstr_fields in
 
   let heading = ref [] in
-  Ref.append ~set:heading (make_store_func ~classname ~loc);
+  Ref.replace heading (fun xs -> (make_store_func ~classname ~loc) :: xs);
+(*  Ref.append ~set:heading (make_store_func ~classname ~loc);*)
 
   let wrap_signal ~options ~classname (({txt=signalname; loc},_,kind) as _m) =
     let _ =  options in
@@ -219,12 +220,12 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
                                          pval_loc=loc } in
          { pstr_desc; pstr_loc=loc }
        in
-       Ref.append ~set:heading external_stub;
+       Gencpp.ref_append ~set:heading external_stub;
 
        (* C++ stub *)
        let types = eval_signal_typ core_typ in
        let (args,res) = List.(drop_last_exn types, last_exn types) in
-       if Stdlib.(snd res <> `unit)
+       if Stdlib.(snd res <> Gencpp.Arg.unit)
        then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
 
        assert Stdlib.(fst res = Nolabel);
@@ -233,8 +234,9 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
        if List.exists ~f:(fun (label,_) -> Stdlib.(=) label Nolabel) args
        then raise @@ ErrorMsg ("All arguments should have a label", loc);
 
-       if config.gencpp then Gencpp.gen_signal ~classname ~signalname @@
-                               List.map ~f:(fun (l,x) -> (oldify_arg_label l,x)) args;
+       if config.gencpp
+       then Gencpp.gen_signal ~classname ~signalname @@
+            List.map ~f:(fun (l,x) -> (oldify_arg_label l, (x :> Arg.non_cppobj Arg.t))) args;
        (* OCaml meth *)
        let open Ast_helper in
        let e = Exp.(poly (apply
@@ -260,7 +262,7 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
        | `Ok typ ->
           if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
           let signal_name = Names.signal_of_prop propname in
-          Ref.append ~set:heading (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
+          ref_append ~set:heading (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
           let open Ast_helper in
           let e = Exp.(poly (apply
                                (ident (mkloc (Lident ("stub_"^signal_name)) loc) )
@@ -299,9 +301,10 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
     if config.gencpp then List.iter ~f Gencpp.itemmodel_members;
     (* now add some OCaml code *)
 
-    let f = fun (name,stub_name,xs) ->
+    let f (name,stub_name,xs) =
+      let xs = (xs :> Gencpp.meth_typ_item list) in
       let typnames = List.map xs ~f:Gencpp.ocaml_ast_of_typ in
-      Ref.append ~set:heading @@ make_stub_general ~loc ~typnames ~name:("stub_"^name) ~stub_name;
+      ref_append ~set:heading @@ make_stub_general ~loc ~typnames ~name:("stub_"^name) ~stub_name;
       (*let stubname: string  = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in*)
       (*
       gen_stub_cpp ~classname ~methname:name ~stubname
@@ -329,7 +332,7 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
                                       pval_loc=loc } in
       { pstr_desc; pstr_loc=loc }
     in
-    Ref.append add_role_stub ~set:heading;
+    ref_append add_role_stub ~set:heading;
     let f name =
       let open Ast_helper in
       let e = Exp.(poly (apply
@@ -373,6 +376,8 @@ let wrap_class_decl ?(destdir=".") ~attributes _mapper loc (ci: class_declaratio
   if config.gencpp then Gencpp.close_files ~options;
   !heading @ [ans; creator]
 
+let wrap_module_decl ~loc me info =
+  []
 
 let () =
   Ppxlib.Driver.register_transformation
@@ -387,17 +392,21 @@ let () =
           | Pstr_class [cinfo] when has_attr "qtclass" cinfo.pci_attributes ->
               Ast_helper.with_default_loc si.pstr_loc (fun () ->
                 wrap_class_decl ~destdir:config.destdir ~attributes:cinfo.pci_attributes
-                                self si.pstr_loc cinfo
+                                si.pstr_loc cinfo
               )
           | Pstr_module {pmb_expr; pmb_attributes}  when has_attr "qml" pmb_attributes ->
-              (*begin
+              begin
                 match find_attr_exn pmb_attributes ~name:"qml" with
-                | PStr [{pstr_desc= Pstr_eval (e,_) }] ->
-
-                    [super#structure_item si]
+                | PStr [{pstr_desc= Pstr_eval (e,_) }] -> begin
+                    match Testdemo.parse_singleton e  with
+                      | None -> raise (ErrorMsg ("bad attribute", si.pstr_loc))
+                      | Some info ->
+                          wrap_module_decl ~loc:si.pstr_loc pmb_expr info
+                    end
+(*                    [super#structure_item si]*)
                 | _ -> raise (ErrorMsg ("bad attribute", si.pstr_loc))
-              end*)
-              [super#structure_item si]
+              end
+
           | _ -> [super#structure_item si]
       end in
     m#structure ss
