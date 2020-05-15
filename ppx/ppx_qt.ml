@@ -18,8 +18,11 @@ open Ppxlib.Ast_builder.Default
 type config = { mutable gencpp: bool
               ; mutable destdir: string
               ; mutable ext: string
+              ; mutable insert_locks: bool
               }
-let config  = { gencpp=true; destdir="."; ext="cpp" }
+let config  = { gencpp=true; destdir="."; ext="cpp"
+  ; insert_locks = true
+  }
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
@@ -33,15 +36,17 @@ let find_attr_exn ~name xs =
     else None)
 
 let type_suits_prop ty =
+  let open Base.Result in
   match ty with
-  | [%type: int] -> `Ok `int
-  | [%type: bool] -> `Ok `bool
-  | [%type: string] -> `Ok `string
-  | [%type: Variant.t] -> `Ok `variant
-  | [%type: unit] -> `Error "property can't have type 'unit'"
+  | [%type: int]       -> return Arg.Int
+  | [%type: bool]      -> return Arg.Bool
+  | [%type: string]    -> return Arg.QString
+  | [%type: Variant.t]
+  | [%type: QVariant.t] -> return Arg.QVariant
+  | [%type: unit] -> fail "property can't have type 'unit'"
   | {ptyp_desc = Ptyp_constr ({txt=Lident x; _},[]); _ } ->
-      `Error (sprintf "Don't know what to do with '%s'" x)
-  | _ -> `Error "Type is unknown"
+      fail (sprintf "Don't know what to do with '%s'" x)
+  | _ -> fail "Type is unknown"
 
 let make_coretyp ~loc txt = Ast_helper.Typ.constr ~loc ({txt; loc}) []
 let cppobj_coretyp loc = make_coretyp ~loc (Lident "cppobj")
@@ -134,13 +139,13 @@ let make_handler_meth ~loc : class_field =
 (* return list of pairs. 1st is argument label. 2nd is actual type *)
 let eval_meth_typ_gen t =
   let rec parse_one t = match t.ptyp_desc with
-    | Ptyp_constr (({txt=Lident "list"  ;_}),[typarg]) -> Arg.qlist (parse_one typarg)
-    | Ptyp_constr (({txt=Lident "string";_}),_) -> Arg.qstring
-    | Ptyp_constr (({txt=Lident "unit"  ;_}),_) -> Arg.unit
-    | Ptyp_constr (({txt=Lident "int"   ;_}),_) -> Arg.int
-    | Ptyp_constr (({txt=Lident "variant";_}),_) -> Arg.variant
-    | Ptyp_constr (({txt=Ldot (Lident "Variant", "t");_}),_) -> Arg.variant
-    | Ptyp_constr (({txt=Ldot (Lident "QVariant","t");_}),_) -> Arg.variant
+    | Ptyp_constr (({txt=Lident "list"  ;_}),[typarg]) -> Arg.QList (parse_one typarg)
+    | Ptyp_constr (({txt=Lident "string";_}),_) -> Arg.QString
+    | Ptyp_constr (({txt=Lident "unit"  ;_}),_) -> Arg.Unit
+    | Ptyp_constr (({txt=Lident "int"   ;_}),_) -> Arg.Int
+    | Ptyp_constr (({txt=Lident "variant";_}),_)
+    | Ptyp_constr (({txt=Ldot (Lident "Variant", "t");_}),_)
+    | Ptyp_constr (({txt=Ldot (Lident "QVariant","t");_}),_) -> Arg.QVariant
     | _ -> raise @@ ErrorMsg ("can't eval type", t.ptyp_loc)
   in
   let rec helper t =
@@ -225,7 +230,7 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
        (* C++ stub *)
        let types = eval_signal_typ core_typ in
        let (args,res) = List.(drop_last_exn types, last_exn types) in
-       if Stdlib.(snd res <> Gencpp.Arg.unit)
+       if Stdlib.(snd res <> Gencpp.Arg.Unit)
        then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
 
        assert Stdlib.(fst res = Nolabel);
@@ -259,7 +264,7 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
        raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
     | Cfk_virtual core_typ -> begin
        match type_suits_prop core_typ with
-       | `Ok typ ->
+       | Ok typ ->
           if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
           let signal_name = Names.signal_of_prop propname in
           ref_append ~set:heading (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
@@ -277,7 +282,7 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
                         flag,
                         Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp loc) core_typ) )
           ]
-       | `Error msg ->
+       | Error msg ->
           raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc)
     end
   in
@@ -302,7 +307,7 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
     (* now add some OCaml code *)
 
     let f (name,stub_name,xs) =
-      let xs = (xs :> Gencpp.meth_typ_item list) in
+(*      let xs = (xs :> Gencpp.meth_typ_item list) in*)
       let typnames = List.map xs ~f:Gencpp.ocaml_ast_of_typ in
       ref_append ~set:heading @@ make_stub_general ~loc ~typnames ~name:("stub_"^name) ~stub_name;
       (*let stubname: string  = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in*)
@@ -348,12 +353,12 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
                   ; "endRemoveRows" ]
     in
     let virtuals =
-      [ make_virt_meth [ `modelindex; `modelindex ] ~loc ~name:"parent"
-      ; make_virt_meth [ `int; `int; `modelindex; `modelindex ] ~loc ~name:"index"
-      ; make_virt_meth [ `modelindex; `int ] ~loc ~name:"columnCount"
-      ; make_virt_meth [ `modelindex; `int ] ~loc ~name:"rowCount"
-      ; make_virt_meth [ `modelindex; `bool ] ~loc ~name:"hasChildren"
-      ; make_virt_meth [ `modelindex; `int; `variant ] ~loc ~name:"data"
+      [ make_virt_meth [ Arg.QModelIndex; Arg.QModelIndex ] ~loc ~name:"parent"
+      ; make_virt_meth [ Arg.Int; Arg.Int; Arg.QModelIndex; Arg.QModelIndex ] ~loc ~name:"index"
+      ; make_virt_meth [ Arg.QModelIndex; Arg.Int ] ~loc ~name:"columnCount"
+      ; make_virt_meth [ Arg.QModelIndex; Arg.Int ] ~loc ~name:"rowCount"
+      ; make_virt_meth [ Arg.QModelIndex; Arg.Bool ] ~loc ~name:"hasChildren"
+      ; make_virt_meth [ Arg.QModelIndex; Arg.Int; Arg.QVariant ] ~loc ~name:"data"
       ]
     in
     emitters @ virtuals
