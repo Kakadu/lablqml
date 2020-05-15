@@ -47,7 +47,7 @@ std::pair<QGuiApplication*, QQmlEngine*> construct_engine(int* argc, char** argv
 extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
   CAMLparam1(_argv);
   CAMLlocal3(_ans,_app,_engine);
-  caml_enter_blocking_section();
+  LABLQML_LEAVE_OCAML;
 
   ARGC_N_ARGV(_argv, copy)
 
@@ -60,6 +60,8 @@ extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
   // we need allocate argc because QApplication(int& argc,...)
   std::pair<QGuiApplication*, QQmlEngine*> p =
     construct_engine(argc, copy);
+
+  LABLQML_ENTER_OCAML;
 
   // qDebug() << "copy[0] = " << copy[0];
   // qDebug() << "*argc = " << *argc;
@@ -75,7 +77,7 @@ extern "C" value caml_create_QQmlEngine_and_app(value _argv) {
   _ans = caml_alloc(2,0);
   Store_field(_ans, 0, _app);
   Store_field(_ans, 1, _engine);
-  caml_leave_blocking_section();
+  //caml_leave_blocking_section();
   CAMLreturn(_ans);
 }
 
@@ -159,7 +161,8 @@ extern "C" value caml_QQmlAppEngine_to_QQmlEngine(value _appEngine) {
 extern "C" value caml_QQmlEngine_loadQml(value _path, value _engine) {
   CAMLparam2(_path, _engine);
   CAMLlocal1(_ans);
-  caml_enter_blocking_section();
+
+  LABLQML_LEAVE_OCAML;
 
   QQmlEngine *engine = (QQmlEngine*) (Field(_engine,0));
   Q_ASSERT(engine != nullptr);
@@ -188,7 +191,8 @@ extern "C" value caml_QQmlEngine_loadQml(value _path, value _engine) {
     _ans = caml_alloc_small(1, Abstract_tag);
     (*((QQuickView **) &Field(_ans, 0))) = view;
   }
-  caml_leave_blocking_section();
+  LABLQML_ENTER_OCAML;
+
   CAMLreturn(Val_some(_ans));
 }
 
@@ -197,9 +201,9 @@ extern "C" value caml_QGuiApplication_exec(value _app) {
   QGuiApplication *app = (QGuiApplication*) (Field(_app,0));
   Q_ASSERT(app != nullptr);
   //qDebug() << "App exec. ENTER blocking section" << __FILE__ ;
-  caml_enter_blocking_section();
+  LABLQML_LEAVE_OCAML;
   app->exec();
-  caml_leave_blocking_section();
+  LABLQML_ENTER_OCAML;
   qDebug() << "quitting gui application";
   CAMLreturn(Val_unit);
 }
@@ -226,26 +230,20 @@ extern "C" value caml_QQuickWindow_show(value _w) {
 // QQuickWindow.t -> unit
 extern "C" value caml_QQuickWindow_showFullScreen(value _w) {
   CAMLparam1(_w);
-  caml_enter_blocking_section();
+  LABLQML_LEAVE_OCAML;
   QQuickWindow *w = (QQuickWindow*) (Field(_w,0));
   Q_ASSERT_X(w != NULL, __func__, "Trying to show window which is NULL");
   w->showFullScreen();
-  caml_leave_blocking_section();
+  LABLQML_ENTER_OCAML;
   CAMLreturn(Val_unit);
 }
-
-#define debug_enter_blocking \
-qDebug() << "___________ ENTER blocking section in " << __FILE__ << " +" << __LINE__;
-
-#define debug_leave_blocking \
-qDebug() << "___________ LEAVE blocking section in " << __FILE__ << " +" << __LINE__;
 
 // argv -> (unit -> unit) -> string -> unit
 extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
   CAMLparam3(_argv, _cb, _qmlpath);
   CAMLlocal2(_ctx, _cb_res);
   //qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. "<<__FILE__<< ", line " << __LINE__ ;
-  caml_enter_blocking_section();
+  LABLQML_LEAVE_OCAML;
 
   ARGC_N_ARGV(_argv, copy);
 

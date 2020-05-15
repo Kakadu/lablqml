@@ -32,3 +32,20 @@ static value Val_some(value v) {
 
   CAMLreturn(some);
 }
+
+#define DEBUG_ENTER_OCAML \
+    qDebug() << "ENTER TO OCAML == acquire_runtime == leave_section" << __FILE__ << __LINE__;
+
+#define DEBUG_LEAVE_OCAML \
+    qDebug() << "LEAVE TO OCAML == release_runtime == enter_section" << __FILE__ << __LINE__;
+
+#define DEBUG_ENTER_OCAML
+#define DEBUG_LEAVE_OCAML
+
+#define LABLQML_ENTER_OCAML \
+    DEBUG_ENTER_OCAML \
+    caml_acquire_runtime_system();
+
+#define LABLQML_LEAVE_OCAML \
+    DEBUG_LEAVE_OCAML \
+    caml_release_runtime_system();

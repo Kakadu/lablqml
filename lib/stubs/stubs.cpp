@@ -9,6 +9,9 @@ void registerContext(const QString& name, QQmlContext* v) {
   CAMLparam0();
   CAMLlocal3(_name,_view,_ans);
   static value *closure = nullptr;
+
+  LABLQML_ENTER_OCAML;
+
   if (closure == nullptr) {
     closure = (value*) caml_named_value("register_view") ;
   }
@@ -16,9 +19,10 @@ void registerContext(const QString& name, QQmlContext* v) {
   _name = caml_copy_string(name.toStdString().c_str());
   _view = caml_alloc_small(1, Abstract_tag);
   (*((QQmlContext **) &Field(_view, 0))) = v;
-  caml_leave_blocking_section ();
   _ans = caml_callback2(*closure, _name, _view); // should be a unit
-  caml_enter_blocking_section();
+
+  LABLQML_LEAVE_OCAML;
+
   Q_UNUSED(_ans);
   CAMLreturn0;
 }
@@ -48,7 +52,9 @@ extern "C" value caml_QQmlEngine_registerContext(value _name, value _engine) {
   Q_ASSERT(engine != nullptr);
   QQmlContext *ctx = engine->rootContext();
   const QString &name = QString::fromLocal8Bit(String_val(_name));
+  LABLQML_LEAVE_OCAML;
   registerContext(name, ctx);
+  LABLQML_ENTER_OCAML;
   CAMLreturn(Val_unit);
 }
 
