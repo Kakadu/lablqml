@@ -12,7 +12,8 @@ null  :=
 space := $(null) $(null)
 comma := ,
 
-PPX_QT ?= ppx_qt
+PPX_QT ?= lablqml.pp_qt
+PPX_QT_OPTS ?= -destdir . -ext cpp
 OCAMLFIND_PACKAGES=lablqml
 LABLQML_WHERE= $(shell ocamlfind query lablqml)
 # deferred expansion allows to update PACKAGES variable in parent makefiles
@@ -28,7 +29,7 @@ override CXXFLAGS=`pkg-config --cflags Qt5Quick` -fPIC -I`ocamlc -where` -std=c+
 
 QT_MODULES=Qt5Quick Qt5Widgets
 LDLIBS += $(shell pkg-config --libs-only-l   $(QT_MODULES) ) -lstdc++
-
+CXXFLAGS += -g
 LDFLAGS+= $(shell pkg-config --libs-only-L     $(QT_MODULES))
 LDFLAGS+= $(shell pkg-config --libs-only-other $(QT_MODULES))
 ML_LDFLAGS = $(addprefix -ccopt ,$(LDFLAGS))
@@ -43,18 +44,18 @@ GENERATED_MOC += moc_$(1).o
 GENERATED_OBJS += moc_$(1).o $(1)_c.o
 $(1).h: $(1).ml
 	$(V)PATH=../../ppx/:$$$$PATH OCAMLPATH=../../lib/_build/bundle \
-	$(OCAMLOPT) -c -ppx "$(PPX_QT) --as-ppx -destdir . -ext cpp" $(1).ml
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) --as-ppx $(PPX_QT_OPTS)" $(1).ml
 
 $(1).cmx: $(1).ml
 	$(V)PATH=../../ppx/:$$$$PATH OCAMLPATH=../../lib/_build/bundle \
-	$(OCAMLOPT) -c -ppx "$(PPX_QT) --as-ppx -nocpp" $(1).ml
+	$(OCAMLOPT) -c -ppx "$(PPX_QT) --as-ppx $(PPX_QT_OPTS) -nocpp" $(1).ml
 
 $(1)_c.o: $(1)_c.cpp
-	$(V)$(CXX) $(CXXFLAGS) -Dprotected=public -I`ocamlfind c -where` \
+	$(V)$(CXX) $(CXXFLAGS) -g -Dprotected=public -I`ocamlfind c -where` \
 	-c $(1)_c.cpp -o $(1)_c.o
 
 moc_$(1).o: moc_$(1).cpp
-	$(V)$(CXX) $(CXXFLAGS) -I`ocamlfind c -where` -c moc_$(1).cpp -o moc_$(1).o
+	$(V)$(CXX) $(CXXFLAGS) -g -I`ocamlfind c -where` -c moc_$(1).cpp -o moc_$(1).o
 
 moc_$(1).cpp: $(1).h
 	$(V)moc $(1).h -o moc_$(1).cpp
@@ -70,3 +71,7 @@ endef
 define MAKE_RULES
 $(foreach i,$(1),$(eval $(call MAKE_RULES0,$(i)) ) )
 endef
+
+#.PHONY: celan
+#celan: clean
+

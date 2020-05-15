@@ -3,6 +3,7 @@ import QtQuick 2.0
 Item {
     width: 400 + controller.x
     height: 600 + controller.y
+    visible: true
 
     Component.onCompleted: {
       var o = controller.getobj();

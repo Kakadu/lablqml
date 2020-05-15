@@ -5,11 +5,12 @@ OCAMLFIND_PACKAGES+= str
 OUT=main
 GENERATED_FILES=
 
-.PHONY: clean all generate app
+.PHONY: clean all generate app celan
 .DEFAULT_GOAL: all
 all: $(OUT)
 
 LABLQML=../../lib
+CXX_FLAGS+=-g
 CLINK=g++ -g `pkg-config --cflags Qt5Quick Qt5Widgets` -fPIC
 CLINKLIBS=`pkg-config --libs Qt5Quick Qt5Widgets`
 CMX=program.cmx
@@ -39,5 +40,7 @@ main.o: main.cpp
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT)  -c $<
 
+celan: clean
 clean::
 	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s $(MOC_CPP) $(GEN_H) $(GEN_CPP) $(OUT)
+
