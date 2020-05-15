@@ -166,7 +166,7 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
       if PpxQtCfg.config.gencpp
       then
         let options =
-          if Options.is_itemmodel options then [`ItemModel] else []
+          if Options.is_itemmodel options then [OItemModel] else []
         in
         Gencpp.gen_meth ~options ~classname ~methname (meth_typ :> Arg.non_cppobj Arg.t list)
      in
@@ -184,8 +184,8 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
   let classname = ci.pci_name.txt in
   let options =
     List.concat
-      [ if has_attr "itemmodel"    attributes then [`ItemModel] else []
-      ; if has_attr "instantiable" attributes then [`Instantiable] else []
+      [ if has_attr "itemmodel"    attributes then [OItemModel] else []
+      ; if has_attr "instantiable" attributes then [OInstantiable] else []
       ]
   in
   if PpxQtCfg.config.gencpp then Gencpp.open_files ~options ~ext:PpxQtCfg.config.ext ~destdir ~classname;
@@ -198,7 +198,6 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
 
   let heading = ref [] in
   Ref.replace heading (fun xs -> (make_store_func ~classname ~loc) :: xs);
-(*  Ref.append ~set:heading (make_store_func ~classname ~loc);*)
 
   let wrap_signal ~options ~classname (({txt=signalname; loc},_,kind) as _m) =
     let _ =  options in
@@ -300,46 +299,32 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
     (* now add some OCaml code *)
 
     let f (name,stub_name,xs) =
-(*      let xs = (xs :> Gencpp.meth_typ_item list) in*)
       let typnames = List.map xs ~f:Gencpp.ocaml_ast_of_typ in
       ref_append ~set:heading @@ make_stub_general ~loc ~typnames ~name:("stub_"^name) ~stub_name;
-      (*let stubname: string  = sprintf "caml_%s_%s_cppmeth_wrapper" classname name in*)
-      (*
-      gen_stub_cpp ~classname ~methname:name ~stubname
-                   hndl
-                   [ ((typ   :> meth_typ_item), {ai_ref=false;ai_const=false})
-                   ; ((`unit :> meth_typ_item), {ai_ref=false;ai_const=false})
-                   ]; *)
-      ()
     in
     List.iter (Gencpp.itemmodel_externals ~classname) ~f;
     let () = if config.gencpp then Gencpp.gen_itemmodel_stuff ~classname in
 
     let add_role_stub =
-      let pval_name = {txt="add_role"; loc} in
-      let pval_prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole"] in
-      let pval_type = Ast_helper.Typ.(arrow Nolabel (var "a")
-                                            (arrow Nolabel (int_coretyp loc)
-                                                   (arrow Nolabel (string_coretyp loc)
-                                                          (unit_coretyp loc)
-                                                   )
-                                            )
-                      )
+      let name = {txt="add_role"; loc} in
+      let prim = [sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole"] in
+      let type_ =
+        [%type: 'a -> int -> string -> unit]
       in
-      let pstr_desc = Pstr_primitive {pval_name; pval_type; pval_prim; pval_attributes=[];
-                                      pval_loc=loc } in
-      { pstr_desc; pstr_loc=loc }
+
+      Ast_builder.Default.pstr_primitive ~loc @@
+      Ast_builder.Default.value_description ~loc ~name ~type_ ~prim
     in
     ref_append add_role_stub ~set:heading;
     let f name =
       let open Ast_helper in
       let e = Exp.(poly (apply
                            (ident (mkloc (Lident ("stub_"^name)) loc) )
-                           [(Nolabel,ident (mkloc (Lident "cppobj") loc) )]
+                           [(Nolabel, [%expr cppobj] )]
                         ) None
               )
       in
-      (Cf.method_ (mkloc name loc) Public (Cfk_concrete (Fresh,e)) )
+      Cf.method_ (mkloc name loc) Public (Cfk_concrete (Fresh,e))
     in
     let emitters =
       List.map ~f [ "dataChanged"; "beginInsertRows"; "endInsertRows"; "beginRemoveRows"

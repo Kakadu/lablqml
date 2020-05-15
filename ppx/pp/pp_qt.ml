@@ -13,6 +13,8 @@ let () =
     (String (fun s -> config.ext <- s)) ~doc:"EXT File extension to use (usually .cpp or .c)";
   Driver.add_arg "-nolocks"
     (Unit (fun () -> config.insert_locks <- false)) ~doc:" omit caml_leave_blocking_section and others";
+  Driver.add_arg "-tracelocks"
+    (Unit (fun () -> config.trace_locks <- false)) ~doc:" trace some acquired and released locks";
   ()
 
 let () =

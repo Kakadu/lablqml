@@ -2,8 +2,11 @@ open Ppxlib
 
 val ref_append: set: 'a list ref -> 'a -> unit
 
+type opt_item = OInstantiable | OItemModel | OItemModelVal of string option
+
 module Options : sig
-  type t = [ `Instantiable | `ItemModel ] list
+  type item = opt_item
+  type t = item list
   val is_itemmodel: t -> bool
 end
 
@@ -24,15 +27,7 @@ module Arg : sig
     | QList         : 'a t -> 'a t
     | QModelIndex   : [> `Model ] t
     | Cppobj        : [> `Cppobj ] t
-(*    val int : default t
-    val qstring : default t
-    val unit : default t
-    val variant : default t
-    val bytearray : default t
-    val qlist : 'a t -> 'a t
-    val obj : cppobj t
-    val cppobj : cppobj t
-    val modelindex : model t*)
+
 end
 
 val ocaml_ast_of_typ: Arg.any Arg.t -> Longident.t
@@ -57,11 +52,6 @@ end
 
 val itemmodel_members:
   (string * Arg.non_cppobj Arg.t list * meth_info) list
-
-(*val itemmodel_externals: classname:string ->
-  (string * string *
-              [> `bytearray | `cppobj | `int | `modelindex | `unit ] list)
-             list*)
 
 val itemmodel_externals: classname:string ->
   (string * string * Arg.any Arg.t list)
