@@ -12,10 +12,12 @@ void doCaml() {
   CAMLparam0();
   static value *closure = nullptr;
   if (closure == nullptr) {
-    closure = caml_named_value("doCaml");
+    closure = const_cast<value*>(caml_named_value("doCaml"));
   }
   Q_ASSERT(closure!=nullptr);
+  caml_acquire_runtime_system();
   caml_callback(*closure, Val_unit); // should be a unit
+  caml_acquire_runtime_system();
   CAMLreturn0;
 }
 

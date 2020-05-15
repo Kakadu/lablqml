@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-PPX_QT=ppx_qt
+PPX_QT ?= lablqml.pp_qt
 OUT=test.native
 
 ifeq ($(VERBOSE),1)

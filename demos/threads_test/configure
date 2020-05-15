@@ -8,5 +8,5 @@ $OB src/Controller.cmx
 
 # generate required .cpp and .h files
 cd _build # we are doing this in the _build dir to prevent sanitize errors
-ocamlfind opt -thread -package lablqml -ppx "ppx_qt --as-ppx -destdir ../src/ -ext c" -c \
+ocamlfind opt -thread -package lablqml -ppx "lablqml.pp_qt --as-ppx -destdir ../src/ -ext c" -c \
     src/Controller.ml

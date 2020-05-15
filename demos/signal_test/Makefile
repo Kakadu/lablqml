@@ -2,7 +2,7 @@ include ../Makefile.rule
 
 OUT=signal_test.native
 
-.PHONY: clean all generate app
+.PHONY: clean celan all generate app
 
 all: generate $(OUT)
 
@@ -25,5 +25,6 @@ $(OUT): $(GENERATED_CMX) $(GENERATED_OBJS) program.cmx libcppstubs.a
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -c $<
 
+celan: clean
 clean::
 	$(RM) *.cm[iox] *.o libcppstubs.a $(OUT)

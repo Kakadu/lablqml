@@ -1,7 +1,7 @@
 include ../Makefile.rule
 
 
-.PHONY: all clean library_code generate app
+.PHONY: all celan clean library_code generate app
 
 OUT=prop_test.native
 CLINK=g++ -g `pkg-config --cflags Qt5Quick Qt5Widgets` -fPIC
@@ -36,5 +36,6 @@ main.o: main.cpp
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
 	$(OCAMLOPT) -c $<
 
+celan: clean
 clean::
 	$(RM) *.o *.cm[oiax] *.cmxa *.o.startup.s $(OUT)
