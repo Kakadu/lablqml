@@ -2,6 +2,7 @@ open Stdio
 open Base
 open Printf
 
+
 module Time = struct
   let now () = Unix.(localtime @@ time() )
   let months = [| "Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep"; "Oct"; "Nov"; "Dec" |]
@@ -129,12 +130,25 @@ let open_files ?(destdir=".") ?(ext="cpp") ~options ~classname =
   ()
 
 let enter_blocking_section ch =
-  fprintfn ch "  caml_release_runtime_system();";
-  ()
+  if PpxQtCfg.config.insert_locks
+  then
+    let () =
+      if PpxQtCfg.config.trace_locks
+      then fprintfn ch "  qDebug() << \"release_runtime_system();\";"
+    in
+    fprintfn ch "  caml_release_runtime_system();"
+
 
 let leave_blocking_section ch =
-  fprintfn ch "  caml_acquire_runtime_system();";
-  ()
+  if PpxQtCfg.config.insert_locks
+  then
+    let () =
+      if PpxQtCfg.config.trace_locks
+      then fprintfn ch "  qDebug() << \"acquire_runtime_system();\";"
+    in
+    fprintfn ch "  caml_acquire_runtime_system();"
+
+
 
 let close_files ~options:_ =
   (*print_endline "Closing files";*)
@@ -222,16 +236,7 @@ let getter_of_cppvars  prefix =
 (* We need this arginfo because void foo(QString) is not the same as void foo(const QString&) *)
 type arg_info = { ai_ref: bool; ai_const: bool }
 type meth_info = { mi_virt: bool; mi_const: bool }
-(*
-type simple_types = [ `variant | `bytearray | `bool | `int | `string  ]
-(* properties can have only simple types (except unit) *)
-type prop_typ = [ simple_types | `list of prop_typ ]
-type meth_typ_item =
-  [ `unit | simple_types | `list of meth_typ_item
-  | `modelindex | `cppobj
-  ]
-type meth_typ = (meth_typ_item * arg_info) list
-*)
+
 let mi_empty = { mi_virt=false; mi_const=false }
 let ai_empty = { ai_ref=false; ai_const=false }
 let wrap_typ_simple x = (x, ai_empty)
@@ -256,18 +261,6 @@ module Arg : sig
     | QModelIndex   : [> `Model ] t
     | Cppobj        : [> `Cppobj ] t
 
-(*
-  val int : default t
-  val bool: default t
-  val qstring : default t
-  val unit : default t
-  val variant : default t
-  val bytearray : default t
-  val qlist  : 'a t -> 'a t
-
-  val obj : cppobj t
-  val cppobj : cppobj t
-  val modelindex : model t*)
 
   val default_plus_model : default t -> [ default | model ] t
   val model_plus_default : model t -> [ default | model ] t
@@ -289,18 +282,6 @@ end = struct
     | QList         : 'a t -> 'a t
     | QModelIndex   : [> `Model ] t
     | Cppobj        : [> `Cppobj ] t
-
-(*  let int = Int
-  let bool = Bool
-  let qstring = QString
-  let unit = Unit
-  let variant = QVariant
-  let bytearray = QByteArray
-  let qlist xs = QList xs
-
-  let modelindex = QModelIndex
-  let obj = Cppobj
-  let cppobj = Cppobj*)
 
   let rec model_plus_default : model t -> [ default | model ] t = function
     | QModelIndex as y -> y
@@ -390,22 +371,8 @@ let cpptyp_of_typ =
                          (if ai.ai_ref then "&" else "")
   in
   helper
-  (*
-  match x with
-  | `cppobj  -> failwith "Bug. cppobj can't appear in C++"
-  | `bool    -> helper (`bool,ai)
-  | `bytearray-> helper (`bytearray,ai)
-  | `int     -> helper (`int, ai)
-  | `unit    -> helper (`unit, ai)
-  | `variant -> helper (`variant, ai)
-  | `list a  -> helper (`list a,ai)
-  | `string  -> helper (`string,ai)
-  | `modelindex -> helper (`modelindex,ai)
-*)
 
 let rec cpptyp_of_proptyp: (default Arg.t) * arg_info -> string = fun (typ,ai) ->
-(*  let upcasted = (x :> non_cppobj Arg.t * arg_info) in*)
-
   let upcasted = (default_plus_model typ, ai) in
   let cppname =
     match typ with

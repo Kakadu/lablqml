@@ -1,5 +1,6 @@
 open Base
 open Printf
+open PpxQtCfg
 open Gencpp
 
 exception ErrorMsg of string * Location.t
@@ -13,16 +14,6 @@ let () =
 open Ppxlib
 open Ppxlib.Ast_builder.Default
 
-(* Configuration of extension:
- * Should we geneate C++ code, should we add debug printing, etc. *)
-type config = { mutable gencpp: bool
-              ; mutable destdir: string
-              ; mutable ext: string
-              ; mutable insert_locks: bool
-              }
-let config  = { gencpp=true; destdir="."; ext="cpp"
-  ; insert_locks = true
-  }
 
 let rec has_attr name: Parsetree.attributes -> bool = function
   | [] -> false
@@ -171,12 +162,14 @@ let wrap_meth ~classname ?(options=[]) (({txt=methname; loc},_,kind) as m) =
      let meth_typ = eval_meth_typ typ in
      if not (check_meth_typ ~loc meth_typ)
      then raise @@ ErrorMsg (sprintf "Method '%s' has wrong type" methname, loc);
-     let () = if config.gencpp then (
-                  let options =
-                    if Options.is_itemmodel options then [`ItemModel] else []
-                  in
-                  Gencpp.gen_meth ~options ~classname ~methname (meth_typ :> Arg.non_cppobj Arg.t list)
-              ) in
+     let () =
+      if PpxQtCfg.config.gencpp
+      then
+        let options =
+          if Options.is_itemmodel options then [`ItemModel] else []
+        in
+        Gencpp.gen_meth ~options ~classname ~methname (meth_typ :> Arg.non_cppobj Arg.t list)
+     in
      [Pcf_method m]
   end
 
@@ -195,7 +188,7 @@ let wrap_class_decl ?(destdir=".") ~attributes loc (ci: class_declaration) =
       ; if has_attr "instantiable" attributes then [`Instantiable] else []
       ]
   in
-  if config.gencpp then Gencpp.open_files ~options ~ext:config.ext ~destdir ~classname;
+  if PpxQtCfg.config.gencpp then Gencpp.open_files ~options ~ext:PpxQtCfg.config.ext ~destdir ~classname;
 
   let clas_sig = match ci.pci_expr.pcl_desc with
     | Pcl_structure s -> s

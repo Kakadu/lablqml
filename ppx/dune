@@ -4,7 +4,7 @@
   (kind ppx_rewriter)
   (inline_tests)
   (libraries unix base ppxlib ppxlib.metaquot)
-  (modules gencpp ppx_qt testdemo)
+  (modules gencpp ppx_qt testdemo ppxQtCfg)
   (preprocess (pps ppxlib.metaquot ppx_inline_test ppx_deriving.show))
   (flags (:standard -warn-error -A -w -9-3))
 )
