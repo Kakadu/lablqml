@@ -18,4 +18,5 @@ moc_*.cpp
 *.creator.user.*pre[0-9]
 *.creator.user
 #
+CMakeFiles
 

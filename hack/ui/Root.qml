@@ -1,9 +1,11 @@
 import QtQuick 2.1
-import QtQuick.Controls 2.15
+import QtQuick.Controls 1.0
+import com.mycompany.qmlcomponents 1.0
 
 ApplicationWindow {
     property string backgroundColor: "#FFFFDF"
-    width: 800; height: 600;
+    width: 800;
+    height: 600;
 
     Rectangle {
         id: root
@@ -16,9 +18,10 @@ ApplicationWindow {
             Qt.quit();
         }
 
-        Text {
+         Text {
           anchors.centerIn: parent
-          text: controller.descr
+          text: Singleton1.someProperty
         }
     }
+    Component.onCompleted: console.log(Singleton1.someProperty)
 }

@@ -3,7 +3,7 @@
 (name lablqml)
 
 (package
-  (name lablqml))
+ (name lablqml))
 
-
-
+(package
+ (name lablqmlDemos))

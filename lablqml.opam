@@ -17,8 +17,6 @@ build: [
                              { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
   [make "demos"] { with-test & os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" } 
 ]
-remove: [make "uninstall"]
-flags: [ light-uninstall ]
 
 depends: [
   "ocaml"             {>= "4.03.0"}

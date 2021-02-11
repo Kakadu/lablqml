@@ -1,62 +1,63 @@
 (copy_files stubs/*.cpp)
+
 (copy_files stubs/*.h)
 
 (library
-  (name            lablqml)
-  (public_name     lablqml)
-  (synopsis        "wrappers for QML objects")
-  (modules         lablqml)
-
-  (install_c_headers lablqml)
-  ;(cxx_flags           ( (:include c_flags.sexp) -Wall -std=c++11 -O3 -I . -Dprivate=public -fPIC) )
-  (foreign_stubs
-    (language cxx)
-    (names      CamlPropertyMap_stubs
-                moc_CamlPropertyMap
-                object_ml
-                moc_object
-                QSingleFunc_stubs
-                moc_QSingleFunc
-                stubs
-                variant
-                modelindex
-                propMap_stubs
-                startup_stubs
-                test_stubs
-              )
-    (flags    ( (:include c_flags.sexp)
-                -Wall -std=c++11 -O3 -I .
-                ; dirty hack next line
-                -Dprivate=public -fPIC) )
-  )
-
-  (c_library_flags     (:include c_library_flags.sexp) )
-  (flags ())   ; standart enable a few warning that I will fix later
-)
-
-(rule
-  (targets c_flags.sexp c_library_flags.sexp moc.sexp rcc.sexp)
-  (deps    config/discover.exe)
-  (action  (run config/discover.exe ))
-)
+ (name lablqml)
+ (public_name lablqml)
+ (synopsis "wrappers for QML objects")
+ (modules lablqml)
+ (install_c_headers lablqml)
+ ;(cxx_flags           ( (:include c_flags.sexp) -Wall -std=c++11 -O3 -I . -Dprivate=public -fPIC) )
+ (foreign_stubs
+  (language cxx)
+  (names
+   CamlPropertyMap_stubs
+   moc_CamlPropertyMap
+   object_ml
+   moc_object
+   QSingleFunc_stubs
+   moc_QSingleFunc
+   stubs
+   variant
+   modelindex
+   propMap_stubs
+   startup_stubs
+   test_stubs)
+  (flags
+   ((:include %{project_root}/config/c_flags.sexp)
+    -Wall
+    -std=c++11
+    -O3
+    -I
+    .
+    ; dirty hack next line
+    -Dprivate=public
+    -fPIC)))
+ (c_library_flags
+  (:include %{project_root}/config/c_library_flags.sexp))
+ (libraries threads)
+ (flags ()) ; standart enable a few warning that I will fix later
+ )
 
 (rule
  (targets moc_QSingleFunc.cpp)
- (deps    QSingleFunc.h)
- (action  (run %{read:moc.sexp} %{deps} -o %{targets})) )
+ (deps QSingleFunc.h)
+ (action
+  (run %{read:../config/moc.sexp} %{deps} -o %{targets})))
 
 (rule
  (targets moc_object.cpp)
- (deps    object.h)
- (action  (run %{read:moc.sexp} %{deps} -o %{targets})) )
+ (deps object.h)
+ (action
+  (run %{read:../config/moc.sexp} %{deps} -o %{targets})))
 
 (rule
  (targets moc_CamlPropertyMap.cpp)
- (deps    CamlPropertyMap.h)
- (action  (run %{read:moc.sexp} %{deps} -o %{targets})) )
-
+ (deps CamlPropertyMap.h)
+ (action
+  (run %{read:../config/moc.sexp} %{deps} -o %{targets})))
 
 (alias
-  (name    default)
-  (deps    liblablqml_stubs.a lablqml.cmxa)
-)
+ (name default)
+ (deps %{project_root}/config/moc.sexp liblablqml_stubs.a lablqml.cmxa))

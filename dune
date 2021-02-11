@@ -1,2 +1,3 @@
 ;(ignored_subdirs (demos) )
-(dirs lib ppx doc dune_test)
+
+(dirs config lib ppx doc dune_test hack)

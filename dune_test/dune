@@ -1,51 +1,63 @@
 (copy_files ui/Root.qml)
 
 (library
-  (name            mystubs)
-  (modules )
-  (cxx_names       controller_c moc_controller_c qrc_resources)
-  (install_c_headers controller)
-  (cxx_flags       ( (:include c_flags.sexp) -O3 -fPIC ))
-  (flags           (:standard))
-)
-
+ (name mystubs_dune_test)
+ (public_name lablqmlDemos.mystubs)
+ (modules)
+ (foreign_stubs
+  (language cxx)
+  (names controller_c moc_controller_c qrc_resources)
+  (flags
+   ((:include %{project_root}/config/c_flags.sexp)
+    -fPIC
+    -std=c++11
+    -O3)))
+ (install_c_headers controller))
 
 (executable
-  (name        program)
-  (libraries   lablqml threads mystubs)
-  (modules     Program Controller)
-  (flags       (:standard -w -33-27) )
-  (preprocess (per_module
-               ((pps lablqml.ppx) Controller)) )
-
-  (link_flags  (-ccopt -Wl,-no-as-needed
-                -fPIC
-                -cclib -lstdc++ -cclib -llablqml_stubs
-                ; By some reason resources are not linked/loaded when places in mystubs
-                dune_test/qrc_resources.o
-                (:include ocaml_qt_libs.sexp) ) )
-)
+ (name program)
+ (libraries lablqml threads lablqmlDemos.mystubs)
+ (modules Program Controller)
+ (flags
+  (:standard -w -33-27))
+ (preprocess
+  (per_module
+   ((pps lablqml.ppx)
+    Controller)))
+ (link_flags
+  (-ccopt
+   -Wl,-no-as-needed
+   -ccopt
+   -fPIC
+   -cclib
+   -lstdc++
+   -cclib
+   -llablqml_stubs
+   ; By some reason resources are not linked/loaded when places in mystubs
+   dune_test/qrc_resources.o
+   (:include %{project_root}/config/ocaml_qt_libs.sexp))))
 
 (rule
  (targets moc_controller_c.cpp)
- (deps    controller.h)
- (action  (run moc %{deps} -o %{targets})) )
+ (deps controller.h)
+ (action
+  (run moc %{deps} -o %{targets})))
 
 (rule
-  (targets controller_c.cpp controller.h)
-  (deps    Controller.ml)
-  (action  (run ../ppx/pp/pp_qt.exe -ext cpp %{deps}))
-)
+ (targets controller_c.cpp controller.h)
+ (deps Controller.ml)
+ (action
+  (run ../ppx/pp/pp_qt.exe -ext cpp %{deps})))
 
 (rule
  (targets qrc_resources.cpp)
- (deps    src/resources.qrc ui/Root.qml)
+ (deps src/resources.qrc ui/Root.qml)
  ; it will be great to have hack to access head of the dependecies (like in Makefile)
- (action  (run rcc -name resources src/resources.qrc -o %{targets})) )
+ (action
+  (run rcc -name resources src/resources.qrc -o %{targets})))
 
-(rule
- (targets  c_flags.sexp
-           ocaml_qt_libs.sexp
-           c_library_flags.sexp)
- (deps    config/discover.exe)
- (action  (run config/discover.exe )) )
+;(rule
+; (targets c_flags.sexp ocaml_qt_libs.sexp c_library_flags.sexp)
+; (deps %{project_root}/config/discover.exe)
+; (action
+;  (run %{project_root}/config/discover.exe)))

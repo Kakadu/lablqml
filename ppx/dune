@@ -1,11 +1,14 @@
 (library
-  (name ppx_qt_rewriter)
-  (public_name lablqml.ppx)
-  (kind ppx_rewriter)
-  (inline_tests)
-  (libraries unix base ppxlib ppxlib.metaquot)
-  (modules gencpp ppx_qt testdemo ppxQtCfg)
-  (preprocess (pps ppxlib.metaquot ppx_inline_test ppx_deriving.show))
-  (flags (:standard -warn-error -A -w -9-3))
-)
-
+ (name ppx_qt_rewriter)
+ (modules gencpp ppx_qt ppxQtCfg generation2)
+ (public_name lablqml.ppx)
+ (libraries unix base stdio ppxlib ppxlib.metaquot myparser)
+ (kind ppx_rewriter)
+ (preprocess
+  (pps
+   ppxlib.metaquot
+   ppx_deriving.show
+   ppx_string_interpolation
+   ppx_inline_test))
+ (flags
+  (:standard -warn-error -A -w -9-3)))
