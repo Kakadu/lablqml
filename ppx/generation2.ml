@@ -1,7 +1,5 @@
 open Base
-open Printf
 open PpxQtCfg
-open Gencpp
 open TypeRepr
 open Format
 
@@ -381,7 +379,6 @@ module OnSingleton = struct
 end
 
 let wrap_module_decl ~loc name stru sign info =
-  Format.printf "%s %d\n%!" __FILE__ __LINE__;
   print_endline @@ Testdemo.show_info info;
   let classname =
     match info.name with

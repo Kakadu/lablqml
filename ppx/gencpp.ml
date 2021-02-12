@@ -1,5 +1,4 @@
 open Base
-open Stdio
 open Format
 open Ppxlib
 open TypeRepr

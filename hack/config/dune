@@ -1,0 +1,9 @@
+(executable
+ (name discover)
+ (libraries base stdio dune-configurator))
+
+(rule
+ (targets my_namespace.sexp import_name_my_namespace.sexp)
+ (deps ./discover.exe)
+ (action
+  (run ./discover.exe)))

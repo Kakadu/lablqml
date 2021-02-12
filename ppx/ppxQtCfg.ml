@@ -39,6 +39,5 @@ let find_attr_exn ~name xs =
 
 let find_attr ~name xs =
   List.find_map xs ~f:(fun { attr_name = { txt; _ }; attr_payload } ->
-      Format.printf "checking %s and %s\n%!" txt name;
       if String.equal txt name then Some attr_payload else None)
 ;;

@@ -4,6 +4,10 @@
 
 (rule
  (targets
+  QT_INSTALL_HEADERS.sexp
+  I_QT_INSTALL_HEADERS.sexp
+  QT_VERSION.sexp
+  qml_foreign_types.sexp
   moc.sexp
   rcc.sexp
   c_flags.sexp

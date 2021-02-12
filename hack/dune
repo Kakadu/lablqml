@@ -10,7 +10,7 @@
  (modules)
  (foreign_stubs
   (language cxx)
-  (names Singleton1_c moc_Singleton1_c proj2_qmltyperegistrations)
+  (names Singleton1_c moc_Singleton1_c)
   (flags
    ((:include %{project_root}/config/c_flags.sexp)
     -fPIC
@@ -31,7 +31,7 @@
     MyControls)))
  (foreign_stubs
   (language cxx)
-  (names qrc_resources)
+  (names qrc_resources proj2_qmltyperegistrations)
   (flags
    ((:include %{project_root}/config/c_flags.sexp)
     -fPIC
@@ -46,8 +46,6 @@
    -lstdc++
    -cclib
    -llablqml_stubs
-   -cclib
-   hack/proj2_qmltyperegistrations.o
    (:include %{project_root}/config/ocaml_qt_libs.sexp))))
 
 (rule
@@ -57,30 +55,41 @@
   (run
    qmltyperegistrar
    --generate-qmltypes=proj2.qmltypes
-   --import-name=com.mycompany.qmlcomponents
+   %{read:config/import_name_my_namespace.sexp}
    --major-version=1
    --minor-version=0
-   --foreign-types=/opt/qt515/lib/metatypes/qt5quick_metatypes.json,/opt/qt515/lib/metatypes/qt5gui_metatypes.json,/opt/qt515/lib/metatypes/qt5qmlmodels_metatypes.json,/opt/qt515/lib/metatypes/qt5qml_metatypes.json,/opt/qt515/lib/metatypes/qt5network_metatypes.json,/opt/qt515/lib/metatypes/qt5core_metatypes.json
+   %{read:../config/qml_foreign_types.sexp}
+   ;--foreign-types=/opt/qt515/lib/metatypes/qt5quick_metatypes.json,/opt/qt515/lib/metatypes/qt5gui_metatypes.json,/opt/qt515/lib/metatypes/qt5qmlmodels_metatypes.json,/opt/qt515/lib/metatypes/qt5qml_metatypes.json,/opt/qt515/lib/metatypes/qt5network_metatypes.json,/opt/qt515/lib/metatypes/qt5core_metatypes.json
    %{deps}
    -o
    %{targets})))
 
 (rule
- (targets proj2_metatypes.json)
+ (target proj2_metatypes.json)
  (deps moc_Singleton1_c.cpp.json)
  (action
-  (run moc -I/opt/qt515/include --collect-json %{deps} -o %{targets})))
+  (run
+   moc
+   %{read:../config/I_QT_INSTALL_HEADERS.sexp}
+   --collect-json
+   %{deps}
+   -o
+   %{target})))
 
 (rule
  (targets moc_Singleton1_c.cpp moc_Singleton1_c.cpp.json)
  (deps Singleton1.h)
+ ;(enabled_if
+ ; (>= %{read:QT_VERSION.sexp} 5.15))    ;; Doesn't work
  (action
   (run
    moc
-   -I/opt/qt515/include
+   %{read:../config/I_QT_INSTALL_HEADERS.sexp}
    --output-json
    %{deps}
    -o
+   ;%{target}
+   ; TODO: wait until dune will support named targets
    moc_Singleton1_c.cpp)))
 
 (rule
@@ -89,15 +98,26 @@
  (action
   (run %{project_root}/ppx/pp/pp_qt.exe -ext cpp %{deps})))
 
+; TODO: generated file should depend on the contents of .qrc file
+;     xpath -q -e '/RCC/qresource/file/text()' hack/src/resources.qrc
+; from  the apt package libxml-xpath-perl
+
 (rule
  (targets qrc_resources.cpp)
- (deps src/resources.qrc ui/Root.qml)
- ; it will be great to have hack to access head of the dependecies (like in Makefile)
+ (deps
+  (:qrc src/resources.qrc)
+  ui/Root.qml)
  (action
-  (run rcc -name resources src/resources.qrc -o %{targets})))
+  (run rcc -name resources %{qrc} -o %{targets})))
 
 (rule
  (targets c_flags.sexp ocaml_qt_libs.sexp c_library_flags.sexp)
+ (deps %{project_root}/config/discover.exe)
+ (action
+  (run %{project_root}/config/discover.exe)))
+
+(rule
+ (targets import_name_my_namespace.sexp)
  (deps config/discover.exe)
  (action
   (run config/discover.exe)))

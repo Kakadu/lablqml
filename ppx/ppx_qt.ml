@@ -2,7 +2,6 @@ open Base
 open Printf
 open PpxQtCfg
 open Gencpp
-open Generation2
 open Ppxlib
 open Ppxlib.Ast_builder.Default
 open TypeRepr
@@ -395,7 +394,6 @@ let () =
                             (match Myparser.Testdemo.parse_singleton e with
                             | None -> raise (ErrorMsg ("bad attribute", si.pstr_loc))
                             | Some info ->
-                              Format.printf "%s %d\n%!" __FILE__ __LINE__;
                               Generation2.wrap_module_decl
                                 ~loc:si.pstr_loc
                                 name
