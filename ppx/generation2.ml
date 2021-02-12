@@ -2,29 +2,13 @@ open Base
 open Printf
 open PpxQtCfg
 open Gencpp
+open TypeRepr
+open Format
 
 let fprintfn ch fmt = ksprintf (Format.fprintf ch "%s\n%!") fmt
 
-exception ErrorMsg of string * Location.t
-
 open Gencpp
-
-let () =
-  Location.register_error_of_exn (fun exn ->
-      match exn with
-      | ErrorMsg (msg, loc) -> Some (Location.error ~loc msg)
-      | _ -> None)
-;;
-
-let string_suits_prop s =
-  match s with
-  | "int" -> Result.return Arg.Int
-  | "bool" -> Result.return Arg.Bool
-  | "string" -> Result.return Arg.QString
-  | "variant" -> Result.return Arg.QVariant
-  | _ -> Result.fail (Printf.sprintf "Type '%s' is unknown" s)
-;;
-
+open Ppxlib
 open Myparser
 open Myparser.Testdemo
 
@@ -42,7 +26,7 @@ module GenProp = struct
   end
 
   module CamlSidePreRegistered = struct
-    let run ~classname ~propname (typ : Gencpp.Arg.default Arg.t) pinfo =
+    let run ~classname ~propname (typ : Arg.default Arg.t) pinfo =
       let sgnl_name = Names.signal_of_prop propname in
       let getter_name = Option.value_exn pinfo.p_read in
       let cpptyp_name = cpptyp_of_proptyp @@ wrap_typ_simple typ in
@@ -58,7 +42,6 @@ module GenProp = struct
           println "%s %s::%s() {" cpptyp_name classname getter_name;
           println "  CAMLparam0();";
           println "  CAMLlocal1(_ans);";
-          (* println "  value *callback = nullptr;"; *)
           prints_
             [%string
               {|
@@ -70,7 +53,7 @@ module GenProp = struct
             _ans = caml_callback(*closure, Val_unit);
             |}];
           let cppvar = "ans" in
-          println "  %s %s;" (Gencpp.cpptyp_of_typ (typ, ai_empty)) cppvar;
+          println "  %s %s;" (cpptyp_of_typ (typ, ai_empty)) cppvar;
           Gencpp.cpp_value_of_ocaml
             ~cppvar
             ~ocamlvar:"_ans"
@@ -87,7 +70,6 @@ module GenProp = struct
           println "void %s::%s(%s newVal) {" classname setter_name cpptyp_name;
           println "  CAMLparam0();";
           println "  CAMLlocal1(%s);" ocaml_var;
-          (* println "  value *callback = nullptr;"; *)
           Gencpp.ocaml_value_of_cpp
             ppf
             (Gencpp.vars_triplet [ ocaml_var ])
@@ -143,7 +125,10 @@ module GenProp = struct
 end
 
 module OnSingleton = struct
-  let on_header ~loc ~classname info =
+  let creation_callback ~classname = [%string "save_freshly_created_$classname"]
+  let callback_of_invokable ~classname name = [%string "invoke_$(classname)_$name"]
+
+  let on_header ~loc ~classname ~inv_signs info =
     Format.printf "on_singleton\n%!";
     let ppf, _ = Gencpp.get_smart_ppf Gencpp.get_header_ch ~classname in
     let println fmt = fprintfn ppf fmt in
@@ -153,35 +138,28 @@ module OnSingleton = struct
     println "  QML_SINGLETON";
     println "public:";
     println "  %s();" classname;
+    let open Ppxlib in
+    List.iter inv_signs ~f:(function { pval_name; pval_type; pval_loc = loc } ->
+        let args = TypeRepr.parse_arrow_type_exn pval_type in
+        let args, res = List.(drop_last_exn args, last_exn args) in
+        let args, res =
+          let f = function
+            | Nolabel, arg -> Arg.default_plus_model arg, ai_empty
+            | _ -> ppxqt_failed ~loc "Labeled arguments not yet supported"
+          in
+          List.map ~f args, f res
+        in
+        Gencpp.gen_meth_header ~methname:pval_name.txt ~res ~args ppf);
     List.iter info.props ~f:(fun (propname, typ, pinfo) ->
-        match string_suits_prop typ with
+        match TypeRepr.string_suites_prop typ with
         | Error msg ->
           raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc)
         | Ok typ ->
           ();
-          GenProp.CamlSidePreRegistered.run ~classname ~propname typ pinfo
-        (* Gencpp.gen_prop ~classname ~propname typ *)
-        (*let signal_name = Names.signal_of_prop propname in
-       ref_append ~set:heading (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
-       let open Ast_helper in
-       let e = Exp.(poly (apply
-                            (ident (mkloc (Lident ("stub_"^signal_name)) loc) )
-                            [Nolabel, [%expr self#handler]
-                            ]
-                         )
-                         None) in
-
-       [ (Cf.method_ (mkloc ("emit_" ^ signal_name) loc)
-                   Public (Cfk_concrete (Fresh,e)) ).pcf_desc
-       ; Pcf_method (Located.mk ~loc (Gencpp.Names.getter_of_prop propname),
-                     flag,
-                     Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp loc) core_typ) )
-       ]*))
+          GenProp.CamlSidePreRegistered.run ~classname ~propname typ pinfo)
   ;;
 
-  let creation_callback ~classname = [%string "save_freshly_created_$classname"]
-
-  let on_src ~loc:_ ~classname info =
+  let on_src ~loc:_ ~classname ~inv_signs info =
     let ppf, prints_ = Gencpp.get_smart_ppf Gencpp.get_source_ch ~classname in
     ignore prints_;
     let println fmt = fprintfn ppf fmt in
@@ -198,12 +176,13 @@ module OnSingleton = struct
     println "}";
     println "#endif";
     let _namespace = Option.value info.namespace ~default:"Qt.example.qobjectSingleton" in
-    let registration_f = creation_callback ~classname in
-    let obj = "this" in
-    Format.pp_print_string
-      ppf
-      [%string
-        {|
+    let _construction =
+      let registration_f = creation_callback ~classname in
+      let obj = "this" in
+      Format.pp_print_string
+        ppf
+        [%string
+          {|
       $classname::$classname() {
             CAMLparam0();
             CAMLlocal1(_ans);
@@ -211,22 +190,67 @@ module OnSingleton = struct
             // store this shit in OCaml
             static value *closure = nullptr;
             if (closure == nullptr) {
-              closure = (value*) caml_named_value("$registration_f") ;
+              closure = (value*) caml_named_value("$registration_f");
               Q_ASSERT_X(closure, Q_FUNC_INFO, "Value $registration_f is not created on OCaml side");
             }   |}];
-    Gencpp.alloc_and_store ppf ~classname ~obj ~where:"_ans";
-    Gencpp.leave_blocking_section ppf;
-    println "  caml_callback(*closure, _ans);";
-    Gencpp.enter_blocking_section ppf;
-    println "  CAMLreturn0;";
-    println "}\n%!";
+      Gencpp.alloc_and_store ppf ~classname ~obj ~where:"_ans";
+      Gencpp.leave_blocking_section ppf;
+      println "  caml_callback(*closure, _ans);";
+      Gencpp.enter_blocking_section ppf;
+      println "  CAMLreturn0;";
+      println "}\n%!"
+    in
+    let _invokables =
+      List.iter inv_signs ~f:(function { pval_name; pval_type; pval_loc = loc } ->
+          let methname = pval_name.txt in
+          let wrap ~make_cb_var ocaml_var locals ~args =
+            let args : (_ TypeRepr.Arg.t * _) list = args in
+            println "  static value *closure = nullptr;";
+            let registration_f = callback_of_invokable ~classname methname in
+            println "  if (closure == nullptr) {";
+            println "    closure = (value*) caml_named_value(%S);" registration_f;
+            println
+              "    Q_ASSERT_X(closure, Q_FUNC_INFO, %S);"
+              [%string "Value $registration_f is not created on OCaml side"];
+            println "  }";
+            let triplet = vars_triplet locals in
+            let call_closure_str =
+              match List.length args with
+              | (0 | 1)
+                when match args with
+                     | [ (Arg.Unit, _) ] -> true
+                     | _ -> false -> sprintf "caml_callback(*closure, Val_unit);"
+              | n ->
+                List.iteri args ~f:(fun i ((typ : _ Arg.t), _) ->
+                    let cppvar = sprintf "x%d" i in
+                    let ocamlvar = make_cb_var i in
+                    fprintf ppf "  ";
+                    ocaml_value_of_cpp ppf triplet ~ocamlvar ~cppvar typ;
+                    println "  _args[%d] = %s;" i ocamlvar);
+                sprintf "caml_callbackN(*closure, %d, _args);" n
+            in
+            triplet, call_closure_str
+          in
+          let args =
+            TypeRepr.parse_arrow_type_exn pval_type
+            |> List.map ~f:(function
+                   | Nolabel, arg -> Arg.default_plus_model arg, ai_empty
+                   | _ -> ppxqt_failed ~loc "Labeled arguments not yet supported")
+          in
+          Gencpp.gen_meth_cpp_generic ~methname ~classname wrap ppf args)
+    in
     ()
   ;;
 
-  let on_ml ~loc ~classname (name, stru, sign) info =
-    let open Ppxlib in
-    let open Ast_builder.Default in
-    let extra_stru ?(creation = false) ?(notifiers = false) ?(getters = false) () =
+  let on_ml ~loc ~classname ~inv_signs (name, stru, sign) info =
+    let open Ppxlib.Ast_builder.Default in
+    let extra_stru
+        ?(creation = false)
+        ?(notifiers = false)
+        ?(getters = false)
+        ?(invokables = false)
+        ()
+      =
       List.concat
         [ (if creation
           then
@@ -282,6 +306,18 @@ module OnSingleton = struct
                         ;;]
                   | _ -> [])
                 ])
+        ; (if not invokables
+          then []
+          else
+            List.map inv_signs ~f:(function { pval_name; pval_loc = loc } ->
+                let methname = pval_name.txt in
+                let stub_name = callback_of_invokable ~classname methname in
+                [%stri
+                  let () =
+                    Callback.register
+                      [%e pexp_constant ~loc @@ Pconst_string (stub_name, loc, None)]
+                      [%e pexp_ident ~loc @@ Located.map lident pval_name]
+                  ;;]))
         ]
     in
     let extra_sign =
@@ -321,17 +357,26 @@ module OnSingleton = struct
               (pmod_structure ~loc
               @@ extra_stru ~creation:true ~notifiers:true ()
               @ stru
-              @ extra_stru ~getters:true ())
+              @ extra_stru ~getters:true ~invokables:true ())
               (pmty_signature ~loc @@ sign @ extra_sign))
     |> List.return
   ;;
 
-  let run ~loc ~classname mb info =
+  let run ~loc ~classname ((_, _, sigis) as mb) info =
+    let inv_signs =
+      let open PpxQtCfg in
+      let open Ppxlib in
+      List.filter_map sigis ~f:(fun sigi ->
+          match sigi.psig_desc with
+          | Psig_value ({ pval_attributes } as vd)
+            when has_attr "qinvokable" pval_attributes -> Some vd
+          | _ -> None)
+    in
     if PpxQtCfg.config.gencpp
     then (
-      on_src ~loc ~classname info;
-      on_header ~loc ~classname info);
-    on_ml ~loc ~classname mb info
+      on_src ~loc ~classname ~inv_signs info;
+      on_header ~loc ~classname ~inv_signs info);
+    on_ml ~loc ~classname ~inv_signs mb info
   ;;
 end
 

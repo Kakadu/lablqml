@@ -5,36 +5,7 @@ open Gencpp
 open Generation2
 open Ppxlib
 open Ppxlib.Ast_builder.Default
-
-let rec has_attr name : Parsetree.attributes -> bool = function
-  | [] -> false
-  | { attr_name = { txt; _ }; _ } :: _ when String.equal txt name -> true
-  | _ :: xs -> has_attr name xs
-;;
-
-let find_attr_exn ~name xs =
-  List.find_map_exn xs ~f:(fun { attr_name = { txt; _ }; attr_payload } ->
-      if String.equal txt name then Some attr_payload else None)
-;;
-
-let find_attr ~name xs =
-  List.find_map xs ~f:(fun { attr_name = { txt; _ }; attr_payload } ->
-      Format.printf "checking %s and %s\n%!" txt name;
-      if String.equal txt name then Some attr_payload else None)
-;;
-
-let type_suits_prop ty =
-  let open Base.Result in
-  match ty with
-  | [%type: int] -> return Arg.Int
-  | [%type: bool] -> return Arg.Bool
-  | [%type: string] -> return Arg.QString
-  | [%type: Variant.t] | [%type: QVariant.t] -> return Arg.QVariant
-  | [%type: unit] -> fail "property can't have type 'unit'"
-  | { ptyp_desc = Ptyp_constr ({ txt = Lident x; _ }, []); _ } ->
-    fail (sprintf "Don't know what to do with '%s'" x)
-  | _ -> fail "Type is unknown"
-;;
+open TypeRepr
 
 let make_coretyp ~loc txt = Ast_helper.Typ.constr ~loc { txt; loc } []
 let cppobj_coretyp loc = make_coretyp ~loc (Lident "cppobj")
@@ -115,12 +86,12 @@ let make_virt_meth ~loc ~name xs =
   let open Ast_helper in
   let rec helper = function
     | [] -> assert false
-    | [ t ] -> Typ.constr ~loc { txt = Gencpp.ocaml_ast_of_typ t; loc } []
+    | [ t ] -> Typ.constr ~loc { txt = TypeRepr.ocaml_ast_of_typ t; loc } []
     | t :: xs ->
       Typ.(
         arrow
           Nolabel
-          (constr ~loc { txt = Gencpp.ocaml_ast_of_typ t; loc } [])
+          (constr ~loc { txt = TypeRepr.ocaml_ast_of_typ t; loc } [])
           (helper xs))
   in
   let typ = helper xs in
@@ -147,29 +118,17 @@ let make_handler_meth ~loc : class_field =
   Ast_helper.(Cf.method_ (Located.mk "handler" ~loc) Public (Cfk_concrete (Fresh, e)))
 ;;
 
-(* return list of pairs. 1st is argument label. 2nd is actual type *)
-let eval_meth_typ_gen t =
-  let rec parse_one t =
-    match t.ptyp_desc with
-    | Ptyp_constr ({ txt = Lident "list"; _ }, [ typarg ]) -> Arg.QList (parse_one typarg)
-    | Ptyp_constr ({ txt = Lident "string"; _ }, _) -> Arg.QString
-    | Ptyp_constr ({ txt = Lident "unit"; _ }, _) -> Arg.Unit
-    | Ptyp_constr ({ txt = Lident "int"; _ }, _) -> Arg.Int
-    | Ptyp_constr ({ txt = Lident "variant"; _ }, _)
-    | Ptyp_constr ({ txt = Ldot (Lident "Variant", "t"); _ }, _)
-    | Ptyp_constr ({ txt = Ldot (Lident "QVariant", "t"); _ }, _) -> Arg.QVariant
-    | _ -> raise @@ ErrorMsg ("can't eval type", t.ptyp_loc)
-  in
-  let rec helper t =
-    match t.ptyp_desc with
-    | Ptyp_arrow (name, l, r) -> [ name, parse_one l ] @ helper r
-    | _ -> [ Nolabel, parse_one t ]
-  in
-  helper t
+let eval_meth_typ t =
+  match TypeRepr.eval_meth_typ_gen t with
+  | Result.Ok xs -> List.map ~f:snd xs
+  | Error (msg, typ) -> raise @@ ErrorMsg (msg, typ)
 ;;
 
-let eval_meth_typ t = List.map ~f:snd (eval_meth_typ_gen t)
-let eval_signal_typ = eval_meth_typ_gen
+let eval_signal_typ t =
+  match TypeRepr.eval_meth_typ_gen t with
+  | Result.Ok xs -> xs
+  | Error (msg, typ) -> raise @@ ErrorMsg (msg, typ)
+;;
 
 let check_meth_typ ~loc _xs =
   let _ = loc in
@@ -245,7 +204,7 @@ let wrap_class_decl ?(destdir = ".") ~attributes loc (ci : class_declaration) =
       (* C++ stub *)
       let types = eval_signal_typ core_typ in
       let args, res = List.(drop_last_exn types, last_exn types) in
-      if Stdlib.(snd res <> Gencpp.Arg.Unit)
+      if Stdlib.(snd res <> TypeRepr.Arg.Unit)
       then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
       assert (Stdlib.(fst res = Nolabel));
       (* last argument always will be without a label, isn't it? *)
@@ -333,7 +292,7 @@ let wrap_class_decl ?(destdir = ".") ~attributes loc (ci : class_declaration) =
       if config.gencpp then List.iter ~f Gencpp.itemmodel_members;
       (* now add some OCaml code *)
       let f (name, stub_name, xs) =
-        let typnames = List.map xs ~f:Gencpp.ocaml_ast_of_typ in
+        let typnames = List.map xs ~f:TypeRepr.ocaml_ast_of_typ in
         ref_append ~set:heading
         @@ make_stub_general ~loc ~typnames ~name:("stub_" ^ name) ~stub_name
       in
@@ -443,7 +402,7 @@ let () =
                                 stru
                                 sign
                                 info)
-                          | _ ->
+                          | Some _ ->
                             raise
                               (ErrorMsg
                                  ( sprintf "bad attribute %s %d" __FILE__ __LINE__
@@ -467,24 +426,6 @@ let () =
                 Fun.id
             in
             ans
-          (*
-            match si with
-            | { pstr_desc = Pstr_class [ cinfo ] }
-              when has_attr "qtclass" cinfo.pci_attributes ->
-              Ast_helper.with_default_loc si.pstr_loc (fun () ->
-                  wrap_class_decl
-                    ~destdir:config.destdir
-                    ~attributes:cinfo.pci_attributes
-                    si.pstr_loc
-                    cinfo)
-            | Pstr_module ({ pmb_attributes } as mb) when has_attr "qml" pmb_attributes ->
-              (match find_attr_exn pmb_attributes ~name:"qml" with
-              | PStr [ { pstr_desc = Pstr_eval (e, _) } ] ->
-                (match Myparser.Testdemo.parse_singleton e with
-                | None -> raise (ErrorMsg ("bad attribute", si.pstr_loc))
-                | Some info -> Generation2.wrap_module_decl ~loc:si.pstr_loc mb info)
-              | _ -> raise (ErrorMsg ("bad attribute", si.pstr_loc)))
-            | _ -> [ super#structure_item si ] *)
         end
       in
       m#structure ss)

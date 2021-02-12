@@ -20,7 +20,10 @@ end = struct
       |> fun x -> assert (Result.is_ok x))
   ;;
 
-  let doSomething () = ()
+  let doSomething () =
+    print_endline "doSomething called";
+    ()
+  ;;
 end [@qml
       singleton
         ~name:"Singleton1"

@@ -1,5 +1,5 @@
-import QtQuick 2.1
-import QtQuick.Controls 1.0
+import QtQuick 2.12
+import QtQuick.Controls 2.12
 import com.mycompany.qmlcomponents 1.0
 
 ApplicationWindow {
@@ -24,4 +24,8 @@ ApplicationWindow {
         }
     }
     Component.onCompleted: console.log(Singleton1.someProperty)
+    Button {
+        text: "Click me"
+        onClicked: Singleton1.doSomething()
+    }
 }

@@ -1,5 +1,6 @@
 open Ppxlib
 open Format
+open TypeRepr
 
 val ref_append : set:'a list ref -> 'a -> unit
 
@@ -14,50 +15,6 @@ module Options : sig
 
   val is_itemmodel : t -> bool
 end
-
-module Arg : sig
-  type default = [ `Default ]
-  type model = [ `Model ]
-  type cppobj = [ `Cppobj ]
-
-  type non_cppobj =
-    [ `Default
-    | `Model
-    ]
-
-  type any =
-    [ `Cppobj
-    | `Default
-    | `Model
-    ]
-
-  type _ t =
-    | Unit : [> `Default ] t
-    | QString : [> `Default ] t
-    | Int : [> `Default ] t
-    | Bool : [> `Default ] t
-    | QVariant : [> `Default ] t
-    | QByteArray : [> `Default ] t
-    | QList : 'a t -> 'a t
-    | QModelIndex : [> `Model ] t
-    | Cppobj : [> `Cppobj ] t
-
-  val default_plus_model : default t -> [ default | model ] t
-end
-
-val ocaml_ast_of_typ : Arg.any Arg.t -> Longident.t
-
-type meth_info =
-  { mi_virt : bool
-  ; mi_const : bool
-  }
-
-type arg_info =
-  { ai_ref : bool
-  ; ai_const : bool
-  }
-
-val ai_empty : arg_info
 
 val gen_meth
   :  ?minfo:meth_info
@@ -106,8 +63,6 @@ end
 val itemmodel_members : (string * Arg.non_cppobj Arg.t list * meth_info) list
 val itemmodel_externals : classname:string -> (string * string * Arg.any Arg.t list) list
 val gen_itemmodel_stuff : classname:string -> unit
-val cpptyp_of_proptyp : Arg.default Arg.t * arg_info -> string
-val wrap_typ_simple : 'a -> 'a * arg_info
 
 type triplet
 
@@ -121,23 +76,44 @@ val cpp_value_of_ocaml
   -> unit
 
 val vars_triplet : string list -> triplet
-val cpptyp_of_typ : [ `Default | `Model ] Arg.t * arg_info -> tag
 
 val ocaml_value_of_cpp
   :  formatter
   -> triplet
-  -> ocamlvar:tag
-  -> cppvar:tag
+  -> ocamlvar:string
+  -> cppvar:string
   -> [ `Default | `Model ] Arg.t
   -> unit
 
 val gen_stub_cpp
   :  ?options:opt_item list
-  -> classname:tag
-  -> stubname:tag
-  -> methname:tag
+  -> classname:string
+  -> stubname:string
+  -> methname:string
   -> formatter
   -> (Arg.non_cppobj Arg.t * arg_info) list
+  -> unit
+
+val gen_meth_cpp_generic
+  :  ?minfo:meth_info
+  -> ?options:'a list
+  -> classname:string
+  -> methname:string
+  -> (make_cb_var:(int -> string)
+      -> string
+      -> string list
+      -> args:(Arg.non_cppobj Arg.t * arg_info) list
+      -> triplet * string)
+  -> formatter
+  -> (Arg.non_cppobj Arg.t * arg_info) list
+  -> unit
+
+val gen_meth_header
+  :  ?minfo:meth_info
+  -> methname:label
+  -> res:[ `Default | `Model ] Arg.t * arg_info
+  -> args:(Arg.non_cppobj Arg.t * arg_info) list
+  -> formatter
   -> unit
 
 val enter_blocking_section : formatter -> unit
