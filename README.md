@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Kakadu/lablqml.svg?branch=master)](https://travis-ci.org/Kakadu/lablqml)
+[![OCaml 4.10 on master](https://github.com/kakadu/lablqml/workflows/Build/badge.svg)](https://github.com/kakadu/lablqml/actions)
 
 Let's write QML/QtQuick GUI for OCaml (or Reason) using *lablqml*!
 
@@ -13,15 +13,15 @@ See [online book](https://qmlbook.github.io/) for getting started with Qt/QML it
 
 From 14th of February 2017 it's renamed from `lablqt` to `lablqml` because it
 is actually about QtQuick and not QtWidgets or Qt itself.  If
-you really need QtWidgets you can check out 
-[mrvn's work](https://github.com/mrvn/ocaml-qt5) or 
+you really need QtWidgets you can check out
+[mrvn's work](https://github.com/mrvn/ocaml-qt5) or
 [def](https://github.com/let-def/cuite)'s.
 
 Directories mapping:
 
 * PPX syntax extension with code generator is in `ppx/`.
 * Library for interfacing with QtQuick 2 is in `lib`.
-* Demo that can be build during opam installation is in `dune_test`. 
+* Demo that can be build during opam installation is in `dune_test`.
   Use `make demo` to build it.
 * Old demos that are not using `dune` as build system are in `demos/`.
 * Demo app `qocamlbrowser` (ocamlbrowser with QtQuick instead of Tcl/Tk) is
@@ -61,12 +61,12 @@ $ opam show lablqml --list-files
 
 There is a library here. It's fine to use it for simple programs
 
-There is also `ppx_qt` executable. It is used to generate C++ code from OCaml. 
+There is also `ppx_qt` executable. It is used to generate C++ code from OCaml.
 See `demos/` for examples
 
 ### Minimal ocamlfind-based helloworld
 
-    ➜  cat a.ml                                                                                                                     
+    ➜  cat a.ml
 ```
 open Lablqml
 
@@ -75,7 +75,7 @@ let () =
   run_with_QQmlApplicationEngine Sys.argv main "Root.qml"
 ```
 
-    ➜  cat Root.qml                                                                                   
+    ➜  cat Root.qml
 ```
 import QtQuick 2.0
 import QtQuick.Controls 1.0
@@ -101,4 +101,3 @@ ApplicationWindow {
 
     #thread;;
     #require "lablqml";;
-

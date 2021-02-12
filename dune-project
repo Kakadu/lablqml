@@ -7,3 +7,6 @@
 
 (package
  (name lablqmlDemos))
+
+(package
+ (name conf-qt))

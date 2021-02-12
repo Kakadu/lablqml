@@ -1,0 +1,17 @@
+name: CI on docker
+
+on: [push]
+
+jobs:
+  myjob:
+    runs-on: ubuntu-20.04 # linux required if you want to use docker
+    steps:
+    # Those steps are executed directly on the VM
+    - run: ls /
+    - run: echo $HOME
+    - name: Add a file
+      run: touch $HOME/stuff.txt
+    # Those steps are actions, which may run inside a container
+    - uses: actions/checkout@v1
+    - uses: ./.github/workflows/blank
+    - uses: docker://kakadu18/ocaml:fp2020

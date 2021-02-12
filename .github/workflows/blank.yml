@@ -1,0 +1,58 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - 'README.md'
+
+jobs:
+  build:
+    defaults:
+      run:
+        shell: sh
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          #- macos-latest
+          - ubuntu-20.04
+        ocaml-version:
+          #- 4.11.0
+          - 4.10.1
+          #- 4.09.1
+          #- 4.08.1
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.7.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Use OCaml ${{ matrix.ocaml-version }}
+        uses: avsm/setup-ocaml@v1
+        with:
+          ocaml-version: ${{ matrix.ocaml-version }}
+
+      - run: sudo add-apt-repository ppa:beineri/opt-qt-5.15.2-focal
+      - run: sudo apt install qt515quickcontrols2 libgl-dev --no-install-recommends --yes
+      #- run: sh -x ./qt515-env.sh
+      - run: . ./qt515-env.sh #|| echo "Intentionally ignore exit code 1"
+      #- run: which qmake || echo "Just for debug"
+      #- run: echo $QT_BASE_DIR || echo "Just for debug"
+
+      - run: sh -c '. ./qt515-env.sh && opam pin add conf-qt.dev . --no-action'
+      - run: sh -c '. ./qt515-env.sh && opam depext conf-qt.dev --yes'
+      - run: sh -c '. ./qt515-env.sh && opam install conf-qt.dev --yes'
+
+      - run: sh -c '. ./qt515-env.sh && opam pin add lablqml.dev . --no-action'
+      - run: sh -c '. ./qt515-env.sh && opam depext lablqml.dev --yes --with-doc --with-test'
+      - run: sh -c '. ./qt515-env.sh && opam install . --deps-only --with-doc --with-test'
+
+      - run: sh -c '. ./qt515-env.sh && opam exec -- dune build'
+      - run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest'

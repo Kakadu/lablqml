@@ -1,0 +1,31 @@
+opam-version: "2.0"
+
+version: "5.15"
+synopsis: "Installation of Qt5 using APT packages or from source"
+maintainer: "Kakadu@pm.me"
+authors:    "Kakadu@pm.me"
+homepage: "http://kakadu.github.io/lablqml/"
+bug-reports: "https://github.com/kakadu/lablqml/issues"
+flags: conf
+
+build: [
+  ["which" "qmake"]
+  ["qmake" "--version"]
+  ["which" "moc"]
+  ["moc" "--version"]
+  ["sh" "-exc" "echo \"Your Qt version is `qmake -query QT_VERSION`\""]
+  [
+    "sh"
+    "-exc"
+    "min=\"%{_:version}%\"         cur=`qmake -query QT_VERSION`; res=`printf \"$min\\n$cur\\n\" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -n | head -n 1`; [ \"$res\" = \"$min\" ]"
+  ]
+]
+post-messages:
+  "It's recommended to set PKG_CONFIG_PATH to /usr/local/opt/qt/lib/pkgconfig to enable pkg-config. Also you may need to execute `brew link --force` to symlink everything properly. https://github.com/Kakadu/lablqml/issues/21#issuecomment-319489574"
+    {os = "macos"}
+
+depexts: [
+  ["qt515quickcontrols2" "qt515base" ] {os-family = "debian"}
+
+]
+dev-repo: "git+https://github.com/Kakadu/lablqml.git"

@@ -11,23 +11,26 @@ build: [
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH ./configure"] { os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH dune build -p lablqml" ] { os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make demos" ] { (os-distribution = "alpine"  | os-distribution = "centos" | os-distribution = "fedora") & with-test }
-  
+
   ["./configure"]            { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
   ["dune" "build" "-p" name "-j" jobs]
                              { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
-  [make "demos"] { with-test & os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" } 
+  [make "demos"] { with-test & os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
 ]
 
 depends: [
-  "ocaml"             {>= "4.03.0"}
-  "ocamlfind"         { build }
-  "dune"              { build & >= "2.0.0" }
-  "dune-configurator" { build }
-  "ppxlib"  
-  "conf-qt"           {>= "5.2.1"}
+  "ocaml"             { >= "4.03.0" }
+  "ocamlfind"
+  "dune"              { >= "2.0.0" }
+  "dune-configurator"
+	"stdio"
+  "ppxlib"   					{ >= "0.20.0" & < "0.22.0" }
+  "conf-qt"           { >= "5.2.1" & build }
   "conf-pkg-config"   { build }
+	"ppx_deriving"
+  "ppx_inline_test"
+  "ppx_string_interpolation"
 ]
-synopsis:
-  "OCamlfind package and PPX extension to interface OCaml and QtQuick"
-description: "Versions <= 0.4 are known as `lablqt`, >0.5 -- as `lablqml`."
 
+synopsis:  "OCamlfind package and PPX extension to interface OCaml and QtQuick"
+description: "Versions <= 0.4 are known as `lablqt`, >0.5 -- as `lablqml`."
