@@ -10,7 +10,7 @@
  (modules)
  (foreign_stubs
   (language cxx)
-  (names Singleton1_c moc_Singleton1_c)
+  (names Singleton1_c moc_Singleton1_c myslider_c moc_myslider_c)
   (flags
    ((:include %{project_root}/config/c_flags.sexp)
     -fPIC
@@ -59,7 +59,6 @@
    --major-version=1
    --minor-version=0
    %{read:../config/qml_foreign_types.sexp}
-   ;--foreign-types=/opt/qt515/lib/metatypes/qt5quick_metatypes.json,/opt/qt515/lib/metatypes/qt5gui_metatypes.json,/opt/qt515/lib/metatypes/qt5qmlmodels_metatypes.json,/opt/qt515/lib/metatypes/qt5qml_metatypes.json,/opt/qt515/lib/metatypes/qt5network_metatypes.json,/opt/qt515/lib/metatypes/qt5core_metatypes.json
    %{deps}
    -o
    %{targets})))
@@ -97,6 +96,20 @@
  (deps MyControls.ml)
  (action
   (run %{project_root}/ppx/pp/pp_qt.exe -ext cpp %{deps})))
+
+;; adding old style examples
+
+(rule
+ (targets moc_myslider_c.cpp)
+ (deps myslider.h)
+ (action
+  (run moc %{deps} -o %{targets})))
+
+(rule
+ (targets myslider_c.cpp myslider.h)
+ (deps MyControls.ml)
+ (action
+  (run ../ppx/pp/pp_qt.exe -ext cpp %{deps})))
 
 ; TODO: generated file should depend on the contents of .qrc file
 ;     xpath -q -e '/RCC/qresource/file/text()' hack/src/resources.qrc

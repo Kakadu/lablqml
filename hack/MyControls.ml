@@ -37,24 +37,9 @@ end [@qml
 
 let () = ()
 
-(* include (
-  struct
-    let doSomething () = ()
-    let someProperty () = 5
-    let setSomeProperty newval = ()
-  end [@qml
-        singleton
-          ~name:"MyApi"
-          ((someProperty : int)
-             READ
-             somePropery
-             WRITE
-             setSomeProperty
-             NOTIFY
-             somePropertyChanged)] :
-    sig
-      (* [%property int someProperty READ somePropery WRITE setSomeProperty NOTIFY somePropertyChanged] *)
-      (* [%qml_named_element MyApi] *)
-      val doSomething : unit -> unit [@@qinvokable]
-    end)
- *)
+open Lablqml
+
+class virtual myslider =
+  object (self)
+    method virtual descr : string [@@qtprop]
+  end [@@qtclass]

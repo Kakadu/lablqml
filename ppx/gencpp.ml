@@ -131,15 +131,15 @@ let get_header_ppf ~classname =
   Format.formatter_of_out_channel @@ get_header_ch ~classname
 ;;
 
+let get_source_ppf ~classname =
+  Format.formatter_of_out_channel @@ get_source_ch ~classname
+;;
+
 let get_smart_ppf f ~classname =
   let ppf = Format.formatter_of_out_channel @@ f ~classname in
   (* let println fmt = Format.kfprintf (fun ppf s -> Format.fprintf ppf "%s\n" s) ppf fmt in *)
   let prints str = fprintf ppf "@[%s@]" str in
   ppf, prints
-;;
-
-let get_source_ppf ~classname =
-  Format.formatter_of_out_channel @@ get_source_ch ~classname
 ;;
 
 let only_open ~classname =
@@ -213,7 +213,7 @@ let print_header_preamble ~classname =
 let open_files ~options ~classname =
   only_open ~classname;
   print_header_preamble ~classname;
-  let ppf = get_source_ppf ~classname in
+  let ppf = get_header_ppf ~classname in
   let println fmt = fprintfn ppf fmt in
   println
     "class %s : public %s {"

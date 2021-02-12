@@ -163,206 +163,209 @@ let oldify_arg_label = function
   | Optional s -> s
 ;;
 
-let wrap_class_decl ?(destdir = ".") ~attributes loc (ci : class_declaration) =
-  (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
-  let classname = ci.pci_name.txt in
-  let options =
-    List.concat
-      [ (if has_attr "itemmodel" attributes then [ OItemModel ] else [])
-      ; (if has_attr "instantiable" attributes then [ OInstantiable ] else [])
-      ]
-  in
-  if PpxQtCfg.config.gencpp then Gencpp.open_files ~options ~classname;
-  let clas_sig =
-    match ci.pci_expr.pcl_desc with
-    | Pcl_structure s -> s
-    | _ ->
-      raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
-  in
-  let fields : class_field list = clas_sig.pcstr_fields in
-  let heading = ref [] in
-  Ref.replace heading (fun xs -> make_store_func ~classname ~loc :: xs);
-  let wrap_signal ~options ~classname (({ txt = signalname; loc }, _, kind) as _m) =
-    let _ = options in
-    match kind with
-    | Cfk_concrete _ ->
-      raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
-    | Cfk_virtual core_typ ->
-      (* stub which will be called by OCaml meth*)
-      let external_stub =
-        let pval_name = { txt = "stub_" ^ signalname; loc } in
-        let pval_prim = [ sprintf "caml_%s_%s_emitter_wrapper" classname signalname ] in
-        let pval_type = Ast_helper.Typ.(arrow Nolabel (cppobj_coretyp loc) core_typ) in
-        let pstr_desc =
-          Pstr_primitive
-            { pval_name; pval_type; pval_prim; pval_attributes = []; pval_loc = loc }
+module OfClass = struct
+  let run ~attributes loc (ci : class_declaration) =
+    (* print_endline "wrap_class_type_decl on class type markend with `qtclass`"; *)
+    let classname = ci.pci_name.txt in
+    let options =
+      List.concat
+        [ (if has_attr "itemmodel" attributes then [ OItemModel ] else [])
+        ; (if has_attr "instantiable" attributes then [ OInstantiable ] else [])
+        ]
+    in
+    if PpxQtCfg.config.gencpp then Gencpp.open_files ~options ~classname;
+    let clas_sig =
+      match ci.pci_expr.pcl_desc with
+      | Pcl_structure s -> s
+      | _ ->
+        raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
+    in
+    let fields : class_field list = clas_sig.pcstr_fields in
+    let heading = ref [] in
+    Ref.replace heading (fun xs -> make_store_func ~classname ~loc :: xs);
+    let wrap_signal ~options ~classname (({ txt = signalname; loc }, _, kind) as _m) =
+      let _ = options in
+      match kind with
+      | Cfk_concrete _ ->
+        raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
+      | Cfk_virtual core_typ ->
+        (* stub which will be called by OCaml meth*)
+        let external_stub =
+          let open Ast_builder.Default in
+          pstr_primitive ~loc
+          @@ value_description
+               ~loc
+               ~name:(Located.mk ~loc @@ sprintf "stub_%s" signalname)
+               ~type_:[%type: [%e cppobj_coretyp loc] -> [%e core_typ]]
+               ~prim:[ sprintf "caml_%s_%s_emitter_wrapper" classname signalname ]
         in
-        { pstr_desc; pstr_loc = loc }
-      in
-      Gencpp.ref_append ~set:heading external_stub;
-      (* C++ stub *)
-      let types = eval_signal_typ core_typ in
-      let args, res = List.(drop_last_exn types, last_exn types) in
-      if Stdlib.(snd res <> TypeRepr.Arg.Unit)
-      then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
-      assert (Stdlib.(fst res = Nolabel));
-      (* last argument always will be without a label, isn't it? *)
-      if List.exists ~f:(fun (label, _) -> Stdlib.( = ) label Nolabel) args
-      then raise @@ ErrorMsg ("All arguments should have a label", loc);
-      if config.gencpp
-      then
-        Gencpp.gen_signal ~classname ~signalname
-        @@ List.map
-             ~f:(fun (l, x) -> oldify_arg_label l, (x :> Arg.non_cppobj Arg.t))
-             args;
-      (* OCaml meth *)
-      let open Ast_helper in
-      let e =
-        Exp.(
-          poly
-            (apply
-               (ident (Located.mk ~loc (Lident ("stub_" ^ signalname))))
-               [ Nolabel, [%expr self#handler] ])
-            None)
-      in
-      [ (Cf.method_
-           (Located.mk ~loc ("emit_" ^ signalname))
-           Public
-           (Cfk_concrete (Fresh, e)))
-          .pcf_desc
-      ]
-  in
-  let wrap_prop ~classname (loc, flag, kind) =
-    let propname = loc.txt in
-    let loc = loc.loc in
-    match kind with
-    | Cfk_concrete _ ->
-      raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
-    | Cfk_virtual core_typ ->
-      (match type_suits_prop core_typ with
-      | Ok typ ->
-        if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
-        let signal_name = Names.signal_of_prop propname in
-        ref_append
-          ~set:heading
-          (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
+        Gencpp.ref_append ~set:heading external_stub;
+        (* C++ stub *)
+        let types = eval_signal_typ core_typ in
+        let args, res = List.(drop_last_exn types, last_exn types) in
+        if Stdlib.(snd res <> TypeRepr.Arg.Unit)
+        then raise @@ ErrorMsg ("Result type for signal should be unit", loc);
+        assert (Stdlib.(fst res = Nolabel));
+        (* last argument always will be without a label, isn't it? *)
+        if List.exists ~f:(fun (label, _) -> Stdlib.( = ) label Nolabel) args
+        then raise @@ ErrorMsg ("All arguments should have a label", loc);
+        if config.gencpp
+        then
+          Gencpp.gen_signal ~classname ~signalname
+          @@ List.map
+               ~f:(fun (l, x) -> oldify_arg_label l, (x :> Arg.non_cppobj Arg.t))
+               args;
+        (* OCaml meth *)
         let open Ast_helper in
         let e =
           Exp.(
             poly
               (apply
-                 (ident (mkloc (Lident ("stub_" ^ signal_name)) loc))
+                 (ident (Located.mk ~loc (Lident ("stub_" ^ signalname))))
                  [ Nolabel, [%expr self#handler] ])
               None)
         in
         [ (Cf.method_
-             (mkloc ("emit_" ^ signal_name) loc)
+             (Located.mk ~loc ("emit_" ^ signalname))
              Public
              (Cfk_concrete (Fresh, e)))
             .pcf_desc
-        ; Pcf_method
-            ( Located.mk ~loc (Gencpp.Names.getter_of_prop propname)
-            , flag
-            , Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp loc) core_typ) )
         ]
-      | Error msg ->
-        raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc))
-  in
-  let wrap_field (f_desc : class_field) : class_field list =
-    let ans =
-      match f_desc.pcf_desc with
-      | Pcf_method m when has_attr "qtmeth" f_desc.pcf_attributes ->
-        wrap_meth ~options ~classname m
-      | Pcf_method m when has_attr "qtsignal" f_desc.pcf_attributes ->
-        wrap_signal ~options ~classname m
-      | Pcf_method m when has_attr "qtprop" f_desc.pcf_attributes ->
-        wrap_prop ~classname m
-      | _ -> []
     in
-    List.map ~f:(fun ans -> { f_desc with pcf_desc = ans }) ans
-  in
-  let itemmodel_meths =
-    if has_attr "itemmodel" attributes
-    then (
-      let f (methname, meth_typ, minfo) =
-        (* printf "Generating itemmodel-specific meth: '%s'\n" methname; *)
-        if config.gencpp then Gencpp.gen_meth ~classname ~methname ~minfo meth_typ
-      in
-      if config.gencpp then List.iter ~f Gencpp.itemmodel_members;
-      (* now add some OCaml code *)
-      let f (name, stub_name, xs) =
-        let typnames = List.map xs ~f:TypeRepr.ocaml_ast_of_typ in
-        ref_append ~set:heading
-        @@ make_stub_general ~loc ~typnames ~name:("stub_" ^ name) ~stub_name
-      in
-      List.iter (Gencpp.itemmodel_externals ~classname) ~f;
-      let () = if config.gencpp then Gencpp.gen_itemmodel_stuff ~classname in
-      let add_role_stub =
-        let name = { txt = "add_role"; loc } in
-        let prim = [ sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole" ] in
-        let type_ = [%type: 'a -> int -> string -> unit] in
-        Ast_builder.Default.pstr_primitive ~loc
-        @@ Ast_builder.Default.value_description ~loc ~name ~type_ ~prim
-      in
-      ref_append add_role_stub ~set:heading;
-      let f name =
-        let open Ast_helper in
-        let e =
-          Exp.(
-            poly
-              (apply
-                 (ident (mkloc (Lident ("stub_" ^ name)) loc))
-                 [ Nolabel, [%expr cppobj] ])
-              None)
-        in
-        Cf.method_ (mkloc name loc) Public (Cfk_concrete (Fresh, e))
-      in
-      let emitters =
-        List.map
-          ~f
-          [ "dataChanged"
-          ; "beginInsertRows"
-          ; "endInsertRows"
-          ; "beginRemoveRows"
-          ; "endRemoveRows"
+    let wrap_prop ~classname (loc, flag, kind) =
+      let propname = loc.txt in
+      let loc = loc.loc in
+      match kind with
+      | Cfk_concrete _ ->
+        raise @@ ErrorMsg ("We can generate prop methods for virtuals only", loc)
+      | Cfk_virtual core_typ ->
+        (match type_suits_prop core_typ with
+        | Ok typ ->
+          if config.gencpp then Gencpp.gen_prop ~classname ~propname typ;
+          let signal_name = Names.signal_of_prop propname in
+          ref_append
+            ~set:heading
+            (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
+          let open Ast_helper in
+          let e =
+            Exp.(
+              poly
+                (apply
+                   (ident (mkloc (Lident ("stub_" ^ signal_name)) loc))
+                   [ Nolabel, [%expr self#handler] ])
+                None)
+          in
+          [ (Cf.method_
+               (mkloc ("emit_" ^ signal_name) loc)
+               Public
+               (Cfk_concrete (Fresh, e)))
+              .pcf_desc
+          ; Pcf_method
+              ( Located.mk ~loc (Gencpp.Names.getter_of_prop propname)
+              , flag
+              , Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp loc) core_typ) )
           ]
+        | Error msg ->
+          raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc))
+    in
+    let wrap_field (f_desc : class_field) : class_field list =
+      let ans =
+        match f_desc.pcf_desc with
+        | Pcf_method m when has_attr "qtmeth" f_desc.pcf_attributes ->
+          wrap_meth ~options ~classname m
+        | Pcf_method m when has_attr "qtsignal" f_desc.pcf_attributes ->
+          wrap_signal ~options ~classname m
+        | Pcf_method m when has_attr "qtprop" f_desc.pcf_attributes ->
+          wrap_prop ~classname m
+        | _ -> []
       in
-      let virtuals =
-        [ make_virt_meth [ Arg.QModelIndex; Arg.QModelIndex ] ~loc ~name:"parent"
-        ; make_virt_meth
-            [ Arg.Int; Arg.Int; Arg.QModelIndex; Arg.QModelIndex ]
-            ~loc
-            ~name:"index"
-        ; make_virt_meth [ Arg.QModelIndex; Arg.Int ] ~loc ~name:"columnCount"
-        ; make_virt_meth [ Arg.QModelIndex; Arg.Int ] ~loc ~name:"rowCount"
-        ; make_virt_meth [ Arg.QModelIndex; Arg.Bool ] ~loc ~name:"hasChildren"
-        ; make_virt_meth [ Arg.QModelIndex; Arg.Int; Arg.QVariant ] ~loc ~name:"data"
-        ]
-      in
-      emitters @ virtuals)
-    else []
-  in
-  let new_fields = (fields |> List.map ~f:wrap_field |> List.concat) @ itemmodel_meths in
-  let new_fields = make_initializer ~loc :: make_handler_meth ~loc :: new_fields in
-  let new_desc =
-    Pcl_structure
-      { pcstr_fields = new_fields; pcstr_self = Ast_helper.Pat.var (mkloc "self" loc) }
-  in
-  let new_expr = { ci.pci_expr with pcl_desc = new_desc } in
-  let new_desc2 =
-    Pcl_fun (Nolabel, None, Ast_helper.Pat.var (mkloc "cppobj" loc), new_expr)
-  in
-  let new_expr2 = { new_expr with pcl_desc = new_desc2 } in
-  let ans =
-    { pstr_desc =
-        Pstr_class [ { { ci with pci_expr = new_expr2 } with pci_attributes = [] } ]
-    ; pstr_loc = loc
-    }
-  in
-  let creator = make_creator ~loc ~classname in
-  if config.gencpp then Gencpp.close_files ~options ();
-  !heading @ [ ans; creator ]
-;;
+      List.map ~f:(fun ans -> { f_desc with pcf_desc = ans }) ans
+    in
+    let itemmodel_meths =
+      if has_attr "itemmodel" attributes
+      then (
+        let f (methname, meth_typ, minfo) =
+          (* printf "Generating itemmodel-specific meth: '%s'\n" methname; *)
+          if config.gencpp then Gencpp.gen_meth ~classname ~methname ~minfo meth_typ
+        in
+        if config.gencpp then List.iter ~f Gencpp.itemmodel_members;
+        (* now add some OCaml code *)
+        let f (name, stub_name, xs) =
+          let typnames = List.map xs ~f:TypeRepr.ocaml_ast_of_typ in
+          ref_append ~set:heading
+          @@ make_stub_general ~loc ~typnames ~name:("stub_" ^ name) ~stub_name
+        in
+        List.iter (Gencpp.itemmodel_externals ~classname) ~f;
+        let () = if config.gencpp then Gencpp.gen_itemmodel_stuff ~classname in
+        let add_role_stub =
+          let name = Located.mk ~loc "add_role" in
+          let prim = [ sprintf "caml_%s_%s_cppmeth_wrapper" classname "addRole" ] in
+          let type_ = [%type: 'a -> int -> string -> unit] in
+          Ast_builder.Default.pstr_primitive ~loc
+          @@ Ast_builder.Default.value_description ~loc ~name ~type_ ~prim
+        in
+        ref_append add_role_stub ~set:heading;
+        let f name =
+          let open Ast_helper in
+          let e =
+            Exp.(
+              poly
+                (apply
+                   (ident (mkloc (Lident ("stub_" ^ name)) loc))
+                   [ Nolabel, [%expr cppobj] ])
+                None)
+          in
+          Cf.method_ (mkloc name loc) Public (Cfk_concrete (Fresh, e))
+        in
+        let emitters =
+          List.map
+            ~f
+            [ "dataChanged"
+            ; "beginInsertRows"
+            ; "endInsertRows"
+            ; "beginRemoveRows"
+            ; "endRemoveRows"
+            ]
+        in
+        let virtuals =
+          [ make_virt_meth [ Arg.QModelIndex; Arg.QModelIndex ] ~loc ~name:"parent"
+          ; make_virt_meth
+              [ Arg.Int; Arg.Int; Arg.QModelIndex; Arg.QModelIndex ]
+              ~loc
+              ~name:"index"
+          ; make_virt_meth [ Arg.QModelIndex; Arg.Int ] ~loc ~name:"columnCount"
+          ; make_virt_meth [ Arg.QModelIndex; Arg.Int ] ~loc ~name:"rowCount"
+          ; make_virt_meth [ Arg.QModelIndex; Arg.Bool ] ~loc ~name:"hasChildren"
+          ; make_virt_meth [ Arg.QModelIndex; Arg.Int; Arg.QVariant ] ~loc ~name:"data"
+          ]
+        in
+        emitters @ virtuals)
+      else []
+    in
+    let new_fields = List.concat_map fields ~f:wrap_field @ itemmodel_meths in
+    let new_fields = make_initializer ~loc :: make_handler_meth ~loc :: new_fields in
+    let new_expr =
+      let open Ast_builder.Default in
+      pcl_fun ~loc Nolabel None [%pat? cppobj]
+      @@ pcl_structure ~loc
+      @@ class_structure ~self:[%pat? self] ~fields:new_fields
+    in
+    (* let new_desc2 =
+      Pcl_fun (Nolabel, None, Ast_helper.Pat.var (mkloc "cppobj" loc), new_expr)
+    in
+    let new_expr2 = { new_expr with pcl_desc = new_desc2 } in *)
+    let ans =
+      pstr_class ~loc [ { ci with pci_expr = new_expr } ]
+      (*     { pstr_desc =
+          Pstr_class [ { { ci with pci_expr = new_expr2 } with pci_attributes = [] } ]
+      ; pstr_loc = loc
+      } *)
+    in
+    let creator = make_creator ~loc ~classname in
+    if config.gencpp then Gencpp.close_files ~options ();
+    !heading @ [ ans; creator ]
+  ;;
+end
 
 let () =
   Ppxlib.Driver.register_transformation
@@ -412,8 +415,7 @@ let () =
                           if has_attr "qtclass" cinfo.pci_attributes
                           then
                             Ast_helper.with_default_loc si.pstr_loc (fun () ->
-                                wrap_class_decl
-                                  ~destdir:config.destdir
+                                OfClass.run
                                   ~attributes:cinfo.pci_attributes
                                   si.pstr_loc
                                   cinfo)

@@ -18,9 +18,18 @@ ApplicationWindow {
             Qt.quit();
         }
 
-         Text {
+        Label {
+          id: text1
           anchors.centerIn: parent
           text: Singleton1.someProperty
+          font.pixelSize: 22
+        }
+
+        Label {
+          anchors.top: text1.bottom
+          anchors.left: text1.left
+          text: controller.descr
+          font.pixelSize: 22
         }
     }
     Component.onCompleted: console.log(Singleton1.someProperty)
