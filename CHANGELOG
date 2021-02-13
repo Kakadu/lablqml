@@ -1,3 +1,12 @@
+0.7 (Working version)
+
+* Add new PPX annotation for Qt 5.15. Now we can create QML singletons and other items with less boilerplate due to [changes in Qt](https://www.qt.io/blog/qml-type-registration-in-qt-5.15).
+
+
+0.6.2
+
+Migration to dune and other libraries. No new features.
+
 0.5.1
 Update for OCaml 4.05
 
