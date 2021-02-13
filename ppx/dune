@@ -1,8 +1,8 @@
 (library
  (name ppx_qt_rewriter)
- (modules gencpp ppx_qt TypeRepr ppxQtCfg generation2)
+ (modules Gencpp TypeRepr ppxQtCfg generation2 Ppx_qt)
  (public_name lablqml.ppx)
- (libraries unix base stdio ppxlib ppxlib.metaquot myparser)
+ (libraries unix base stdio ppxlib myparser)
  (kind ppx_rewriter)
  (preprocess
   (pps

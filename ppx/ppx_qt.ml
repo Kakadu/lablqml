@@ -13,108 +13,81 @@ let int_coretyp loc = make_coretyp ~loc (Lident "int")
 let string_coretyp loc = make_coretyp ~loc (Lident "string")
 
 let make_store_func ~loc ~classname : structure_item =
-  let pval_name = { txt = "store"; loc } in
   let pval_prim = [ sprintf "caml_store_value_in_%s" classname ] in
   let pval_type =
-    Ast_helper.Typ.(
-      arrow
-        Nolabel
-        (cppobj_coretyp loc)
-        (arrow
-           Nolabel
-           (object_ ~loc [] Open)
-           (constr ~loc { txt = Lident "unit"; loc } [])))
+    [%type:
+      t Lablqml.cppobj
+      -> [%t ptyp_object ~loc [] Open]
+      -> [%t ptyp_constr ~loc { txt = Lident "unit"; loc } []]]
   in
-  let pstr_desc =
-    Pstr_primitive
-      { pval_name; pval_type; pval_prim; pval_attributes = []; pval_loc = loc }
-  in
-  { pstr_desc; pstr_loc = loc }
+  pstr_primitive ~loc
+  @@ value_description
+       ~loc
+       ~name:(Located.mk ~loc "store")
+       ~type_:pval_type
+       ~prim:pval_prim
 ;;
 
 let make_stub_general ~loc ~typnames ~name ~stub_name =
-  let pval_prim = [ stub_name ] in
-  let pval_name = { txt = name; loc } in
   let rec helper = function
     | [] -> assert false
-    | [ txt ] -> Ast_helper.Typ.constr ~loc { txt; loc } []
-    | txt :: xs ->
-      Ast_helper.Typ.(arrow Nolabel (constr ~loc { txt; loc } []) (helper xs))
+    | [ txt ] -> ptyp_constr ~loc { txt; loc } []
+    | txt :: xs -> [%type: [%t ptyp_constr ~loc { txt; loc } []] -> [%t helper xs]]
   in
   let pval_type = helper typnames in
-  let pstr_desc =
-    Pstr_primitive
-      { pval_name; pval_type; pval_prim; pval_attributes = []; pval_loc = loc }
-  in
-  { pstr_desc; pstr_loc = loc }
+  pstr_primitive ~loc
+  @@ value_description
+       ~loc
+       ~name:(Located.mk ~loc name)
+       ~type_:pval_type
+       ~prim:[ stub_name ]
 ;;
 
 let make_creator ~loc ~classname =
-  let pval_prim = [ sprintf "caml_create_%s" classname ] in
-  let pval_name = { txt = sprintf "create_%s" classname; loc } in
-  let pval_type =
-    Ast_helper.Typ.(
-      arrow Nolabel (constr ~loc { txt = Lident "unit"; loc } []) (var ~loc "a"))
-  in
-  let pstr_desc =
-    Pstr_primitive
-      { pval_name; pval_type; pval_prim; pval_attributes = []; pval_loc = loc }
-  in
-  { pstr_desc; pstr_loc = loc }
+  pstr_primitive ~loc
+  @@ value_description
+       ~loc
+       ~name:(Located.mk ~loc @@ sprintf "create_%s" classname)
+       ~type_:[%type: unit -> 'a]
+       ~prim:[ sprintf "caml_create_%s" classname ]
 ;;
 
 let make_stub_for_signal ~classname ~loc ~typ name : structure_item =
-  (*  let open Ast_helper in*)
-  let pval_name = { txt = "stub_" ^ name; loc } in
+  (*   let pval_name = { txt = "stub_" ^ name; loc } in
   let pval_prim = [ sprintf "caml_%s_%s_cppmeth_wrapper" classname name ] in
-  let pval_type =
-    Ast_helper.Typ.(
-      arrow
-        Nolabel
-        (cppobj_coretyp loc)
-        (arrow Nolabel typ (constr ~loc { txt = Lident "unit"; loc } [])))
-  in
+  let pval_type = [%type: _ Lablqml.cppobj -> [%t typ] -> unit] in
   let pstr_desc =
     Pstr_primitive
       { pval_name; pval_type; pval_prim; pval_attributes = []; pval_loc = loc }
   in
-  { pstr_desc; pstr_loc = loc }
+  { pstr_desc; pstr_loc = loc } *)
+  pstr_primitive ~loc
+  @@ value_description
+       ~loc
+       ~name:(Located.mk ~loc @@ sprintf "stub_%s" name)
+       ~type_:[%type: _ Lablqml.cppobj -> [%t typ] -> unit]
+       ~prim:[ sprintf "caml_%s_%s_cppmeth_wrapper" classname name ]
 ;;
 
 let make_virt_meth ~loc ~name xs =
-  let open Ast_helper in
   let rec helper = function
     | [] -> assert false
-    | [ t ] -> Typ.constr ~loc { txt = TypeRepr.ocaml_ast_of_typ t; loc } []
+    | [ t ] -> ptyp_constr ~loc { txt = TypeRepr.ocaml_ast_of_typ t; loc } []
     | t :: xs ->
-      Typ.(
-        arrow
-          Nolabel
-          (constr ~loc { txt = TypeRepr.ocaml_ast_of_typ t; loc } [])
-          (helper xs))
+      [%type:
+        [%t ptyp_constr ~loc (Located.mk ~loc @@ TypeRepr.ocaml_ast_of_typ t) []]
+        -> [%t helper xs]]
   in
   let typ = helper xs in
-  Cf.method_ (Located.mk name ~loc) Public (Cfk_virtual typ)
+  pcf_method ~loc (Located.mk name ~loc, Public, Cfk_virtual typ)
 ;;
 
 let mkloc x loc = Located.mk ~loc x
-
-let make_initializer ~loc : class_field =
-  (*  let pexp_desc = Ast_helper.Exp.(
-    apply (ident (mkloc (Lident "store") loc))
-          [ (Nolabel, ident (mkloc (Lident "cppobj") loc))
-          ; (Nolabel, ident (mkloc (Lident "self") loc))
-          ]
-          )
-  in (* TODO: *)
-  *)
-  let pcf_desc = Pcf_initializer [%expr store cppobj self] in
-  { pcf_desc; pcf_loc = loc; pcf_attributes = [] }
-;;
+let make_initializer ~loc : class_field = pcf_initializer ~loc [%expr store cppobj self]
 
 let make_handler_meth ~loc : class_field =
   let e = [%expr cppobj] in
-  Ast_helper.(Cf.method_ (Located.mk "handler" ~loc) Public (Cfk_concrete (Fresh, e)))
+  pcf_method ~loc (Located.mk "handler" ~loc, Public, Cfk_concrete (Fresh, e))
 ;;
 
 let eval_meth_typ t =
@@ -153,15 +126,16 @@ let wrap_meth ~classname ?(options = []) (({ txt = methname; loc }, _, kind) as 
           ~methname
           (meth_typ :> Arg.non_cppobj Arg.t list))
     in
-    [ Pcf_method m ]
+    [ pcf_method ~loc m ]
 ;;
 
+(*
 (* in 4.03 definition have changed from string to Ast_types.arg_label *)
 let oldify_arg_label = function
   | Nolabel -> ""
   | Labelled s -> s
   | Optional s -> s
-;;
+;; *)
 
 module OfClass = struct
   let run ~attributes loc (ci : class_declaration) =
@@ -181,8 +155,7 @@ module OfClass = struct
         raise @@ ErrorMsg ("Qt class signature should be structure of class", ci.pci_loc)
     in
     let fields : class_field list = clas_sig.pcstr_fields in
-    let heading = ref [] in
-    Ref.replace heading (fun xs -> make_store_func ~classname ~loc :: xs);
+    let heading = ref [ [%stri type t]; make_store_func ~classname ~loc ] in
     let wrap_signal ~options ~classname (({ txt = signalname; loc }, _, kind) as _m) =
       let _ = options in
       match kind with
@@ -196,7 +169,7 @@ module OfClass = struct
           @@ value_description
                ~loc
                ~name:(Located.mk ~loc @@ sprintf "stub_%s" signalname)
-               ~type_:[%type: [%e cppobj_coretyp loc] -> [%e core_typ]]
+               ~type_:[%type: [%e t Lablqml.cppobj loc] -> [%e core_typ]]
                ~prim:[ sprintf "caml_%s_%s_emitter_wrapper" classname signalname ]
         in
         Gencpp.ref_append ~set:heading external_stub;
@@ -212,24 +185,20 @@ module OfClass = struct
         if config.gencpp
         then
           Gencpp.gen_signal ~classname ~signalname
-          @@ List.map
-               ~f:(fun (l, x) -> oldify_arg_label l, (x :> Arg.non_cppobj Arg.t))
-               args;
+          @@ List.map ~f:(fun (l, x) -> l, (x :> Arg.non_cppobj Arg.t)) args;
         (* OCaml meth *)
-        let open Ast_helper in
         let e =
-          Exp.(
-            poly
-              (apply
-                 (ident (Located.mk ~loc (Lident ("stub_" ^ signalname))))
-                 [ Nolabel, [%expr self#handler] ])
-              None)
+          pexp_poly
+            ~loc
+            (pexp_apply
+               ~loc
+               (pexp_ident ~loc (Located.mk ~loc (Lident ("stub_" ^ signalname))))
+               [ Nolabel, [%expr self#handler] ])
+            None
         in
-        [ (Cf.method_
-             (Located.mk ~loc ("emit_" ^ signalname))
-             Public
-             (Cfk_concrete (Fresh, e)))
-            .pcf_desc
+        [ pcf_method
+            ~loc
+            (Located.mk ~loc ("emit_" ^ signalname), Public, Cfk_concrete (Fresh, e))
         ]
     in
     let wrap_prop ~classname (loc, flag, kind) =
@@ -248,19 +217,19 @@ module OfClass = struct
             (make_stub_for_signal ~classname ~loc ~typ:core_typ signal_name);
           let open Ast_helper in
           let e =
-            Exp.(
-              poly
-                (apply
-                   (ident (mkloc (Lident ("stub_" ^ signal_name)) loc))
-                   [ Nolabel, [%expr self#handler] ])
-                None)
+            pexp_poly
+              ~loc
+              (pexp_apply
+                 ~loc
+                 (pexp_ident ~loc (Located.mk ~loc @@ lident ("stub_" ^ signal_name)))
+                 [ Nolabel, [%expr self#handler] ])
+              None
           in
-          [ (Cf.method_
-               (mkloc ("emit_" ^ signal_name) loc)
-               Public
-               (Cfk_concrete (Fresh, e)))
-              .pcf_desc
-          ; Pcf_method
+          [ pcf_method
+              ~loc
+              (Located.mk ~loc ("emit_" ^ signal_name), Public, Cfk_concrete (Fresh, e))
+          ; pcf_method
+              ~loc
               ( Located.mk ~loc (Gencpp.Names.getter_of_prop propname)
               , flag
               , Cfk_virtual Ast_helper.Typ.(arrow Nolabel (unit_coretyp loc) core_typ) )
@@ -269,17 +238,14 @@ module OfClass = struct
           raise @@ ErrorMsg (sprintf "Can't wrap property '%s': %s" propname msg, loc))
     in
     let wrap_field (f_desc : class_field) : class_field list =
-      let ans =
-        match f_desc.pcf_desc with
-        | Pcf_method m when has_attr "qtmeth" f_desc.pcf_attributes ->
-          wrap_meth ~options ~classname m
-        | Pcf_method m when has_attr "qtsignal" f_desc.pcf_attributes ->
-          wrap_signal ~options ~classname m
-        | Pcf_method m when has_attr "qtprop" f_desc.pcf_attributes ->
-          wrap_prop ~classname m
-        | _ -> []
-      in
-      List.map ~f:(fun ans -> { f_desc with pcf_desc = ans }) ans
+      match f_desc.pcf_desc with
+      | Pcf_method m when has_attr "qtmeth" f_desc.pcf_attributes ->
+        wrap_meth ~options ~classname m
+      | Pcf_method m when has_attr "qtsignal" f_desc.pcf_attributes ->
+        wrap_signal ~options ~classname m
+      | Pcf_method m when has_attr "qtprop" f_desc.pcf_attributes ->
+        wrap_prop ~classname m
+      | _ -> []
     in
     let itemmodel_meths =
       if has_attr "itemmodel" attributes

@@ -3,15 +3,17 @@ type t
 val get_view_exn : name:string -> t
 val get_view : name:string -> t option
 
-type cppobj
+type 'a cppobj
 
-val set_context_property : ctx:t -> name:string -> cppobj -> unit
+val set_context_property : ctx:t -> name:string -> _ cppobj -> unit
 
 module QVariant : sig
+  type wrap_cppobj = { obj : 'a. 'a cppobj }
+
   type t =
     [ `empty
     | `string of string
-    | `qobject of cppobj
+    | `qobject of wrap_cppobj
     | `int of int
     | `bool of bool
     | `float of float
@@ -19,7 +21,7 @@ module QVariant : sig
 
   val empty : t
   val of_string : string -> t
-  val of_object : cppobj -> t
+  val of_object : 'a cppobj -> t
   val of_int : int -> t
   val of_bool : bool -> t
   val of_float : float -> t
@@ -80,11 +82,11 @@ module QQmlAppEngine : sig
 
   (* Use this function to get access to functions from QQmlEngine module *)
   val to_QQmlEngine : t -> QQmlEngine.t
-  val root_named : t -> string -> cppobj
+  val root_named : t -> string -> 'a cppobj
 end
 
-val object_child_named : cppobj -> string -> cppobj
-val object_property_named : cppobj -> string -> cppobj
+val object_child_named : 'a cppobj -> string -> 'a cppobj
+val object_property_named : 'a cppobj -> string -> 'a cppobj
 
 (** Creates QGuiApplication and QQmlApplicationEngine. *)
 val create_app_engine : string array -> string -> QGuiApplication.t * QQmlAppEngine.t
@@ -123,7 +125,7 @@ class virtual ['valtyp] qvariant_prop :
 module PropMap : sig
   type t
 
-  val handler : t -> cppobj
+  val handler : t -> 'a cppobj
   val create : ?callback:(string -> QVariant.t -> unit) -> unit -> t
   val insert : t -> name:string -> QVariant.t -> unit
   val value_ : t -> string -> QVariant.t
@@ -133,13 +135,13 @@ module OCamlObject : sig
   type t
   type variant_fn_t = QVariant.t -> unit
 
-  val binding : ?create:bool -> cppobj -> string -> variant_fn_t -> t
+  val binding : ?create:bool -> 'a cppobj -> string -> variant_fn_t -> t
   val write : obj:t -> QVariant.t -> bool
 end
 
 module SingleFunc : sig
   type t
 
-  val handler : t -> cppobj
+  val handler : t -> 'a cppobj
   val create : (unit -> unit) -> t
 end

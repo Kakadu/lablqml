@@ -1,3 +1,5 @@
 ;(ignored_subdirs (demos) )
 
-(dirs config lib ppx doc dune_test hack)
+; (dirs config lib ppx doc dune_test hack ppx_inline_test)
+
+(dirs :standard \ demos)

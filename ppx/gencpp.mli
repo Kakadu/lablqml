@@ -27,7 +27,7 @@ val gen_meth
 val gen_signal
   :  classname:string
   -> signalname:string
-  -> (string * Arg.non_cppobj Arg.t) list
+  -> (Ppxlib.arg_label * Arg.non_cppobj Arg.t) list
   -> unit
 
 val alloc_and_store

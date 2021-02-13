@@ -252,9 +252,10 @@ module OnSingleton = struct
       List.concat
         [ (if creation
           then
-            [ [%stri type t = Lablqml.cppobj]
+            [ [%stri type t]
             ; [%stri
-                let self_container : (t, [< `Noninitialized ]) Result.t ref =
+                let self_container : (t Lablqml.cppobj, [< `Noninitialized ]) Result.t ref
+                  =
                   ref (Result.error `Noninitialized)
                 ;;]
             ; (let stub_name = creation_callback ~classname in
@@ -283,7 +284,7 @@ module OnSingleton = struct
                          ~name:(Located.mk ~loc notifier)
                          ~type_:
                            [%type:
-                             Lablqml.cppobj
+                             t Lablqml.cppobj
                              -> [%t ptyp_constr ~loc (Located.mk ~loc @@ Lident ptyp) []]
                              -> unit]
                          ~prim:[ stub_name ]
@@ -321,7 +322,9 @@ module OnSingleton = struct
     let extra_sign =
       Stdlib.List.flatten
         [ [ [%sigi: type t] ]
-        ; [ [%sigi: val self_container : (t, [ `Noninitialized ]) Result.t ref] ]
+        ; [ [%sigi:
+              val self_container : (t Lablqml.cppobj, [ `Noninitialized ]) Result.t ref]
+          ]
         ; List.concat_map info.props ~f:(fun (_, ptyp, info) ->
               Stdlib.List.flatten
                 [ (match info.p_notify with
@@ -338,7 +341,7 @@ module OnSingleton = struct
                          ~name:(Located.mk ~loc notifier)
                          ~type_:
                            [%type:
-                             t
+                             t Lablqml.cppobj
                              -> [%t ptyp_constr ~loc (Located.mk ~loc @@ Lident ptyp) []]
                              -> unit]
                          ~prim:[ stub_name ])

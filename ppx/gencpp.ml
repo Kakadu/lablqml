@@ -56,7 +56,7 @@ let print_time ppf =
   fprintfn ppf " */"
 ;;
 
-let ref_append ~set x = set := x :: !set
+let ref_append ~set x = set := !set @ [ x ]
 
 module Ref = struct
   include Ref
@@ -785,7 +785,15 @@ let gen_signal ~classname ~signalname types' =
   let println fmt = fprintfn ppf fmt in
   println "signals:";
   let types = List.map types ~f:wrap_typ_simple in
-  let f t name = sprintf "%s %s" (cpptyp_of_typ t) name in
+  let f t lab =
+    let name =
+      match lab with
+      | Nolabel -> ""
+      | Labelled s -> s
+      | Optional s -> s
+    in
+    sprintf "%s %s" (cpptyp_of_typ t) name
+  in
   println "  void %s(%s);" signalname (List.map2_exn ~f types argnames |> String.concat);
   let stubname : string = sprintf "caml_%s_%s_emitter_wrapper" classname signalname in
   let ppf = get_source_ppf ~classname in

@@ -31,7 +31,7 @@
     MyControls)))
  (foreign_stubs
   (language cxx)
-  (names qrc_resources proj2_qmltyperegistrations)
+  (names qrc_resources proj2_qmltyperegistrations) ;; TODO: It iseems dune doesn't know about these two dependecies
   (flags
    ((:include %{project_root}/config/c_flags.sexp)
     -fPIC
