@@ -39,12 +39,22 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
 
+      - name: Retrieve date for cache key
+        id: cache-key
+        run: echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
+        shell: bash
+
+      - name: Restore opam cache
+        id: opam-cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.opam"
+          # invalidate cache daily, gets built daily using a scheduled job
+          key: ${{ steps.cache-key.outputs.date }}
+
       - run: sudo add-apt-repository ppa:beineri/opt-qt-5.15.2-focal
       - run: sudo apt install qt515quickcontrols2 libgl-dev --no-install-recommends --yes
-      #- run: sh -x ./qt515-env.sh
-      - run: . ./qt515-env.sh #|| echo "Intentionally ignore exit code 1"
-      #- run: which qmake || echo "Just for debug"
-      #- run: echo $QT_BASE_DIR || echo "Just for debug"
+      #- run: . ./qt515-env.sh
 
       - run: sh -c '. ./qt515-env.sh && opam pin add conf-qt.dev . --no-action'
       - run: sh -c '. ./qt515-env.sh && opam depext conf-qt.dev --yes'
