@@ -7,7 +7,7 @@
  (preprocess
   (pps
    ppxlib.metaquot
-   ppx_deriving.show
+   ppx_show
    ppx_string_interpolation
    ppx_inline_test))
  (flags

@@ -3,9 +3,11 @@
   (public_name lablqml.myparser)
 
   (modules testdemo testdemo2)
-  (libraries ppxlib ppxlib.metaquot )
+  (libraries ppxlib ppxlib.metaquot ppx_show.runtime)
   (flags (:standard -warn-error -A -w -9-3))
 
   (inline_tests)
-  (preprocess (pps ppxlib.metaquot ppx_deriving.show ppx_inline_test))
+  (preprocess (pps ppxlib.metaquot
+    ppx_show
+    ppx_inline_test))
 )
