@@ -27,7 +27,7 @@ depends: [
   "ppxlib"   					{ >= "0.20.0" & < "0.22.0" }
   "conf-qt"           { >= "5.2.1" & build }
   "conf-pkg-config"   { build }
-	"ppx_deriving"
+	"ppx_show"
   "ppx_inline_test"
   "ppx_string_interpolation"
 ]
