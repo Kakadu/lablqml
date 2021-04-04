@@ -67,7 +67,7 @@ See `demos/` for examples
 ### Minimal ocamlfind-based helloworld
 
     ➜  cat a.ml
-```
+```ocaml
 open Lablqml
 
 let main () = ()
@@ -76,7 +76,7 @@ let () =
 ```
 
     ➜  cat Root.qml
-```
+```qml
 import QtQuick 2.0
 import QtQuick.Controls 1.0
 
