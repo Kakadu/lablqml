@@ -35,7 +35,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
+        uses: avsm/setup-ocaml@v2
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
 
@@ -70,6 +70,6 @@ jobs:
         run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest -p lablqml'
 
       - name: Building lablqml demos
-        run: sh -c '. ./qt515-env.sh && opam exec -- dune build -p lablqmlDemos'
+        run: sh -c '. ./qt515-env.sh && opam exec -- dune build -p lablqml,lablqmlDemos'
       - name: Testing lablqml demos
-        run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest -p lablqmlDemos'
+        run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest -p lablqml,lablqmlDemos'
