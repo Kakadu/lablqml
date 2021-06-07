@@ -1,0 +1,62 @@
+(library
+ (public_name app.MyControls)
+ (name MyControls)
+ (modules MyControls)
+ (libraries lablqml )
+ (preprocess
+  (per_module
+   ((pps lablqml.ppx)
+    MyControls)))
+)
+
+
+(library
+ (name mystubs_dune_hack)
+ (modules)
+ (foreign_stubs
+  (language cxx)
+  (names Singleton1_c moc_Singleton1_c myslider_c moc_myslider_c)
+  (flags
+   ((:include %{project_root}/config/c_flags.sexp)
+    -fPIC
+    -std=c++11
+    -I.
+    -O3)))
+ (install_c_headers Singleton1))
+
+
+(rule
+ (targets moc_Singleton1_c.cpp moc_Singleton1_c.cpp.json)
+ (deps Singleton1.h)
+ ;(enabled_if
+ ; (>= %{read:QT_VERSION.sexp} 5.15))    ;; Doesn't work
+ (action
+  (run
+   moc
+   %{read:../config/I_QT_INSTALL_HEADERS.sexp}
+   --output-json
+   %{deps}
+   -o
+   ;%{target}
+   ; TODO: wait until dune will support named targets
+   moc_Singleton1_c.cpp)))
+
+(rule
+ (targets Singleton1_c.cpp Singleton1.h)
+ (deps MyControls.ml)
+ (action
+  (run lablqml.pp_qt -ext cpp %{deps})))
+
+;; adding old style examples
+
+(rule
+ (targets moc_myslider_c.cpp)
+ (deps myslider.h)
+ (action
+  (run moc %{deps} -o %{targets})))
+
+(rule
+ (targets myslider_c.cpp myslider.h)
+ (deps MyControls.ml)
+ (action
+  (run lablqml.pp_qt -ext cpp %{deps})))
