@@ -35,6 +35,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - run: sudo add-apt-repository ppa:beineri/opt-qt-5.15.2-focal
+      - run: sudo apt install qt515quickcontrols2 libgl-dev --no-install-recommends --yes
+      #- run: . ./qt515-env.sh
+
       - name: Use OCaml ${{ matrix.ocaml-version }}
         uses: avsm/setup-ocaml@v2
         with:
@@ -54,9 +58,6 @@ jobs:
           # invalidate cache daily, gets built daily using a scheduled job
           key: ${{ steps.cache-key.outputs.date }}
 
-      - run: sudo add-apt-repository ppa:beineri/opt-qt-5.15.2-focal
-      - run: sudo apt install qt515quickcontrols2 libgl-dev --no-install-recommends --yes
-      #- run: . ./qt515-env.sh
 
       - run: sh -c '. ./qt515-env.sh && opam pin add conf-qt.dev . --no-action'
       - run: sh -c '. ./qt515-env.sh && opam depext conf-qt.dev --yes'
