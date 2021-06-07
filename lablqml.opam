@@ -1,7 +1,10 @@
 opam-version: "2.0"
 maintainer:   "kakadu.hafanana@gmail.com"
 authors:      "kakadu.hafanana@gmail.com"
-homepage:     "http://kakadu.github.io/lablqt/"
+synopsis:    "OCamlfind package and PPX extension to interface OCaml and QtQuick"
+description: "Versions <= 0.4 are known as `lablqt`, >0.5 -- as `lablqml`."
+
+homepage:     "http://kakadu.github.io/lablqml/"
 bug-reports:  "https://github.com/kakadu/lablqml/issues"
 dev-repo: "git+https://github.com/Kakadu/lablqml.git"
 tags: [ "gui" "ui" "qt" ]
@@ -31,6 +34,3 @@ depends: [
   "ppx_inline_test"
   "ppx_string_interpolation"
 ]
-
-synopsis:  "OCamlfind package and PPX extension to interface OCaml and QtQuick"
-description: "Versions <= 0.4 are known as `lablqt`, >0.5 -- as `lablqml`."

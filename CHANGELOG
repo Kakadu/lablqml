@@ -1,45 +1,81 @@
-0.7 (Working version)
+## 0.7
 
-* Add new PPX annotation for Qt 5.15. Now we can create QML singletons and other items with less boilerplate due to [changes in Qt](https://www.qt.io/blog/qml-type-registration-in-qt-5.15). See `/dune_test` for an old version and `/dune_test_515` for a new one
-* requires 0.20 <= ppxlib < 0.23
+### Changed
 
+- Add new PPX annotation for Qt 5.15. Now we can create QML singletons and other items with less boilerplate due to [changes in Qt](https://www.qt.io/blog/qml-type-registration-in-qt-5.15). See `/dune_test` for an old version and `/dune_test_515` for a new one
+- requires 0.20 <= ppxlib < 0.23
 
-0.6.2
+##  0.6.2
 
-Migration to dune and other libraries. No new features.
+### Changed
 
-0.5.1
-Update for OCaml 4.05
+- Migration to dune and other libraries. No new features.
 
-0.5
-Some fixes from Orbifx
+## 0.5.1
 
-0.4
-OCaml (>= 4.03.0 compatibility).
+### Changed
+
+- Update for OCaml 4.05
+
+## 0.5
+
+### Changed
+
+- Some fixes from Orbifx
+
+## 0.4
+
+### Changed
+
+-OCaml (>= 4.03.0 compatibility).
 Other minor fixes (by request of and with help from Orbital Fox).
 
-0.3
-Massive rewrite from external specification file to PPX.
+## 0.3
 
-0.2
-Compatibility with Qt 5.2. Some minor issues fixed. Removed some dependecies
+### Changed
+
+- Massive rewrite from external specification file to PPX.
+
+## 0.2
+
+### Changed
+
+- Compatibility with Qt 5.2. Some minor issues fixed. Removed some dependecies
 (no ocamlgraph, core -> core_kernel).
 
-0.1.8
-Clearing, reorganizing repository. Removing QtGUI outdated features.
+## 0.1.8
+
+### Changed
+
+- Clearing, reorganizing repository. Removing QtGUI outdated features.
 Preparing for Qt 5.2 release.
 
-0.1.7
-Now we can statup with Rectangle {} and ApplicationWindow {} both.
+## 0.1.7
 
-0.1.6
-Now we can startup from OCaml
+### Changed
 
-0.1.5
-Added signal argnames specification
+- Now we can statup with Rectangle {} and ApplicationWindow {} both.
+
+## 0.1.6
+
+### Changed
+
+- Now we can startup from OCaml
+
+## 0.1.5
+
+### Changed
+
+- Added signal argnames specification
 
 0.1.4:
-Added signal support to mocml
+
+### Changed
+
+- Added signal support to mocml
 
 0.1.3
-First version released via OPAM
+
+### Changed
+
+- First version released via OPAM
