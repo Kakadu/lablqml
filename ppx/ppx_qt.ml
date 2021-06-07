@@ -154,7 +154,7 @@ module OfClass = struct
             pstr_primitive ~loc
             @@ value_description ~loc
                  ~name:(Located.mk ~loc @@ sprintf "stub_%s" signalname)
-                 ~type_:[%type: [%e t Lablqml.cppobj loc] -> [%e core_typ]]
+                 ~type_:[%type: t Lablqml.cppobj -> [%t core_typ]]
                  ~prim:
                    [ sprintf "caml_%s_%s_emitter_wrapper" classname signalname ]
           in

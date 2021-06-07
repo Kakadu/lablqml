@@ -23,7 +23,7 @@ $(OUT): $(GENERATED_CMX) $(GENERATED_OBJS) program.cmx libcppstubs.a
 
 .ml.cmx:
 	$(V)PATH=../../src/:$$PATH OCAMLPATH=../../lib/_build/bundle \
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT) -dsource -c $<
 
 celan: clean
 clean::

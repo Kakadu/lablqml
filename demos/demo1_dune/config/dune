@@ -1,3 +1,0 @@
-(executable
- (name discover)
- (libraries base stdio dune-configurator))
