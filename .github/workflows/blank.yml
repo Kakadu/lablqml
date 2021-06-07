@@ -64,5 +64,12 @@ jobs:
       - run: sh -c '. ./qt515-env.sh && opam depext lablqml.dev --yes --with-doc --with-test'
       - run: sh -c '. ./qt515-env.sh && opam install . --deps-only --with-doc --with-test'
 
-      - run: sh -c '. ./qt515-env.sh && opam exec -- dune build'
-      - run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest'
+      - name: Building lablqml
+        run: sh -c '. ./qt515-env.sh && opam exec -- dune build -p lablqml'
+      - name: Testing lablqml
+        run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest -p lablqml'
+
+      - name: Building lablqml demos
+        run: sh -c '. ./qt515-env.sh && opam exec -- dune build -p lablqmlDemos'
+      - name: Testing lablqml demos
+        run: sh -c '. ./qt515-env.sh && opam exec -- dune runtest -p lablqmlDemos'
