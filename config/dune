@@ -10,6 +10,7 @@
   qml_foreign_types.sexp
   moc.sexp
   rcc.sexp
+  qmltyperegistrar.sexp
   c_flags.sexp
   ocaml_qt_libs.sexp
   c_library_flags.sexp)

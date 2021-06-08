@@ -13,7 +13,7 @@ let () =
       "import_name_my_namespace.sexp"
       (sexp_of_string @@ sprintf "--import-name=%s" namespace);
 
-
+    (*
     let default : C.Pkg_config.package_conf = { libs = []; cflags = [] } in
     let conf =
       let pc =
@@ -44,6 +44,7 @@ let () =
       ans
     in
     let _ = run_qmake ~prefix:("I_", "-I") "QT_INSTALL_HEADERS" in
+    *)
     ()
   )
 ;;

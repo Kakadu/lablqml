@@ -19,7 +19,7 @@
   (names qrc_resources proj2_qmltyperegistrations)
   ;; TODO: It iseems dune doesn't know about these two dependecies
   (flags
-   ((:include %{project_root}/config/c_flags.sexp)
+   ((:include %{project_root}/../config/c_flags.sexp)
     -fPIC
     -std=c++11
     -O3)))
@@ -30,7 +30,7 @@
    -fPIC
    -cclib
    -lstdc++
-   (:include %{project_root}/config/ocaml_qt_libs.sexp)
+   (:include %{project_root}/../config/ocaml_qt_libs.sexp)
    -cclib
    -llablqml_stubs)))
 
@@ -39,7 +39,7 @@
  (deps proj2_metatypes.json)
  (action
   (run
-   qmltyperegistrar
+   %{read:../config/qmltyperegistrar.sexp}
    --generate-qmltypes=proj2.qmltypes
    %{read:config/import_name_my_namespace.sexp}
    --major-version=1
@@ -74,12 +74,6 @@
   ui/Root.qml)
  (action
   (run rcc -name resources %{qrc} -o %{targets})))
-
-(rule
- (targets c_flags.sexp ocaml_qt_libs.sexp c_library_flags.sexp I_QT_INSTALL_HEADERS.sexp)
- (deps %{project_root}/config/discover.exe)
- (action
-  (run %{project_root}/config/discover.exe)))
 
 (rule
  (targets import_name_my_namespace.sexp)

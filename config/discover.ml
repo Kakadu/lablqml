@@ -36,6 +36,7 @@ let () =
       let _ = run_qmake "QT_VERSION" in
       let _ = run_qmake "QT_INSTALL_HEADERS" in
       let libs_Qt = run_qmake "QT_INSTALL_LIBS" in
+      let bins_Qt = run_qmake "QT_INSTALL_BINS" in
       let _ = run_qmake ~prefix:("I_", "-I") "QT_INSTALL_HEADERS" in
       write_sexp "c_flags.sexp" (sexp_of_list sexp_of_string conf.cflags);
       write_sexp "c_library_flags.sexp" (sexp_of_list sexp_of_string conf.libs);
@@ -46,6 +47,7 @@ let () =
         @@ conf.libs);
       write_sexp "moc.sexp" (sexp_of_string @@ check_which "moc");
       write_sexp "rcc.sexp" (sexp_of_string @@ check_which "rcc");
+      write_sexp "qmltyperegistrar.sexp" (sexp_of_string @@ check_which @@ sprintf "%s/qmltyperegistrar" bins_Qt);
       let () =
         let files =
           C.Process.run_capture_exn c "ls" [ "-1"; sprintf "%s/metatypes/*.json" libs_Qt ]

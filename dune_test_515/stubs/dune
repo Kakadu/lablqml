@@ -17,7 +17,7 @@
   (language cxx)
   (names Singleton1_c moc_Singleton1_c myslider_c moc_myslider_c)
   (flags
-   ((:include %{project_root}/config/c_flags.sexp)
+   ((:include %{project_root}/../config/c_flags.sexp)
     -fPIC
     -std=c++11
     -I.
@@ -33,7 +33,7 @@
  (action
   (run
    moc
-   %{read:../config/I_QT_INSTALL_HEADERS.sexp}
+   %{read:../../config/I_QT_INSTALL_HEADERS.sexp}
    --output-json
    %{deps}
    -o
