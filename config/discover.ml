@@ -33,7 +33,7 @@ let () =
         write_sexp (sprintf "%s.sexp" filename) (sexp_of_string cnts);
         ans
       in
-      let _ = run_qmake "QT_VERSION" in
+      let ver_Qt = run_qmake "QT_VERSION" in
       let _ = run_qmake "QT_INSTALL_HEADERS" in
       let libs_Qt = run_qmake "QT_INSTALL_LIBS" in
       let bins_Qt = run_qmake "QT_INSTALL_BINS" in
@@ -49,13 +49,18 @@ let () =
       write_sexp "rcc.sexp" (sexp_of_string @@ check_which "rcc");
       write_sexp "qmltyperegistrar.sexp" (sexp_of_string @@ check_which @@ sprintf "%s/qmltyperegistrar" bins_Qt);
       let () =
-        let files =
-          C.Process.run_capture_exn c "ls" [ "-1"; sprintf "%s/metatypes/*.json" libs_Qt ]
-          |> Base.String.strip
-          |> C.Flags.extract_comma_space_separated_words
-        in
         let filename = "qml_foreign_types.sexp" in
-        let contents = sprintf "--foreign-types=%s" (String.concat ~sep:"," files) in
+        let contents =
+          if String.compare ver_Qt "5.15" > 0 then
+            let files =
+              C.Process.run_capture_exn c "ls" [ "-1"; sprintf "%s/metatypes/*.json" libs_Qt ]
+              |> Base.String.strip
+              |> C.Flags.extract_comma_space_separated_words
+            in
+            sprintf "--foreign-types=%s" (String.concat ~sep:"," files)
+          else
+            sprintf ""
+        in
         write_sexp filename (sexp_of_string contents)
       in
       ())
