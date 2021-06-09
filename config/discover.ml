@@ -17,18 +17,25 @@ let () =
         Option.value (C.Pkg_config.query pc ~package:"Qt5Quick") ~default
       in
       let check_which s =
-        if Stdlib.Sys.command (Printf.sprintf "which %s-qt5" s) = 0
-        then sprintf "%s-qt5" s
+        if Stdlib.Sys.command (Printf.sprintf "which %s-qt5" s) = 0 then
+          sprintf "%s-qt5" s
         else s
       in
+      let qmake_bin = check_which "qmake" in
+      write_sexp "moc.sexp" (sexp_of_string @@ check_which "moc");
+      write_sexp "rcc.sexp" (sexp_of_string @@ check_which "rcc");
+      write_sexp "qmake.sexp" (sexp_of_string qmake_bin);
+
       let run_qmake ?prefix spec =
         let ans =
-          C.Process.run_capture_exn c "qmake" [ "-query"; spec ] |> Base.String.strip
+          C.Process.run_capture_exn c qmake_bin [ "-query"; spec ]
+          |> Base.String.strip
         in
         let filename, cnts =
           match prefix with
-          | Some (name, opt) -> sprintf "%s%s" name spec, sprintf "%s%s" opt ans
-          | None -> spec, ans
+          | Some (name, opt) ->
+              (sprintf "%s%s" name spec, sprintf "%s%s" opt ans)
+          | None -> (spec, ans)
         in
         write_sexp (sprintf "%s.sexp" filename) (sexp_of_string cnts);
         ans
@@ -40,28 +47,25 @@ let () =
       let _ = run_qmake ~prefix:("I_", "-I") "QT_INSTALL_HEADERS" in
       write_sexp "c_flags.sexp" (sexp_of_list sexp_of_string conf.cflags);
       write_sexp "c_library_flags.sexp" (sexp_of_list sexp_of_string conf.libs);
-      write_sexp
-        "ocaml_qt_libs.sexp"
+      write_sexp "ocaml_qt_libs.sexp"
         (sexp_of_list sexp_of_string
         @@ List.concat_map ~f:(fun s -> [ "-ccopt"; s ])
         @@ conf.libs);
-      write_sexp "moc.sexp" (sexp_of_string @@ check_which "moc");
-      write_sexp "rcc.sexp" (sexp_of_string @@ check_which "rcc");
-      write_sexp "qmltyperegistrar.sexp" (sexp_of_string @@ check_which @@ sprintf "%s/qmltyperegistrar" bins_Qt);
+      write_sexp "qmltyperegistrar.sexp"
+        (sexp_of_string @@ check_which @@ sprintf "%s/qmltyperegistrar" bins_Qt);
       let () =
         let filename = "qml_foreign_types.sexp" in
         let contents =
           if String.compare ver_Qt "5.15" > 0 then
             let files =
-              C.Process.run_capture_exn c "ls" [ "-1"; sprintf "%s/metatypes/*.json" libs_Qt ]
+              C.Process.run_capture_exn c "ls"
+                [ "-1"; sprintf "%s/metatypes/*.json" libs_Qt ]
               |> Base.String.strip
               |> C.Flags.extract_comma_space_separated_words
             in
             sprintf "--foreign-types=%s" (String.concat ~sep:"," files)
-          else
-            sprintf ""
+          else sprintf ""
         in
         write_sexp filename (sexp_of_string contents)
       in
       ())
-;;

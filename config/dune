@@ -8,6 +8,7 @@
   I_QT_INSTALL_HEADERS.sexp
   QT_VERSION.sexp
   qml_foreign_types.sexp
+  qmake.sexp
   moc.sexp
   rcc.sexp
   qmltyperegistrar.sexp
