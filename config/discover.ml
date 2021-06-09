@@ -3,6 +3,23 @@ open Base
 open Stdio
 module C = Configurator.V1
 
+module Ver = struct
+  let cmp_lists a b =
+    let rec helper = function
+      | [], [] -> 0
+      | _, [] -> 1
+      | [], _ -> -1
+      | h1 :: _, h2 :: _ when Stdlib.compare h1 h2 <> 0 -> Int.compare h1 h2
+      | _ :: t1, _ :: t2 -> helper (t1, t2)
+    in
+    helper (a, b)
+
+  let cmp l r =
+    let l = String.split l ~on:'.' |> List.map ~f:Stdlib.int_of_string in
+    let r = String.split r ~on:'.' |> List.map ~f:Stdlib.int_of_string in
+    cmp_lists l r
+end
+
 let write_sexp fn sexp = Out_channel.write_all fn ~data:(Sexp.to_string sexp)
 
 let () =
@@ -56,7 +73,7 @@ let () =
       let () =
         let filename = "qml_foreign_types.sexp" in
         let contents =
-          if String.compare ver_Qt "5.15" > 0 then
+          if Ver.cmp ver_Qt "5.15" > 0 then
             let files =
               C.Process.run_capture_exn c "ls"
                 [ "-1"; sprintf "%s/metatypes/*.json" libs_Qt ]
