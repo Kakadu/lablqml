@@ -7,7 +7,7 @@ let write_sexp fn sexp = Out_channel.write_all fn ~data:(Sexp.to_string sexp)
 let namespace = "com.mycompany.qmlcomponents"
 
 let () =
-  C.main ~name:"mylib" (fun c ->
+  C.main ~name:"mylib" (fun _c ->
     write_sexp "my_namespace.sexp" (sexp_of_string namespace);
     write_sexp
       "import_name_my_namespace.sexp"
