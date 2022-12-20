@@ -15,6 +15,7 @@ build: [
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH dune build -p lablqml" ] { os-distribution = "alpine" | os-distribution = "centos" | os-distribution = "fedora" }
   ["sh" "-exc" "PATH=/usr/lib64/qt5/bin:/usr/lib/qt5/bin:$PATH make demos" ] { (os-distribution = "alpine"  | os-distribution = "centos" | os-distribution = "fedora") & with-test }
 
+  ["./configure"]            { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
   ["dune" "build" "-p" name "-j" jobs]
                              { os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
   [make "demos"] { with-test & os-distribution != "alpine" & os-distribution != "centos" & os-distribution != "fedora" }
