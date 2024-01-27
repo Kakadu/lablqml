@@ -101,6 +101,10 @@ module FilesKey = struct
     | (_, CSRC), (_, CHDR) -> -1
     | (_, CHDR), (_, CSRC) -> 1
     | (x, _), (y, _) -> cmp_string x y
+
+  let realname = function
+    | (classname, CSRC) -> sprintf "%s_c.%s" classname PpxQtCfg.config.ext
+    | (classname, CHDR) -> sprintf "%s.h" classname
 end
 
 module FilesMap = Stdlib.Map.Make (FilesKey)
@@ -126,11 +130,17 @@ let get_smart_ppf f ~classname =
 let only_open ~classname =
   (*print_endline "Opening files....";*)
   let destdir = PpxQtCfg.config.destdir in
-  let ext = PpxQtCfg.config.ext in
-  let src =
-    Stdio.Out_channel.create (sprintf "%s/%s_c.%s" destdir classname ext)
+  let src_name = sprintf "%s/%s" destdir FilesKey.(realname (classname,CSRC)) in 
+  let h_name = sprintf "%s/%s" destdir FilesKey.(realname (classname,CHDR)) in 
+  let () =
+    (* On MacOS we need to make files writable. No idea why. *)
+    if Stdlib.Sys.file_exists src_name
+    then Unix.chmod src_name 0o644;
+    if Stdlib.Sys.file_exists h_name
+    then Unix.chmod h_name 0o644;
   in
-  let hdr = Stdio.Out_channel.create (sprintf "%s/%s.h" destdir classname) in
+  let src = Stdio.Out_channel.create src_name in
+  let hdr = Stdio.Out_channel.create h_name in
   (files := FilesMap.(add (classname, FilesKey.CHDR) hdr !files));
   files := FilesMap.(add (classname, FilesKey.CSRC) src !files)
 
