@@ -1,4 +1,8 @@
-(env(_(flags (-w -34))))
+; (env
+;  (_
+;   (flags
+;    (:standard -w -34))))
+
 (copy_files ui/Root.qml)
 
 (library
@@ -7,7 +11,14 @@
  (modules)
  (foreign_stubs
   (language cxx)
-  (names controller_c moc_controller_c c_c moc_c_c dataItem_c moc_dataItem_c qrc_resources)
+  (names
+   controller_c
+   moc_controller_c
+   c_c
+   moc_c_c
+   dataItem_c
+   moc_dataItem_c
+   qrc_resources)
   (flags
    ((:include %{project_root}/config/c_flags.sexp)
     -fPIC
@@ -28,8 +39,6 @@
     Controller)))
  (link_flags
   (-ccopt
-   -Wl,-no-as-needed
-   -ccopt
    -fPIC
    -cclib
    -lstdc++
@@ -58,7 +67,13 @@
   (run moc %{deps} -o %{targets})))
 
 (rule
- (targets controller_c.cpp controller.h c_c.cpp c.h dataItem.h dataItem_c.cpp)
+ (targets
+  controller_c.cpp
+  controller.h
+  c_c.cpp
+  c.h
+  dataItem.h
+  dataItem_c.cpp)
  (deps Controller.ml)
  (action
   (run ../ppx/pp/pp_qt.exe -ext cpp %{deps})))
