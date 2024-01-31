@@ -1,10 +1,3 @@
-#include "lablqml.h"
-
-/*  QGuiApplication for any GUI application
- *  QApplication inherits QGuiApplication is for QWidget-based apps.
- *  We use first one.
- */
-// #define QT_QML_DEBUG // Enable for access with QML profiler
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlApplicationEngine>
@@ -12,6 +5,15 @@
 #include <QtQuick/QQuickWindow>
 #include <QtQuick/QQuickItem>
 #include <QtCore/QDirIterator>
+
+#include "lablqml.h"
+
+/*  QGuiApplication for any GUI application
+ *  QApplication inherits QGuiApplication is for QWidget-based apps.
+ *  We use first one.
+ */
+// #define QT_QML_DEBUG // Enable for access with QML profiler
+
 
 /* This is a crazy macro to allocation argc and argv and pass them to
  * QApplication. The problem is that we need copying of argv because they are
@@ -242,9 +244,12 @@ extern "C" value caml_QQuickWindow_showFullScreen(value _w) {
 extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _qmlpath) {
   CAMLparam3(_argv, _cb, _qmlpath);
   CAMLlocal2(_ctx, _cb_res);
-  //qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. "<<__FILE__<< ", line " << __LINE__ ;
-  LABLQML_LEAVE_OCAML;
+  // LABLQML_LEAVE_OCAML;
+  qDebug() << "App exec. inside caml_run_QQmlApplicationEngine. " << __FILE__ << ", line " << __LINE__;
 
+
+  lablqml_check_locks = false;
+  qDebug() << "lablqml_check_locks = " << lablqml_check_locks;
   ARGC_N_ARGV(_argv, copy);
 
   /*
@@ -265,13 +270,22 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   _ctx = caml_alloc_small(1, Abstract_tag);
   (*((QQmlContext **) &Field(_ctx, 0))) = ctxt; */
   //debug_leave_blocking;
-  caml_leave_blocking_section();
+  // LABLQML_ENTER_OCAML;
+  // caml_release_runtime_system();
+  qDebug() << __FILE__ << ", line " << __LINE__;
   _cb_res = caml_callback(_cb, Val_unit);
+  qDebug() << __FILE__ << ", line " << __LINE__;
   //debug_enter_blocking;
-  caml_enter_blocking_section();
+  // LABLQML_LEAVE_OCAML
   Q_ASSERT(_cb_res == Val_unit);
 
-  engine.load(QUrl(QString(String_val(_qmlpath))));
+  const QString &path = QString(String_val(_qmlpath));
+  LABLQML_ENTER_OCAML;
+  qDebug() << __FILE__ << ", line " << __LINE__;
+  engine.load(QUrl(path));
+  LABLQML_LEAVE_OCAML;
+  qDebug() << __FILE__ << ", line " << __LINE__;
+
   QList<QObject*> xs = engine.rootObjects();
   if (xs.count() == 0) {
     Q_ASSERT_X(false, "Creating C++ runtime", "Your QML file seems buggy");
@@ -279,8 +293,12 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   QQuickWindow *window = qobject_cast<QQuickWindow*>(xs.at(0));
   Q_ASSERT_X(window != nullptr, "Creating C++ runtime", "Couldn't cast root object to QQuickWindow");
   window->show();
-  //qDebug() << "executing app.exec()";
+  lablqml_check_locks = true;
+  qDebug() << "lablqml_check_locks = " << lablqml_check_locks;
+  caml_release_runtime_system();
+  // qDebug() << "executing app.exec()";
   app.exec();
-  caml_leave_blocking_section();
+
+
   CAMLreturn(Val_unit);
 }

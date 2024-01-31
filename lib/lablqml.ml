@@ -6,25 +6,17 @@ let container : t M.t ref = ref M.empty
 let add_view name (v : t) = container := M.add name v !container
 let () = Callback.register "register_view" add_view
 let get_view_exn ~name = M.find name !container
-
-let get_view ~name =
-  try Some (get_view_exn ~name) with
-  | Not_found -> None
-;;
+let get_view ~name = try Some (get_view_exn ~name) with Not_found -> None
 
 type _ cppobj = [ `cppobject ]
 
-external set_context_property
-  :  ctx:t
-  -> name:string
-  -> _ cppobj
-  -> unit
+external set_context_property : ctx:t -> name:string -> _ cppobj -> unit
   = "caml_setContextProperty"
 
 module QPoint = struct
   type t = int * int
 
-  let create x y = x, y
+  let create x y = (x, y)
   let x = fst
   let y = snd
 end
@@ -38,8 +30,7 @@ module QVariant = struct
     | `qobject of wrap_cppobj
     | `int of int
     | `bool of bool
-    | `float of float
-    ]
+    | `float of float ]
 
   let empty = `empty
   let of_string s = `string s
@@ -54,10 +45,10 @@ end
 module QModelIndex = struct
   type t = int * int
 
-  let empty = -1, -1
+  let empty = (-1, -1)
   let row = fst
   let column = snd
-  let make ~row ~column = row, column
+  let make ~row ~column = (row, column)
   let to_string (row, column) = Printf.sprintf "(%d,%d)" row column
 end
 
@@ -67,7 +58,8 @@ class test_object ptr =
   object
     method handler = ptr
 
-    method property : string -> QVariant.t = fun name -> qobject_property ptr name
+    method property : string -> QVariant.t =
+      fun name -> qobject_property ptr name
   end
 
 module QGuiApplication = struct
@@ -79,13 +71,15 @@ end
 module QQmlEngine = struct
   type t
 
-  external register_context : name:string -> t -> unit = "caml_QQmlEngine_registerContext"
-  external add_import_path : string -> t -> unit = "caml_QQmlEngine_addImportPath"
+  external register_context : name:string -> t -> unit
+    = "caml_QQmlEngine_registerContext"
+
+  external add_import_path : string -> t -> unit
+    = "caml_QQmlEngine_addImportPath"
 end
 
-external create_qguiapplication_stub
-  :  string array
-  -> QGuiApplication.t * QQmlEngine.t
+external create_qguiapplication_stub :
+  string array -> QGuiApplication.t * QQmlEngine.t
   = "caml_create_QQmlEngine_and_app"
 
 let create_qapplication argv = create_qguiapplication_stub argv
@@ -104,10 +98,7 @@ module QQuickWindow = struct
   let as_test_object win = new test_object (as_test_object_stub win)
 end
 
-external loadQml_stub
-  :  string
-  -> QQmlEngine.t
-  -> QQuickWindow.t option
+external loadQml_stub : string -> QQmlEngine.t -> QQuickWindow.t option
   = "caml_QQmlEngine_loadQml"
 
 let loadQml path engine = loadQml_stub path engine
@@ -116,30 +107,27 @@ let loadQml path engine = loadQml_stub path engine
 module QQmlAppEngine = struct
   type t
 
-  external to_QQmlEngine : t -> QQmlEngine.t = "caml_QQmlAppEngine_to_QQmlEngine"
-  external root_named : t -> string -> _ cppobj = "caml_qml_application_engine_root_named"
+  external to_QQmlEngine : t -> QQmlEngine.t
+    = "caml_QQmlAppEngine_to_QQmlEngine"
+
+  external root_named : t -> string -> _ cppobj
+    = "caml_qml_application_engine_root_named"
 end
 
 (* TODO: make the names good *)
-external create_app_engine_stub
-  :  string array
-  -> string
-  -> QGuiApplication.t * QQmlAppEngine.t
+external create_app_engine_stub :
+  string array -> string -> QGuiApplication.t * QQmlAppEngine.t
   = "caml_create_QQmlAppEngine_and_app"
 
 let create_app_engine argv path = create_app_engine_stub argv path
 
-external run_with_QQmlApplicationEngine_stub
-  :  string array
-  -> (unit -> unit)
-  -> string
-  -> unit
+external run_with_QQmlApplicationEngine_stub :
+  string array -> (unit -> unit) -> string -> unit
   = "caml_run_QQmlApplicationEngine"
 
 (* TODO: add labeled arguments *)
 let run_with_QQmlApplicationEngine argv init path =
   run_with_QQmlApplicationEngine_stub argv init path
-;;
 
 type qvariantable
 type non_qvariantable
@@ -147,16 +135,13 @@ type non_qvariantable
 class virtual ['valtyp] prop (_name : string) =
   object (self)
     method name = _name
-
     method virtual get : 'valtyp
-
     method virtual set : 'valtyp -> unit
   end
 
 class virtual ['valtyp] qvariant_prop _name =
   object (self)
     inherit ['valtyp] prop _name as base
-
     method virtual wrap_in_qvariant : 'valtyp -> QVariant.t
   end
 
@@ -174,11 +159,17 @@ end = struct
 
   let handler : t -> t cppobj = fun x -> x
 
-  external create_stub : callback_t -> unit -> t cppobj = "caml_create_QQmlPropertyMap"
-  external insert_stub : t -> string -> QVariant.t -> unit = "caml_QQmlPropertyMap_insert"
+  external create_stub : callback_t -> unit -> t cppobj
+    = "caml_create_QQmlPropertyMap"
+
+  external insert_stub : t -> string -> QVariant.t -> unit
+    = "caml_QQmlPropertyMap_insert"
+
   external value_stub : t -> string -> QVariant.t = "caml_QQmlPropertyMap_value"
 
-  let create ?(callback : callback_t = fun _ _ -> ()) () = create_stub callback ()
+  let create ?(callback : callback_t = fun _ _ -> ()) () =
+    create_stub callback ()
+
   let insert map ~name variant = insert_stub map name variant
   let value_ map name = value_stub map name
 end
@@ -187,26 +178,21 @@ module OCamlObject = struct
   type t = t cppobj
   type variant_fn_t = QVariant.t -> unit
 
-  external binding_stub
-    :  create:bool
-    -> obj:t cppobj
-    -> name:string
-    -> fn:variant_fn_t
-    -> t
+  external binding_stub :
+    create:bool -> obj:t cppobj -> name:string -> fn:variant_fn_t -> t
     = "ocamlobject_binding"
 
-  let binding ?(create = false) obj name fn = binding_stub ~create ~obj ~name ~fn
+  let binding ?(create = false) obj name fn =
+    binding_stub ~create ~obj ~name ~fn
 
   (*external value: obj:t -> QVariant.t = "ocamlobject_value"*)
   external write : obj:t -> QVariant.t -> bool = "ocamlobject_write"
 end
 
-external object_child_named : 'a cppobj -> string -> 'b cppobj = "caml_qml_child_named"
+external object_child_named : 'a cppobj -> string -> 'b cppobj
+  = "caml_qml_child_named"
 
-external object_property_named
-  :  _ cppobj
-  -> string
-  -> _ cppobj
+external object_property_named : _ cppobj -> string -> _ cppobj
   = "caml_qml_property_child_named"
 
 module SingleFunc : sig
@@ -223,3 +209,5 @@ end = struct
 
   let create cb = create_stub cb
 end
+
+external set_check_locks : bool -> unit = "caml_lablqml_set_check_locks"

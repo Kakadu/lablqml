@@ -37,4 +37,5 @@ watch:
 doc:
 	cd doc && sphinx-build . _build
 
-
+deps:
+	opam install --yes ppx_show ppx_string_interpolation ppxlib dune-configurator dune ppx_inline_test

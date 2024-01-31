@@ -8,12 +8,10 @@
 (executable
  (name app)
  (public_name lablqmlDemos.app515)
- (libraries MyControls
-   lablqml lwt.unix threads mystubs_dune_hack)
+ (libraries MyControls lablqml lwt.unix threads mystubs_dune_hack)
  (modules app)
  (flags
   (:standard -w -33-27))
-
  (foreign_stubs
   (language cxx)
   (names qrc_resources proj2_qmltyperegistrations)
@@ -21,7 +19,7 @@
   (flags
    ((:include %{project_root}/../config/c_flags.sexp)
     -fPIC
-    -std=c++11
+    -std=c++17
     -O3)))
  (link_flags
   (-ccopt
@@ -52,14 +50,12 @@
  (deps stubs/moc_Singleton1_c.cpp.json)
  (action
   (run
-   moc
+   /usr/lib/qt6/libexec/moc
    %{read:../config/I_QT_INSTALL_HEADERS.sexp}
    --collect-json
    %{deps}
    -o
    %{target})))
-
-
 
 ; TODO: generated file should depend on the contents of .qrc file
 ;     xpath -q -e '/RCC/qresource/file/text()' hack/src/resources.qrc

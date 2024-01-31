@@ -6,11 +6,12 @@
 #include <QQuickWindow>
 
 void registerContext(const QString& name, QQmlContext* v) {
+  // LABLQML_LEAVE_OCAML;
   CAMLparam0();
   CAMLlocal3(_name,_view,_ans);
   static value *closure = nullptr;
 
-  LABLQML_ENTER_OCAML;
+
 
   if (closure == nullptr) {
     closure = (value*) caml_named_value("register_view") ;
@@ -21,7 +22,7 @@ void registerContext(const QString& name, QQmlContext* v) {
   (*((QQmlContext **) &Field(_view, 0))) = v;
   _ans = caml_callback2(*closure, _name, _view); // should be a unit
 
-  LABLQML_LEAVE_OCAML;
+  // LABLQML_ENTER_OCAML;
 
   Q_UNUSED(_ans);
   CAMLreturn0;
@@ -30,6 +31,7 @@ void registerContext(const QString& name, QQmlContext* v) {
 // ctx:t -> name:string -> cppobj -> unit
 extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj) {
   CAMLparam3(_ctx,_name,_cppObj);
+  // LABLQML_LEAVE_OCAML;
 
   Q_ASSERT( Tag_val(_ctx) == Abstract_tag );
   Q_ASSERT( Tag_val(_cppObj) == Abstract_tag || Tag_val(_cppObj) == Custom_tag );
@@ -40,32 +42,34 @@ extern "C" value caml_setContextProperty(value _ctx, value _name, value _cppObj)
     (*(QObject**) (Data_custom_val(_cppObj))) : ((QObject*) Field(_cppObj,0));
   ctx->setContextProperty(name, o);
   //qDebug() << "setted property " << name << " to " << o;
+  // LABLQML_ENTER_OCAML;
   CAMLreturn(Val_unit);
 }
 
 // string -> QQmlEngine.t -> unit
 extern "C" value caml_QQmlEngine_registerContext(value _name, value _engine) {
   CAMLparam2(_name,_engine);
+  // LABLQML_LEAVE_OCAML;
 
-  Q_ASSERT( true );
-  QQmlEngine  *engine = ((QQmlEngine*) Field(_engine,0));
+  QQmlEngine *engine = ((QQmlEngine*) Field(_engine,0));
   Q_ASSERT(engine != nullptr);
   QQmlContext *ctx = engine->rootContext();
   const QString &name = QString::fromLocal8Bit(String_val(_name));
-  LABLQML_LEAVE_OCAML;
   registerContext(name, ctx);
-  LABLQML_ENTER_OCAML;
+  // LABLQML_ENTER_OCAML;
   CAMLreturn(Val_unit);
 }
 
 // string -> QQmlEngine.t -> unit
 extern "C" value caml_QQmlEngine_addImportPath(value _path, value _engine) {
   CAMLparam2(_path,_engine);
+  // LABLQML_LEAVE_OCAML;
 
-  QQmlEngine  *engine = ((QQmlEngine*) Field(_engine,0));
+  QQmlEngine *engine = ((QQmlEngine*) Field(_engine,0));
   Q_ASSERT(engine != nullptr);
   const QString &path = QString::fromLocal8Bit(String_val(_path));
   engine->addImportPath(path);
+  // LABLQML_ENTER_OCAML;
   CAMLreturn(Val_unit);
 }
 
@@ -156,6 +160,14 @@ extern "C" value caml_quick_window_find_child(value window_val, value name_val) 
     CAMLreturn(Val_none);
   else
     CAMLreturn(Val_some(object_val));
+}
+
+bool lablqml_check_locks = false;
+
+extern "C" value caml_lablqml_set_check_locks(value b) {
+  CAMLparam1(b);
+  lablqml_check_locks = Bool_val(b);
+  CAMLreturn(Val_unit);
 }
 
 /*
