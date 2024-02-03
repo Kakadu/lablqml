@@ -272,19 +272,17 @@ extern "C" value caml_run_QQmlApplicationEngine(value _argv, value _cb, value _q
   //debug_leave_blocking;
   // LABLQML_ENTER_OCAML;
   // caml_release_runtime_system();
-  qDebug() << __FILE__ << ", line " << __LINE__;
   _cb_res = caml_callback(_cb, Val_unit);
-  qDebug() << __FILE__ << ", line " << __LINE__;
   //debug_enter_blocking;
   // LABLQML_LEAVE_OCAML
   Q_ASSERT(_cb_res == Val_unit);
 
   const QString &path = QString(String_val(_qmlpath));
   LABLQML_ENTER_OCAML;
-  qDebug() << __FILE__ << ", line " << __LINE__;
+  // qDebug() << __FILE__ << ", line " << __LINE__;
   engine.load(QUrl(path));
   LABLQML_LEAVE_OCAML;
-  qDebug() << __FILE__ << ", line " << __LINE__;
+  // qDebug() << __FILE__ << ", line " << __LINE__;
 
   QList<QObject*> xs = engine.rootObjects();
   if (xs.count() == 0) {

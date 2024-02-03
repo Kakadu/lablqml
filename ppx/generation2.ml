@@ -36,6 +36,7 @@ module GenProp = struct
               ~getter_name:(Option.value_exn pinfo.p_read)
           in
           println "%s %s::%s() {" cpptyp_name classname getter_name;
+          println "  LABLQML_MAYBE_TAKE_LOCK;";
           println "  CAMLparam0();";
           println "  CAMLlocal1(_ans);";
           prints_
@@ -53,6 +54,7 @@ module GenProp = struct
           Gencpp.cpp_value_of_ocaml ~cppvar ~ocamlvar:"_ans" ppf
             (Gencpp.vars_triplet [ "_ans" ])
             typ;
+          println "  LABLQML_MAYBE_RELEASE_LOCK;";
           println "  CAMLreturnT(%s,ans);" (cpptyp_of_typ (typ, ai_empty));
           println "}\n"
         in

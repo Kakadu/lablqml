@@ -57,3 +57,9 @@ extern bool lablqml_check_locks;
     DEBUG_ENTER_OCAML \
     if (LABLQML_USE_LOCKS) caml_release_runtime_system(); \
   }
+
+#define LABLQML_MAYBE_TAKE_LOCK \
+  bool __lablqml_need_release_ = (Caml_state_opt == NULL) ? true : false; \
+  if (__lablqml_need_release_) caml_acquire_runtime_system();
+
+#define LABLQML_MAYBE_RELEASE_LOCK if (__lablqml_need_release_) caml_release_runtime_system();
