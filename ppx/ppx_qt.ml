@@ -7,13 +7,9 @@ open Ppxlib.Ast_builder.Default
 open TypeRepr
 
 let make_coretyp ~loc txt = Ast_helper.Typ.constr ~loc { txt; loc } []
-
 let cppobj_coretyp loc = make_coretyp ~loc (Lident "cppobj")
-
 let unit_coretyp loc = make_coretyp ~loc (Lident "unit")
-
 let int_coretyp loc = make_coretyp ~loc (Lident "int")
-
 let string_coretyp loc = make_coretyp ~loc (Lident "string")
 
 let make_store_func ~loc ~classname : structure_item =
@@ -105,7 +101,8 @@ let wrap_meth ~classname (* ?(options = []) *)
           (* let options =
                if Options.is_itemmodel options then [ OItemModel ] else []
              in *)
-          Gencpp.gen_meth (*~options*) ~classname ~methname
+          Gencpp.gen_meth (*~options*)
+            ~classname ~methname
             (meth_typ :> Arg.non_cppobj Arg.t list)
       in
       [ pcf_method ~loc m ]
@@ -338,6 +335,28 @@ module OfClass = struct
     if config.gencpp then Gencpp.close_files ~options ();
     !heading @ [ ans; creator ]
 end
+
+let () =
+  let open PpxQtCfg in
+  Driver.add_arg "-nocpp"
+    (Unit (fun () -> config.gencpp <- false))
+    ~doc:" Don't generate C++";
+  Driver.add_arg "-cpp"
+    (Unit (fun () -> config.gencpp <- true))
+    ~doc:" Do    generate C++ (default)";
+  Driver.add_arg "-destdir"
+    (String (fun s -> config.destdir <- s))
+    ~doc:"DIR Where to put files";
+  Driver.add_arg "-ext"
+    (String (fun s -> config.ext <- s))
+    ~doc:"EXT File extension to use (usually .cpp or .c)";
+  Driver.add_arg "-nolocks"
+    (Unit (fun () -> config.insert_locks <- false))
+    ~doc:" omit caml_leave_blocking_section and others";
+  Driver.add_arg "-tracelocks"
+    (Unit (fun () -> config.trace_locks <- true))
+    ~doc:" trace some acquired and released locks";
+  ()
 
 let () =
   Ppxlib.Driver.register_transformation

@@ -16,8 +16,7 @@ module QVariant : sig
     | `qobject of wrap_cppobj
     | `int of int
     | `bool of bool
-    | `float of float
-    ]
+    | `float of float ]
 
   val empty : t
   val of_string : string -> t
@@ -31,7 +30,6 @@ class test_object :
   t
   -> object
        method handler : t
-
        method property : string -> QVariant.t
      end
 
@@ -59,8 +57,8 @@ module QQmlEngine : sig
   val add_import_path : string -> t -> unit
 end
 
-(** Creates QGuiApplication. No platform-dependent styling applied. *)
 val create_qapplication : string array -> QGuiApplication.t * QQmlEngine.t
+(** Creates QGuiApplication. No platform-dependent styling applied. *)
 
 module QQuickWindow : sig
   type t
@@ -71,8 +69,8 @@ module QQuickWindow : sig
   val as_test_object : t -> test_object
 end
 
-(** Creates QQuickWindow using file and QQmlEngine *)
 val loadQml : string -> QQmlEngine.t -> QQuickWindow.t option
+(** Creates QQuickWindow using file and QQmlEngine *)
 
 (* This QML engine applies platform-dependent styling. With this engine
  * your root QML object should be a Window form QtQuick.Controls library.
@@ -88,14 +86,16 @@ end
 val object_child_named : 'a cppobj -> string -> 'a cppobj
 val object_property_named : 'a cppobj -> string -> 'a cppobj
 
+val create_app_engine :
+  string array -> string -> QGuiApplication.t * QQmlAppEngine.t
 (** Creates QGuiApplication and QQmlApplicationEngine. *)
-val create_app_engine : string array -> string -> QGuiApplication.t * QQmlAppEngine.t
 
+val run_with_QQmlApplicationEngine :
+  string array -> (unit -> unit) -> string -> unit
 (** Function [run_with_QQmlApplicationEngine argv callback path] initializates
     and open QQuickWindow using QQmlApplcationEngine. It uses platform-dependent
     styling, so the root element of the QML file specified in [path] should be
     a Window from QtQuick.Controls library *)
-val run_with_QQmlApplicationEngine : string array -> (unit -> unit) -> string -> unit
 
 type qvariantable
 type non_qvariantable
@@ -104,9 +104,7 @@ class virtual ['valtyp] prop :
   string
   -> object
        method virtual get : 'valtyp
-
        method name : string
-
        method virtual set : 'valtyp -> unit
      end
 
@@ -114,11 +112,8 @@ class virtual ['valtyp] qvariant_prop :
   string
   -> object
        method virtual get : 'valtyp
-
        method name : string
-
        method virtual set : 'valtyp -> unit
-
        method virtual wrap_in_qvariant : 'valtyp -> QVariant.t
      end
 
@@ -145,3 +140,5 @@ module SingleFunc : sig
   val handler : t -> 'a cppobj
   val create : (unit -> unit) -> t
 end
+
+val set_check_locks : bool -> unit

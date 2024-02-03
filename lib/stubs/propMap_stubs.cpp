@@ -1,10 +1,11 @@
+#include <QtCore/QDebug>
+#include <QtQml/QQmlEngine>
+
 #include "lablqml.h"
 
 #include "variant.h"
 #include "CamlPropertyMap.h"
 
-#include <QtCore/QDebug>
-#include <QtQml/QQmlEngine>
 
 extern "C" {
 

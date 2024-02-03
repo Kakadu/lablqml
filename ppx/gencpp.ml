@@ -46,6 +46,8 @@ let fprintfn ppf fmt = Format.ksprintf (Format.fprintf ppf "%s\n%!") fmt
 let print_time ppf =
   fprintfn ppf "/*";
   fprintfn ppf " * Generated at %s" Time.(now () |> to_string);
+  fprintfn ppf " *   insert_locks = %b" PpxQtCfg.config.insert_locks;
+  fprintfn ppf " *   trace_locks  = %b" PpxQtCfg.config.trace_locks;
   fprintfn ppf " */"
 
 let ref_append ~set x = set := !set @ [ x ] [@@warning "-32"]
@@ -62,11 +64,9 @@ type opt_item = OInstantiable | OItemModel | OItemModelVal of string option
 
 module Options = struct
   type item = opt_item
-
   type t = item list
 
   let myfind x ~set = List.mem set x ~equal:Stdlib.( = )
-
   let is_itemmodel set = myfind OItemModel ~set
 
   let has_itemmodel_val set =
@@ -74,24 +74,33 @@ module Options = struct
 end
 
 let enter_blocking_section ch =
-  if PpxQtCfg.config.insert_locks then
+  (* Format.eprintf "inside enter_blocking_section\n"; *)
+  if PpxQtCfg.config.insert_locks then (
+    fprintfn ch "  if (lablqml_check_locks) {";
     let () =
-      if PpxQtCfg.config.trace_locks then
-        fprintfn ch "  qDebug() << \"release_runtime_system();\";"
+      if PpxQtCfg.config.trace_locks then (
+        fprintfn ch {|    qDebug() << "Caml_state_opt = " << Caml_state_opt;|};
+        fprintfn ch
+          {|    qDebug() << "release_runtime_system()" << Q_FUNC_INFO;|})
     in
-    fprintfn ch "  caml_release_runtime_system();"
+    fprintfn ch "  caml_release_runtime_system();";
+    fprintfn ch "}")
 
 let leave_blocking_section ch =
-  if PpxQtCfg.config.insert_locks then
+  (* Format.eprintf "inside leave_blocking_section\n"; *)
+  if PpxQtCfg.config.insert_locks then (
+    fprintfn ch "  if (lablqml_check_locks) {";
     let () =
-      if PpxQtCfg.config.trace_locks then
-        fprintfn ch "  qDebug() << \"acquire_runtime_system();\";"
+      if PpxQtCfg.config.trace_locks then (
+        fprintfn ch {|  qDebug() << "Caml_state_opt = " << Caml_state_opt;|};
+        fprintfn ch
+          {|  qDebug() << "acquire_runtime_system();" << Q_FUNC_INFO;|})
     in
-    fprintfn ch "  caml_acquire_runtime_system();"
+    fprintfn ch "  caml_acquire_runtime_system();";
+    fprintfn ch "}")
 
 module FilesKey = struct
   type ext = CSRC | CHDR
-
   type t = string * ext
 
   let cmp_string : string -> string -> int = String.compare
@@ -110,9 +119,7 @@ end
 module FilesMap = Stdlib.Map.Make (FilesKey)
 
 let files = ref FilesMap.empty
-
 let get_header_ch ~classname = FilesMap.find (classname, FilesKey.CHDR) !files
-
 let get_source_ch ~classname = FilesMap.find (classname, FilesKey.CSRC) !files
 
 let get_header_ppf ~classname =
@@ -183,6 +190,7 @@ let print_header_preamble ~classname =
   println "#include <QtCore/QAbstractItemModel>";
   println "#include <QtQml/QQmlEngine>";
   println "#include <QtQml/QtQml>  // macro like QML_ELEMENT, etc.";
+  println "#include <lablqml.h>";
   println "";
   println "#ifdef __cplusplus";
   println "extern \"C\" {";
@@ -202,6 +210,7 @@ let open_files ~options ~classname =
   print_header_preamble ~classname;
   let ppf = get_header_ppf ~classname in
   let println fmt = fprintfn ppf fmt in
+  println "#define DO_CHECK_CAML_STATE 0";
   println "class %s : public %s {" classname
     (if Options.is_itemmodel options then "QAbstractItemModel" else "QObject");
   println "  Q_OBJECT";
@@ -213,7 +222,7 @@ let open_files ~options ~classname =
   println "       //maybe unregister global root?";
   println "    }";
   println "    _camlobjHolder = x;";
-  println "    register_global_root(&_camlobjHolder);";
+  println "    caml_register_global_root(&_camlobjHolder);";
   println "  }\n";
   let () =
     if Options.is_itemmodel options then (
@@ -278,13 +287,13 @@ let close_files ?(caml_owner = true) ~options:_ () =
             classname;
           println "  CAMLparam1(_dummyUnitVal);";
           println "  CAMLlocal1(_ans);";
-          enter_blocking_section ppf;
+          (* leave_blocking_section ppf; *)
           alloc_and_store ppf ~classname
             ~obj:(sprintf "new %s()" classname)
             ~where:"_ans";
           (* println "  _ans = caml_alloc_small(1, Abstract_tag);";
              println "  (*((%s **) &Field(_ans, 0))) = new %s();" classname classname; *)
-          leave_blocking_section ppf;
+          (* enter_blocking_section ppf; *)
           println "  CAMLreturn(_ans);";
           println "}\n";
           println
@@ -292,10 +301,10 @@ let close_files ?(caml_owner = true) ~options:_ () =
              _camlobj) {"
             classname;
           println "  CAMLparam2(_cppobj,_camlobj);";
-          enter_blocking_section ppf;
+          (* leave_blocking_section ppf; *)
           println "  %s *o = (%s*) (Field(_cppobj,0));" classname classname;
           println "  o->storeCAMLobj(_camlobj);";
-          leave_blocking_section ppf;
+          (* enter_blocking_section ppf; *)
           println "  CAMLreturn(Val_unit);";
           println "}")
     (*
@@ -320,9 +329,7 @@ let close_files ?(caml_owner = true) ~options:_ () =
 
 module Names = struct
   let signal_of_prop s = s ^ "Changed"
-
   let getter_of_prop s = "get" ^ s
-
   let setter_of_prop s = "set" ^ s
 end
 
@@ -375,7 +382,6 @@ let print_declarations ?(mode = Local) ppf xs =
   helper xs
 
 let print_local_declarations ch xs = print_declarations ~mode:Local ch xs
-
 let print_param_declarations ch xs = print_declarations ~mode:Param ch xs
 
 let cpp_value_of_ocaml ?(options = []) ~cppvar ~ocamlvar ppf
@@ -565,7 +571,7 @@ let gen_stub_cpp ?(options = []) ~classname ~stubname ~methname ppf
   println "  // aux vars count = %d" aux_count;
   let local_names = List.init ~f:(sprintf "_x%d") aux_count in
   print_local_declarations ppf local_names;
-  enter_blocking_section ppf;
+  (* enter_blocking_section ppf; *)
   println "  %s *o = (%s*) (Field(_cppobj,0));" classname classname;
   let triplet = vars_triplet local_names in
   let options =
@@ -577,20 +583,22 @@ let gen_stub_cpp ?(options = []) ~classname ~stubname ~methname ppf
       println "  %s %s;" (cpptyp_of_typ arg) cppvar;
       cpp_value_of_ocaml ppf ~options ~cppvar ~ocamlvar triplet (fst arg));
   let () =
-    match res with
-    | Unit, _ ->
-        println "  o->%s(%s);" methname (String.concat ~sep:"," cppvars);
-        leave_blocking_section ppf;
-        println "  CAMLreturn(Val_unit);"
-    | _t, _ai ->
-        let cppvar = "res" in
-        println "  %s %s = o->%s(%s);" (cpptyp_of_typ res) cppvar methname
-          (String.concat ~sep:"," cppvars);
-        let ocamlvar = "_ans" in
-        fprintf ppf "  ";
-        ocaml_value_of_cpp ppf triplet ~ocamlvar ~cppvar (fst res);
-        leave_blocking_section ppf;
-        println "  CAMLreturn(%s);" ocamlvar
+    let ocamlvar =
+      match res with
+      | Unit, _ ->
+          println "  o->%s(%s);" methname (String.concat ~sep:"," cppvars);
+          "Val_unit"
+      | _t, _ai ->
+          let cppvar = "res" in
+          println "  %s %s = o->%s(%s);" (cpptyp_of_typ res) cppvar methname
+            (String.concat ~sep:"," cppvars);
+          let ocamlvar = "_ans" in
+          fprintf ppf "  ";
+          ocaml_value_of_cpp ppf triplet ~ocamlvar ~cppvar (fst res);
+          ocamlvar
+    in
+    (* leave_blocking_section ppf; *)
+    println "  CAMLreturn(%s);" ocamlvar
   in
   println "}";
   ()
@@ -616,6 +624,7 @@ let gen_meth_cpp_generic ?(minfo = TypeRepr.mi_empty) ~classname ~methname wrap
         String.concat ~sep:","
         @@ List.mapi ~f:(fun i t -> sprintf "%s x%d" (cpptyp_of_typ t) i) args)
     (if minfo.mi_const then " const" else "");
+  leave_blocking_section ppf;
   println "  CAMLparam0();";
   let locals_count =
     2
@@ -632,7 +641,7 @@ let gen_meth_cpp_generic ?(minfo = TypeRepr.mi_empty) ~classname ~methname wrap
   (* generate name *)
   let cb_locals = List.mapi ~f:(fun i _ -> make_cb_var i) args in
   print_local_declarations ppf cb_locals;
-  leave_blocking_section ppf;
+
   let triplet, call_closure_str = wrap ~make_cb_var "_meth" locals ~args in
   let () =
     match fst res with

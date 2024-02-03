@@ -1,5 +1,11 @@
 #pragma once
 
+#include <QtCore/QAbstractItemModel>
+#include <QtCore/QString>
+#include <QtCore/QDebug>
+#include <QtQml/QQmlContext>
+
+
 extern "C" {
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -10,10 +16,6 @@ extern "C" {
 #include <caml/threads.h>
 #include <caml/fail.h>
 }
-
-#include <QtCore/QAbstractItemModel>
-#include <QtCore/QString>
-#include <QtQml/QQmlContext>
 
 #define Ctype_of_val(T, V) (*((T **) Data_custom_val(V)))
 #define Ctype_field(T, B, I) ((*((T **) &Field(B, I))))
@@ -33,20 +35,31 @@ static value Val_some(value v) {
   CAMLreturn(some);
 }
 
+extern bool lablqml_check_locks;
 
-/* #define DEBUG_ENTER_OCAML \
-    qDebug() << "ENTER TO OCAML == acquire_runtime == leave_section" << __FILE__ << __LINE__;
+#define DEBUG_ENTER_OCAML \
+    qDebug() << "ENTER OCAML == release_runtime_lock " << __FILE__ << __LINE__;
 #define DEBUG_LEAVE_OCAML \
-    qDebug() << "LEAVE TO OCAML == release_runtime == enter_section" << __FILE__ << __LINE__;
- */
+    qDebug() << "LEAVE OCAML == acquire_runtime_lock" << __FILE__ << __LINE__;
 
-#define DEBUG_ENTER_OCAML
-#define DEBUG_LEAVE_OCAML
-
-#define LABLQML_ENTER_OCAML \
-    DEBUG_ENTER_OCAML \
-    caml_acquire_runtime_system();
+#define LABLQML_USE_LOCKS 1
+// #define DEBUG_ENTER_OCAML
+// #define DEBUG_LEAVE_OCAML
 
 #define LABLQML_LEAVE_OCAML \
+  if (lablqml_check_locks) { \
     DEBUG_LEAVE_OCAML \
-    caml_release_runtime_system();
+    if (LABLQML_USE_LOCKS) caml_acquire_runtime_system(); \
+  }
+
+#define LABLQML_ENTER_OCAML \
+  if (lablqml_check_locks) { \
+    DEBUG_ENTER_OCAML \
+    if (LABLQML_USE_LOCKS) caml_release_runtime_system(); \
+  }
+
+#define LABLQML_MAYBE_TAKE_LOCK \
+  bool __lablqml_need_release_ = (Caml_state_opt == NULL) ? true : false; \
+  if (__lablqml_need_release_) caml_acquire_runtime_system();
+
+#define LABLQML_MAYBE_RELEASE_LOCK if (__lablqml_need_release_) caml_release_runtime_system();

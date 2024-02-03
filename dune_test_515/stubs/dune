@@ -2,13 +2,11 @@
  (public_name app.MyControls)
  (name MyControls)
  (modules MyControls)
- (libraries lablqml )
+ (libraries lablqml)
  (preprocess
   (per_module
    ((pps lablqml.ppx)
-    MyControls)))
-)
-
+    MyControls))))
 
 (library
  (name mystubs_dune_hack)
@@ -19,11 +17,12 @@
   (flags
    ((:include %{project_root}/../config/c_flags.sexp)
     -fPIC
-    -std=c++11
+    -std=c++17
     -I.
+    -I%{project_root}/lib/
+    -I../../lib
     -O3)))
  (install_c_headers Singleton1))
-
 
 (rule
  (targets moc_Singleton1_c.cpp moc_Singleton1_c.cpp.json)
@@ -32,7 +31,7 @@
  ; (>= %{read:QT_VERSION.sexp} 5.15))    ;; Doesn't work
  (action
   (run
-   moc
+   %{read:../../config/moc.sexp}
    %{read:../../config/I_QT_INSTALL_HEADERS.sexp}
    --output-json
    %{deps}
@@ -53,7 +52,7 @@
  (targets moc_myslider_c.cpp)
  (deps myslider.h)
  (action
-  (run moc %{deps} -o %{targets})))
+  (run %{read:../../config/moc.sexp} %{deps} -o %{targets})))
 
 (rule
  (targets myslider_c.cpp myslider.h)

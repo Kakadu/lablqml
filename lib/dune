@@ -27,12 +27,12 @@
   (flags
    ((:include %{project_root}/config/c_flags.sexp)
     -Wall
-    -std=c++11
+    -std=c++17
     -O3
     -I
     .
     ; dirty hack next line
-    -Dprivate=public
+    ; -Dprivate=public
     -fPIC)))
  (c_library_flags
   (:include %{project_root}/config/c_library_flags.sexp))

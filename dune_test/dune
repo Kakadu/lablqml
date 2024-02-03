@@ -8,6 +8,7 @@
 (library
  (name mystubs_dune_test)
  (public_name lablqmlDemos.mystubs)
+ (libraries lablqml)
  (modules)
  (foreign_stubs
   (language cxx)
@@ -23,7 +24,8 @@
    ((:include %{project_root}/config/c_flags.sexp)
     -fPIC
     -Dprotected=public
-    -std=c++11
+    -std=c++17
+    -I%{project_root}/lib
     -O3)))
  (install_c_headers controller))
 
@@ -52,19 +54,19 @@
  (targets moc_controller_c.cpp)
  (deps controller.h)
  (action
-  (run moc %{deps} -o %{targets})))
+  (run %{read:../config/moc.sexp} %{deps} -o %{targets})))
 
 (rule
  (targets moc_dataItem_c.cpp)
  (deps dataItem.h)
  (action
-  (run moc %{deps} -o %{targets})))
+  (run %{read:../config/moc.sexp} %{deps} -o %{targets})))
 
 (rule
  (targets moc_c_c.cpp)
  (deps c.h)
  (action
-  (run moc %{deps} -o %{targets})))
+  (run %{read:../config/moc.sexp} %{deps} -o %{targets})))
 
 (rule
  (targets
@@ -76,7 +78,14 @@
   dataItem_c.cpp)
  (deps Controller.ml)
  (action
-  (run ../ppx/pp/pp_qt.exe -ext cpp %{deps})))
+  (run
+   ../ppx/pp/pp_qt.exe
+   ; -nolocks
+   -tracelocks
+   ;
+   -ext
+   cpp
+   %{deps})))
 
 (rule
  (targets qrc_resources.cpp)

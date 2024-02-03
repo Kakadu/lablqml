@@ -22,6 +22,11 @@ end
 
 let write_sexp fn sexp = Out_channel.write_all fn ~data:(Sexp.to_string sexp)
 
+let qtquick_pkg,rcc, moc = 
+  match Sys.getenv "QT" with 
+  | Some "6" -> "Qt6Quick", "/usr/lib/qt6/libexec/rcc", "/usr/lib/qt6/libexec/moc"
+  | _ -> "Qt5Quick", "rcc", "moc"
+
 let () =
   C.main ~name:"mylib" (fun c ->
       let default : C.Pkg_config.package_conf = { libs = []; cflags = [] } in
@@ -31,16 +36,19 @@ let () =
           | None -> C.die "pkg-config is not available"
           | Some pc -> pc
         in
-        Option.value (C.Pkg_config.query pc ~package:"Qt5Quick") ~default
+        Option.value (C.Pkg_config.query pc ~package:qtquick_pkg) ~default
       in
       let check_which s =
         if Stdlib.Sys.command (Printf.sprintf "which %s-qt5" s) = 0 then
           sprintf "%s-qt5" s
         else s
       in
-      let qmake_bin = check_which "qmake" in
-      write_sexp "moc.sexp" (sexp_of_string @@ check_which "moc");
-      write_sexp "rcc.sexp" (sexp_of_string @@ check_which "rcc");
+      let qmake_bin = check_which (match Sys.getenv "QT" with 
+        | Some "6" -> "qmake6"
+        | _ -> "qmake") 
+      in
+      write_sexp "moc.sexp" (sexp_of_string @@ check_which moc);
+      write_sexp "rcc.sexp" (sexp_of_string @@ check_which rcc);
       write_sexp "qmake.sexp" (sexp_of_string qmake_bin);
 
       let run_qmake ?prefix spec =
