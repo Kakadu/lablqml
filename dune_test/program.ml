@@ -3,23 +3,20 @@ open Lablqml
 
 let () = Printexc.record_backtrace true
 
-class type virtual controller_t =
-  object
-    inherit Controller.controller
-
-    method updateDescription : string -> unit
-  end
+class type virtual controller_t = object
+  inherit Controller.controller
+  method updateDescription : string -> unit
+end
 
 type options = { mutable ctrl : controller_t }
 
-let options = { ctrl = Obj.magic (object end) }
+let options = { ctrl = Obj.magic object end }
 
 let main () =
   let controller_cppobj = Controller.create_controller () in
   let controller =
     object (self)
       inherit Controller.controller controller_cppobj
-
       val mutable desc = ""
 
       method updateDescription info =
@@ -51,11 +48,8 @@ let create_model () =
         let cpp_obj = DataItem.create_dataItem () in
         object (self)
           inherit DataItem.dataItem cpp_obj
-
           method getcellX () = n
-
           val mutable text_ = sprintf "text %d" n
-
           method gettext () = text_
 
           method setText s =
@@ -69,7 +63,6 @@ let create_model () =
     class virtual abstractListModel cppobj =
       object (self)
         inherit IntModel.c cppobj
-
         method parent _ = QModelIndex.empty
 
         method index row column parent =
@@ -78,14 +71,12 @@ let create_model () =
           else QModelIndex.empty
 
         method columnCount _ = 1
-
         method hasChildren _ = self#rowCount QModelIndex.empty > 0
       end
   end in
   let model =
     object (self)
       inherit M.abstractListModel cpp_model
-
       method rowCount _ = 3
 
       method data index role =
@@ -146,6 +137,7 @@ let _ =
   (*   ] *)
   run_with_QQmlApplicationEngine Sys.argv
     (fun () ->
+      Printf.printf "%s %d\n" __FILE__ __LINE__;
       main ();
       create_model ();
       create_threads ())

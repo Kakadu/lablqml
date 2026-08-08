@@ -5,10 +5,7 @@
  (libraries unix base stdio ppxlib myparser)
  (kind ppx_rewriter)
  (preprocess
-  (pps
-   ppxlib.metaquot
-   ppx_show
-   ppx_string_interpolation
-   ppx_inline_test))
+  (pps ppxlib.metaquot ppx_deriving.show ppx_string_interpolation
+    ppx_inline_test))
  (flags
   (:standard -warn-error -A -w -9-3)))

@@ -62,11 +62,9 @@ type opt_item = OInstantiable | OItemModel | OItemModelVal of string option
 
 module Options = struct
   type item = opt_item
-
   type t = item list
 
   let myfind x ~set = List.mem set x ~equal:Stdlib.( = )
-
   let is_itemmodel set = myfind OItemModel ~set
 
   let has_itemmodel_val set =
@@ -79,7 +77,7 @@ let enter_blocking_section ch =
       if PpxQtCfg.config.trace_locks then
         fprintfn ch "  qDebug() << \"release_runtime_system();\";"
     in
-    fprintfn ch "  caml_release_runtime_system();"
+    fprintfn ch "  LABLQML_LEAVE_OCAML;"
 
 let leave_blocking_section ch =
   if PpxQtCfg.config.insert_locks then
@@ -87,11 +85,12 @@ let leave_blocking_section ch =
       if PpxQtCfg.config.trace_locks then
         fprintfn ch "  qDebug() << \"acquire_runtime_system();\";"
     in
-    fprintfn ch "  caml_acquire_runtime_system();"
+    fprintfn ch "  LABLQML_ENTER_OCAML;"
+
+let enter_ocaml_section = leave_blocking_section
 
 module FilesKey = struct
   type ext = CSRC | CHDR
-
   type t = string * ext
 
   let cmp_string : string -> string -> int = String.compare
@@ -103,16 +102,14 @@ module FilesKey = struct
     | (x, _), (y, _) -> cmp_string x y
 
   let realname = function
-    | (classname, CSRC) -> sprintf "%s_c.%s" classname PpxQtCfg.config.ext
-    | (classname, CHDR) -> sprintf "%s.h" classname
+    | classname, CSRC -> sprintf "%s_c.%s" classname PpxQtCfg.config.ext
+    | classname, CHDR -> sprintf "%s.h" classname
 end
 
 module FilesMap = Stdlib.Map.Make (FilesKey)
 
 let files = ref FilesMap.empty
-
 let get_header_ch ~classname = FilesMap.find (classname, FilesKey.CHDR) !files
-
 let get_source_ch ~classname = FilesMap.find (classname, FilesKey.CSRC) !files
 
 let get_header_ppf ~classname =
@@ -130,14 +127,14 @@ let get_smart_ppf f ~classname =
 let only_open ~classname =
   (*print_endline "Opening files....";*)
   let destdir = PpxQtCfg.config.destdir in
-  let src_name = sprintf "%s/%s" destdir FilesKey.(realname (classname,CSRC)) in 
-  let h_name = sprintf "%s/%s" destdir FilesKey.(realname (classname,CHDR)) in 
+  let src_name =
+    sprintf "%s/%s" destdir FilesKey.(realname (classname, CSRC))
+  in
+  let h_name = sprintf "%s/%s" destdir FilesKey.(realname (classname, CHDR)) in
   let () =
     (* On MacOS we need to make files writable. No idea why. *)
-    if Stdlib.Sys.file_exists src_name
-    then Unix.chmod src_name 0o644;
-    if Stdlib.Sys.file_exists h_name
-    then Unix.chmod h_name 0o644;
+    if Stdlib.Sys.file_exists src_name then Unix.chmod src_name 0o644;
+    if Stdlib.Sys.file_exists h_name then Unix.chmod h_name 0o644
   in
   let src = Stdio.Out_channel.create src_name in
   let hdr = Stdio.Out_channel.create h_name in
@@ -161,13 +158,14 @@ let with_io ~classname f =
       only_close ();
       raise exc)
   else ()
-  [@@warning "-32"]
+[@@warning "-32"]
 
 let print_source_preamble ~classname =
   let ppf = get_source_ppf ~classname in
   print_time ppf;
   (* let println fmt = fprintfn hndl fmt in
      print_time ppf; *)
+  fprintfn ppf "#include <lablqml.h>";
   fprintfn ppf "#include \"%s.h\"" classname;
   fprintfn ppf ""
 
@@ -213,7 +211,7 @@ let open_files ~options ~classname =
   println "       //maybe unregister global root?";
   println "    }";
   println "    _camlobjHolder = x;";
-  println "    register_global_root(&_camlobjHolder);";
+  println "    caml_register_global_root(&_camlobjHolder);";
   println "  }\n";
   let () =
     if Options.is_itemmodel options then (
@@ -278,13 +276,13 @@ let close_files ?(caml_owner = true) ~options:_ () =
             classname;
           println "  CAMLparam1(_dummyUnitVal);";
           println "  CAMLlocal1(_ans);";
-          enter_blocking_section ppf;
+          (* enter_blocking_section ppf; *)
           alloc_and_store ppf ~classname
             ~obj:(sprintf "new %s()" classname)
             ~where:"_ans";
           (* println "  _ans = caml_alloc_small(1, Abstract_tag);";
              println "  (*((%s **) &Field(_ans, 0))) = new %s();" classname classname; *)
-          leave_blocking_section ppf;
+          (* leave_blocking_section ppf; *)
           println "  CAMLreturn(_ans);";
           println "}\n";
           println
@@ -320,9 +318,7 @@ let close_files ?(caml_owner = true) ~options:_ () =
 
 module Names = struct
   let signal_of_prop s = s ^ "Changed"
-
   let getter_of_prop s = "get" ^ s
-
   let setter_of_prop s = "set" ^ s
 end
 
@@ -375,7 +371,6 @@ let print_declarations ?(mode = Local) ppf xs =
   helper xs
 
 let print_local_declarations ch xs = print_declarations ~mode:Local ch xs
-
 let print_param_declarations ch xs = print_declarations ~mode:Param ch xs
 
 let cpp_value_of_ocaml ?(options = []) ~cppvar ~ocamlvar ppf
@@ -616,6 +611,7 @@ let gen_meth_cpp_generic ?(minfo = TypeRepr.mi_empty) ~classname ~methname wrap
         String.concat ~sep:","
         @@ List.mapi ~f:(fun i t -> sprintf "%s x%d" (cpptyp_of_typ t) i) args)
     (if minfo.mi_const then " const" else "");
+  enter_ocaml_section ppf;
   println "  CAMLparam0();";
   let locals_count =
     2
@@ -624,6 +620,7 @@ let gen_meth_cpp_generic ?(minfo = TypeRepr.mi_empty) ~classname ~methname wrap
         ~init:0 types
   in
   let locals = List.init ~f:(sprintf "_x%d") (locals_count - 1) in
+
   print_local_declarations ppf ("_ans" :: "_meth" :: locals);
   (* array for invoking OCaml method *)
   println "  CAMLlocalN(_args, %d);" (List.length args + 1);
@@ -632,7 +629,7 @@ let gen_meth_cpp_generic ?(minfo = TypeRepr.mi_empty) ~classname ~methname wrap
   (* generate name *)
   let cb_locals = List.mapi ~f:(fun i _ -> make_cb_var i) args in
   print_local_declarations ppf cb_locals;
-  leave_blocking_section ppf;
+
   let triplet, call_closure_str = wrap ~make_cb_var "_meth" locals ~args in
   let () =
     match fst res with

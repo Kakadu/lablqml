@@ -1,3 +1,10 @@
 .merlin
 /program.native
 
+/c.h
+/c_c.cpp
+/controller.h
+/controller_c.cpp
+/dataItem.h
+/dataItem_c.cpp
+
